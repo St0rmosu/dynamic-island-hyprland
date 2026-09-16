@@ -4,6 +4,8 @@ import re
 import os
 import sys
 import time
+import json
+import threading
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
@@ -11,17 +13,15 @@ from resolve_discord_avatar import resolve_avatar
 
 ACTIVE_CALL = False
 LAST_CALL_TIME = 0
+STATE_FILE = "/tmp/tide_discord_call_ongoing"
 
 def send_ipc(method, *args):
-    global ACTIVE_CALL, LAST_CALL_TIME
     ipc_path = os.path.expanduser("~/.config/quickshell/tide-island")
     cmd = ["quickshell", "ipc", "-p", ipc_path, "call", "island", method] + list(args)
     try:
         subprocess.run(cmd, timeout=2, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
-
-STATE_FILE = "/tmp/tide_discord_call_ongoing"
 
 def close_call():
     global ACTIVE_CALL, LAST_CALL_TIME
@@ -33,9 +33,75 @@ def close_call():
         pass
     send_ipc("closeCall")
 
+def get_discord_channel_or_contact():
+    try:
+        res = subprocess.run(["hyprctl", "clients", "-j"], capture_output=True, text=True, timeout=1.5)
+        clients = json.loads(res.stdout)
+        for c in clients:
+            cls = (c.get("class") or "").lower()
+            if any(x in cls for x in ("discord", "vesktop", "armcord", "webcord")):
+                title = c.get("title", "")
+                if title and " - Discord" in title:
+                    clean = title.split(" - Discord")[0].strip()
+                    if clean and clean.lower() != "discord":
+                        return clean
+                elif title and title.lower() != "discord":
+                    return title.strip()
+    except Exception:
+        pass
+    return "Discord Call"
+
+def is_discord_audio_active():
+    try:
+        res = subprocess.run(["pactl", "list", "source-outputs"], capture_output=True, text=True, timeout=1.5)
+        out = res.stdout.lower()
+        if "discord" in out or "webrtc" in out:
+            return True
+    except Exception:
+        pass
+    return False
+
+def audio_monitor_loop():
+    global ACTIVE_CALL, LAST_CALL_TIME
+    prev_active = False
+    while True:
+        try:
+            curr_active = is_discord_audio_active()
+            if curr_active and not prev_active:
+                # Discord voice stream started
+                if not os.path.exists(STATE_FILE):
+                    # Outgoing call or voice connection initiated in Discord
+                    name = get_discord_channel_or_contact()
+                    avatar = resolve_avatar(name) or ""
+                    ACTIVE_CALL = True
+                    LAST_CALL_TIME = time.time()
+                    try:
+                        with open(STATE_FILE, "w") as f:
+                            f.write(str(time.time()))
+                    except Exception:
+                        pass
+                    send_ipc("incomingCall", name, "In chiamata...", avatar)
+                    time.sleep(0.08)
+                    send_ipc("callAccepted")
+                else:
+                    ACTIVE_CALL = True
+            elif not curr_active and prev_active:
+                # Discord voice stream ended
+                if os.path.exists(STATE_FILE):
+                    close_call()
+            prev_active = curr_active
+        except Exception:
+            pass
+        time.sleep(1.5)
+
 def run_monitor():
     global ACTIVE_CALL, LAST_CALL_TIME
-    # Monitor the whole Notifications interface
+
+    # Start audio monitor thread for outgoing/active voice calls
+    t = threading.Thread(target=audio_monitor_loop, daemon=True)
+    t.start()
+
+    # Monitor DBus Notifications for incoming calls
     cmd = [
         "dbus-monitor",
         "--session",
@@ -57,16 +123,6 @@ def run_monitor():
     for line in iter(proc.stdout.readline, ''):
         line = line.strip()
         if not line:
-            continue
-
-        # Check for CloseNotification or NotificationClosed
-        if "member=CloseNotification" in line or "member=NotificationClosed" in line:
-            # If the call was accepted and is ongoing, do NOT close the island
-            if os.path.exists(STATE_FILE):
-                continue
-            # If a call was active or ringing in the last 60 seconds, close it immediately
-            if ACTIVE_CALL or (time.time() - LAST_CALL_TIME < 60):
-                close_call()
             continue
 
         if "member=Notify" in line:

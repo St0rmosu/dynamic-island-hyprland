@@ -42,25 +42,14 @@ def accept_call():
     except Exception:
         pass
 
-    # 2. Target Discord window
+    # 2. Target Discord window directly WITHOUT switching focus or workspace
     win = find_discord_window()
     if win:
         addr = win.get("address", "")
-        # Focus Discord so user can participate in call and see UI
         if addr:
-            run_hypr_lua(f'hl.dispatch(hl.dsp.focus({{ window = "address:{addr}" }}))')
-            time.sleep(0.06)
             run_hypr_lua(f'hl.dispatch(hl.dsp.send_shortcut({{ mods = "ctrl", key = "Return", window = "address:{addr}" }}))')
         else:
-            run_hypr_lua('hl.dispatch(hl.dsp.focus({ window = "class:discord" }))')
-            time.sleep(0.06)
             run_hypr_lua('hl.dispatch(hl.dsp.send_shortcut({ mods = "ctrl", key = "Return", window = "class:discord" }))')
-
-    # 3. Fallback wtype keypress
-    try:
-        subprocess.run(["wtype", "-M", "ctrl", "-k", "Return", "-m", "ctrl"], timeout=1, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        pass
 
     # 4. Notify quickshell island
     ipc_path = os.path.expanduser("~/.config/quickshell/tide-island")

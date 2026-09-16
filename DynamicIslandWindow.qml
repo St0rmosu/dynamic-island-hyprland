@@ -270,6 +270,14 @@ PanelWindow {
 
         Region {
             intersection: Intersection.Combine
+            x: callFloatingIsland ? Math.floor(callFloatingIsland.x) : 0
+            y: callFloatingIsland ? Math.floor(callFloatingIsland.y) : 0
+            width: (callFloatingIsland && callFloatingIsland.visible) ? Math.ceil(callFloatingIsland.width) : 0
+            height: (callFloatingIsland && callFloatingIsland.visible) ? Math.ceil(callFloatingIsland.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
             x: Math.floor(fileShelfBubble.x)
             y: Math.floor(fileShelfBubble.y)
             width: fileShelfBubble.visible ? Math.ceil(fileShelfBubble.width) : 0
@@ -316,6 +324,9 @@ PanelWindow {
     readonly property real headphonesFloatingIslandHeight: headphonesFloatingIsland && headphonesFloatingIsland.visible
         ? Math.ceil(headphonesFloatingIsland.y + headphonesFloatingIsland.height + 12)
         : 0
+    readonly property real callFloatingIslandHeight: callFloatingIsland && callFloatingIsland.visible
+        ? Math.ceil(callFloatingIsland.y + callFloatingIsland.height + 12)
+        : 0
     readonly property real requestedWindowHeight: Math.max(
         root.notificationCenterWindowHeight,
         root.capsuleWindowHeight,
@@ -323,7 +334,8 @@ PanelWindow {
         root.overviewWindowHeight,
         Math.ceil(root.controlCenterWindowHeight),
         root.musicFloatingIslandHeight,
-        root.headphonesFloatingIslandHeight
+        root.headphonesFloatingIslandHeight,
+        root.callFloatingIslandHeight
     )
     // Grow the layer surface immediately, but keep the old extent while the
     // capsule finishes its collapse animation. A later expansion interrupts
@@ -802,13 +814,12 @@ PanelWindow {
         islandContainer.abortSideTransientMode();
         islandContainer.clearTransientCapsule();
         islandContainer.discordCallerName = callerName || "St0rm";
-        islandContainer.discordCallSubtitle = subtitle || "00:42";
+        islandContainer.discordCallSubtitle = subtitle || "00:00";
         islandContainer.discordCallAvatarUrl = avatarUrl || "";
         islandContainer.discordCallOngoing = true;
-        islandContainer.islandState = "discord_call";
-        mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-        root.showAutoHiddenIsland("state");
-        islandContainer.restartAutoHideTimer(15000);
+        islandContainer.discordCallActive = true;
+        islandContainer.smartRestoreState();
+        islandContainer.stopAutoHideTimer();
     }
 
     Process {
@@ -819,16 +830,18 @@ PanelWindow {
     }
 
     function acceptDiscordCall() {
+        islandContainer.discordCallActive = true;
         islandContainer.discordCallOngoing = true;
         islandContainer.discordCallSubtitle = "00:00";
-        mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-        islandContainer.restartAutoHideTimer(60000);
+        islandContainer.smartRestoreState();
+        islandContainer.stopAutoHideTimer();
         discordCallActionProc.action = "accept";
         discordCallActionProc.running = false;
         discordCallActionProc.running = true;
     }
 
     function declineDiscordCall() {
+        islandContainer.discordCallActive = false;
         islandContainer.discordCallOngoing = false;
         islandContainer.discordCallAvatarUrl = "";
         islandContainer.closeDiscordCallCapsule();
@@ -844,10 +857,13 @@ PanelWindow {
     }
 
     function setDiscordCallOngoing() {
+        islandContainer.discordCallActive = true;
         islandContainer.discordCallOngoing = true;
         islandContainer.discordCallSubtitle = "00:00";
-        mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-        islandContainer.restartAutoHideTimer(60000);
+        if (islandContainer.islandState === "discord_call") {
+            islandContainer.smartRestoreState();
+        }
+        islandContainer.stopAutoHideTimer();
     }
 
     function closeDiscordCall() {
@@ -1242,6 +1258,7 @@ PanelWindow {
         property string discordCallSubtitle: "Chiamata in arrivo..."
         property string discordCallAvatarUrl: ""
         property bool discordCallOngoing: false
+        property bool discordCallActive: false
         property var bluetoothExpandedDevice: null
         property var notificationHistoryModel: ListModel {}
         readonly property var cavaLevels: systemState.cavaLevels
@@ -1564,6 +1581,8 @@ PanelWindow {
                     musicFloatingIsland.isExpanded = false;
                 if (headphonesFloatingIsland)
                     headphonesFloatingIsland.isExpanded = false;
+                if (callFloatingIsland)
+                    callFloatingIsland.isExpanded = false;
                 if (islandState === "expanded")
                     smartRestoreState();
                 return;
@@ -2049,28 +2068,27 @@ PanelWindow {
         function showDiscordCallCapsule(callerName, subtitle, avatarUrl) {
             if (root.overviewVisible || islandState === "polkit") return;
 
+            discordCallerName = callerName || "Discord Call";
+            discordCallSubtitle = subtitle || "Chiamata in arrivo...";
+            discordCallAvatarUrl = avatarUrl || "";
+            discordCallOngoing = false;
+            discordCallActive = true;
+
             if (islandState !== "discord_call") {
                 abortSideTransientMode();
                 clearTransientCapsule();
-                discordCallerName = callerName || "Discord Call";
-                discordCallSubtitle = subtitle || "Chiamata in arrivo...";
-                discordCallAvatarUrl = avatarUrl || "";
-                discordCallOngoing = false;
                 islandState = "discord_call";
                 mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
                 root.showAutoHiddenIsland("state");
-                restartAutoHideTimer(15000);
-            } else {
-                if (callerName) discordCallerName = callerName;
-                if (subtitle) discordCallSubtitle = subtitle;
-                if (avatarUrl !== undefined && avatarUrl !== "") discordCallAvatarUrl = avatarUrl;
+                stopAutoHideTimer();
             }
         }
 
         function closeDiscordCallCapsule() {
+            discordCallActive = false;
+            discordCallOngoing = false;
+            discordCallAvatarUrl = "";
             if (islandState === "discord_call") {
-                discordCallOngoing = false;
-                discordCallAvatarUrl = "";
                 smartRestoreState();
             }
         }
@@ -2264,7 +2282,7 @@ PanelWindow {
         function showWorkspaceCapsule(wsId) {
             currentWs = wsId;
             if (root.autoHideSuppressesTransientReveal) return;
-            if (islandState === "control_center" || islandState === "notification") return;
+            if (islandState === "control_center" || islandState === "notification" || islandState === "discord_call") return;
             const animateFromSide = currentTransientOriginSide();
             clearTransientCapsule();
             sideTransientRestoreTimer.stop();
@@ -2394,6 +2412,27 @@ PanelWindow {
             islandTopMargin: root.userConfig.islandTopMargin
             accentColor: pywalColors.accent
             z: 8
+        }
+
+        CallFloatingIsland {
+            id: callFloatingIsland
+            targetCapsule: mainCapsule
+            headphonesFloatingIsland: headphonesFloatingIsland
+            rootWindow: root
+            userConfig: root.userConfig
+            islandTopMargin: root.userConfig.islandTopMargin
+            accentColor: pywalColors.accent
+            hasCall: islandContainer.discordCallActive
+            ongoing: islandContainer.discordCallOngoing
+            callerName: islandContainer.discordCallerName
+            subtitle: islandContainer.discordCallSubtitle
+            avatarUrl: islandContainer.discordCallAvatarUrl
+            islandState: islandContainer.islandState
+            currentWs: islandContainer.currentWs
+            z: 8
+            onAccepted: root.acceptDiscordCall()
+            onDeclined: root.declineDiscordCall()
+            onCallerClicked: root.focusDiscordWindow()
         }
 
         // --- UI 渲染：灵动岛主干 ---
