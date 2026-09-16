@@ -21,9 +21,16 @@ def send_ipc(method, *args):
     except Exception:
         pass
 
+STATE_FILE = "/tmp/tide_discord_call_ongoing"
+
 def close_call():
     global ACTIVE_CALL, LAST_CALL_TIME
     ACTIVE_CALL = False
+    try:
+        if os.path.exists(STATE_FILE):
+            os.remove(STATE_FILE)
+    except Exception:
+        pass
     send_ipc("closeCall")
 
 def run_monitor():
@@ -54,6 +61,9 @@ def run_monitor():
 
         # Check for CloseNotification or NotificationClosed
         if "member=CloseNotification" in line or "member=NotificationClosed" in line:
+            # If the call was accepted and is ongoing, do NOT close the island
+            if os.path.exists(STATE_FILE):
+                continue
             # If a call was active or ringing in the last 60 seconds, close it immediately
             if ACTIVE_CALL or (time.time() - LAST_CALL_TIME < 60):
                 close_call()

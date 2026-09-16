@@ -347,6 +347,27 @@ Scope {
             });
         }
 
+        function acceptCall() {
+            shellRoot.forEachWindow((window) => {
+                if (window && window.acceptDiscordCall)
+                    window.acceptDiscordCall();
+            });
+        }
+
+        function declineCall() {
+            shellRoot.forEachWindow((window) => {
+                if (window && window.declineDiscordCall)
+                    window.declineDiscordCall();
+            });
+        }
+
+        function callAccepted() {
+            shellRoot.forEachWindow((window) => {
+                if (window && window.setDiscordCallOngoing)
+                    window.setDiscordCallOngoing();
+            });
+        }
+
         function closeCall() {
             shellRoot.closeDiscordCallAll();
         }

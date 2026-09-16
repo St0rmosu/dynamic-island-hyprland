@@ -811,6 +811,45 @@ PanelWindow {
         islandContainer.restartAutoHideTimer(15000);
     }
 
+    Process {
+        id: discordCallActionProc
+        property string action: "accept"
+        command: ["python3", "/home/lollo/.config/quickshell/tide-island/scripts/discord_call_action.py", action]
+        running: false
+    }
+
+    function acceptDiscordCall() {
+        islandContainer.discordCallOngoing = true;
+        islandContainer.discordCallSubtitle = "00:00";
+        mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+        islandContainer.restartAutoHideTimer(60000);
+        discordCallActionProc.action = "accept";
+        discordCallActionProc.running = false;
+        discordCallActionProc.running = true;
+    }
+
+    function declineDiscordCall() {
+        islandContainer.discordCallOngoing = false;
+        islandContainer.discordCallAvatarUrl = "";
+        islandContainer.closeDiscordCallCapsule();
+        discordCallActionProc.action = "decline";
+        discordCallActionProc.running = false;
+        discordCallActionProc.running = true;
+    }
+
+    function focusDiscordWindow() {
+        discordCallActionProc.action = "focus";
+        discordCallActionProc.running = false;
+        discordCallActionProc.running = true;
+    }
+
+    function setDiscordCallOngoing() {
+        islandContainer.discordCallOngoing = true;
+        islandContainer.discordCallSubtitle = "00:00";
+        mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+        islandContainer.restartAutoHideTimer(60000);
+    }
+
     function closeDiscordCall() {
         islandContainer.closeDiscordCallCapsule();
     }
@@ -3125,15 +3164,9 @@ PanelWindow {
                         heroFontFamily: root.heroFontFamily
                         iconFontFamily: root.iconFontFamily
                         showCondition: true
-                        onAccepted: {
-                            islandContainer.discordCallOngoing = true;
-                            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-                            islandContainer.restartAutoHideTimer(30000);
-                        }
-                        onDeclined: {
-                            islandContainer.discordCallOngoing = false;
-                            islandContainer.smartRestoreState();
-                        }
+                        onAccepted: root.acceptDiscordCall()
+                        onDeclined: root.declineDiscordCall()
+                        onCallerClicked: root.focusDiscordWindow()
                     }
                 }
             }

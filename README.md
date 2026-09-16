@@ -308,6 +308,8 @@ quickshell ipc -p ~/.config/quickshell/tide-island call island testBrightness 80
 # Discord Calls
 quickshell ipc -p ~/.config/quickshell/tide-island call island testDiscordCall "St0rm"
 quickshell ipc -p ~/.config/quickshell/tide-island call island testDiscordCallOngoing "St0rm"
+quickshell ipc -p ~/.config/quickshell/tide-island call island acceptCall
+quickshell ipc -p ~/.config/quickshell/tide-island call island declineCall
 quickshell ipc -p ~/.config/quickshell/tide-island call island closeCall
 
 # Media Player & Utilities

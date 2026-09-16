@@ -19,6 +19,7 @@ Item {
 
     signal accepted()
     signal declined()
+    signal callerClicked()
 
     anchors.fill: parent
     opacity: showCondition ? 1 : 0
@@ -51,6 +52,7 @@ Item {
 
         // Left: Avatar + Caller Information
         Row {
+            id: callerInfoRow
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             spacing: 12
@@ -143,6 +145,16 @@ Item {
                     font.weight: Font.Medium
                 }
             }
+        }
+
+        MouseArea {
+            anchors.left: callerInfoRow.left
+            anchors.right: callerInfoRow.right
+            anchors.top: callerInfoRow.top
+            anchors.bottom: callerInfoRow.bottom
+            cursorShape: Qt.PointingHandCursor
+            hoverEnabled: true
+            onClicked: root.callerClicked()
         }
 
         // Right side: Incoming Call Action Buttons (Decline & Accept)
