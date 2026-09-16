@@ -532,32 +532,21 @@ Item {
         setConnectivityPanelOpen(kind, !isConnectivityPanelOpen(kind));
     }
 
-    signal requestCloseMenu()
-
     function triggerShutdown() {
-        requestCloseMenu();
         if (!shutdownProcess.running)
             shutdownProcess.running = true;
     }
     function triggerRestart() {
-        requestCloseMenu();
         if (!restartProcess.running)
             restartProcess.running = true;
     }
     function triggerSleep() {
-        requestCloseMenu();
         if (!sleepProcess.running)
             sleepProcess.running = true;
     }
     function triggerLock() {
-        requestCloseMenu();
         if (!lockProcess.running)
             lockProcess.running = true;
-    }
-    function triggerLogout() {
-        requestCloseMenu();
-        if (!logoutProcess.running)
-            logoutProcess.running = true;
     }
 
     function closeConnectivityPanels(emitSignals) {
@@ -1218,17 +1207,7 @@ Item {
         onExited: function(exitCode) {
             if (exitCode !== 0)
                 controlCenter.requestNotification("Power", "Lock failed",
-                    "Could not lock screen via qslock-wrapper.sh.");
-        }
-    }
-    Process {
-        id: logoutProcess
-        command: ["hyprctl", "dispatch", "exit"]
-        running: false
-        onExited: function(exitCode) {
-            if (exitCode !== 0)
-                controlCenter.requestNotification("Power", "Logout failed",
-                    "Could not log out via hyprctl.");
+                    "Could not lock screen.");
         }
     }
 
@@ -2578,7 +2557,6 @@ Item {
         }
     }
     Item {
-        id: powerViewContainer
         anchors.fill: parent
         visible: controlCenter.powerViewActive
 
@@ -2586,152 +2564,35 @@ Item {
             NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: controlCenter.requestCloseMenu()
-        }
-
-        Item {
-            id: powerHeader
-            anchors.top: parent.top
-            anchors.topMargin: 12
-            anchors.left: parent.left
-            anchors.leftMargin: 20
-            anchors.right: parent.right
-            anchors.rightMargin: 20
-            height: 24
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-
-                Text {
-                    text: "\uf011"
-                    font.family: controlCenter.iconFontFamily
-                    font.pixelSize: 13
-                    color: controlCenter.accentColor
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Text {
-                    text: "Opzioni Sessione"
-                    font.family: controlCenter.textFontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
-                    color: StyleTokens.textSecondary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            Rectangle {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                width: 22
-                height: 22
-                radius: 11
-                color: closePowerMouse.containsMouse ? "#26ffffff" : "#14ffffff"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "✕"
-                    color: closePowerMouse.containsMouse ? "#ffffff" : "#8e8e93"
-                    font.pixelSize: 11
-                    font.weight: Font.Bold
-                }
-
-                MouseArea {
-                    id: closePowerMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: controlCenter.requestCloseMenu()
-                }
-            }
-        }
-
         Row {
-            anchors.top: powerHeader.bottom
-            anchors.topMargin: 14
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 16
+            anchors.centerIn: parent
+            spacing: 26
 
             Repeater {
                 model: [
-                    { glyph: "\uf023", label: "Blocca", action: "triggerLock", accent: "#0a84ff" },
-                    { glyph: "\uf186", label: "Standby", action: "triggerSleep", accent: "#5e5ce6" },
-                    { glyph: "\uf021", label: "Riavvia", action: "triggerRestart", accent: "#ff9f0a" },
-                    { glyph: "\uf011", label: "Spegni", action: "triggerShutdown", accent: "#ff453a" },
-                    { glyph: "\uf2f5", label: "Esci", action: "triggerLogout", accent: "#bf5af2" }
+                    { glyph: "\uf023", action: "triggerLock" },
+                    { glyph: "\uf186", action: "triggerSleep" },
+                    { glyph: "\uf021", action: "triggerRestart" },
+                    { glyph: "\uf011", action: "triggerShutdown" }
                 ]
 
-                delegate: Column {
-                    id: actionCol
-                    required property var modelData
-                    required property int index
-
-                    spacing: 6
-                    width: 58
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    readonly property color btnAccent: modelData.accent
-
-                    Item {
-                        width: 52
-                        height: 52
-                        anchors.horizontalCenter: parent.horizontalCenter
-
-                        Rectangle {
-                            id: btnBg
-                            anchors.fill: parent
-                            radius: 26
-                            color: btnMouse.containsMouse ? Qt.rgba(actionCol.btnAccent.r, actionCol.btnAccent.g, actionCol.btnAccent.b, 0.28) : "#14ffffff"
-                            border.color: btnMouse.containsMouse ? actionCol.btnAccent : "#24ffffff"
-                            border.width: 1.5
-
-                            scale: btnMouse.pressed ? 0.92 : (btnMouse.containsMouse ? 1.08 : 1.0)
-
-                            Behavior on scale {
-                                NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-                            }
-                            Behavior on color {
-                                ColorAnimation { duration: 150 }
-                            }
-                            Behavior on border.color {
-                                ColorAnimation { duration: 150 }
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData.glyph
-                                color: btnMouse.containsMouse ? actionCol.btnAccent : StyleTokens.textPrimary
-                                font.pixelSize: 22
-                                font.family: controlCenter.iconFontFamily
-                            }
-                        }
-
-                        MouseArea {
-                            id: btnMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (controlCenter[modelData.action])
-                                    controlCenter[modelData.action]();
-                            }
-                        }
-                    }
+                delegate: Item {
+                    width: 56
+                    height: 56
 
                     Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: modelData.label
-                        color: btnMouse.containsMouse ? "#ffffff" : StyleTokens.textSecondary
-                        font.pixelSize: 11
-                        font.family: controlCenter.textFontFamily
-                        font.weight: Font.DemiBold
+                        anchors.centerIn: parent
+                        text: modelData.glyph
+                        color: StyleTokens.textPrimary
+                        font.pixelSize: 38
+                        font.family: controlCenter.iconFontFamily
+                    }
 
-                        Behavior on color {
-                            ColorAnimation { duration: 150 }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (controlCenter[modelData.action])
+                                controlCenter[modelData.action]();
                         }
                     }
                 }
