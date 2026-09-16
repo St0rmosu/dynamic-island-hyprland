@@ -1,4 +1,4 @@
-# 🏝️ Tide Island - Apple Dynamic Island for Hyprland
+# 🏝️ Dynamic Island Hyprland
 
 An authentic, fluid **Apple-style Dynamic Island** and modern Control Center implementation for **Hyprland** (Wayland) built with **Quickshell** (Qt 6 / QML) and Python.
 
@@ -274,7 +274,7 @@ Ensure you have the following packages installed on your system:
 
 1. Clone this repository into your Quickshell configuration directory:
 ```bash
-git clone https://github.com/St0rmosu/tide-island-dynamic.git ~/.config/quickshell/tide-island
+git clone https://github.com/St0rmosu/dynamic-island-hyprland.git ~/.config/quickshell/tide-island
 ```
 
 2. Launch or reload the bar:

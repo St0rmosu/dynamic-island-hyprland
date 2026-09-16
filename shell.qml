@@ -214,6 +214,8 @@ Scope {
                     && String(wallpaperPath) !== "") {
                 window.wallpaperPickerActiveWallpaper = String(wallpaperPath);
             }
+            if (window && window.refreshWallpaperSources)
+                window.refreshWallpaperSources();
             if (window && window.prewarmWallpaperCache)
                 window.prewarmWallpaperCache();
         });

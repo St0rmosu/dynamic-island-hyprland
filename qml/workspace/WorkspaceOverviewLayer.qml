@@ -405,7 +405,7 @@ Item {
                                         fillMode: Image.PreserveAspectCrop
                                         sourceSize.width: root.cachedWallpaperWidth
                                         sourceSize.height: root.cachedWallpaperHeight
-                                        asynchronous: false; cache: true; opacity: 0.92
+                                        asynchronous: false; cache: false; opacity: 0.92
                                     }
                                     Rectangle {
                                         anchors.fill: parent

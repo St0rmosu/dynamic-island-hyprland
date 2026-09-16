@@ -84,6 +84,32 @@ PanelWindow {
     }
 
     FileView {
+        id: walWallpaperFile
+        path: "/home/lollo/.cache/wal/wal"
+        watchChanges: true
+        property string wallpaperPath: ""
+
+        Component.onCompleted: reload()
+        onFileChanged: {
+            reload();
+            if (awwwQueryProc && !awwwQueryProc.running) {
+                awwwQueryProc.running = true;
+            }
+        }
+        onLoaded: {
+            try {
+                var p = text().trim();
+                if (p !== "") {
+                    wallpaperPath = p;
+                    console.log("[DynamicIsland] Loaded wallpaper from ~/.cache/wal/wal:", p);
+                }
+            } catch(e) {
+                console.warn("[DynamicIsland] Failed to read wal wallpaper path:", e);
+            }
+        }
+    }
+
+    FileView {
         id: currentWallpaperFile
         path: "/home/lollo/.local/state/caelestia/wallpaper/path.txt"
         watchChanges: true
@@ -96,11 +122,10 @@ PanelWindow {
                 var p = text().trim();
                 if (p !== "") {
                     wallpaperPath = p;
-                    root.wallpaperPickerActiveWallpaper = p;
-                    console.log("[TideIsland] Loaded current wallpaper path from caelestia:", p);
+                    console.log("[DynamicIsland] Loaded current wallpaper path from caelestia:", p);
                 }
             } catch(e) {
-                console.warn("[TideIsland] Failed to read current wallpaper path:", e);
+                console.warn("[DynamicIsland] Failed to read current wallpaper path:", e);
             }
         }
     }
@@ -118,7 +143,12 @@ PanelWindow {
         property string wallpaper: ""
 
         Component.onCompleted: reload()
-        onFileChanged: reload()
+        onFileChanged: {
+            reload();
+            if (awwwQueryProc && !awwwQueryProc.running) {
+                awwwQueryProc.running = true;
+            }
+        }
         onLoaded: {
             try {
                 var data = JSON.parse(text());
@@ -128,18 +158,62 @@ PanelWindow {
                 }
                 if (data.wallpaper) {
                     wallpaper = data.wallpaper;
-                    if (root.wallpaperPickerActiveWallpaper === "") {
-                        root.wallpaperPickerActiveWallpaper = data.wallpaper;
-                    }
                 }
                 if (data.colors) {
                     var acc = data.colors.color4 || data.colors.color2 || "#0a84ff";
                     walAccent = acc;
-                    console.log("[TideIsland] Loaded pywal colors! accent:", walAccent, "wallpaper:", data.wallpaper);
+                    console.log("[DynamicIsland] Loaded pywal colors! accent:", walAccent, "wallpaper:", data.wallpaper);
                 }
             } catch(e) {
-                console.warn("[TideIsland] Failed to parse pywal colors:", e);
+                console.warn("[DynamicIsland] Failed to parse pywal colors:", e);
             }
+        }
+    }
+
+    property string awwwWallpaperPath: ""
+
+    Process {
+        id: awwwQueryProc
+        command: ["awww", "query"]
+        running: false
+        stdout: SplitParser {
+            onRead: data => {
+                try {
+                    const text = String(data);
+                    const match = text.match(/currently displaying:\s*(?:image:\s*)?([^\r\n]+)/);
+                    if (match && match[1]) {
+                        const parsedPath = match[1].trim();
+                        if (parsedPath !== "" && parsedPath !== root.awwwWallpaperPath) {
+                            root.awwwWallpaperPath = parsedPath;
+                            console.log("[DynamicIsland] awww wallpaper detected:", parsedPath);
+                        }
+                    }
+                } catch(e) {
+                    console.warn("[DynamicIsland] Failed to parse awww query:", e);
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: wallpaperSyncTimer
+        interval: 3000
+        repeat: true
+        running: true
+        onTriggered: {
+            if (awwwQueryProc && !awwwQueryProc.running) {
+                awwwQueryProc.running = true;
+            }
+            if (walWallpaperFile) walWallpaperFile.reload();
+        }
+    }
+
+    function refreshWallpaperSources() {
+        if (walWallpaperFile) walWallpaperFile.reload();
+        if (pywalColors) pywalColors.reload();
+        if (currentWallpaperFile) currentWallpaperFile.reload();
+        if (awwwQueryProc && !awwwQueryProc.running) {
+            awwwQueryProc.running = true;
         }
     }
 
@@ -268,7 +342,10 @@ PanelWindow {
     }
 
     onRequestedWindowHeightChanged: root.reconcileWindowHeight()
-    Component.onCompleted: root.retainedWindowHeight = root.requestedWindowHeight
+    Component.onCompleted: {
+        root.retainedWindowHeight = root.requestedWindowHeight;
+        root.refreshWallpaperSources();
+    }
 
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
     WlrLayershell.layer: islandContainer.wallpaperPickerLayerVisible
@@ -389,15 +466,25 @@ PanelWindow {
     readonly property int connectivityDetailAnimationDuration: 360
 
     readonly property string effectiveWallpaperPath: {
-        if (currentWallpaperFile.wallpaperPath !== "")
-            return currentWallpaperFile.wallpaperPath;
+        if (root.awwwWallpaperPath !== "")
+            return root.awwwWallpaperPath;
+        if (walWallpaperFile.wallpaperPath !== "")
+            return walWallpaperFile.wallpaperPath;
         if (pywalColors.wallpaper !== "")
             return pywalColors.wallpaper;
         if (root.wallpaperPickerActiveWallpaper !== "")
             return root.wallpaperPickerActiveWallpaper;
+        if (currentWallpaperFile.wallpaperPath !== "")
+            return currentWallpaperFile.wallpaperPath;
         if (userConfig.wallpaperPath !== "")
             return userConfig.wallpaperPath;
         return "/home/lollo/Sfondi/B & W Window.png";
+    }
+
+    onEffectiveWallpaperPathChanged: {
+        console.log("[DynamicIsland] Effective wallpaper path changed:", effectiveWallpaperPath);
+        root.wallpaperPickerActiveWallpaper = effectiveWallpaperPath;
+        prewarmWallpaperCache();
     }
 
     readonly property string effectiveWallpaperUrl: {
@@ -532,6 +619,7 @@ PanelWindow {
     function prepareOverview() {
         if (compositorIsNiri) return;
         if (overviewPhase !== "closed") return;
+        root.refreshWallpaperSources();
         overviewUnloadGraceTimer.stop();
         overviewPreloading = true;
         overviewPreloadExpireTimer.restart();
@@ -548,6 +636,7 @@ PanelWindow {
         if (compositorIsNiri)
             return;
         if (overviewPhase !== "closed") return;
+        root.refreshWallpaperSources();
         overviewUnloadGraceTimer.stop();
         overviewPreloadExpireTimer.stop();
         overviewPreloading = true;
@@ -682,6 +771,7 @@ PanelWindow {
             shellRootController.refreshOverviewWallpaperCaches(filePath);
         else
             prewarmWallpaperCache();
+        refreshWallpaperSources();
     }
 
     function showReload(failed, errorString) {
@@ -3127,7 +3217,7 @@ PanelWindow {
                         accentColor: pywalColors.accent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
-                        activeWallpaper: root.wallpaperPickerActiveWallpaper
+                        activeWallpaper: root.effectiveWallpaperPath
                         showCondition: islandContainer.wallpaperPickerLayerVisible
                         onWallpaperApplied: filePath => root.wallpaperPickerActiveWallpaper = filePath
                         onWallpaperApplySucceeded: filePath => root.handleWallpaperApplySucceeded(filePath)
