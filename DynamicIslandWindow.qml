@@ -965,9 +965,12 @@ PanelWindow {
             return;
         }
 
+        islandContainer.pendingPowerView = true;
         islandContainer.showControlCenter();
-        if (controlCenterLoader.item)
+        if (controlCenterLoader.item) {
             controlCenterLoader.item.powerViewActive = true;
+            islandContainer.pendingPowerView = false;
+        }
     }
 
     function toggleNotificationCenterWindow() {
@@ -1254,6 +1257,7 @@ PanelWindow {
         property string batteryAlertMode: "charging"
         property int batteryAlertCapacity: 100
         property bool silentRingIsMuted: false
+        property bool pendingPowerView: false
         property string discordCallerName: "Discord Call"
         property string discordCallSubtitle: "Chiamata in arrivo..."
         property string discordCallAvatarUrl: ""
@@ -2148,6 +2152,9 @@ PanelWindow {
         }
 
         function smartRestoreState() {
+            pendingPowerView = false;
+            if (controlCenterLoader.item)
+                controlCenterLoader.item.powerViewActive = false;
             restoreRestingCapsule();
         }
 
@@ -2472,7 +2479,7 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "control_center":
-                    return 420;
+                    return (islandContainer.pendingPowerView || (controlCenterLoader.item && controlCenterLoader.item.powerViewActive)) ? 440 : 420;
                 case "notification_center":
                     return 410;
                 case "wallpaper_picker":
@@ -2508,8 +2515,8 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "control_center":
-                    return controlCenterLoader.item && controlCenterLoader.item.powerViewActive
-                        ? 150
+                    return (islandContainer.pendingPowerView || (controlCenterLoader.item && controlCenterLoader.item.powerViewActive))
+                        ? 145
                         : 320 + 60 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
@@ -2544,7 +2551,7 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "control_center":
-                    return 34;
+                    return (islandContainer.pendingPowerView || (controlCenterLoader.item && controlCenterLoader.item.powerViewActive)) ? 32 : 34;
                 case "notification_center":
                     return mainCapsule.targetHeight * 36 / 165;
                 case "wallpaper_picker":
@@ -3217,6 +3224,13 @@ PanelWindow {
                 asynchronous: false
                 visible: active
 
+                onLoaded: {
+                    if (islandContainer.pendingPowerView && item) {
+                        item.powerViewActive = true;
+                        islandContainer.pendingPowerView = false;
+                    }
+                }
+
                 sourceComponent: Component {
                     ControlCenterLayer {
                         accentColor: pywalColors.accent
@@ -3237,6 +3251,7 @@ PanelWindow {
                             ? root.shellRootController.nightLightEnabled
                             : false
                         showCondition: islandContainer.controlCenterLayerVisible
+                        onRequestCloseMenu: islandContainer.smartRestoreState()
                         onFocusModeChanged: function(enabled) {
                             if (root.shellRootController && root.shellRootController.focusEnabled !== undefined)
                                 root.shellRootController.focusEnabled = enabled;
