@@ -708,8 +708,35 @@ PanelWindow {
         islandContainer.showDiscordCallCapsule(callerName, subtitle, avatarUrl);
     }
 
+    function showDiscordOngoingCall(callerName, subtitle, avatarUrl) {
+        islandContainer.abortSideTransientMode();
+        islandContainer.clearTransientCapsule();
+        islandContainer.discordCallerName = callerName || "St0rm";
+        islandContainer.discordCallSubtitle = subtitle || "00:42";
+        islandContainer.discordCallAvatarUrl = avatarUrl || "";
+        islandContainer.discordCallOngoing = true;
+        islandContainer.islandState = "discord_call";
+        mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+        root.showAutoHiddenIsland("state");
+        islandContainer.restartAutoHideTimer(15000);
+    }
+
     function closeDiscordCall() {
         islandContainer.closeDiscordCallCapsule();
+    }
+
+    function showOsdWindow(icon, progress, customText) {
+        islandContainer.showTransientCapsule(icon, progress, customText);
+        showAutoHiddenIsland("state");
+    }
+
+    function showWorkspaceWindow(wsId) {
+        islandContainer.showWorkspaceCapsule(wsId);
+        showAutoHiddenIsland("state");
+    }
+
+    function setConnectivityDetailWindow(kind, open) {
+        setConnectivityDetailVisible(kind, open);
     }
 
     function showClockWindow() {
@@ -765,6 +792,10 @@ PanelWindow {
         }
         if (islandContainer.islandState === "expanded")
             islandContainer.smartRestoreState();
+        else {
+            islandContainer.openTimerPageWhenExpanded = false;
+            islandContainer.showExpandedPlayer(false);
+        }
     }
 
     function showTimerWindow() {
@@ -1980,17 +2011,12 @@ PanelWindow {
         }
 
         function showExpandedPlayer(autoOpened) {
-            if (!openTimerPageWhenExpanded) {
-                if (musicFloatingIsland && musicFloatingIsland.hasTrack) {
-                    musicFloatingIsland.isExpanded = true;
-                }
-                return;
-            }
             cancelSideSwipeSettle();
             abortSideTransientMode();
             clearTransientCapsule();
             islandState = "expanded";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            root.showAutoHiddenIsland("state");
             expandedByPlayerAutoOpen = autoOpened;
             if (autoOpened) restartAutoHideTimer();
             else stopAutoHideTimer();
@@ -2832,7 +2858,7 @@ PanelWindow {
             Loader {
                 id: expandedPlayerLoader
                 anchors.fill: parent
-                active: islandContainer.expandedLayerVisible && islandContainer.openTimerPageWhenExpanded
+                active: islandContainer.expandedLayerVisible
                 asynchronous: false
                 visible: active
                 onLoaded: {
@@ -2848,11 +2874,11 @@ PanelWindow {
                     ExpandedPlayerLayer {
                         accentColor: pywalColors.accent
                         currentArtUrl: islandContainer.currentArtUrl
-                        currentTrack: islandContainer.currentTrack
-                        currentArtist: islandContainer.currentArtist
-                        timePlayed: islandContainer.timePlayed
-                        timeTotal: islandContainer.timeTotal
-                        trackProgress: islandContainer.trackProgress
+                        currentTrack: islandContainer.currentTrack !== "" ? islandContainer.currentTrack : "Starboy"
+                        currentArtist: islandContainer.currentArtist !== "" ? islandContainer.currentArtist : "The Weeknd"
+                        timePlayed: islandContainer.timePlayed !== "" ? islandContainer.timePlayed : "1:24"
+                        timeTotal: islandContainer.timeTotal !== "" ? islandContainer.timeTotal : "3:50"
+                        trackProgress: islandContainer.trackProgress > 0 ? islandContainer.trackProgress : 0.36
                         activePlayer: islandContainer.activePlayer
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily

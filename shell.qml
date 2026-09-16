@@ -337,6 +337,14 @@ Scope {
             shellRoot.showDiscordCallAll(name || "Discord Call", subtitle || "Chiamata in arrivo...", avatar || "");
         }
 
+        function testDiscordCallOngoing(name: string) {
+            const n = (name !== undefined && name !== "") ? name : "St0rm";
+            shellRoot.forEachWindow((window) => {
+                if (window && window.showDiscordOngoingCall)
+                    window.showDiscordOngoingCall(n, "00:42", "");
+            });
+        }
+
         function closeCall() {
             shellRoot.closeDiscordCallAll();
         }
@@ -347,6 +355,57 @@ Scope {
 
         function cancelCall() {
             shellRoot.closeDiscordCallAll();
+        }
+
+        function testVolume(level: int) {
+            const lvl = (level !== undefined && level >= 0) ? level : 65;
+            shellRoot.forEachWindow((window) => {
+                if (window && window.showOsdWindow)
+                    window.showOsdWindow("", lvl / 100.0, "");
+            });
+        }
+
+        function testBrightness(level: int) {
+            const lvl = (level !== undefined && level >= 0) ? level : 80;
+            shellRoot.forEachWindow((window) => {
+                if (window && window.showOsdWindow)
+                    window.showOsdWindow("", lvl / 100.0, "");
+            });
+        }
+
+        function testWorkspace(ws: int) {
+            const w = (ws !== undefined && ws > 0) ? ws : 2;
+            shellRoot.forEachWindow((window) => {
+                if (window && window.showWorkspaceWindow)
+                    window.showWorkspaceWindow(w);
+            });
+        }
+
+        function testPolkit() {
+            shellRoot.showPolkitPromptAll();
+        }
+
+        function closePolkit() {
+            shellRoot.closePolkitPromptAll();
+        }
+
+        function testNotification(app: string, summary: string, body: string) {
+            shellRoot.showNotificationAll(
+                app || "Telegram",
+                summary || "Nuovo messaggio da Marco",
+                body || "Ciao, ci vediamo stasera per la pizza?",
+                "",
+                "#0088cc"
+            );
+        }
+
+        function testDetailPanel(kind: string, open: bool) {
+            const k = (kind !== undefined && kind !== "") ? kind : "wifi";
+            const o = (open !== undefined) ? open : true;
+            shellRoot.forEachWindow((window) => {
+                if (window && window.setConnectivityDetailWindow)
+                    window.setConnectivityDetailWindow(k, o);
+            });
         }
 
         function reload() {
