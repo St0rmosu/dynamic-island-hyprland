@@ -1,4 +1,3 @@
-
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -28,20 +27,85 @@ FocusScope {
     readonly property string textFontFamily: UserConfig.textFontFamily !== "" ? UserConfig.textFontFamily : "Google Sans Flex"
     readonly property string heroFontFamily: UserConfig.heroFontFamily !== "" ? UserConfig.heroFontFamily : "Google Sans Flex"
 
-    // Colors & Theme Tokens
-    readonly property color bgGlass: "#121214"
-    readonly property color bgSidebar: "#0d0f12"
-    readonly property color bgCard: "#17191e"
-    readonly property color bgCardHover: "#1d2027"
-    readonly property color borderCard: "#252831"
-    readonly property color borderSubtle: "#1e2129"
-    readonly property color dividerColor: "#1f222a"
-    readonly property color textPrimary: StyleTokens.textPrimary
-    readonly property color textSecondary: StyleTokens.textSecondary
-    readonly property color textMuted: StyleTokens.textMuted
-    readonly property color accentColor: StyleTokens.accent
+    // External theme inputs (from DynamicIslandWindow)
+    property color accentColor: StyleTokens.accent
+    property color pywalBackground: "#0f141c"
+    property color pywalForeground: "#ffffff"
+
+    // Live watchers for Iris and Pywal palette files
+    FileView {
+        id: localIrisColors
+        path: "/home/lollo/.cache/iris/colors.json"
+        watchChanges: true
+        property string accentHex: ""
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && d.accent) accentHex = d.accent;
+            } catch(e) {}
+        }
+    }
+
+    FileView {
+        id: localWalColors
+        path: "/home/lollo/.cache/wal/colors.json"
+        watchChanges: true
+        property string walAccent: ""
+        property color walBg: "#0f141c"
+        property color walFg: "#ffffff"
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && d.colors) {
+                    walAccent = d.colors.color4 || d.colors.color2 || "#0a84ff";
+                }
+                if (d && d.special) {
+                    if (d.special.background) walBg = d.special.background;
+                    if (d.special.foreground) walFg = d.special.foreground;
+                }
+            } catch(e) {}
+        }
+    }
+
+    // Unified dynamic theme tokens
+    readonly property color effectiveAccent: {
+        if (accentColor !== StyleTokens.accent && String(accentColor) !== "#00000000") return accentColor;
+        if (localIrisColors.accentHex !== "") return localIrisColors.accentHex;
+        if (localWalColors.walAccent !== "") return localWalColors.walAccent;
+        return StyleTokens.accent;
+    }
+
+    readonly property color effectiveBg: {
+        const base = pywalBackground !== "#0f141c" ? pywalBackground : localWalColors.walBg;
+        return Qt.darker(base, 1.15);
+    }
+
+    readonly property color effectiveFg: {
+        return pywalForeground !== "#ffffff" ? pywalForeground : localWalColors.walFg;
+    }
+
+    // Glass & Accent Derivations
+    readonly property color accentSoft: Qt.rgba(effectiveAccent.r, effectiveAccent.g, effectiveAccent.b, 0.16)
+    readonly property color accentBorder: Qt.rgba(effectiveAccent.r, effectiveAccent.g, effectiveAccent.b, 0.42)
+    readonly property color accentGlow: Qt.rgba(effectiveAccent.r, effectiveAccent.g, effectiveAccent.b, 0.28)
+    readonly property color accentPressed: Qt.darker(effectiveAccent, 1.3)
+
+    readonly property color bgGlass: Qt.rgba(14/255, 17/255, 24/255, 0.94)
+    readonly property color bgSidebar: Qt.rgba(10/255, 12/255, 17/255, 0.97)
+    readonly property color bgCard: Qt.rgba(255, 255, 255, 0.045)
+    readonly property color bgCardHover: Qt.rgba(255, 255, 255, 0.08)
+    readonly property color borderCard: Qt.rgba(255, 255, 255, 0.08)
+    readonly property color borderSubtle: Qt.rgba(255, 255, 255, 0.05)
+    readonly property color dividerColor: Qt.rgba(255, 255, 255, 0.04)
+    readonly property color textPrimary: "#f2f4f8"
+    readonly property color textSecondary: "#9aa3b5"
+    readonly property color textMuted: "#656f82"
     readonly property color successColor: "#34c759"
-    readonly property color switchOffColor: "#2a2d36"
+    readonly property color switchOffColor: Qt.rgba(255, 255, 255, 0.12)
 
     // Active navigation
     property int selectedCategoryIndex: 0
@@ -52,7 +116,7 @@ FocusScope {
     property bool configLoaded: false
     property bool hasPendingSave: false
     property bool isSaving: false
-    property string lastSavedStatus: "Synced"
+    property string lastSavedStatus: "Live Synced"
 
     // Live configurable properties mirroring userconfig.json
     property int cfgCornerRadius: 32
@@ -67,6 +131,11 @@ FocusScope {
     property bool cfgAutoHideEnabled: UserConfig.islandAutoHideEnabled
     property bool cfgShowWorkspaceOnAutoHide: UserConfig.islandShowWorkspaceOnAutoHide
     property bool cfgDisableAutoExpand: UserConfig.disableAutoExpandOnTrackChange
+
+    // Hover & Interaction Properties
+    property bool cfgHoverExpandEnabled: true
+    property int cfgHoverExpandAction: 2 // 1: Player, 2: Control Center
+    property int cfgHoverExpandDelay: 200
 
     // Control Center Module Toggles
     property bool cfgShowWifiCard: true
@@ -101,7 +170,7 @@ FocusScope {
             key: "bar",
             title: "Bar & Island",
             icon: "\uf108", // desktop
-            subtitle: "Geometry, margins & auto-hide"
+            subtitle: "Geometry, margins & hover behavior"
         },
         {
             key: "controlcenter",
@@ -112,13 +181,13 @@ FocusScope {
         {
             key: "appearance",
             title: "Appearance",
-            icon: "\uf1fc", // paintbrush / palette
+            icon: "\uf1fc", // palette
             subtitle: "Opacity, fonts & clock format"
         },
         {
             key: "motion",
             title: "Motion & Animation",
-            icon: "\uf0e7", // bolt / motion
+            icon: "\uf0e7", // bolt
             subtitle: "Transitions, FPS & dynamics"
         },
         {
@@ -160,6 +229,10 @@ FocusScope {
             if (parsed.islandAutoHideDelayMs !== undefined) root.cfgAutoHideDelay = Math.round(Number(parsed.islandAutoHideDelayMs));
             if (parsed.islandShowWorkspaceOnAutoHide !== undefined) root.cfgShowWorkspaceOnAutoHide = Boolean(parsed.islandShowWorkspaceOnAutoHide);
             if (parsed.disableAutoExpandOnTrackChange !== undefined) root.cfgDisableAutoExpand = Boolean(parsed.disableAutoExpandOnTrackChange);
+
+            if (parsed.hoverExpandEnabled !== undefined) root.cfgHoverExpandEnabled = Boolean(parsed.hoverExpandEnabled);
+            if (parsed.hoverExpandAction !== undefined) root.cfgHoverExpandAction = Math.round(Number(parsed.hoverExpandAction));
+            if (parsed.hoverExpandDelayMs !== undefined) root.cfgHoverExpandDelay = Math.round(Number(parsed.hoverExpandDelayMs));
 
             if (parsed.showWifiCard !== undefined) root.cfgShowWifiCard = Boolean(parsed.showWifiCard);
             if (parsed.showBluetoothCard !== undefined) root.cfgShowBluetoothCard = Boolean(parsed.showBluetoothCard);
@@ -258,47 +331,47 @@ FocusScope {
         root.loadConfigFromDisk();
     }
 
-    // Outer Window Shell: 840x560 with radius 32
+    // Outer Window Shell: 840x560 with smooth radius
     Rectangle {
         id: windowFrame
         anchors.fill: parent
-        radius: 32
+        radius: 28
         color: root.bgGlass
         border.width: 1
-        border.color: "#2a2d36"
+        border.color: root.borderCard
         clip: true
 
-        // Subtle matte gradient lighting
+        // Ambient theme accent background glow
         Rectangle {
             anchors.fill: parent
             radius: parent.radius
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#0cffffff" }
-                GradientStop { position: 0.08; color: "#03ffffff" }
-                GradientStop { position: 1.0; color: "#00000000" }
+                GradientStop { position: 0.0; color: root.accentGlow }
+                GradientStop { position: 0.12; color: Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.04) }
+                GradientStop { position: 1.0; color: StyleTokens.transparent }
             }
         }
 
-        // Inner subtle rim border
+        // Inner subtle specular highlight rim
         Rectangle {
             anchors.fill: parent
             anchors.margins: 1
             radius: Math.max(0, parent.radius - 1)
             color: StyleTokens.transparent
             border.width: 1
-            border.color: "#18ffffff"
+            border.color: Qt.rgba(255, 255, 255, 0.07)
         }
 
-        // Main Horizontal Split: Left Sidebar (230px) + Right Content Area
+        // Main Horizontal Split: Left Sidebar (234px) + Right Content Area
         Row {
             anchors.fill: parent
 
             // ==========================================
-            // LEFT SIDEBAR (Width: 230px)
+            // LEFT SIDEBAR (Width: 234px)
             // ==========================================
             Rectangle {
                 id: sidebar
-                width: 230
+                width: 234
                 height: parent.height
                 color: root.bgSidebar
 
@@ -314,31 +387,31 @@ FocusScope {
                 // Sidebar Layout Column
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 16
+                    anchors.margins: 14
                     spacing: 12
 
-                    // App Header
+                    // App Brand Header
                     Row {
                         width: parent.width
-                        height: 48
+                        height: 46
                         spacing: 12
 
                         // Glowing Logo Capsule
                         Rectangle {
-                            width: 40
-                            height: 40
-                            radius: 12
-                            color: "#181b22"
+                            width: 42
+                            height: 42
+                            radius: 13
+                            color: root.accentSoft
                             border.width: 1
-                            border.color: root.accentColor
+                            border.color: root.accentBorder
                             anchors.verticalCenter: parent.verticalCenter
 
                             Text {
                                 anchors.centerIn: parent
-                                text: "\uf013" // Gear / Cog
+                                text: "\uf108" // Dynamic Island / Desktop
                                 font.family: root.iconFontFamily
-                                font.pixelSize: 18
-                                color: root.accentColor
+                                font.pixelSize: 19
+                                color: root.effectiveAccent
                             }
                         }
 
@@ -347,7 +420,7 @@ FocusScope {
                             spacing: 2
 
                             Text {
-                                text: "Tide Island"
+                                text: "Dynamic Island"
                                 font.family: root.heroFontFamily
                                 font.pixelSize: 15
                                 font.weight: Font.Bold
@@ -355,7 +428,7 @@ FocusScope {
                             }
 
                             Text {
-                                text: "Island Customizer"
+                                text: "Preferences & Styles"
                                 font.family: root.textFontFamily
                                 font.pixelSize: 11
                                 color: root.textMuted
@@ -386,12 +459,12 @@ FocusScope {
                                 readonly property bool isSelected: root.selectedCategoryIndex === index
                                 readonly property bool isHovered: navMouse.containsMouse
 
-                                width: sidebar.width - 32
-                                height: 46
+                                width: sidebar.width - 28
+                                height: 44
                                 radius: 12
-                                color: isSelected ? "#1c202a" : (isHovered ? "#14171e" : StyleTokens.transparent)
+                                color: isSelected ? root.accentSoft : (isHovered ? Qt.rgba(255, 255, 255, 0.05) : StyleTokens.transparent)
                                 border.width: isSelected ? 1 : 0
-                                border.color: isSelected ? "#2d3342" : StyleTokens.transparent
+                                border.color: isSelected ? root.accentBorder : StyleTokens.transparent
 
                                 Behavior on color {
                                     ColorAnimation { duration: 140 }
@@ -402,10 +475,10 @@ FocusScope {
                                     anchors.left: parent.left
                                     anchors.leftMargin: 4
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 3
+                                    width: 3.5
                                     height: 20
-                                    radius: 1.5
-                                    color: root.accentColor
+                                    radius: 1.75
+                                    color: root.effectiveAccent
                                     visible: navItem.isSelected
                                 }
 
@@ -420,7 +493,7 @@ FocusScope {
                                         text: navItem.modelData.icon
                                         font.family: root.iconFontFamily
                                         font.pixelSize: 15
-                                        color: navItem.isSelected ? root.accentColor : (navItem.isHovered ? root.textPrimary : root.textSecondary)
+                                        color: navItem.isSelected ? root.effectiveAccent : (navItem.isHovered ? root.textPrimary : root.textSecondary)
                                     }
 
                                     Text {
@@ -429,7 +502,7 @@ FocusScope {
                                         font.family: root.textFontFamily
                                         font.pixelSize: 13
                                         font.weight: navItem.isSelected ? Font.DemiBold : Font.Normal
-                                        color: navItem.isSelected ? root.textPrimary : (navItem.isHovered ? "#e0e3eb" : root.textSecondary)
+                                        color: navItem.isSelected ? root.textPrimary : (navItem.isHovered ? "#ffffff" : root.textSecondary)
                                     }
                                 }
 
@@ -448,17 +521,17 @@ FocusScope {
                     }
 
                     Item {
-                        // Spacer
+                        // Flexible spacer
                         width: parent.width
-                        height: sidebar.height - 350
+                        height: Math.max(16, sidebar.height - 350)
                     }
 
                     // Sidebar Footer: Live Status & Reload
                     Rectangle {
                         width: parent.width
-                        height: 52
+                        height: 50
                         radius: 12
-                        color: "#111419"
+                        color: Qt.rgba(255, 255, 255, 0.03)
                         border.width: 1
                         border.color: root.borderSubtle
 
@@ -472,7 +545,7 @@ FocusScope {
                                 width: 8
                                 height: 8
                                 radius: 4
-                                color: root.isSaving ? "#e5a93b" : root.successColor
+                                color: root.isSaving ? "#e5a93b" : root.effectiveAccent
                                 anchors.verticalCenter: parent.verticalCenter
 
                                 SequentialAnimation on opacity {
@@ -503,24 +576,34 @@ FocusScope {
                                 }
                             }
 
-                            Item { width: 1; height: 1 } // flex
+                            Item { width: 1; height: 1 } // spacer
 
                             // Quick manual reload button
                             Rectangle {
                                 width: 28
                                 height: 28
                                 radius: 14
-                                color: reloadMouse.containsMouse ? "#232732" : "#191c24"
+                                color: reloadMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05)
                                 border.width: 1
-                                border.color: "#2a2e3a"
+                                border.color: reloadMouse.containsMouse ? root.accentBorder : root.borderCard
                                 anchors.verticalCenter: parent.verticalCenter
 
                                 Text {
+                                    id: reloadIcon
                                     anchors.centerIn: parent
                                     text: "\uf021" // Refresh
                                     font.family: root.iconFontFamily
                                     font.pixelSize: 12
-                                    color: reloadMouse.containsMouse ? root.accentColor : root.textSecondary
+                                    color: reloadMouse.containsMouse ? root.effectiveAccent : root.textSecondary
+
+                                    RotationAnimation on rotation {
+                                        id: reloadAnim
+                                        running: false
+                                        from: 0
+                                        to: 360
+                                        duration: 400
+                                        easing.type: Easing.OutCubic
+                                    }
                                 }
 
                                 MouseArea {
@@ -529,6 +612,7 @@ FocusScope {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
+                                        reloadAnim.restart();
                                         UserConfig.reload();
                                         root.loadConfigFromDisk();
                                     }
@@ -540,7 +624,7 @@ FocusScope {
             }
 
             // ==========================================
-            // RIGHT CONTENT AREA (Width: 610px)
+            // RIGHT CONTENT AREA (Width: 606px)
             // ==========================================
             Item {
                 id: contentArea
@@ -556,7 +640,7 @@ FocusScope {
                     height: 64
                     color: StyleTokens.transparent
 
-                    // Bottom subtle line
+                    // Bottom subtle separator line
                     Rectangle {
                         anchors.bottom: parent.bottom
                         anchors.left: parent.left
@@ -565,11 +649,30 @@ FocusScope {
                         color: root.borderSubtle
                     }
 
+                    // Category Title & Icon Badge
                     Row {
                         anchors.left: parent.left
                         anchors.leftMargin: 24
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: 12
+
+                        Rectangle {
+                            width: 34
+                            height: 34
+                            radius: 10
+                            color: root.accentSoft
+                            border.width: 1
+                            border.color: root.accentBorder
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.categories[root.selectedCategoryIndex].icon
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 16
+                                color: root.effectiveAccent
+                            }
+                        }
 
                         Text {
                             text: root.categories[root.selectedCategoryIndex].title
@@ -593,15 +696,19 @@ FocusScope {
                             width: 180
                             height: 32
                             radius: 16
-                            color: "#16181e"
+                            color: Qt.rgba(255, 255, 255, 0.05)
                             border.width: 1
-                            border.color: searchInput.activeFocus ? root.accentColor : root.borderCard
+                            border.color: searchInput.activeFocus ? root.effectiveAccent : root.borderCard
+
+                            Behavior on border.color {
+                                ColorAnimation { duration: 120 }
+                            }
 
                             Row {
                                 anchors.fill: parent
                                 anchors.leftMargin: 10
                                 anchors.rightMargin: 10
-                                spacing: 6
+                                spacing: 8
 
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
@@ -614,7 +721,7 @@ FocusScope {
                                 TextInput {
                                     id: searchInput
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 24
+                                    width: parent.width - 40
                                     font.family: root.textFontFamily
                                     font.pixelSize: 12
                                     color: root.textPrimary
@@ -623,11 +730,24 @@ FocusScope {
 
                                     Text {
                                         anchors.fill: parent
-                                        text: "Search..."
+                                        text: "Search settings..."
                                         font.family: root.textFontFamily
                                         font.pixelSize: 12
                                         color: root.textMuted
                                         visible: !searchInput.text && !searchInput.activeFocus
+                                    }
+                                }
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "\u2715"
+                                    font.pixelSize: 10
+                                    color: root.textMuted
+                                    visible: searchInput.text !== ""
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: searchInput.text = ""
                                     }
                                 }
                             }
@@ -639,16 +759,19 @@ FocusScope {
                             width: 32
                             height: 32
                             radius: 16
-                            color: closeMouse.pressed ? "#441a1a" : (closeMouse.containsMouse ? "#2b1e22" : "#1a1d24")
+                            color: closeMouse.pressed ? "#551c22" : (closeMouse.containsMouse ? "#3a191d" : Qt.rgba(255, 255, 255, 0.05))
                             border.width: 1
-                            border.color: closeMouse.containsMouse ? "#6a2e35" : root.borderCard
+                            border.color: closeMouse.containsMouse ? "#7d2c34" : root.borderCard
+
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on border.color { ColorAnimation { duration: 120 } }
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "\u2715" // ✕
                                 font.pixelSize: 13
                                 font.weight: Font.Bold
-                                color: closeMouse.containsMouse ? "#ff6b6b" : root.textSecondary
+                                color: closeMouse.containsMouse ? "#ff453a" : root.textSecondary
                             }
 
                             MouseArea {
@@ -687,16 +810,10 @@ FocusScope {
                             width: parent.width
                             spacing: 14
                             visible: root.selectedCategoryIndex === 0 || (root.searchQuery !== "" && (
-                                "bar island geometry height width radius margin auto-hide".indexOf(root.searchQuery) >= 0
+                                "bar island geometry height width radius margin auto-hide hover".indexOf(root.searchQuery) >= 0
                             ))
 
-                            Text {
-                                text: "ISLAND GEOMETRY"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: root.accentColor
-                            }
+                            SettingsSectionHeader { title: "ISLAND GEOMETRY" }
 
                             // Group Card: Dimensions & Radius
                             Rectangle {
@@ -800,13 +917,151 @@ FocusScope {
                                 }
                             }
 
-                            Text {
-                                text: "ISLAND BEHAVIOR"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: root.accentColor
+                            SettingsSectionHeader { title: "MOUSE HOVER INTERACTION" }
+
+                            // Group Card: Hover Settings
+                            Rectangle {
+                                width: parent.width
+                                height: hoverCol.height + 24
+                                radius: 18
+                                color: root.bgCard
+                                border.width: 1
+                                border.color: root.borderCard
+
+                                Column {
+                                    id: hoverCol
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: 12
+                                    spacing: 8
+
+                                    // Hover Expand Toggle
+                                    SettingsSwitchRow {
+                                        title: "Hover to Open Island"
+                                        desc: "Instantly open the island by moving mouse cursor over it"
+                                        iconGlyph: "\uf245" // mouse pointer
+                                        checked: root.cfgHoverExpandEnabled
+                                        onToggled: function(val) {
+                                            root.cfgHoverExpandEnabled = val;
+                                            root.updateSetting("hoverExpandEnabled", val);
+                                        }
+                                    }
+
+                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
+
+                                    // Hover Target Action
+                                    Row {
+                                        width: parent.width
+                                        height: 48
+
+                                        Column {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: parent.width - 230
+                                            spacing: 2
+
+                                            Text {
+                                                text: "Hover Open Target"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 13
+                                                font.weight: Font.DemiBold
+                                                color: root.textPrimary
+                                            }
+
+                                            Text {
+                                                text: "Choose what opens when hovering cursor"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 11
+                                                color: root.textSecondary
+                                            }
+                                        }
+
+                                        // Segmented Target Picker
+                                        Rectangle {
+                                            width: 220
+                                            height: 30
+                                            radius: 15
+                                            color: Qt.rgba(255, 255, 255, 0.05)
+                                            border.width: 1
+                                            border.color: root.borderCard
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Row {
+                                                anchors.fill: parent
+
+                                                Rectangle {
+                                                    width: parent.width / 2
+                                                    height: parent.height
+                                                    radius: 15
+                                                    color: root.cfgHoverExpandAction === 2 ? root.effectiveAccent : StyleTokens.transparent
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: "Control Center"
+                                                        font.family: root.textFontFamily
+                                                        font.pixelSize: 11
+                                                        font.weight: root.cfgHoverExpandAction === 2 ? Font.Bold : Font.Normal
+                                                        color: root.cfgHoverExpandAction === 2 ? "#ffffff" : root.textSecondary
+                                                    }
+
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.cfgHoverExpandAction = 2;
+                                                            root.updateSetting("hoverExpandAction", 2);
+                                                        }
+                                                    }
+                                                }
+
+                                                Rectangle {
+                                                    width: parent.width / 2
+                                                    height: parent.height
+                                                    radius: 15
+                                                    color: root.cfgHoverExpandAction === 1 ? root.effectiveAccent : StyleTokens.transparent
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: "Music Player"
+                                                        font.family: root.textFontFamily
+                                                        font.pixelSize: 11
+                                                        font.weight: root.cfgHoverExpandAction === 1 ? Font.Bold : Font.Normal
+                                                        color: root.cfgHoverExpandAction === 1 ? "#ffffff" : root.textSecondary
+                                                    }
+
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.cfgHoverExpandAction = 1;
+                                                            root.updateSetting("hoverExpandAction", 1);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
+
+                                    // Hover Expand Delay Slider
+                                    SettingsSliderRow {
+                                        title: "Hover Open Delay"
+                                        desc: "Cursor dwell time before triggering island expansion"
+                                        fromVal: 100
+                                        toVal: 500
+                                        step: 25
+                                        unitStr: "ms"
+                                        currentVal: root.cfgHoverExpandDelay
+                                        onValMoved: function(nextVal) {
+                                            root.cfgHoverExpandDelay = Math.round(nextVal);
+                                            root.updateSetting("hoverExpandDelayMs", root.cfgHoverExpandDelay);
+                                        }
+                                    }
+                                }
                             }
+
+                            SettingsSectionHeader { title: "ISLAND AUTO-HIDE & BEHAVIOR" }
 
                             // Group Card: Auto-hide & Media
                             Rectangle {
@@ -829,6 +1084,7 @@ FocusScope {
                                     SettingsSwitchRow {
                                         title: "Auto-hide Dynamic Island"
                                         desc: "Collapse island when no active track or alert is present"
+                                        iconGlyph: "\uf070" // eye slash
                                         checked: root.cfgAutoHideEnabled
                                         onToggled: function(val) {
                                             root.cfgAutoHideEnabled = val;
@@ -859,6 +1115,7 @@ FocusScope {
                                     SettingsSwitchRow {
                                         title: "Show Workspace on Auto-hide"
                                         desc: "Display active workspace number indicator when tucked"
+                                        iconGlyph: "\uf108"
                                         checked: root.cfgShowWorkspaceOnAutoHide
                                         onToggled: function(val) {
                                             root.cfgShowWorkspaceOnAutoHide = val;
@@ -872,6 +1129,7 @@ FocusScope {
                                     SettingsSwitchRow {
                                         title: "Disable Media Track Auto-Expand"
                                         desc: "Prevent island from popping open whenever songs change"
+                                        iconGlyph: "\uf001"
                                         checked: root.cfgDisableAutoExpand
                                         onToggled: function(val) {
                                             root.cfgDisableAutoExpand = val;
@@ -892,13 +1150,7 @@ FocusScope {
                                 "control center module card wifi bluetooth barra battery sound sliders night focus clipboard".indexOf(root.searchQuery) >= 0
                             ))
 
-                            Text {
-                                text: "CONTROL CENTER MODULES"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: root.accentColor
-                            }
+                            SettingsSectionHeader { title: "CONTROL CENTER MODULES" }
 
                             // Group Card: Module Switches
                             Rectangle {
@@ -1023,16 +1275,10 @@ FocusScope {
                             width: parent.width
                             spacing: 14
                             visible: root.selectedCategoryIndex === 2 || (root.searchQuery !== "" && (
-                                "appearance opacity font typography clock format pywal palette".indexOf(root.searchQuery) >= 0
+                                "appearance opacity font typography clock format pywal palette iris".indexOf(root.searchQuery) >= 0
                             ))
 
-                            Text {
-                                text: "APPEARANCE & STYLING"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: root.accentColor
-                            }
+                            SettingsSectionHeader { title: "APPEARANCE & THEME HARMONY" }
 
                             // Group Card: Styling & Fonts
                             Rectangle {
@@ -1097,11 +1343,11 @@ FocusScope {
                                         // Segmented 24h / 12h toggle
                                         Rectangle {
                                             width: 120
-                                            height: 28
-                                            radius: 14
-                                            color: "#20232b"
+                                            height: 30
+                                            radius: 15
+                                            color: Qt.rgba(255, 255, 255, 0.05)
                                             border.width: 1
-                                            border.color: "#2d313c"
+                                            border.color: root.borderCard
                                             anchors.verticalCenter: parent.verticalCenter
 
                                             Row {
@@ -1110,8 +1356,8 @@ FocusScope {
                                                 Rectangle {
                                                     width: parent.width / 2
                                                     height: parent.height
-                                                    radius: 14
-                                                    color: root.cfgClockFormat === "24" ? root.accentColor : StyleTokens.transparent
+                                                    radius: 15
+                                                    color: root.cfgClockFormat === "24" ? root.effectiveAccent : StyleTokens.transparent
 
                                                     Text {
                                                         anchors.centerIn: parent
@@ -1135,8 +1381,8 @@ FocusScope {
                                                 Rectangle {
                                                     width: parent.width / 2
                                                     height: parent.height
-                                                    radius: 14
-                                                    color: root.cfgClockFormat === "12" ? root.accentColor : StyleTokens.transparent
+                                                    radius: 15
+                                                    color: root.cfgClockFormat === "12" ? root.effectiveAccent : StyleTokens.transparent
 
                                                     Text {
                                                         anchors.centerIn: parent
@@ -1162,10 +1408,11 @@ FocusScope {
 
                                     Rectangle { width: parent.width; height: 1; color: root.dividerColor }
 
-                                    // Pywal Dynamic Theming Toggle
+                                    // Pywal / Iris Dynamic Theming Toggle
                                     SettingsSwitchRow {
-                                        title: "Pywal Wallpaper Dynamic Colors"
-                                        desc: "Harmonize island accent colors automatically from wallpaper"
+                                        title: "Pywal & Iris Dynamic Palette"
+                                        desc: "Harmonize island accent colors automatically with wallpaper and theme"
+                                        iconGlyph: "\uf1fc"
                                         checked: root.cfgPywalEnabled
                                         onToggled: function(val) {
                                             root.cfgPywalEnabled = val;
@@ -1237,13 +1484,7 @@ FocusScope {
                                 "motion animation fps transition duration curve".indexOf(root.searchQuery) >= 0
                             ))
 
-                            Text {
-                                text: "MOTION & ANIMATION"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: root.accentColor
-                            }
+                            SettingsSectionHeader { title: "MOTION & ANIMATION" }
 
                             // Group Card: Motion
                             Rectangle {
@@ -1324,11 +1565,11 @@ FocusScope {
 
                                         Rectangle {
                                             width: 220
-                                            height: 28
-                                            radius: 14
-                                            color: "#20232b"
+                                            height: 30
+                                            radius: 15
+                                            color: Qt.rgba(255, 255, 255, 0.05)
                                             border.width: 1
-                                            border.color: "#2d313c"
+                                            border.color: root.borderCard
                                             anchors.verticalCenter: parent.verticalCenter
 
                                             Row {
@@ -1341,9 +1582,9 @@ FocusScope {
                                                         required property int index
                                                         required property string modelData
                                                         width: 220 / 3
-                                                        height: 28
-                                                        radius: 14
-                                                        color: root.cfgAnimationSpeedMode === index ? root.accentColor : StyleTokens.transparent
+                                                        height: parent.height
+                                                        radius: 15
+                                                        color: root.cfgAnimationSpeedMode === index ? root.effectiveAccent : StyleTokens.transparent
 
                                                         Text {
                                                             anchors.centerIn: parent
@@ -1381,13 +1622,7 @@ FocusScope {
                                 "modules swipe pills triggers actions".indexOf(root.searchQuery) >= 0
                             ))
 
-                            Text {
-                                text: "DYNAMIC ISLAND SWIPE MODULES"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Bold
-                                color: root.accentColor
-                            }
+                            SettingsSectionHeader { title: "DYNAMIC ISLAND SWIPE MODULES" }
 
                             // Group Card: Swipe Modules
                             Rectangle {
@@ -1464,7 +1699,31 @@ FocusScope {
     // REUSABLE SUB-COMPONENTS
     // ==========================================
 
-    // Component: Switch Row
+    // Component: Section Header with Accent Dot
+    component SettingsSectionHeader: Row {
+        property string title: ""
+        spacing: 8
+
+        Rectangle {
+            width: 6
+            height: 6
+            radius: 3
+            color: root.effectiveAccent
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Text {
+            text: title
+            font.family: root.textFontFamily
+            font.pixelSize: 11
+            font.weight: Font.Bold
+            color: root.effectiveAccent
+            font.letterSpacing: 0.8
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
+    // Component: Switch Row with Vibrant Accent Toggle
     component SettingsSwitchRow: Row {
         id: switchRowItem
         property string title: ""
@@ -1488,16 +1747,21 @@ FocusScope {
                 width: 32
                 height: 32
                 radius: 10
-                color: "#1d2027"
+                color: switchRowItem.checked ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05)
+                border.width: 1
+                border.color: switchRowItem.checked ? root.accentBorder : root.borderCard
                 visible: switchRowItem.iconGlyph !== ""
                 anchors.verticalCenter: parent.verticalCenter
+
+                Behavior on color { ColorAnimation { duration: 160 } }
+                Behavior on border.color { ColorAnimation { duration: 160 } }
 
                 Text {
                     anchors.centerIn: parent
                     text: switchRowItem.iconGlyph
                     font.family: root.iconFontFamily
-                    font.pixelSize: 13
-                    color: switchRowItem.checked ? root.accentColor : root.textSecondary
+                    font.pixelSize: 14
+                    color: switchRowItem.checked ? root.effectiveAccent : root.textSecondary
                 }
             }
 
@@ -1530,16 +1794,16 @@ FocusScope {
             id: toggleSwitch
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            width: 46
+            width: 48
             height: 26
             radius: 13
-            color: switchRowItem.checked ? root.successColor : root.switchOffColor
+            color: switchRowItem.checked ? root.effectiveAccent : root.switchOffColor
 
             Behavior on color {
                 ColorAnimation { duration: 180 }
             }
 
-            // Sliding Knob
+            // Sliding Knob with Spring Easing
             Rectangle {
                 id: switchKnob
                 width: 20
@@ -1550,10 +1814,10 @@ FocusScope {
                 x: switchRowItem.checked ? (toggleSwitch.width - width - 3) : 3
 
                 Behavior on x {
-                    NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                    NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
                 }
 
-                // Subtle inner shadow / border for 3D iOS feel
+                // Subtle inner shadow for 3D feel
                 Rectangle {
                     anchors.fill: parent
                     radius: parent.radius
@@ -1623,11 +1887,11 @@ FocusScope {
             Rectangle {
                 id: trackArea
                 width: 140
-                height: 8
-                radius: 4
-                color: "#21242d"
+                height: 7
+                radius: 3.5
+                color: Qt.rgba(255, 255, 255, 0.1)
                 border.width: 1
-                border.color: "#2c303c"
+                border.color: Qt.rgba(255, 255, 255, 0.05)
                 anchors.verticalCenter: parent.verticalCenter
 
                 readonly property real normVal: Math.max(0, Math.min(1, (sliderRowItem.currentVal - sliderRowItem.fromVal) / Math.max(0.001, (sliderRowItem.toVal - sliderRowItem.fromVal))))
@@ -1637,7 +1901,11 @@ FocusScope {
                     height: parent.height
                     width: Math.max(4, trackArea.normVal * parent.width)
                     radius: parent.radius
-                    color: root.accentColor
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: root.effectiveAccent }
+                        GradientStop { position: 1.0; color: Qt.lighter(root.effectiveAccent, 1.2) }
+                    }
                 }
 
                 // Knob
@@ -1647,11 +1915,11 @@ FocusScope {
                     radius: 9
                     color: "#ffffff"
                     border.width: 1
-                    border.color: "#d8dce6"
+                    border.color: Qt.rgba(0, 0, 0, 0.2)
                     anchors.verticalCenter: parent.verticalCenter
                     x: Math.max(0, Math.min(trackArea.width - width, trackArea.normVal * trackArea.width - width / 2))
 
-                    scale: sliderMouse.pressed ? 1.15 : (sliderMouse.containsMouse ? 1.08 : 1.0)
+                    scale: sliderMouse.pressed ? 1.18 : (sliderMouse.containsMouse ? 1.08 : 1.0)
                     Behavior on scale {
                         NumberAnimation { duration: 120 }
                     }
@@ -1685,13 +1953,16 @@ FocusScope {
 
             // Value Badge
             Rectangle {
-                width: 58
-                height: 24
-                radius: 12
-                color: "#1d2028"
+                width: 60
+                height: 26
+                radius: 13
+                color: sliderMouse.pressed ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05)
                 border.width: 1
-                border.color: "#2e323e"
+                border.color: sliderMouse.pressed ? root.accentBorder : root.borderCard
                 anchors.verticalCenter: parent.verticalCenter
+
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { ColorAnimation { duration: 120 } }
 
                 Text {
                     anchors.centerIn: parent
@@ -1699,7 +1970,7 @@ FocusScope {
                     font.family: root.textFontFamily
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
-                    color: "#e2e6f0"
+                    color: sliderMouse.pressed ? root.effectiveAccent : "#e2e6f0"
                 }
             }
         }

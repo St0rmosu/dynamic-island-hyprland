@@ -420,7 +420,9 @@ PanelWindow {
         return isNaN(action) ? 0 : Math.max(0, Math.min(2, Math.round(action)));
     }
     readonly property real baseExclusiveZone: userConfig.islandExclusiveZone
-    readonly property bool hoverExpandEnabled: false
+    readonly property bool hoverExpandEnabled: userConfig.hoverExpandEnabled !== undefined
+        ? Boolean(userConfig.hoverExpandEnabled)
+        : (configuredHoverExpandAction > 0)
     readonly property bool topGestureInputActive: false
     readonly property bool autoHideRuntimeEnabled: !shellRootController
         || shellRootController.islandAutoHideRuntimeEnabled === undefined
@@ -2447,32 +2449,40 @@ PanelWindow {
         }
         Timer {
             id: hoverExpandDelayTimer
-            interval: 350
+            interval: userConfig.hoverExpandDelayMs > 0 ? userConfig.hoverExpandDelayMs : 200
             repeat: false
             onTriggered: {
-                if (!capsuleMouseArea.containsMouse) return;
+                if (!capsuleMouseArea.containsMouse && !mainCapsuleHoverHandler.hovered) return;
                 if (!root.hoverExpandEnabled) return;
 
                 const current = islandContainer.islandState;
-                const target = root.configuredHoverExpandAction === 2 ? "control_center" : "expanded";
+                const target = root.configuredHoverExpandAction === 1 ? "expanded" : "control_center";
                 if (current === target) return;
                 if (current !== "normal" && current !== "custom" && current !== "lyrics")
                     return;
 
                 islandContainer.hoverExpandedActive = true;
-                if (root.configuredHoverExpandAction === 2)
-                    islandContainer.showControlCenter();
-                else
+                if (target === "expanded")
                     islandContainer.showExpandedPlayer(false);
+                else
+                    islandContainer.showControlCenter();
             }
         }
         Timer {
             id: hoverCollapseDelayTimer
-            interval: 250
+            interval: userConfig.hoverCollapseDelayMs > 0 ? userConfig.hoverCollapseDelayMs : 300
             repeat: false
             onTriggered: {
-                if (capsuleMouseArea.containsMouse) return;
+                if (capsuleMouseArea.containsMouse || mainCapsuleHoverHandler.hovered) return;
                 if (!islandContainer.hoverExpandedActive) return;
+                if (islandContainer.islandState === "settings_app" ||
+                    islandContainer.islandState === "clipboard" ||
+                    islandContainer.islandState === "wallpaper_picker" ||
+                    islandContainer.islandState === "application_launcher" ||
+                    islandContainer.islandState === "file_shelf") {
+                    islandContainer.hoverExpandedActive = false;
+                    return;
+                }
                 islandContainer.hoverExpandedActive = false;
                 islandContainer.smartRestoreState();
             }
@@ -2883,6 +2893,29 @@ PanelWindow {
 
             HoverHandler {
                 id: mainCapsuleHoverHandler
+                onHoveredChanged: {
+                    if (hovered) {
+                        if (root.autoHideEnabled) {
+                            root.autoHidePointerInside = true;
+                            root.showAutoHiddenIsland();
+                        }
+                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
+                            hoverCollapseDelayTimer.stop();
+                            hoverExpandDelayTimer.restart();
+                        }
+                    } else {
+                        if (root.autoHideEnabled) {
+                            root.autoHidePointerInside = false;
+                            root.scheduleAutoHide();
+                        }
+                        if (root.hoverExpandEnabled) {
+                            hoverExpandDelayTimer.stop();
+                            if (islandContainer.hoverExpandedActive) {
+                                hoverCollapseDelayTimer.restart();
+                            }
+                        }
+                    }
+                }
             }
 
             MouseArea {
@@ -2916,19 +2949,23 @@ PanelWindow {
                         root.autoHidePointerInside = true;
                         root.showAutoHiddenIsland();
                     }
-                    if (root.hoverExpandEnabled) {
+                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
                         hoverCollapseDelayTimer.stop();
                         hoverExpandDelayTimer.restart();
                     }
                 }
 
                 onExited: {
-                    if (root.autoHideEnabled) {
+                    if (root.autoHideEnabled && !mainCapsuleHoverHandler.hovered) {
                         root.autoHidePointerInside = false;
                         root.scheduleAutoHide();
                     }
-                    if (root.hoverExpandEnabled)
-                        hoverCollapseDelayTimer.restart();
+                    if (root.hoverExpandEnabled && !mainCapsuleHoverHandler.hovered) {
+                        hoverExpandDelayTimer.stop();
+                        if (islandContainer.hoverExpandedActive) {
+                            hoverCollapseDelayTimer.restart();
+                        }
+                    }
                 }
 
                 onPressed: (mouse) => {
@@ -3607,6 +3644,9 @@ PanelWindow {
 
                 sourceComponent: Component {
                     SettingsAppLayer {
+                        accentColor: pywalColors.accent
+                        pywalBackground: pywalColors.background
+                        pywalForeground: pywalColors.foreground
                         showCondition: islandContainer.settingsAppLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }

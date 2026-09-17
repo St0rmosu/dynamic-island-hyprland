@@ -5,7 +5,8 @@ import json
 import os
 import time
 
-STATE_FILE = "/tmp/tide_discord_call_ongoing"
+STATE_FILE = "/tmp/island_discord_call_ongoing"
+LEGACY_STATE_FILE = "/tmp/tide_discord_call_ongoing"
 
 def run_hypr_lua(code):
     cmd = ["hyprctl", "repl", code]
@@ -60,6 +61,8 @@ def decline_call():
     try:
         if os.path.exists(STATE_FILE):
             os.remove(STATE_FILE)
+        if os.path.exists(LEGACY_STATE_FILE):
+            os.remove(LEGACY_STATE_FILE)
     except Exception:
         pass
 

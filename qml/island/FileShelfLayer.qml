@@ -316,7 +316,7 @@ FocusScope {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: !root.dropPreviewOnly
-            text: "Drag files or folders onto Tide Island"
+            text: "Drag files or folders onto Dynamic Island"
             color: StyleTokens.textSecondary
             font.family: root.textFontFamily
             font.pixelSize: 12

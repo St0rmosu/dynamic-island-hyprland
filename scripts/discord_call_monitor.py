@@ -55,7 +55,7 @@ def is_discord_audio_active():
     try:
         res = subprocess.run(["pactl", "list", "source-outputs"], capture_output=True, text=True, timeout=1.5)
         out = res.stdout.lower()
-        if "discord" in out or "webrtc" in out:
+        if "discord" in out or "vesktop" in out or "armcord" in out or "webcord" in out:
             return True
     except Exception:
         pass
