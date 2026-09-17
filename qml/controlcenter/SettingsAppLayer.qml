@@ -364,85 +364,81 @@ FocusScope {
             border.color: Qt.rgba(255, 255, 255, 0.07)
         }
 
-        // Main Horizontal Split: Left Sidebar (234px) + Right Content Area
+        // Main Horizontal Split: Left Sidebar (220px) + Right Content Area - Unified all-in-one
         Row {
             anchors.fill: parent
 
             // ==========================================
-            // LEFT SIDEBAR (Width: 234px)
+            // LEFT SIDEBAR (Width: 220px) - Seamlessly Unified
             // ==========================================
-            Rectangle {
+            Item {
                 id: sidebar
-                width: 234
+                width: 220
                 height: parent.height
-                color: root.bgSidebar
 
-                // Right border divider
-                Rectangle {
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: 1
-                    color: root.borderSubtle
-                }
-
-                // Sidebar Layout Column
                 Column {
                     anchors.fill: parent
                     anchors.margins: 14
                     spacing: 12
 
-                    // App Brand Header
-                    Row {
-                        width: parent.width
-                        height: 46
-                        spacing: 12
-
-                        // Glowing Logo Capsule
-                        Rectangle {
-                            width: 42
-                            height: 42
-                            radius: 13
-                            color: root.accentSoft
-                            border.width: 1
-                            border.color: root.accentBorder
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\uf108" // Dynamic Island / Desktop
-                                font.family: root.iconFontFamily
-                                font.pixelSize: 19
-                                color: root.effectiveAccent
-                            }
-                        }
-
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-
-                            Text {
-                                text: "Dynamic Island"
-                                font.family: root.heroFontFamily
-                                font.pixelSize: 15
-                                font.weight: Font.Bold
-                                color: root.textPrimary
-                            }
-
-                            Text {
-                                text: "Preferences & Styles"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                color: root.textMuted
-                            }
-                        }
-                    }
-
-                    // Divider
+                    // Top Search Bar (matching reference layout)
                     Rectangle {
                         width: parent.width
-                        height: 1
-                        color: root.borderSubtle
+                        height: 38
+                        radius: 19
+                        color: Qt.rgba(255, 255, 255, 0.05)
+                        border.width: 1
+                        border.color: searchInput.activeFocus ? root.effectiveAccent : Qt.rgba(255, 255, 255, 0.08)
+
+                        Behavior on border.color { ColorAnimation { duration: 140 } }
+
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 10
+                            spacing: 8
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\uf002" // Search icon
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 12
+                                color: root.textMuted
+                            }
+
+                            TextInput {
+                                id: searchInput
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width - 44
+                                font.family: root.textFontFamily
+                                font.pixelSize: 12
+                                color: root.textPrimary
+                                clip: true
+                                onTextChanged: root.searchQuery = text.toLowerCase().trim()
+
+                                Text {
+                                    anchors.fill: parent
+                                    text: "Search Settings"
+                                    font.family: root.textFontFamily
+                                    font.pixelSize: 12
+                                    color: root.textMuted
+                                    visible: !searchInput.text && !searchInput.activeFocus
+                                }
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\u2715"
+                                font.pixelSize: 10
+                                color: root.textMuted
+                                visible: searchInput.text !== ""
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: searchInput.text = ""
+                                }
+                            }
+                        }
                     }
 
                     // Categories List
@@ -461,41 +457,45 @@ FocusScope {
                                 readonly property bool isSelected: root.selectedCategoryIndex === index
                                 readonly property bool isHovered: navMouse.containsMouse
 
-                                width: sidebar.width - 28
-                                height: 44
-                                radius: 12
-                                color: isSelected ? root.accentSoft : (isHovered ? Qt.rgba(255, 255, 255, 0.05) : StyleTokens.transparent)
+                                width: parent.width
+                                height: 42
+                                radius: 14
+                                color: isSelected
+                                    ? Qt.rgba(255, 255, 255, 0.08)
+                                    : (isHovered ? Qt.rgba(255, 255, 255, 0.04) : StyleTokens.transparent)
                                 border.width: isSelected ? 1 : 0
-                                border.color: isSelected ? root.accentBorder : StyleTokens.transparent
+                                border.color: Qt.rgba(255, 255, 255, 0.06)
 
-                                Behavior on color {
-                                    ColorAnimation { duration: 140 }
-                                }
-
-                                // Active indicator pill on left edge
-                                Rectangle {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 4
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 3.5
-                                    height: 20
-                                    radius: 1.75
-                                    color: root.effectiveAccent
-                                    visible: navItem.isSelected
-                                }
+                                Behavior on color { ColorAnimation { duration: 140 } }
 
                                 Row {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 14
+                                    anchors.leftMargin: 8
                                     anchors.rightMargin: 10
-                                    spacing: 12
+                                    spacing: 10
 
-                                    Text {
+                                    // Circular Icon Badge (matching reference)
+                                    Rectangle {
+                                        id: iconCircle
+                                        width: 28
+                                        height: 28
+                                        radius: 14
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: navItem.modelData.icon
-                                        font.family: root.iconFontFamily
-                                        font.pixelSize: 15
-                                        color: navItem.isSelected ? root.effectiveAccent : (navItem.isHovered ? root.textPrimary : root.textSecondary)
+                                        color: navItem.isSelected
+                                            ? root.effectiveAccent
+                                            : Qt.rgba(255, 255, 255, 0.06)
+                                        border.width: navItem.isSelected ? 0 : 1
+                                        border.color: Qt.rgba(255, 255, 255, 0.04)
+
+                                        Behavior on color { ColorAnimation { duration: 140 } }
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: navItem.modelData.icon
+                                            font.family: root.iconFontFamily
+                                            font.pixelSize: 13
+                                            color: navItem.isSelected ? "#10141b" : (navItem.isHovered ? root.textPrimary : root.textSecondary)
+                                        }
                                     }
 
                                     Text {
@@ -516,6 +516,7 @@ FocusScope {
                                     onClicked: {
                                         root.selectedCategoryIndex = navItem.index;
                                         root.searchQuery = "";
+                                        searchInput.text = "";
                                     }
                                 }
                             }
@@ -525,28 +526,28 @@ FocusScope {
                     Item {
                         // Flexible spacer
                         width: parent.width
-                        height: Math.max(16, sidebar.height - 350)
+                        height: Math.max(8, sidebar.height - 380)
                     }
 
-                    // Sidebar Footer: Live Status & Reload
+                    // Sidebar Footer: Minimal Sync Status
                     Rectangle {
                         width: parent.width
-                        height: 50
+                        height: 38
                         radius: 12
-                        color: Qt.rgba(255, 255, 255, 0.03)
+                        color: Qt.rgba(255, 255, 255, 0.02)
                         border.width: 1
-                        border.color: root.borderSubtle
+                        border.color: Qt.rgba(255, 255, 255, 0.04)
 
                         Row {
                             anchors.fill: parent
-                            anchors.margins: 10
-                            spacing: 10
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 8
+                            spacing: 8
 
-                            // Pulsing Sync Dot
                             Rectangle {
-                                width: 8
-                                height: 8
-                                radius: 4
+                                width: 7
+                                height: 7
+                                radius: 3.5
                                 color: root.isSaving ? "#e5a93b" : root.effectiveAccent
                                 anchors.verticalCenter: parent.verticalCenter
 
@@ -558,36 +559,21 @@ FocusScope {
                                 }
                             }
 
-                            Column {
+                            Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 1
-
-                                Text {
-                                    text: root.lastSavedStatus
-                                    font.family: root.textFontFamily
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                    color: root.isSaving ? "#e5a93b" : root.textPrimary
-                                }
-
-                                Text {
-                                    text: "userconfig.json"
-                                    font.family: root.textFontFamily
-                                    font.pixelSize: 9
-                                    color: root.textMuted
-                                }
+                                text: root.lastSavedStatus
+                                font.family: root.textFontFamily
+                                font.pixelSize: 10
+                                color: root.isSaving ? "#e5a93b" : root.textSecondary
                             }
 
                             Item { width: 1; height: 1 } // spacer
 
-                            // Quick manual reload button
                             Rectangle {
-                                width: 28
-                                height: 28
-                                radius: 14
-                                color: reloadMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05)
-                                border.width: 1
-                                border.color: reloadMouse.containsMouse ? root.accentBorder : root.borderCard
+                                width: 24
+                                height: 24
+                                radius: 12
+                                color: reloadMouse.containsMouse ? root.accentSoft : StyleTokens.transparent
                                 anchors.verticalCenter: parent.verticalCenter
 
                                 Text {
@@ -595,7 +581,7 @@ FocusScope {
                                     anchors.centerIn: parent
                                     text: "\uf021" // Refresh
                                     font.family: root.iconFontFamily
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     color: reloadMouse.containsMouse ? root.effectiveAccent : root.textSecondary
 
                                     RotationAnimation on rotation {
@@ -626,7 +612,7 @@ FocusScope {
             }
 
             // ==========================================
-            // RIGHT CONTENT AREA (Width: 606px)
+            // RIGHT CONTENT AREA (Width: 620px) - Seamlessly Unified
             // ==========================================
             Item {
                 id: contentArea
@@ -639,7 +625,7 @@ FocusScope {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    height: 64
+                    height: 52
                     color: StyleTokens.transparent
 
                     // Bottom subtle separator line
@@ -648,141 +634,114 @@ FocusScope {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         height: 1
-                        color: root.borderSubtle
+                        color: Qt.rgba(255, 255, 255, 0.04)
                     }
 
-                    // Category Title & Icon Badge
+                    // Left: Back/Forward Navigation & Active Category Title
                     Row {
                         anchors.left: parent.left
-                        anchors.leftMargin: 24
+                        anchors.leftMargin: 20
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 12
+                        spacing: 8
 
+                        // Back button
                         Rectangle {
-                            width: 34
-                            height: 34
-                            radius: 10
-                            color: root.accentSoft
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: prevMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : StyleTokens.transparent
                             border.width: 1
-                            border.color: root.accentBorder
+                            border.color: prevMouse.containsMouse ? root.borderCard : StyleTokens.transparent
+                            opacity: root.selectedCategoryIndex > 0 ? 1.0 : 0.35
                             anchors.verticalCenter: parent.verticalCenter
 
                             Text {
                                 anchors.centerIn: parent
-                                text: root.categories[root.selectedCategoryIndex].icon
+                                text: "\uf060" // Arrow left
                                 font.family: root.iconFontFamily
-                                font.pixelSize: 16
-                                color: root.effectiveAccent
-                            }
-                        }
-
-                        Text {
-                            text: root.categories[root.selectedCategoryIndex].title
-                            font.family: root.heroFontFamily
-                            font.pixelSize: 20
-                            font.weight: Font.Bold
-                            color: root.textPrimary
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    // Search field and Close Button
-                    Row {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 24
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 12
-
-                        // Search capsule
-                        Rectangle {
-                            width: 180
-                            height: 32
-                            radius: 16
-                            color: Qt.rgba(255, 255, 255, 0.05)
-                            border.width: 1
-                            border.color: searchInput.activeFocus ? root.effectiveAccent : root.borderCard
-
-                            Behavior on border.color {
-                                ColorAnimation { duration: 120 }
-                            }
-
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: 10
-                                anchors.rightMargin: 10
-                                spacing: 8
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "\uf002" // Search icon
-                                    font.family: root.iconFontFamily
-                                    font.pixelSize: 11
-                                    color: root.textMuted
-                                }
-
-                                TextInput {
-                                    id: searchInput
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 40
-                                    font.family: root.textFontFamily
-                                    font.pixelSize: 12
-                                    color: root.textPrimary
-                                    clip: true
-                                    onTextChanged: root.searchQuery = text.toLowerCase().trim()
-
-                                    Text {
-                                        anchors.fill: parent
-                                        text: "Search settings..."
-                                        font.family: root.textFontFamily
-                                        font.pixelSize: 12
-                                        color: root.textMuted
-                                        visible: !searchInput.text && !searchInput.activeFocus
-                                    }
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "\u2715"
-                                    font.pixelSize: 10
-                                    color: root.textMuted
-                                    visible: searchInput.text !== ""
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: searchInput.text = ""
-                                    }
-                                }
-                            }
-                        }
-
-                        // Close Button ('✕')
-                        Rectangle {
-                            id: closeBtn
-                            width: 32
-                            height: 32
-                            radius: 16
-                            color: closeMouse.pressed ? "#551c22" : (closeMouse.containsMouse ? "#3a191d" : Qt.rgba(255, 255, 255, 0.05))
-                            border.width: 1
-                            border.color: closeMouse.containsMouse ? "#7d2c34" : root.borderCard
-
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                            Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\u2715" // ✕
-                                font.pixelSize: 13
-                                font.weight: Font.Bold
-                                color: closeMouse.containsMouse ? "#ff453a" : root.textSecondary
+                                font.pixelSize: 11
+                                color: root.textPrimary
                             }
 
                             MouseArea {
-                                id: closeMouse
+                                id: prevMouse
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.closeRequested()
+                                enabled: root.selectedCategoryIndex > 0
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: root.selectedCategoryIndex = Math.max(0, root.selectedCategoryIndex - 1)
                             }
+                        }
+
+                        // Next button
+                        Rectangle {
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: nextMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : StyleTokens.transparent
+                            border.width: 1
+                            border.color: nextMouse.containsMouse ? root.borderCard : StyleTokens.transparent
+                            opacity: root.selectedCategoryIndex < root.categories.length - 1 ? 1.0 : 0.35
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf061" // Arrow right
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 11
+                                color: root.textPrimary
+                            }
+
+                            MouseArea {
+                                id: nextMouse
+                                anchors.fill: parent
+                                enabled: root.selectedCategoryIndex < root.categories.length - 1
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: root.selectedCategoryIndex = Math.min(root.categories.length - 1, root.selectedCategoryIndex + 1)
+                            }
+                        }
+
+                        Item { width: 6; height: 1 }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.categories[root.selectedCategoryIndex].title
+                            font.family: root.heroFontFamily
+                            font.pixelSize: 18
+                            font.weight: Font.Bold
+                            color: root.textPrimary
+                        }
+                    }
+
+                    // Right: Close Button ('✕')
+                    Rectangle {
+                        id: closeBtn
+                        anchors.right: parent.right
+                        anchors.rightMargin: 20
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 28
+                        height: 28
+                        radius: 14
+                        color: closeMouse.pressed ? "#551c22" : (closeMouse.containsMouse ? "#3a191d" : Qt.rgba(255, 255, 255, 0.06))
+                        border.width: 1
+                        border.color: closeMouse.containsMouse ? "#7d2c34" : Qt.rgba(255, 255, 255, 0.08)
+
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                        Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\u2715" // ✕
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            color: closeMouse.containsMouse ? "#ff453a" : root.textSecondary
+                        }
+
+                        MouseArea {
+                            id: closeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.closeRequested()
                         }
                     }
                 }
