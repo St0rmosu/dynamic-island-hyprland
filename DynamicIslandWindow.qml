@@ -404,8 +404,8 @@ PanelWindow {
         return isNaN(action) ? 0 : Math.max(0, Math.min(2, Math.round(action)));
     }
     readonly property real baseExclusiveZone: userConfig.islandExclusiveZone
-    readonly property bool hoverExpandEnabled: configuredHoverExpandAction > 0
-    readonly property bool topGestureInputActive: !root.overviewVisible && islandContainer.canShowSideSwipe
+    readonly property bool hoverExpandEnabled: false
+    readonly property bool topGestureInputActive: false
     readonly property bool autoHideRuntimeEnabled: !shellRootController
         || shellRootController.islandAutoHideRuntimeEnabled === undefined
         || !!shellRootController.islandAutoHideRuntimeEnabled
@@ -937,10 +937,6 @@ PanelWindow {
         }
         if (islandContainer.islandState === "expanded")
             islandContainer.smartRestoreState();
-        else {
-            islandContainer.openTimerPageWhenExpanded = false;
-            islandContainer.showExpandedPlayer(false);
-        }
     }
 
     function showTimerWindow() {
@@ -1258,6 +1254,33 @@ PanelWindow {
         property int batteryAlertCapacity: 100
         property bool silentRingIsMuted: false
         property bool pendingPowerView: false
+        property bool controlCenterHadPointer: false
+        readonly property bool controlCenterPointerInside: Boolean(
+            (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered)
+            || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered)
+            || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered)
+            || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered)
+        )
+
+        onControlCenterPointerInsideChanged: {
+            if (islandState === "control_center") {
+                if (controlCenterPointerInside) {
+                    controlCenterHadPointer = true;
+                    controlCenterAutoCollapseTimer.stop();
+                } else if (controlCenterHadPointer) {
+                    controlCenterAutoCollapseTimer.restart();
+                }
+            }
+        }
+
+        onIslandStateChanged: {
+            controlCenterAutoCollapseTimer.stop();
+            if (islandState === "control_center") {
+                controlCenterHadPointer = controlCenterPointerInside;
+            } else {
+                controlCenterHadPointer = false;
+            }
+        }
         property string discordCallerName: "Discord Call"
         property string discordCallSubtitle: "Chiamata in arrivo..."
         property string discordCallAvatarUrl: ""
@@ -1319,10 +1342,7 @@ PanelWindow {
         readonly property bool splitShowsIconOnly: islandState === "split" && osdProgress < 0 && osdCustomText === ""
         readonly property bool splitUsesExtendedLayout: splitShowsProgress || splitShowsText
         readonly property real splitCapsuleWidth: splitShowsProgress ? 248 : (splitShowsText ? 220 : userConfig.islandWidth)
-        readonly property bool canShowSideSwipe: islandState === "normal"
-            || islandState === "custom"
-            || islandState === "lyrics"
-            || (islandState === "long_capsule" && workspaceOriginSide === "none")
+        readonly property bool canShowSideSwipe: false
         readonly property real rightSwipeProgress: Math.max(0, swipeTransitionProgress)
         readonly property var customLeftItems: systemState.customLeftItems
         readonly property bool hasCustomLeftItems: systemState.hasCustomLeftItems
@@ -1569,8 +1589,6 @@ PanelWindow {
                 if (islandState === "expanded") {
                     autoHideTimer.stop();
                     smartRestoreState();
-                } else {
-                    showExpandedPlayer(false);
                 }
                 return;
             case "openExpandedPlayer":
@@ -1578,7 +1596,6 @@ PanelWindow {
                     musicFloatingIsland.isExpanded = true;
                     return;
                 }
-                showExpandedPlayer(false);
                 return;
             case "closeExpandedPlayer":
                 if (musicFloatingIsland)
@@ -2152,9 +2169,12 @@ PanelWindow {
         }
 
         function smartRestoreState() {
+            controlCenterAutoCollapseTimer.stop();
+            controlCenterHadPointer = false;
             pendingPowerView = false;
             if (controlCenterLoader.item)
                 controlCenterLoader.item.powerViewActive = false;
+            root.closeAllConnectivityDetails();
             restoreRestingCapsule();
         }
 
@@ -2373,6 +2393,16 @@ PanelWindow {
                 islandContainer.smartRestoreState();
             }
         }
+        Timer {
+            id: controlCenterAutoCollapseTimer
+            interval: 400
+            repeat: false
+            onTriggered: {
+                if (islandContainer.islandState === "control_center" && !islandContainer.controlCenterPointerInside) {
+                    islandContainer.smartRestoreState();
+                }
+            }
+        }
 
         function syncCustomCapsuleWidth() {
             const view = customSwipeLoader.item;
@@ -2483,9 +2513,10 @@ PanelWindow {
                 case "notification_center":
                     return 410;
                 case "wallpaper_picker":
-                case "application_launcher":
                 case "file_shelf":
                     return 1100;
+                case "application_launcher":
+                    return 820;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 58;
                     return 400;
@@ -2521,9 +2552,10 @@ PanelWindow {
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
                 case "wallpaper_picker":
-                case "application_launcher":
                 case "file_shelf":
                     return 260;
+                case "application_launcher":
+                    return 428;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 58;
                     return 174;
@@ -2555,8 +2587,9 @@ PanelWindow {
                 case "notification_center":
                     return mainCapsule.targetHeight * 36 / 165;
                 case "wallpaper_picker":
-                case "application_launcher":
                 case "file_shelf":
+                    return 34;
+                case "application_launcher":
                     return 34;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 29;
@@ -2646,6 +2679,10 @@ PanelWindow {
                 }
             }
 
+
+            HoverHandler {
+                id: mainCapsuleHoverHandler
+            }
 
             MouseArea {
                 id: capsuleMouseArea
@@ -2819,7 +2856,9 @@ PanelWindow {
                         }
 
                         preparedOverviewOnPress = false;
-                        islandContainer.handleConfiguredClickAction(userConfig.dynamicIslandPrimaryAction);
+                        const action = userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer"
+                            ? userConfig.dynamicIslandPrimaryAction : "toggleControlCenter";
+                        islandContainer.handleConfiguredClickAction(action);
                         return;
                     }
 

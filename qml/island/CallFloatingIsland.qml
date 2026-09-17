@@ -423,4 +423,39 @@ Rectangle {
             }
         }
     }
+
+    // Auto-collasso quando il cursore esce dall'isola
+    HoverHandler {
+        id: islandHoverHandler
+        onHoveredChanged: {
+            if (!hovered) {
+                if (root.isExpanded) autoCollapseTimer.restart();
+                if (rootWindow && rootWindow.autoHideEnabled) {
+                    rootWindow.autoHidePointerInside = false;
+                    rootWindow.scheduleAutoHide();
+                }
+            } else {
+                autoCollapseTimer.stop();
+                if (rootWindow && rootWindow.autoHideEnabled) {
+                    rootWindow.autoHidePointerInside = true;
+                    rootWindow.showAutoHiddenIsland("edge");
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: autoCollapseTimer
+        interval: 400
+        repeat: false
+        onTriggered: {
+            if (root.isExpanded && !islandHoverHandler.hovered) {
+                root.isExpanded = false;
+            }
+        }
+    }
+
+    onIsExpandedChanged: {
+        autoCollapseTimer.stop();
+    }
 }

@@ -6,6 +6,7 @@ MouseArea {
     property var islandController: null
     property var capsule: null
 
+    enabled: false
     hoverEnabled: false
     acceptedButtons: Qt.NoButton
 

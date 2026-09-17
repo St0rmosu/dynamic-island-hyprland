@@ -16,6 +16,7 @@ Item {
     property string iconFontFamily: ""
     property string textFontFamily: ""
     property string heroFontFamily: ""
+    readonly property bool hovered: detailHoverHandler.hovered
 
     property real revealProgress: 0
 
@@ -58,6 +59,11 @@ Item {
     z: 3
 
     onOpenChanged: startPanelAnimation(open)
+
+    HoverHandler {
+        id: detailHoverHandler
+        enabled: shell.open || shell.mounted
+    }
 
     NumberAnimation {
         id: revealAnimation
