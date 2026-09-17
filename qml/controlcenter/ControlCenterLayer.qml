@@ -41,20 +41,67 @@ Item {
         return fallback;
     }
 
-    readonly property bool cfgShowWifi: cfgValue("showWifiCard", true)
-    readonly property bool cfgShowBluetooth: cfgValue("showBluetoothCard", true)
+    function getModuleConfig(id) {
+        const layout = cfgValue("controlCenterCanvasLayout", null);
+        if (Array.isArray(layout)) {
+            for (let i = 0; i < layout.length; i++) {
+                if (layout[i].id === id) return layout[i];
+            }
+        }
+        return null;
+    }
+
+    readonly property bool cfgShowWifi: {
+        const c = getModuleConfig("wifi");
+        return c !== null ? c.active : cfgValue("showWifiCard", true);
+    }
+    readonly property bool cfgShowBluetooth: {
+        const c = getModuleConfig("bluetooth");
+        return c !== null ? c.active : cfgValue("showBluetoothCard", true);
+    }
     readonly property bool cfgShowConnectivity: cfgShowWifi || cfgShowBluetooth
 
-    readonly property bool cfgShowBarraDesktop: cfgValue("showBarraDesktopCard", true)
-    readonly property bool cfgShowClipboard: cfgValue("showClipboardQuickAccess", true)
+    readonly property bool cfgShowBarraDesktop: {
+        const c = getModuleConfig("quickactions");
+        return c !== null ? c.active : cfgValue("showBarraDesktopCard", true);
+    }
+    readonly property bool cfgShowClipboard: {
+        const c = getModuleConfig("quickactions");
+        return c !== null ? c.active : cfgValue("showClipboardQuickAccess", true);
+    }
     readonly property bool cfgShowQuickActions: cfgShowBarraDesktop || cfgShowClipboard
 
-    readonly property bool cfgShowTlpBattery: cfgValue("showTlpBatteryMode", true)
-    readonly property bool cfgShowNightFocus: cfgValue("showNightFocusToggles", true)
+    readonly property bool cfgShowTlpBattery: {
+        const c = getModuleConfig("battery");
+        return c !== null ? c.active : cfgValue("showTlpBatteryMode", true);
+    }
+    readonly property bool cfgShowNightFocus: {
+        const c = getModuleConfig("toggles");
+        return c !== null ? c.active : cfgValue("showNightFocusToggles", true);
+    }
     readonly property bool cfgShowBatteryDrawer: cfgShowTlpBattery || cfgShowNightFocus
 
-    readonly property bool cfgShowSliders: cfgValue("showDisplaySoundSliders", true)
-    readonly property bool cfgShowNotifications: cfgValue("controlCenterShowNotifications", true)
+    readonly property bool cfgShowSliders: {
+        const c1 = getModuleConfig("brightness");
+        const c2 = getModuleConfig("volume");
+        if (c1 !== null || c2 !== null) {
+            return (c1 ? c1.active : false) || (c2 ? c2.active : false);
+        }
+        return cfgValue("showDisplaySoundSliders", true);
+    }
+    readonly property bool isBrightnessFullSpan: {
+        const c = getModuleConfig("brightness");
+        return c !== null ? (c.colSpan === 2) : false;
+    }
+    readonly property bool isVolumeFullSpan: {
+        const c = getModuleConfig("volume");
+        return c !== null ? (c.colSpan === 2) : false;
+    }
+
+    readonly property bool cfgShowNotifications: {
+        const c = getModuleConfig("notifications");
+        return c !== null ? c.active : cfgValue("controlCenterShowNotifications", true);
+    }
     readonly property string cfgOrientation: cfgValue("controlCenterOrientation", "vertical")
     readonly property bool isHorizontal: cfgOrientation === "horizontal"
 
@@ -81,7 +128,7 @@ Item {
         }
 
         if (cfgShowSliders) {
-            if (isHorizontal) {
+            if (isHorizontal && !isBrightnessFullSpan && !isVolumeFullSpan) {
                 total += 76 + 12;
             } else {
                 total += 76 + 12 + 76 + 12;
@@ -89,7 +136,9 @@ Item {
         }
 
         if (cfgShowNotifications) {
-            total += (notificationsCardItem ? notificationsCardItem.targetHeight : 64) + 12;
+            const c = getModuleConfig("notifications");
+            const customH = (c && c.height) ? c.height : (notificationsCardItem ? notificationsCardItem.targetHeight : 64);
+            total += customH + 12;
         }
 
         total += 16; // bottom padding buffer
@@ -2689,13 +2738,14 @@ Item {
             id: slidersSection
             width: parent.width
             visible: controlCenter.cfgShowSliders
-            height: !controlCenter.cfgShowSliders ? 0 : (controlCenter.isHorizontal ? 76 : (76 * 2 + 12))
+            readonly property bool sideBySide: controlCenter.isHorizontal && !controlCenter.isBrightnessFullSpan && !controlCenter.isVolumeFullSpan
+            height: !controlCenter.cfgShowSliders ? 0 : (sideBySide ? 76 : (76 * 2 + 12))
 
             ControlSliderCard {
                 id: brightnessCard
                 x: 0
                 y: 0
-                width: controlCenter.isHorizontal ? (parent.width - 12) / 2 : parent.width
+                width: slidersSection.sideBySide ? (parent.width - 12) / 2 : parent.width
                 height: 76
                 title: "Display"
                 iconText: controlCenter.brightnessIconGlyph
@@ -2731,9 +2781,9 @@ Item {
 
             ControlSliderCard {
                 id: volumeCard
-                x: controlCenter.isHorizontal ? (parent.width + 12) / 2 : 0
-                y: controlCenter.isHorizontal ? 0 : (76 + 12)
-                width: controlCenter.isHorizontal ? (parent.width - 12) / 2 : parent.width
+                x: slidersSection.sideBySide ? (parent.width + 12) / 2 : 0
+                y: slidersSection.sideBySide ? 0 : (76 + 12)
+                width: slidersSection.sideBySide ? (parent.width - 12) / 2 : parent.width
                 height: 76
                 title: "Sound"
                 iconText: controlCenter.volumeIconGlyph

@@ -182,6 +182,12 @@ FocusScope {
             subtitle: "Module cards & quick toggles"
         },
         {
+            key: "studio",
+            title: "Studio Canvas",
+            icon: "\uf009", // th-large / grid
+            subtitle: "Griglia interattiva, posizionamento & ridimensionamento"
+        },
+        {
             key: "appearance",
             title: "Appearance",
             icon: "\uf1fc", // palette
@@ -200,6 +206,8 @@ FocusScope {
             subtitle: "Island swipe pills & actions"
         }
     ]
+
+    readonly property string currentCategoryKey: (categories[selectedCategoryIndex] && categories[selectedCategoryIndex].key) ? categories[selectedCategoryIndex].key : "bar"
 
     // Read userconfig.json
     FileView {
@@ -776,7 +784,7 @@ FocusScope {
                         Column {
                             width: parent.width
                             spacing: 14
-                            visible: root.selectedCategoryIndex === 0 || (root.searchQuery !== "" && (
+                            visible: root.currentCategoryKey === "bar" || (root.searchQuery !== "" && (
                                 "bar island geometry height width radius margin auto-hide hover".indexOf(root.searchQuery) >= 0
                             ))
 
@@ -1113,7 +1121,7 @@ FocusScope {
                         Column {
                             width: parent.width
                             spacing: 14
-                            visible: root.selectedCategoryIndex === 1 || (root.searchQuery !== "" && (
+                            visible: root.currentCategoryKey === "controlcenter" || (root.searchQuery !== "" && (
                                 "control center module card wifi bluetooth barra battery sound sliders night focus clipboard notifications layout orientation width".indexOf(root.searchQuery) >= 0
                             ))
 
@@ -1386,173 +1394,187 @@ FocusScope {
                                 }
                             }
 
-                            SettingsSectionHeader { title: "LIVE ACTION PREVIEW" }
+                            SettingsSectionHeader { title: "STUDIO CANVAS & EDITOR GRIGLIA" }
 
-                            // Live Interactive Mini Preview
                             Rectangle {
                                 width: parent.width
-                                height: 190
-                                radius: 18
+                                height: 74
+                                radius: 16
                                 color: root.bgCard
                                 border.width: 1
                                 border.color: root.borderCard
-                                clip: true
 
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 8
-                                    width: Math.min(parent.width - 40, root.cfgControlCenterOrientation === "horizontal" ? 340 : 250)
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 16
+                                    anchors.rightMargin: 14
+                                    spacing: 12
 
-                                    // Simulated Island Capsule Header
                                     Rectangle {
-                                        width: parent.width
-                                        height: 26
-                                        radius: 13
-                                        color: Qt.rgba(255, 255, 255, 0.08)
+                                        width: 38
+                                        height: 38
+                                        radius: 19
+                                        color: root.accentSoft
+                                        border.width: 1
+                                        border.color: root.accentBorder
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: ""
+                                            font.family: root.iconFontFamily
+                                            font.pixelSize: 14
+                                            color: root.effectiveAccent
+                                        }
+                                    }
+
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: parent.width - 50 - ctaBtn.width - 24
+                                        spacing: 2
+                                        Text {
+                                            text: "Studio Canvas Interattivo"
+                                            font.family: root.textFontFamily
+                                            font.pixelSize: 12
+                                            font.weight: Font.DemiBold
+                                            color: root.textPrimary
+                                        }
+                                        Text {
+                                            text: "Riposiziona i moduli sulla griglia e ridimensionali con i pallini laterali."
+                                            font.family: root.textFontFamily
+                                            font.pixelSize: 10
+                                            color: root.textMuted
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        id: ctaBtn
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: ctaRow.width + 18
+                                        height: 32
+                                        radius: 16
+                                        color: ctaMouse.containsMouse ? root.effectiveAccent : root.accentSoft
+                                        border.width: 1
+                                        border.color: root.accentBorder
 
                                         Row {
-                                            anchors.left: parent.left
-                                            anchors.leftMargin: 10
-                                            anchors.verticalCenter: parent.verticalCenter
+                                            id: ctaRow
+                                            anchors.centerIn: parent
                                             spacing: 6
-
                                             Text {
-                                                text: "15:42"
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: "Apri Studio"
                                                 font.family: root.textFontFamily
+                                                font.pixelSize: 11
+                                                font.weight: Font.DemiBold
+                                                color: ctaMouse.containsMouse ? "#10141b" : root.effectiveAccent
+                                            }
+                                            Text {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: "➔"
                                                 font.pixelSize: 10
-                                                font.weight: Font.Bold
-                                                color: root.effectiveAccent
+                                                color: ctaMouse.containsMouse ? "#10141b" : root.effectiveAccent
                                             }
                                         }
 
-                                        Row {
-                                            anchors.right: parent.right
-                                            anchors.rightMargin: 10
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            spacing: 6
-
-                                            Text {
-                                                text: "85%"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 9
-                                                color: root.textSecondary
+                                        MouseArea {
+                                            id: ctaMouse
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                for (let i = 0; i < root.categories.length; i++) {
+                                                    if (root.categories[i].key === "studio") {
+                                                        root.selectedCategoryIndex = i;
+                                                        break;
+                                                    }
+                                                }
                                             }
                                         }
-                                    }
-
-                                    // Simulated Module Cards
-                                    Row {
-                                        width: parent.width
-                                        spacing: 6
-                                        visible: root.cfgShowWifiCard || root.cfgShowBluetoothCard
-
-                                        Rectangle {
-                                            width: (root.cfgShowWifiCard && root.cfgShowBluetoothCard) ? (parent.width - 6) / 2 : parent.width
-                                            height: 28
-                                            radius: 8
-                                            color: Qt.rgba(255, 255, 255, 0.06)
-                                            visible: root.cfgShowWifiCard
-                                            Row {
-                                                anchors.centerIn: parent
-                                                spacing: 4
-                                                Text { text: ""; font.family: root.iconFontFamily; font.pixelSize: 10; color: root.effectiveAccent }
-                                                Text { text: "Wi-Fi"; font.family: root.textFontFamily; font.pixelSize: 9; color: root.textPrimary }
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            width: (root.cfgShowWifiCard && root.cfgShowBluetoothCard) ? (parent.width - 6) / 2 : parent.width
-                                            height: 28
-                                            radius: 8
-                                            color: Qt.rgba(255, 255, 255, 0.06)
-                                            visible: root.cfgShowBluetoothCard
-                                            Row {
-                                                anchors.centerIn: parent
-                                                spacing: 4
-                                                Text { text: ""; font.family: root.iconFontFamily; font.pixelSize: 10; color: root.effectiveAccent }
-                                                Text { text: "Bluetooth"; font.family: root.textFontFamily; font.pixelSize: 9; color: root.textPrimary }
-                                            }
-                                        }
-                                    }
-
-                                    // Simulated Sliders (side-by-side if horizontal, stacked if vertical)
-                                    Item {
-                                        width: parent.width
-                                        height: root.cfgControlCenterOrientation === "horizontal" ? 22 : 44
-                                        visible: root.cfgShowDisplaySoundSliders
-
-                                        Rectangle {
-                                            x: 0
-                                            y: 0
-                                            width: root.cfgControlCenterOrientation === "horizontal" ? (parent.width - 6) / 2 : parent.width
-                                            height: 18
-                                            radius: 6
-                                            color: Qt.rgba(255, 255, 255, 0.06)
-                                            Row {
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: 6
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                spacing: 4
-                                                Text { text: "󰃠"; font.family: root.iconFontFamily; font.pixelSize: 9; color: root.textSecondary }
-                                                Text { text: "Display"; font.family: root.textFontFamily; font.pixelSize: 8; color: root.textSecondary }
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            x: root.cfgControlCenterOrientation === "horizontal" ? (parent.width + 6) / 2 : 0
-                                            y: root.cfgControlCenterOrientation === "horizontal" ? 0 : 22
-                                            width: root.cfgControlCenterOrientation === "horizontal" ? (parent.width - 6) / 2 : parent.width
-                                            height: 18
-                                            radius: 6
-                                            color: Qt.rgba(255, 255, 255, 0.06)
-                                            Row {
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: 6
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                spacing: 4
-                                                Text { text: "󰕾"; font.family: root.iconFontFamily; font.pixelSize: 9; color: root.textSecondary }
-                                                Text { text: "Sound"; font.family: root.textFontFamily; font.pixelSize: 8; color: root.textSecondary }
-                                            }
-                                        }
-                                    }
-
-                                    // Simulated Notifications Card
-                                    Rectangle {
-                                        width: parent.width
-                                        height: 24
-                                        radius: 8
-                                        color: Qt.rgba(255, 255, 255, 0.06)
-                                        visible: root.cfgShowNotifications
-
-                                        Row {
-                                            anchors.left: parent.left
-                                            anchors.leftMargin: 8
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            spacing: 6
-                                            Text { text: ""; font.family: root.iconFontFamily; font.pixelSize: 9; color: root.effectiveAccent }
-                                            Text { text: "Notifiche (3 attive)"; font.family: root.textFontFamily; font.pixelSize: 8; color: root.textPrimary }
-                                        }
-                                    }
-
-                                    // Dimension badge
-                                    Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: root.cfgControlCenterWidth + "px • " + (root.cfgControlCenterOrientation === "horizontal" ? "Layout Orizzontale" : "Layout Verticale")
-                                        font.family: root.textFontFamily
-                                        font.pixelSize: 9
-                                        color: root.textMuted
                                     }
                                 }
                             }
                         }
 
                         // ==========================================
-                        // CATEGORY 2: APPEARANCE
+                        // CATEGORY 2: STUDIO CANVAS & GRID EDITOR
                         // ==========================================
                         Column {
                             width: parent.width
                             spacing: 14
-                            visible: root.selectedCategoryIndex === 2 || (root.searchQuery !== "" && (
+                            visible: root.currentCategoryKey === "studio" || (root.searchQuery !== "" && (
+                                "canvas studio griglia ridimensiona moduli layout drag drop resize pallini".indexOf(root.searchQuery) >= 0
+                            ))
+
+                            StudioLayoutCanvas {
+                                id: studioCanvasItem
+                                width: parent.width
+                                accentColor: root.effectiveAccent
+                                accentSoft: root.accentSoft
+                                accentBorder: root.accentBorder
+                                accentGlow: root.accentGlow
+                                textPrimary: root.textPrimary
+                                textSecondary: root.textSecondary
+                                textMuted: root.textMuted
+                                bgCard: root.bgCard
+                                borderCard: root.borderCard
+                                iconFontFamily: root.iconFontFamily
+                                textFontFamily: root.textFontFamily
+                                heroFontFamily: root.heroFontFamily
+                                controlCenterOrientation: root.cfgControlCenterOrientation
+                                controlCenterWidth: root.cfgControlCenterWidth
+                                rawConfig: root.configData
+
+                                onLayoutChanged: function(layoutArray) {
+                                    root.updateSetting("controlCenterCanvasLayout", layoutArray);
+                                    for (let i = 0; i < layoutArray.length; i++) {
+                                        let item = layoutArray[i];
+                                        if (item.id === "wifi") {
+                                            root.cfgShowWifiCard = item.active;
+                                            root.updateSetting("showWifiCard", item.active);
+                                        } else if (item.id === "bluetooth") {
+                                            root.cfgShowBluetoothCard = item.active;
+                                            root.updateSetting("showBluetoothCard", item.active);
+                                        } else if (item.id === "brightness" || item.id === "volume") {
+                                            let anySlider = (item.id === "brightness" ? item.active : root.cfgShowDisplaySoundSliders);
+                                            root.cfgShowDisplaySoundSliders = anySlider;
+                                            root.updateSetting("showDisplaySoundSliders", anySlider);
+                                        } else if (item.id === "notifications") {
+                                            root.cfgShowNotifications = item.active;
+                                            root.updateSetting("controlCenterShowNotifications", item.active);
+                                        } else if (item.id === "battery") {
+                                            root.cfgShowTlpBatteryMode = item.active;
+                                            root.updateSetting("showTlpBatteryMode", item.active);
+                                        } else if (item.id === "toggles") {
+                                            root.cfgShowNightFocusToggles = item.active;
+                                            root.updateSetting("showNightFocusToggles", item.active);
+                                        } else if (item.id === "quickactions") {
+                                            root.cfgShowBarraDesktopCard = item.active;
+                                            root.updateSetting("showBarraDesktopCard", item.active);
+                                            root.cfgShowClipboardQuickAccess = item.active;
+                                            root.updateSetting("showClipboardQuickAccess", item.active);
+                                        }
+                                    }
+                                }
+
+                                onOrientationChanged: function(ori) {
+                                    root.cfgControlCenterOrientation = ori;
+                                    root.updateSetting("controlCenterOrientation", ori);
+                                }
+
+                                onWidthChanged: function(w) {
+                                    root.cfgControlCenterWidth = w;
+                                    root.updateSetting("controlCenterWidth", w);
+                                }
+                            }
+                        }
+
+                        // ==========================================
+                        // CATEGORY 3: APPEARANCE
+                        // ==========================================
+                        Column {
+                            width: parent.width
+                            spacing: 14
+                            visible: root.currentCategoryKey === "appearance" || (root.searchQuery !== "" && (
                                 "appearance opacity font typography clock format pywal palette iris".indexOf(root.searchQuery) >= 0
                             ))
 
@@ -1758,7 +1780,7 @@ FocusScope {
                         Column {
                             width: parent.width
                             spacing: 14
-                            visible: root.selectedCategoryIndex === 3 || (root.searchQuery !== "" && (
+                            visible: root.currentCategoryKey === "motion" || (root.searchQuery !== "" && (
                                 "motion animation fps transition duration curve".indexOf(root.searchQuery) >= 0
                             ))
 
@@ -1896,7 +1918,7 @@ FocusScope {
                         Column {
                             width: parent.width
                             spacing: 14
-                            visible: root.selectedCategoryIndex === 4 || (root.searchQuery !== "" && (
+                            visible: root.currentCategoryKey === "modules" || (root.searchQuery !== "" && (
                                 "modules swipe pills triggers actions".indexOf(root.searchQuery) >= 0
                             ))
 
