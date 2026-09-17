@@ -360,20 +360,6 @@ FocusScope {
     Item {
         anchors.fill: parent
 
-        // Sottile dissolvenza superiore: le app che oltrepassano la barra di ricerca verso l'alto
-        // sfumano morbidamente verso il bordo curvo superiore dell'isola
-        Rectangle {
-            z: 9
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 18
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#000000" }
-                GradientStop { position: 1.0; color: "transparent" }
-            }
-        }
-
         // Barra di ricerca fluttuante (livello z: 10 superiore alla griglia)
         Item {
             id: searchBarContainer
@@ -383,23 +369,6 @@ FocusScope {
             anchors.horizontalCenter: parent.horizontalCenter
             width: Math.min(500, parent.width - 40)
             height: 44
-
-            // Ombra fluttuante: conferisce profondità 3D sopra le app che scorrono sotto
-            Rectangle {
-                id: searchShadow
-                anchors.fill: parent
-                anchors.margins: -4
-                anchors.topMargin: -1
-                anchors.bottomMargin: -6
-                radius: searchField.radius + 4
-                color: "#60000000"
-                z: -1
-                opacity: (appGrid.contentY > -appGrid.topMargin + 2) ? 1.0 : 0.4
-
-                Behavior on opacity {
-                    NumberAnimation { duration: 180 }
-                }
-            }
 
             Rectangle {
                 id: searchField
@@ -544,26 +513,6 @@ FocusScope {
             boundsBehavior: Flickable.StopAtBounds
             flickDeceleration: 1800
             keyNavigationEnabled: false
-
-            Behavior on contentY {
-                enabled: !appGrid.moving && !appGrid.flicking
-                NumberAnimation {
-                    duration: 180
-                    easing.type: Easing.OutCubic
-                }
-            }
-
-            WheelHandler {
-                id: gridWheelHandler
-                target: null
-                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                onWheel: (event) => {
-                    const dy = event.pixelDelta.y !== 0 ? event.pixelDelta.y : (event.angleDelta.y / 2);
-                    if (dy !== 0) {
-                        appGrid.flick(0, dy * 8);
-                    }
-                }
-            }
 
             delegate: Item {
                 id: appDelegate
