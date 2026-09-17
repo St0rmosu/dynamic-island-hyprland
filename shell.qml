@@ -295,15 +295,6 @@ Scope {
             shellRoot.showReloadAll(failed, error);
         }
 
-        function testNotification(appName: string, summary: string, body: string) {
-            shellRoot.showNotificationAll(
-                appName || "Discord",
-                summary || "Nuovo messaggio",
-                body || "Testo della notifica",
-                "",
-                "#0a84ff"
-            );
-        }
 
         function testWifiDisconnect() {
             shellRoot.showNotificationAll(

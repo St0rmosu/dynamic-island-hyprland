@@ -124,7 +124,7 @@ Item {
         }
 
         if (cfgShowBatteryDrawer) {
-            total += batteryDrawerHandleHeight + batteryDrawerProgress * (batteryDrawerContentGap + batteryModeCardHeight) + 12;
+            total += batteryModeCardHeight + 12;
         }
 
         if (cfgShowSliders) {
@@ -2197,20 +2197,18 @@ Item {
             id: batteryDrawer
             readonly property real cardWidth: (width - connectivityCardsRow.spacing) / 2
             readonly property real modeSlotWidth: 44
-            readonly property real openDistance: controlCenter.batteryModeCardHeight
-                + controlCenter.batteryDrawerContentGap
 
             width: parent.width
-            height: controlCenter.cfgShowBatteryDrawer
-                ? (controlCenter.batteryDrawerHandleHeight + controlCenter.batteryDrawerProgress * openDistance)
-                : 0
+            height: controlCenter.cfgShowBatteryDrawer ? controlCenter.batteryModeCardHeight : 0
             visible: controlCenter.cfgShowBatteryDrawer
             clip: true
+
+            Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
             Rectangle {
                 id: batteryModeCard
                 anchors.left: parent.left
-                y: -height + controlCenter.batteryDrawerProgress * height
+                y: 0
                 width: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled && controlCenter.cfgShowNightFocus)
                     ? batteryDrawer.cardWidth
                     : batteryDrawer.width
@@ -2218,7 +2216,7 @@ Item {
                 radius: 20
                 color: StyleTokens.clearBlack
                 visible: controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled
-                opacity: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled) ? Math.min(1, controlCenter.batteryDrawerProgress * 1.35) : 0
+                opacity: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled) ? 1.0 : 0
                 clip: true
 
                 MatteSurface {
@@ -2414,7 +2412,7 @@ Item {
             Rectangle {
                 id: quickTogglesCard
                 x: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled) ? batteryDrawer.cardWidth + connectivityCardsRow.spacing : 0
-                y: batteryModeCard.y
+                y: 0
                 width: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled && controlCenter.cfgShowNightFocus)
                     ? batteryDrawer.cardWidth
                     : batteryDrawer.width
@@ -2422,7 +2420,7 @@ Item {
                 radius: 20
                 color: StyleTokens.clearBlack
                 visible: controlCenter.cfgShowNightFocus
-                opacity: controlCenter.cfgShowNightFocus ? Math.min(1, controlCenter.batteryDrawerProgress * 1.35) : 0
+                opacity: controlCenter.cfgShowNightFocus ? 1.0 : 0
                 clip: true
                 readonly property real toggleIconTop: 12
                 readonly property real toggleIconBoxHeight: 32
@@ -2635,100 +2633,6 @@ Item {
                         font.weight: Font.Medium
                         elide: Text.ElideRight
                         opacity: controlCenter.nightLightBusy ? 0.5 : 1.0
-                    }
-                }
-            }
-
-            Rectangle {
-                id: batteryDrawerTunnelShade
-                anchors.left: parent.left
-                anchors.top: parent.top
-                width: batteryDrawer.cardWidth
-                height: Math.max(1, controlCenter.batteryDrawerContentGap * 0.35)
-                z: 6
-                opacity: Math.min(0.34, controlCenter.batteryDrawerProgress * 0.45)
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0
-                        color: "#9a000000"
-                    }
-                    GradientStop {
-                        position: 1
-                        color: StyleTokens.clearBlack
-                    }
-                }
-            }
-
-            Item {
-                id: batteryDrawerHandle
-                anchors.left: parent.left
-                anchors.right: parent.right
-                y: controlCenter.batteryDrawerProgress * batteryDrawer.openDistance
-                height: controlCenter.batteryDrawerHandleHeight
-                z: 10
-
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: 8
-                    width: 48
-                    height: 5
-                    radius: 3
-                    color: controlCenter.batteryDrawerOpen ? "#d4d6dc" : StyleTokens.textSubtle
-                    opacity: 0.88
-                }
-
-                MouseArea {
-                    id: batteryDrawerHandleArea
-                    anchors.fill: parent
-                    property real pointerGrabOffset: 0
-                    property bool moved: false
-                    property bool suppressClick: false
-
-                    function pointerY(mouse) {
-                        return batteryDrawerHandle.mapToItem(controlCenter, mouse.x, mouse.y).y;
-                    }
-
-                    function itemTop(item) {
-                        return item.mapToItem(controlCenter, 0, 0).y;
-                    }
-
-                    onPressed: function(mouse) {
-                        batteryDrawerSettleTimer.stop();
-                        controlCenter.batteryDrawerSettling = false;
-                        pointerGrabOffset = pointerY(mouse) - itemTop(batteryDrawerHandle);
-                        moved = false;
-                        suppressClick = false;
-                        controlCenter.batteryDrawerDragging = true;
-                    }
-
-                    onPositionChanged: function(mouse) {
-                        const nextHandleY = pointerY(mouse) - pointerGrabOffset - itemTop(batteryDrawer);
-                        if (!moved && Math.abs(nextHandleY - batteryDrawerHandle.y) < 4)
-                            return;
-
-                        moved = true;
-                        suppressClick = true;
-                        controlCenter.batteryDrawerProgress = controlCenter.clamp01(nextHandleY / batteryDrawer.openDistance);
-                    }
-
-                    onReleased: {
-                        controlCenter.batteryDrawerDragging = false;
-                        if (moved)
-                            controlCenter.setBatteryDrawerOpen(controlCenter.batteryDrawerProgress >= 0.55);
-                    }
-
-                    onCanceled: {
-                        controlCenter.batteryDrawerDragging = false;
-                        controlCenter.setBatteryDrawerOpen(controlCenter.batteryDrawerOpen);
-                    }
-
-                    onClicked: {
-                        if (suppressClick) {
-                            suppressClick = false;
-                            return;
-                        }
-
-                        controlCenter.toggleBatteryDrawer();
                     }
                 }
             }

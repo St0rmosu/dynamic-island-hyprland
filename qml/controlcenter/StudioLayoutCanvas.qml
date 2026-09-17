@@ -25,8 +25,8 @@ Item {
     property var rawConfig: ({})
 
     signal layoutChanged(var layoutArray)
-    signal orientationChanged(string orientation)
-    signal widthChanged(int width)
+    signal requestOrientationChange(string orientation)
+    signal requestWidthChange(int newWidth)
 
     // Current selection in canvas
     property string selectedModuleId: "wifi"
@@ -196,8 +196,8 @@ Item {
         studioRoot.selectedModuleId = "wifi";
         studioRoot.controlCenterOrientation = "vertical";
         studioRoot.controlCenterWidth = 420;
-        studioRoot.orientationChanged("vertical");
-        studioRoot.widthChanged(420);
+        studioRoot.requestOrientationChange("vertical");
+        studioRoot.requestWidthChange(420);
         emitSave();
     }
 
@@ -301,7 +301,7 @@ Item {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     studioRoot.controlCenterOrientation = "vertical";
-                                    studioRoot.orientationChanged("vertical");
+                                    studioRoot.requestOrientationChange("vertical");
                                 }
                             }
                         }
@@ -324,7 +324,7 @@ Item {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     studioRoot.controlCenterOrientation = "horizontal";
-                                    studioRoot.orientationChanged("horizontal");
+                                    studioRoot.requestOrientationChange("horizontal");
                                 }
                             }
                         }

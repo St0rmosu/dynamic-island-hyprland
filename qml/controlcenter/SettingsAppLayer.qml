@@ -1556,12 +1556,12 @@ FocusScope {
                                     }
                                 }
 
-                                onOrientationChanged: function(ori) {
+                                onRequestOrientationChange: function(ori) {
                                     root.cfgControlCenterOrientation = ori;
                                     root.updateSetting("controlCenterOrientation", ori);
                                 }
 
-                                onWidthChanged: function(w) {
+                                onRequestWidthChange: function(w) {
                                     root.cfgControlCenterWidth = w;
                                     root.updateSetting("controlCenterWidth", w);
                                 }
