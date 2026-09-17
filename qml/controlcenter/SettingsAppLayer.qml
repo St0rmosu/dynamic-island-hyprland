@@ -137,7 +137,7 @@ FocusScope {
     property int cfgHoverExpandAction: 2 // 1: Player, 2: Control Center
     property int cfgHoverExpandDelay: 200
 
-    // Control Center Module Toggles
+    // Control Center Module Toggles & Live Layout
     property bool cfgShowWifiCard: true
     property bool cfgShowBluetoothCard: true
     property bool cfgShowBarraDesktopCard: true
@@ -145,6 +145,9 @@ FocusScope {
     property bool cfgShowDisplaySoundSliders: true
     property bool cfgShowNightFocusToggles: true
     property bool cfgShowClipboardQuickAccess: true
+    property bool cfgShowNotifications: true
+    property string cfgControlCenterOrientation: "vertical" // "vertical" or "horizontal"
+    property int cfgControlCenterWidth: 420
 
     // Appearance & Typography
     property string cfgClockFormat: UserConfig.clockFormat !== "" ? UserConfig.clockFormat : "24"
@@ -241,6 +244,9 @@ FocusScope {
             if (parsed.showDisplaySoundSliders !== undefined) root.cfgShowDisplaySoundSliders = Boolean(parsed.showDisplaySoundSliders);
             if (parsed.showNightFocusToggles !== undefined) root.cfgShowNightFocusToggles = Boolean(parsed.showNightFocusToggles);
             if (parsed.showClipboardQuickAccess !== undefined) root.cfgShowClipboardQuickAccess = Boolean(parsed.showClipboardQuickAccess);
+            if (parsed.controlCenterShowNotifications !== undefined) root.cfgShowNotifications = Boolean(parsed.controlCenterShowNotifications);
+            if (parsed.controlCenterOrientation !== undefined) root.cfgControlCenterOrientation = String(parsed.controlCenterOrientation);
+            if (parsed.controlCenterWidth !== undefined) root.cfgControlCenterWidth = Math.round(Number(parsed.controlCenterWidth));
 
             if (parsed.clockFormat !== undefined) root.cfgClockFormat = String(parsed.clockFormat);
             if (parsed.bodyFontSize !== undefined) root.cfgBodyFontSize = Math.round(Number(parsed.bodyFontSize));
@@ -1108,10 +1114,148 @@ FocusScope {
                             width: parent.width
                             spacing: 14
                             visible: root.selectedCategoryIndex === 1 || (root.searchQuery !== "" && (
-                                "control center module card wifi bluetooth barra battery sound sliders night focus clipboard".indexOf(root.searchQuery) >= 0
+                                "control center module card wifi bluetooth barra battery sound sliders night focus clipboard notifications layout orientation width".indexOf(root.searchQuery) >= 0
                             ))
 
-                            SettingsSectionHeader { title: "CONTROL CENTER MODULES" }
+                            SettingsSectionHeader { title: "LAYOUT & ORIENTATION" }
+
+                            // Group Card: Layout & Dimensions
+                            Rectangle {
+                                width: parent.width
+                                height: ccLayoutCol.height + 24
+                                radius: 18
+                                color: root.bgCard
+                                border.width: 1
+                                border.color: root.borderCard
+
+                                Column {
+                                    id: ccLayoutCol
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.top: parent.top
+                                    anchors.margins: 12
+                                    spacing: 8
+
+                                    // Orientation Row (Vertical vs Horizontal)
+                                    Item {
+                                        width: parent.width
+                                        height: 52
+
+                                        Column {
+                                            anchors.left: parent.left
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: parent.width - 200
+                                            spacing: 2
+
+                                            Text {
+                                                text: "Orientamento Moduli"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 13
+                                                font.weight: Font.DemiBold
+                                                color: root.textPrimary
+                                            }
+
+                                            Text {
+                                                text: "Disposizione verticale (standard) o orizzontale (compatta con slider affiancati)"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 10
+                                                color: root.textMuted
+                                                elide: Text.ElideRight
+                                                width: parent.width
+                                            }
+                                        }
+
+                                        // Segmented Button
+                                        Rectangle {
+                                            anchors.right: parent.right
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: 184
+                                            height: 34
+                                            radius: 17
+                                            color: root.bgInput
+                                            border.width: 1
+                                            border.color: root.borderCard
+
+                                            Row {
+                                                anchors.fill: parent
+
+                                                Rectangle {
+                                                    width: parent.width / 2
+                                                    height: parent.height
+                                                    radius: 17
+                                                    color: root.cfgControlCenterOrientation === "vertical" ? root.effectiveAccent : StyleTokens.transparent
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: "Verticale"
+                                                        font.family: root.textFontFamily
+                                                        font.pixelSize: 11
+                                                        font.weight: root.cfgControlCenterOrientation === "vertical" ? Font.Bold : Font.Normal
+                                                        color: root.cfgControlCenterOrientation === "vertical" ? "#ffffff" : root.textSecondary
+                                                    }
+
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.cfgControlCenterOrientation = "vertical";
+                                                            root.updateSetting("controlCenterOrientation", "vertical");
+                                                        }
+                                                    }
+                                                }
+
+                                                Rectangle {
+                                                    width: parent.width / 2
+                                                    height: parent.height
+                                                    radius: 17
+                                                    color: root.cfgControlCenterOrientation === "horizontal" ? root.effectiveAccent : StyleTokens.transparent
+
+                                                    Text {
+                                                        anchors.centerIn: parent
+                                                        text: "Orizzontale"
+                                                        font.family: root.textFontFamily
+                                                        font.pixelSize: 11
+                                                        font.weight: root.cfgControlCenterOrientation === "horizontal" ? Font.Bold : Font.Normal
+                                                        color: root.cfgControlCenterOrientation === "horizontal" ? "#ffffff" : root.textSecondary
+                                                    }
+
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        cursorShape: Qt.PointingHandCursor
+                                                        onClicked: {
+                                                            root.cfgControlCenterOrientation = "horizontal";
+                                                            root.updateSetting("controlCenterOrientation", "horizontal");
+                                                            if (root.cfgControlCenterWidth < 500) {
+                                                                root.cfgControlCenterWidth = 540;
+                                                                root.updateSetting("controlCenterWidth", 540);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
+
+                                    // Control Center Width Slider
+                                    SettingsSliderRow {
+                                        title: "Larghezza Centro di Controllo"
+                                        desc: "Larghezza orizzontale dell'isola aperta"
+                                        fromVal: 380
+                                        toVal: 620
+                                        step: 10
+                                        unitStr: "px"
+                                        currentVal: root.cfgControlCenterWidth
+                                        onValMoved: function(nextVal) {
+                                            root.cfgControlCenterWidth = Math.round(nextVal);
+                                            root.updateSetting("controlCenterWidth", root.cfgControlCenterWidth);
+                                        }
+                                    }
+                                }
+                            }
+
+                            SettingsSectionHeader { title: "MODULI DEL CENTRO DI CONTROLLO" }
 
                             // Group Card: Module Switches
                             Rectangle {
@@ -1129,6 +1273,20 @@ FocusScope {
                                     anchors.top: parent.top
                                     anchors.margins: 12
                                     spacing: 8
+
+                                    // Show Notifications Toggle (Option 2/3)
+                                    SettingsSwitchRow {
+                                        title: "Mostra Notifiche nell'Isola"
+                                        desc: "Integra la cronologia delle notifiche, contatore e cancellazione rapida (Option 2/3)"
+                                        iconGlyph: "\uf0f3" // bell
+                                        checked: root.cfgShowNotifications
+                                        onToggled: function(val) {
+                                            root.cfgShowNotifications = val;
+                                            root.updateSetting("controlCenterShowNotifications", val);
+                                        }
+                                    }
+
+                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
 
                                     // Show Wi-Fi Card
                                     SettingsSwitchRow {
@@ -1167,6 +1325,20 @@ FocusScope {
                                         onToggled: function(val) {
                                             root.cfgShowBarraDesktopCard = val;
                                             root.updateSetting("showBarraDesktopCard", val);
+                                        }
+                                    }
+
+                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
+
+                                    // Show Clipboard Quick Access
+                                    SettingsSwitchRow {
+                                        title: "Show Clipboard Quick Access"
+                                        desc: "Direct access to cliphist clipboard history from control center"
+                                        iconGlyph: "\uf0ea"
+                                        checked: root.cfgShowClipboardQuickAccess
+                                        onToggled: function(val) {
+                                            root.cfgShowClipboardQuickAccess = val;
+                                            root.updateSetting("showClipboardQuickAccess", val);
                                         }
                                     }
 
@@ -1211,19 +1383,164 @@ FocusScope {
                                             root.updateSetting("showNightFocusToggles", val);
                                         }
                                     }
+                                }
+                            }
 
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
+                            SettingsSectionHeader { title: "LIVE ACTION PREVIEW" }
 
-                                    // Show Clipboard Quick Access
-                                    SettingsSwitchRow {
-                                        title: "Show Clipboard Quick Access"
-                                        desc: "Direct access to cliphist clipboard history from control center"
-                                        iconGlyph: "\uf0ea"
-                                        checked: root.cfgShowClipboardQuickAccess
-                                        onToggled: function(val) {
-                                            root.cfgShowClipboardQuickAccess = val;
-                                            root.updateSetting("showClipboardQuickAccess", val);
+                            // Live Interactive Mini Preview
+                            Rectangle {
+                                width: parent.width
+                                height: 190
+                                radius: 18
+                                color: root.bgCard
+                                border.width: 1
+                                border.color: root.borderCard
+                                clip: true
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 8
+                                    width: Math.min(parent.width - 40, root.cfgControlCenterOrientation === "horizontal" ? 340 : 250)
+
+                                    // Simulated Island Capsule Header
+                                    Rectangle {
+                                        width: parent.width
+                                        height: 26
+                                        radius: 13
+                                        color: Qt.rgba(255, 255, 255, 0.08)
+
+                                        Row {
+                                            anchors.left: parent.left
+                                            anchors.leftMargin: 10
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            spacing: 6
+
+                                            Text {
+                                                text: "15:42"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 10
+                                                font.weight: Font.Bold
+                                                color: root.effectiveAccent
+                                            }
                                         }
+
+                                        Row {
+                                            anchors.right: parent.right
+                                            anchors.rightMargin: 10
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            spacing: 6
+
+                                            Text {
+                                                text: "85%"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 9
+                                                color: root.textSecondary
+                                            }
+                                        }
+                                    }
+
+                                    // Simulated Module Cards
+                                    Row {
+                                        width: parent.width
+                                        spacing: 6
+                                        visible: root.cfgShowWifiCard || root.cfgShowBluetoothCard
+
+                                        Rectangle {
+                                            width: (root.cfgShowWifiCard && root.cfgShowBluetoothCard) ? (parent.width - 6) / 2 : parent.width
+                                            height: 28
+                                            radius: 8
+                                            color: Qt.rgba(255, 255, 255, 0.06)
+                                            visible: root.cfgShowWifiCard
+                                            Row {
+                                                anchors.centerIn: parent
+                                                spacing: 4
+                                                Text { text: ""; font.family: root.iconFontFamily; font.pixelSize: 10; color: root.effectiveAccent }
+                                                Text { text: "Wi-Fi"; font.family: root.textFontFamily; font.pixelSize: 9; color: root.textPrimary }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: (root.cfgShowWifiCard && root.cfgShowBluetoothCard) ? (parent.width - 6) / 2 : parent.width
+                                            height: 28
+                                            radius: 8
+                                            color: Qt.rgba(255, 255, 255, 0.06)
+                                            visible: root.cfgShowBluetoothCard
+                                            Row {
+                                                anchors.centerIn: parent
+                                                spacing: 4
+                                                Text { text: ""; font.family: root.iconFontFamily; font.pixelSize: 10; color: root.effectiveAccent }
+                                                Text { text: "Bluetooth"; font.family: root.textFontFamily; font.pixelSize: 9; color: root.textPrimary }
+                                            }
+                                        }
+                                    }
+
+                                    // Simulated Sliders (side-by-side if horizontal, stacked if vertical)
+                                    Item {
+                                        width: parent.width
+                                        height: root.cfgControlCenterOrientation === "horizontal" ? 22 : 44
+                                        visible: root.cfgShowDisplaySoundSliders
+
+                                        Rectangle {
+                                            x: 0
+                                            y: 0
+                                            width: root.cfgControlCenterOrientation === "horizontal" ? (parent.width - 6) / 2 : parent.width
+                                            height: 18
+                                            radius: 6
+                                            color: Qt.rgba(255, 255, 255, 0.06)
+                                            Row {
+                                                anchors.left: parent.left
+                                                anchors.leftMargin: 6
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                spacing: 4
+                                                Text { text: "󰃠"; font.family: root.iconFontFamily; font.pixelSize: 9; color: root.textSecondary }
+                                                Text { text: "Display"; font.family: root.textFontFamily; font.pixelSize: 8; color: root.textSecondary }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            x: root.cfgControlCenterOrientation === "horizontal" ? (parent.width + 6) / 2 : 0
+                                            y: root.cfgControlCenterOrientation === "horizontal" ? 0 : 22
+                                            width: root.cfgControlCenterOrientation === "horizontal" ? (parent.width - 6) / 2 : parent.width
+                                            height: 18
+                                            radius: 6
+                                            color: Qt.rgba(255, 255, 255, 0.06)
+                                            Row {
+                                                anchors.left: parent.left
+                                                anchors.leftMargin: 6
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                spacing: 4
+                                                Text { text: "󰕾"; font.family: root.iconFontFamily; font.pixelSize: 9; color: root.textSecondary }
+                                                Text { text: "Sound"; font.family: root.textFontFamily; font.pixelSize: 8; color: root.textSecondary }
+                                            }
+                                        }
+                                    }
+
+                                    // Simulated Notifications Card
+                                    Rectangle {
+                                        width: parent.width
+                                        height: 24
+                                        radius: 8
+                                        color: Qt.rgba(255, 255, 255, 0.06)
+                                        visible: root.cfgShowNotifications
+
+                                        Row {
+                                            anchors.left: parent.left
+                                            anchors.leftMargin: 8
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            spacing: 6
+                                            Text { text: ""; font.family: root.iconFontFamily; font.pixelSize: 9; color: root.effectiveAccent }
+                                            Text { text: "Notifiche (3 attive)"; font.family: root.textFontFamily; font.pixelSize: 8; color: root.textPrimary }
+                                        }
+                                    }
+
+                                    // Dimension badge
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.cfgControlCenterWidth + "px • " + (root.cfgControlCenterOrientation === "horizontal" ? "Layout Orizzontale" : "Layout Verticale")
+                                        font.family: root.textFontFamily
+                                        font.pixelSize: 9
+                                        color: root.textMuted
                                     }
                                 }
                             }

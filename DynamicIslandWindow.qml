@@ -515,7 +515,7 @@ PanelWindow {
         ? controlCenterLoader.item.controlCenterMaximumExtraHeight
         : 120
     readonly property real controlCenterWindowHeight: islandContainer.controlCenterLayerVisible
-        ? userConfig.islandTopMargin + 320 + root.controlCenterMaximumExtraHeight + 12 + 60
+        ? userConfig.islandTopMargin + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 450) + 60
         : 0
 
     readonly property real notificationCenterWindowHeight: islandContainer.notificationCenterLayerVisible
@@ -2741,7 +2741,7 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "control_center":
-                    return 420;
+                    return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 420;
                 case "notification_center":
                     return 410;
                 case "wallpaper_picker":
@@ -2786,7 +2786,7 @@ PanelWindow {
                         return 150;
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
                         return 470;
-                    return 320 + 60 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
+                    return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 420;
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
                 case "wallpaper_picker":
@@ -3566,6 +3566,7 @@ PanelWindow {
                             ? root.shellRootController.nightLightEnabled
                             : false
                         showCondition: islandContainer.controlCenterLayerVisible
+                        notificationModel: islandContainer.notificationHistoryModel
                         onFocusModeChanged: function(enabled) {
                             if (root.shellRootController && root.shellRootController.focusEnabled !== undefined)
                                 root.shellRootController.focusEnabled = enabled;

@@ -17,6 +17,84 @@ Item {
     signal clipboardRequested()
 
     readonly property var userConfig: UserConfig
+    property var notificationModel: null
+
+    FileView {
+        id: localConfigFile
+        path: "/home/lollo/.config/dynamic-island/userconfig.json"
+        watchChanges: true
+        property var parsedData: ({})
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                parsedData = JSON.parse(text());
+            } catch(e) {}
+        }
+    }
+
+    function cfgValue(key, fallback) {
+        if (localConfigFile.parsedData && localConfigFile.parsedData[key] !== undefined)
+            return localConfigFile.parsedData[key];
+        if (userConfig && userConfig[key] !== undefined)
+            return userConfig[key];
+        return fallback;
+    }
+
+    readonly property bool cfgShowWifi: cfgValue("showWifiCard", true)
+    readonly property bool cfgShowBluetooth: cfgValue("showBluetoothCard", true)
+    readonly property bool cfgShowConnectivity: cfgShowWifi || cfgShowBluetooth
+
+    readonly property bool cfgShowBarraDesktop: cfgValue("showBarraDesktopCard", true)
+    readonly property bool cfgShowClipboard: cfgValue("showClipboardQuickAccess", true)
+    readonly property bool cfgShowQuickActions: cfgShowBarraDesktop || cfgShowClipboard
+
+    readonly property bool cfgShowTlpBattery: cfgValue("showTlpBatteryMode", true)
+    readonly property bool cfgShowNightFocus: cfgValue("showNightFocusToggles", true)
+    readonly property bool cfgShowBatteryDrawer: cfgShowTlpBattery || cfgShowNightFocus
+
+    readonly property bool cfgShowSliders: cfgValue("showDisplaySoundSliders", true)
+    readonly property bool cfgShowNotifications: cfgValue("controlCenterShowNotifications", true)
+    readonly property string cfgOrientation: cfgValue("controlCenterOrientation", "vertical")
+    readonly property bool isHorizontal: cfgOrientation === "horizontal"
+
+    readonly property real controlCenterPreferredWidth: {
+        const customW = Number(cfgValue("controlCenterWidth", 0));
+        if (customW >= 360 && customW <= 640) return customW;
+        return isHorizontal ? 540 : 420;
+    }
+
+    readonly property real controlCenterPreferredHeight: {
+        let total = 28; // Header bar
+        total += 12;
+
+        if (cfgShowConnectivity) {
+            total += 80 + 12;
+        }
+
+        if (cfgShowQuickActions) {
+            total += 48 + 12;
+        }
+
+        if (cfgShowBatteryDrawer) {
+            total += batteryDrawerHandleHeight + batteryDrawerProgress * (batteryDrawerContentGap + batteryModeCardHeight) + 12;
+        }
+
+        if (cfgShowSliders) {
+            if (isHorizontal) {
+                total += 76 + 12;
+            } else {
+                total += 76 + 12 + 76 + 12;
+            }
+        }
+
+        if (cfgShowNotifications) {
+            total += (notificationsCardItem ? notificationsCardItem.targetHeight : 64) + 12;
+        }
+
+        total += 16; // bottom padding buffer
+        return total;
+    }
 
     property bool showCondition: false
     property string iconFontFamily: userConfig.iconFontFamily
@@ -128,10 +206,8 @@ Item {
     readonly property real batteryModeCardHeight: 80
     readonly property real roundToggleButtonSize: 58
     readonly property real roundToggleButtonGap: 18
-    readonly property real controlCenterExtraHeight: 12 + batteryDrawerHandleHeight
-        + batteryDrawerProgress * (batteryDrawerContentGap + batteryModeCardHeight)
-    readonly property real controlCenterMaximumExtraHeight: 12 + batteryDrawerHandleHeight
-        + batteryDrawerContentGap + batteryModeCardHeight
+    readonly property real controlCenterExtraHeight: controlCenterPreferredHeight - 380
+    readonly property real controlCenterMaximumExtraHeight: 380
     readonly property bool bluetoothAvailable: !!bluetoothAdapter
     readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
     readonly property var bluetoothDeviceValues: bluetoothAdapter ? bluetoothAdapter.devices.values : []
@@ -1633,8 +1709,10 @@ Item {
         }
 
         Item {
+            id: connectivitySection
             width: parent.width
-            height: 80
+            height: controlCenter.cfgShowConnectivity ? 80 : 0
+            visible: controlCenter.cfgShowConnectivity
 
             Row {
                 id: connectivityCardsRow
@@ -1643,7 +1721,10 @@ Item {
 
                 Rectangle {
                     id: wifiCard
-                    width: (connectivityCardsRow.width - connectivityCardsRow.spacing) / 2
+                    visible: controlCenter.cfgShowWifi
+                    width: (controlCenter.cfgShowWifi && controlCenter.cfgShowBluetooth)
+                        ? (connectivityCardsRow.width - connectivityCardsRow.spacing) / 2
+                        : connectivityCardsRow.width
                     height: connectivityCardsRow.height
                     radius: 20
                     color: StyleTokens.clearBlack
@@ -1769,7 +1850,10 @@ Item {
 
                 Rectangle {
                     id: bluetoothCard
-                    width: (connectivityCardsRow.width - connectivityCardsRow.spacing) / 2
+                    visible: controlCenter.cfgShowBluetooth
+                    width: (controlCenter.cfgShowWifi && controlCenter.cfgShowBluetooth)
+                        ? (connectivityCardsRow.width - connectivityCardsRow.spacing) / 2
+                        : connectivityCardsRow.width
                     height: connectivityCardsRow.height
                     radius: 20
                     color: StyleTokens.clearBlack
@@ -1898,7 +1982,8 @@ Item {
         Item {
             id: secondaryCardsRow
             width: parent.width
-            height: 48
+            height: controlCenter.cfgShowQuickActions ? 48 : 0
+            visible: controlCenter.cfgShowQuickActions
 
             Row {
                 anchors.fill: parent
@@ -1906,7 +1991,10 @@ Item {
 
                 Rectangle {
                     id: barSwitcherCard
-                    width: (parent.width - 12) / 2
+                    visible: controlCenter.cfgShowBarraDesktop
+                    width: (controlCenter.cfgShowBarraDesktop && controlCenter.cfgShowClipboard)
+                        ? (parent.width - 12) / 2
+                        : parent.width
                     height: parent.height
                     radius: 18
                     color: StyleTokens.clearBlack
@@ -1981,7 +2069,10 @@ Item {
 
                 Rectangle {
                     id: clipboardCard
-                    width: (parent.width - 12) / 2
+                    visible: controlCenter.cfgShowClipboard
+                    width: (controlCenter.cfgShowBarraDesktop && controlCenter.cfgShowClipboard)
+                        ? (parent.width - 12) / 2
+                        : parent.width
                     height: parent.height
                     radius: 18
                     color: StyleTokens.clearBlack
@@ -2061,20 +2152,24 @@ Item {
                 + controlCenter.batteryDrawerContentGap
 
             width: parent.width
-            height: controlCenter.batteryDrawerHandleHeight
-                + controlCenter.batteryDrawerProgress * openDistance
+            height: controlCenter.cfgShowBatteryDrawer
+                ? (controlCenter.batteryDrawerHandleHeight + controlCenter.batteryDrawerProgress * openDistance)
+                : 0
+            visible: controlCenter.cfgShowBatteryDrawer
             clip: true
 
             Rectangle {
                 id: batteryModeCard
                 anchors.left: parent.left
                 y: -height + controlCenter.batteryDrawerProgress * height
-                width: batteryDrawer.cardWidth
+                width: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled && controlCenter.cfgShowNightFocus)
+                    ? batteryDrawer.cardWidth
+                    : batteryDrawer.width
                 height: controlCenter.batteryModeCardHeight
                 radius: 20
                 color: StyleTokens.clearBlack
-                visible: controlCenter.tlpControlsEnabled
-                opacity: controlCenter.tlpControlsEnabled ? Math.min(1, controlCenter.batteryDrawerProgress * 1.35) : 0
+                visible: controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled
+                opacity: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled) ? Math.min(1, controlCenter.batteryDrawerProgress * 1.35) : 0
                 clip: true
 
                 MatteSurface {
@@ -2269,13 +2364,16 @@ Item {
 
             Rectangle {
                 id: quickTogglesCard
-                x: controlCenter.tlpControlsEnabled ? batteryDrawer.cardWidth + connectivityCardsRow.spacing : 0
+                x: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled) ? batteryDrawer.cardWidth + connectivityCardsRow.spacing : 0
                 y: batteryModeCard.y
-                width: batteryDrawer.cardWidth
+                width: (controlCenter.cfgShowTlpBattery && controlCenter.tlpControlsEnabled && controlCenter.cfgShowNightFocus)
+                    ? batteryDrawer.cardWidth
+                    : batteryDrawer.width
                 height: controlCenter.batteryModeCardHeight
                 radius: 20
                 color: StyleTokens.clearBlack
-                opacity: Math.min(1, controlCenter.batteryDrawerProgress * 1.35)
+                visible: controlCenter.cfgShowNightFocus
+                opacity: controlCenter.cfgShowNightFocus ? Math.min(1, controlCenter.batteryDrawerProgress * 1.35) : 0
                 clip: true
                 readonly property real toggleIconTop: 12
                 readonly property real toggleIconBoxHeight: 32
@@ -2587,72 +2685,108 @@ Item {
             }
         }
 
-        ControlSliderCard {
-            id: brightnessCard
+        Item {
+            id: slidersSection
             width: parent.width
-            height: 76
-            title: "Display"
-            iconText: controlCenter.brightnessIconGlyph
-            iconFontFamily: controlCenter.iconFontFamily
-            textFontFamily: controlCenter.textFontFamily
-            value: controlCenter.displayedBrightness
-            knobSize: controlCenter.sliderKnobSize
-            moduleColor: controlCenter.moduleColor
-            moduleHover: controlCenter.moduleHover
-            trackColor: controlCenter.trackColor
-            textPrimary: controlCenter.textPrimary
-            textSecondary: controlCenter.textSecondary
+            visible: controlCenter.cfgShowSliders
+            height: !controlCenter.cfgShowSliders ? 0 : (controlCenter.isHorizontal ? 76 : (76 * 2 + 12))
 
-            onInteractionStarted: {
-                if (controlCenter.sliderIntroPending) {
-                    sliderIntroTimer.stop();
-                    controlCenter.sliderIntroPending = false;
-                    controlCenter.displayedBrightness = controlCenter.localBrightness;
-                    controlCenter.displayedVolume = controlCenter.localVolume;
+            ControlSliderCard {
+                id: brightnessCard
+                x: 0
+                y: 0
+                width: controlCenter.isHorizontal ? (parent.width - 12) / 2 : parent.width
+                height: 76
+                title: "Display"
+                iconText: controlCenter.brightnessIconGlyph
+                iconFontFamily: controlCenter.iconFontFamily
+                textFontFamily: controlCenter.textFontFamily
+                value: controlCenter.displayedBrightness
+                knobSize: controlCenter.sliderKnobSize
+                moduleColor: controlCenter.moduleColor
+                moduleHover: controlCenter.moduleHover
+                trackColor: controlCenter.trackColor
+                textPrimary: controlCenter.textPrimary
+                textSecondary: controlCenter.textSecondary
+
+                Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                onInteractionStarted: {
+                    if (controlCenter.sliderIntroPending) {
+                        sliderIntroTimer.stop();
+                        controlCenter.sliderIntroPending = false;
+                        controlCenter.displayedBrightness = controlCenter.localBrightness;
+                        controlCenter.displayedVolume = controlCenter.localVolume;
+                    }
                 }
+                onValueMoved: function(value) {
+                    controlCenter.queueBrightness(value);
+                }
+                onCommitRequested: {
+                    brightnessApplyTimer.stop();
+                    controlCenter.flushBrightness(true);
+                }
+                onCancelRequested: SystemServices.requestBrightness()
             }
-            onValueMoved: function(value) {
-                controlCenter.queueBrightness(value);
+
+            ControlSliderCard {
+                id: volumeCard
+                x: controlCenter.isHorizontal ? (parent.width + 12) / 2 : 0
+                y: controlCenter.isHorizontal ? 0 : (76 + 12)
+                width: controlCenter.isHorizontal ? (parent.width - 12) / 2 : parent.width
+                height: 76
+                title: "Sound"
+                iconText: controlCenter.volumeIconGlyph
+                iconFontFamily: controlCenter.iconFontFamily
+                textFontFamily: controlCenter.textFontFamily
+                value: controlCenter.displayedVolume
+                knobSize: controlCenter.sliderKnobSize
+                moduleColor: controlCenter.moduleColor
+                moduleHover: controlCenter.moduleHover
+                trackColor: controlCenter.trackColor
+                textPrimary: controlCenter.textPrimary
+                textSecondary: controlCenter.textSecondary
+
+                Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                Behavior on y { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                onInteractionStarted: {
+                    if (controlCenter.sliderIntroPending) {
+                        sliderIntroTimer.stop();
+                        controlCenter.sliderIntroPending = false;
+                        controlCenter.displayedBrightness = controlCenter.localBrightness;
+                        controlCenter.displayedVolume = controlCenter.localVolume;
+                    }
+                }
+                onValueMoved: function(value) {
+                    controlCenter.queueVolume(value);
+                }
+                onCommitRequested: {
+                    volumeApplyTimer.stop();
+                    controlCenter.flushVolume(true);
+                }
+                onCancelRequested: SystemServices.requestVolume()
             }
-            onCommitRequested: {
-                brightnessApplyTimer.stop();
-                controlCenter.flushBrightness(true);
-            }
-            onCancelRequested: SystemServices.requestBrightness()
         }
 
-        ControlSliderCard {
-            id: volumeCard
+        NotificationCard {
+            id: notificationsCardItem
             width: parent.width
-            height: 76
-            title: "Sound"
-            iconText: controlCenter.volumeIconGlyph
+            visible: controlCenter.cfgShowNotifications
+            notificationModel: controlCenter.notificationModel
+            accentColor: controlCenter.cardAccent
             iconFontFamily: controlCenter.iconFontFamily
             textFontFamily: controlCenter.textFontFamily
-            value: controlCenter.displayedVolume
-            knobSize: controlCenter.sliderKnobSize
-            moduleColor: controlCenter.moduleColor
-            moduleHover: controlCenter.moduleHover
-            trackColor: controlCenter.trackColor
-            textPrimary: controlCenter.textPrimary
-            textSecondary: controlCenter.textSecondary
-
-            onInteractionStarted: {
-                if (controlCenter.sliderIntroPending) {
-                    sliderIntroTimer.stop();
-                    controlCenter.sliderIntroPending = false;
-                    controlCenter.displayedBrightness = controlCenter.localBrightness;
-                    controlCenter.displayedVolume = controlCenter.localVolume;
-                }
+            heroFontFamily: controlCenter.heroFontFamily
+            onNotificationDismissed: function(index) {
+                if (controlCenter.notificationModel && index >= 0 && index < controlCenter.notificationModel.count)
+                    controlCenter.notificationModel.remove(index);
             }
-            onValueMoved: function(value) {
-                controlCenter.queueVolume(value);
+            onClearAllRequested: {
+                if (controlCenter.notificationModel)
+                    controlCenter.notificationModel.clear();
             }
-            onCommitRequested: {
-                volumeApplyTimer.stop();
-                controlCenter.flushVolume(true);
-            }
-            onCancelRequested: SystemServices.requestVolume()
         }
     }
     Item {
