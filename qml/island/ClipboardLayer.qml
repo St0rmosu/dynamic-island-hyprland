@@ -3,6 +3,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import Quickshell.Widgets
 import IslandBackend
 
 FocusScope {
@@ -613,8 +614,8 @@ FocusScope {
             return 120;
         }
 
-        // Main Card Surface
-        Rectangle {
+        // Main Card Surface (ClippingRectangle ensures child images clip to rounded corners at the top)
+        ClippingRectangle {
             id: cardSurface
             anchors.fill: parent
             anchors.leftMargin: 3
