@@ -282,19 +282,21 @@ FocusScope {
             "python3",
             "-c",
             "import sys, json, os\n" +
-            "p = os.path.expanduser('~/.config/dynamic-island/userconfig.json')\n" +
-            "os.makedirs(os.path.dirname(p), exist_ok=True)\n" +
-            "d = {}\n" +
-            "if os.path.exists(p):\n" +
-            "    try:\n" +
-            "        with open(p, 'r', encoding='utf-8') as f: d = json.load(f)\n" +
-            "    except: d = {}\n" +
-            "d.update(json.loads(sys.argv[1]))\n" +
-            "tmp = p + '.tmp'\n" +
-            "with open(tmp, 'w', encoding='utf-8') as f:\n" +
-            "    json.dump(d, f, indent=4, ensure_ascii=False)\n" +
-            "    f.write('\\n')\n" +
-            "os.replace(tmp, p)\n",
+            "paths = [os.path.expanduser('~/.config/dynamic-island/userconfig.json'), os.path.expanduser('~/.config/tide-island/userconfig.json')]\n" +
+            "patch = json.loads(sys.argv[1])\n" +
+            "for p in paths:\n" +
+            "    os.makedirs(os.path.dirname(p), exist_ok=True)\n" +
+            "    d = {}\n" +
+            "    if os.path.exists(p):\n" +
+            "        try:\n" +
+            "            with open(p, 'r', encoding='utf-8') as f: d = json.load(f)\n" +
+            "        except: d = {}\n" +
+            "    d.update(patch)\n" +
+            "    tmp = p + '.tmp'\n" +
+            "    with open(tmp, 'w', encoding='utf-8') as f:\n" +
+            "        json.dump(d, f, indent=4, ensure_ascii=False)\n" +
+            "        f.write('\\n')\n" +
+            "    os.replace(tmp, p)\n",
             payload
         ]
         running: false

@@ -64,6 +64,8 @@ Item {
     property string _customLeftItemsSignature: ""
     property int _lastLowBatteryAlertCapacity: -1
     property bool _muteInitialized: false
+    property bool _volInitialized: false
+    property bool _brightnessInitialized: false
 
     onConfiguredLeftSwipeIdsChanged: {
         syncCustomLeftItems();
@@ -424,6 +426,19 @@ Item {
         function onVolumeChanged(volPercentage, isMuted) {
             const nextVolType = isMuted ? "MUTE" : "VOL";
             const nextVolValue = root.clamp01(volPercentage / 100.0);
+
+            if (!root._volInitialized) {
+                root._volInitialized = true;
+                root._muteInitialized = true;
+                root._lastVolType = nextVolType;
+                root._lastVolVal = nextVolValue;
+                root._pendingVolType = nextVolType;
+                root._pendingVolVal = nextVolValue;
+                root.currentVolume = nextVolValue;
+                root.isMuted = isMuted;
+                return;
+            }
+
             const muteToggled = root._muteInitialized && (root.isMuted !== isMuted);
             const unchanged = root.isMuted === isMuted
                 && Math.abs(root.currentVolume - nextVolValue) <= 0.001
@@ -477,6 +492,12 @@ Item {
         }
 
         function onBrightnessChanged(value) {
+            if (!root._brightnessInitialized) {
+                root._brightnessInitialized = true;
+                root._pendingBrightnessValue = value;
+                root.currentBrightness = value;
+                return;
+            }
             root._pendingBrightnessValue = value;
             root.currentBrightness = value;
             brightnessDebounce.restart();

@@ -64,6 +64,24 @@ PanelWindow {
     readonly property var userConfig: UserConfig
 
     FileView {
+        id: localUserConfigFile
+        path: "/home/lollo/.config/dynamic-island/userconfig.json"
+        watchChanges: true
+        property var parsedData: ({})
+
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                parsedData = JSON.parse(text());
+                console.log("[DynamicIsland] Loaded local userconfig. hoverAction:", parsedData.hoverExpandAction, "hoverEnabled:", parsedData.hoverExpandEnabled);
+            } catch(e) {
+                console.warn("[DynamicIsland] Failed to parse local userconfig:", e);
+            }
+        }
+    }
+
+    FileView {
         id: irisColors
         path: "/home/lollo/.cache/iris/colors.json"
         watchChanges: true
@@ -416,13 +434,24 @@ PanelWindow {
         userConfig.dynamicIslandSecondaryButton
     ])
     readonly property int configuredHoverExpandAction: {
-        const action = Number(userConfig.hoverExpandAction);
-        return isNaN(action) ? 0 : Math.max(0, Math.min(2, Math.round(action)));
+        let action = undefined;
+        if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandAction !== undefined) {
+            action = Number(localUserConfigFile.parsedData.hoverExpandAction);
+        } else if (userConfig && userConfig.hoverExpandAction !== undefined) {
+            action = Number(userConfig.hoverExpandAction);
+        }
+        return (action === undefined || isNaN(action)) ? 2 : Math.max(0, Math.min(2, Math.round(action)));
     }
     readonly property real baseExclusiveZone: userConfig.islandExclusiveZone
-    readonly property bool hoverExpandEnabled: userConfig.hoverExpandEnabled !== undefined
-        ? Boolean(userConfig.hoverExpandEnabled)
-        : (configuredHoverExpandAction > 0)
+    readonly property bool hoverExpandEnabled: {
+        if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandEnabled !== undefined) {
+            return Boolean(localUserConfigFile.parsedData.hoverExpandEnabled);
+        }
+        if (userConfig && userConfig.hoverExpandEnabled !== undefined) {
+            return Boolean(userConfig.hoverExpandEnabled);
+        }
+        return configuredHoverExpandAction > 0;
+    }
     readonly property bool topGestureInputActive: false
     readonly property bool autoHideRuntimeEnabled: !shellRootController
         || shellRootController.islandAutoHideRuntimeEnabled === undefined
@@ -2387,6 +2416,7 @@ PanelWindow {
         }
 
         function showWorkspaceCapsule(wsId) {
+            if (currentWs === wsId && islandState === "long_capsule") return;
             currentWs = wsId;
             if (root.autoHideSuppressesTransientReveal) return;
             if (islandState === "control_center" || islandState === "notification" || islandState === "discord_call") return;
@@ -2449,7 +2479,11 @@ PanelWindow {
         }
         Timer {
             id: hoverExpandDelayTimer
-            interval: userConfig.hoverExpandDelayMs > 0 ? userConfig.hoverExpandDelayMs : 200
+            interval: {
+                if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandDelayMs > 0)
+                    return localUserConfigFile.parsedData.hoverExpandDelayMs;
+                return userConfig.hoverExpandDelayMs > 0 ? userConfig.hoverExpandDelayMs : 180;
+            }
             repeat: false
             onTriggered: {
                 if (!capsuleMouseArea.containsMouse && !mainCapsuleHoverHandler.hovered) return;
@@ -2470,7 +2504,11 @@ PanelWindow {
         }
         Timer {
             id: hoverCollapseDelayTimer
-            interval: userConfig.hoverCollapseDelayMs > 0 ? userConfig.hoverCollapseDelayMs : 300
+            interval: {
+                if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverCollapseDelayMs > 0)
+                    return localUserConfigFile.parsedData.hoverCollapseDelayMs;
+                return userConfig.hoverCollapseDelayMs > 0 ? userConfig.hoverCollapseDelayMs : 300;
+            }
             repeat: false
             onTriggered: {
                 if (capsuleMouseArea.containsMouse || mainCapsuleHoverHandler.hovered) return;
@@ -2511,7 +2549,10 @@ PanelWindow {
         }
 
         onCurrentTrackChanged: {
-            if (userConfig.disableAutoExpandOnTrackChange) return;
+            const disableAutoExpand = (localUserConfigFile.parsedData && localUserConfigFile.parsedData.disableAutoExpandOnTrackChange !== undefined)
+                ? Boolean(localUserConfigFile.parsedData.disableAutoExpandOnTrackChange)
+                : (userConfig.disableAutoExpandOnTrackChange !== undefined ? Boolean(userConfig.disableAutoExpandOnTrackChange) : true);
+            if (disableAutoExpand) return;
             if (musicFloatingIsland) return;
             if (currentTrack !== ""
                     && islandState !== "control_center"

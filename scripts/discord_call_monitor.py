@@ -97,9 +97,10 @@ def audio_monitor_loop():
 def run_monitor():
     global ACTIVE_CALL, LAST_CALL_TIME
 
-    # Start audio monitor thread for outgoing/active voice calls
-    t = threading.Thread(target=audio_monitor_loop, daemon=True)
-    t.start()
+    # Audio polling loop disabled to prevent ghost call transitions and island twitches
+    # Real calls are monitored cleanly via DBus notifications below.
+    # t = threading.Thread(target=audio_monitor_loop, daemon=True)
+    # t.start()
 
     # Monitor DBus Notifications for incoming calls
     cmd = [
