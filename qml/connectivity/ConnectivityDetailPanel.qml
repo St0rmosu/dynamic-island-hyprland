@@ -10,6 +10,8 @@ Item {
     property string textFontFamily: ""
     property string heroFontFamily: textFontFamily
     property real presentationProgress: 1
+    property bool showBackground: true
+    signal backRequested()
 
     readonly property bool isWifi: panelKind === "wifi"
     readonly property bool isBluetooth: panelKind === "bluetooth"
@@ -107,12 +109,13 @@ Item {
         radius: 28
         color: StyleTokens.module
         opacity: 0.9
+        visible: root.showBackground
     }
 
     Item {
         id: contentRoot
         anchors.fill: parent
-        anchors.margins: 16
+        anchors.margins: root.showBackground ? 16 : 4
         opacity: 0.45 + root.presentationProgress * 0.55
 
         Behavior on opacity {
@@ -128,10 +131,43 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            height: root.isPower ? 0 : 24
+            height: 32
+
+            Rectangle {
+                id: backButton
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 30
+                height: 30
+                radius: 15
+                color: backMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.07)
+
+                Behavior on color {
+                    ColorAnimation { duration: 120 }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: -1
+                    text: "‹"
+                    color: StyleTokens.textPrimary
+                    font.pixelSize: 22
+                    font.family: root.textFontFamily
+                    font.weight: Font.Bold
+                }
+
+                MouseArea {
+                    id: backMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.backRequested()
+                }
+            }
 
             Text {
-                anchors.left: parent.left
+                anchors.left: backButton.right
+                anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.isWifi ? "Wi-Fi" : root.isBluetooth ? "Bluetooth" : "Power"
                 color: StyleTokens.textPrimary
@@ -140,37 +176,113 @@ Item {
                 font.weight: Font.Bold
             }
 
-            Rectangle {
-                id: bluetoothScanButton
+            Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                width: 58
-                height: 24
-                radius: 12
-                visible: root.isBluetooth && root.provider
-                    && root.provider.bluetoothAvailable
-                    && root.provider.bluetoothEnabled
-                color: bluetoothScanMouse.containsMouse
-                    ? StyleTokens.moduleHover
-                    : StyleTokens.secondaryButton
+                spacing: 8
 
-                Text {
-                    anchors.centerIn: parent
-                    text: root.bluetoothScanning ? "Stop" : "Scan"
-                    color: root.bluetoothScanning ? StyleTokens.accentSoft : StyleTokens.textPrimary
-                    font.pixelSize: 10
-                    font.family: root.textFontFamily
-                    font.weight: Font.DemiBold
+                Rectangle {
+                    id: bluetoothScanButton
+                    width: 52
+                    height: 24
+                    radius: 12
+                    visible: root.isBluetooth && root.provider
+                        && root.provider.bluetoothAvailable
+                        && root.provider.bluetoothEnabled
+                    color: bluetoothScanMouse.containsMouse
+                        ? StyleTokens.moduleHover
+                        : StyleTokens.secondaryButton
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.bluetoothScanning ? "Stop" : "Scan"
+                        color: root.bluetoothScanning ? StyleTokens.accentSoft : StyleTokens.textPrimary
+                        font.pixelSize: 10
+                        font.family: root.textFontFamily
+                        font.weight: Font.DemiBold
+                    }
+
+                    MouseArea {
+                        id: bluetoothScanMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.provider)
+                                root.provider.toggleBluetoothScan();
+                        }
+                    }
                 }
 
-                MouseArea {
-                    id: bluetoothScanMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (root.provider)
-                            root.provider.toggleBluetoothScan();
+                Rectangle {
+                    id: wifiToggleSwitch
+                    width: 34
+                    height: 20
+                    radius: 10
+                    visible: root.isWifi && root.provider && root.provider.wifiSupported
+                    color: (root.provider && root.provider.wifiEnabled) ? StyleTokens.success : StyleTokens.switchOff
+
+                    Behavior on color {
+                        ColorAnimation { duration: 140 }
+                    }
+
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        y: 2
+                        x: (root.provider && root.provider.wifiEnabled) ? 16 : 2
+                        color: StyleTokens.white
+
+                        Behavior on x {
+                            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.provider && root.provider.wifiAvailable && !root.provider.wifiBusy
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.provider && root.provider.toggleWifiEnabled)
+                                root.provider.toggleWifiEnabled();
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: btToggleSwitch
+                    width: 34
+                    height: 20
+                    radius: 10
+                    visible: root.isBluetooth && root.provider && root.provider.bluetoothAvailable
+                    color: (root.provider && root.provider.bluetoothEnabled) ? StyleTokens.success : StyleTokens.switchOff
+
+                    Behavior on color {
+                        ColorAnimation { duration: 140 }
+                    }
+
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        y: 2
+                        x: (root.provider && root.provider.bluetoothEnabled) ? 16 : 2
+                        color: StyleTokens.white
+
+                        Behavior on x {
+                            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.provider && !root.provider.bluetoothBusy
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (root.provider && root.provider.toggleBluetoothEnabled)
+                                root.provider.toggleBluetoothEnabled();
+                        }
                     }
                 }
             }
@@ -181,18 +293,27 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: headerRow.bottom
-            anchors.topMargin: root.isPower ? 0 : 14
-            spacing: 10
+            anchors.topMargin: root.isPower ? 0 : 10
+            spacing: 8
 
             Rectangle {
                 width: parent.width
-                height: visible ? 64 : 0
+                height: visible ? 56 : 0
                 radius: 16
-                color: StyleTokens.transparent
+                color: connectedCardMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.06)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
                 visible: root.isWifi && root.provider && root.provider.wifiEnabled && root.provider.wifiCurrentSsid.length > 0
 
+                Behavior on color {
+                    ColorAnimation { duration: 120 }
+                }
+
                 MouseArea {
+                    id: connectedCardMouse
                     anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
                     enabled: root.provider
                         && root.provider.wifiSupported
                         && root.provider.wifiAvailable
@@ -642,6 +763,11 @@ Item {
             contentHeight: contentColumn.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
 
+            WheelHandler {
+                target: contentFlick
+                orientation: Qt.Vertical
+            }
+
             Column {
                 id: contentColumn
                 width: contentFlick.width
@@ -711,15 +837,23 @@ Item {
                     model: root.isWifi && root.provider ? root.provider.wifiNetworks : null
 
                     delegate: Rectangle {
+                        id: networkRow
                         width: contentColumn.width
-                        height: visible ? 52 : 0
+                        height: visible ? 50 : 0
                         radius: 14
-                        color: StyleTokens.transparent
+                        color: networkMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.08) : StyleTokens.transparent
                         visible: root.wifiEntryVisible(connected)
                         clip: true
 
+                        Behavior on color {
+                            ColorAnimation { duration: 120 }
+                        }
+
                         MouseArea {
+                            id: networkMouse
                             anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
                             enabled: root.provider
                                 && root.provider.wifiSupported
                                 && root.provider.wifiAvailable
@@ -818,6 +952,7 @@ Item {
                     visible: root.isBluetooth && root.provider
                         && root.provider.bluetoothEnabled
                         && root.bluetoothScanning
+                        && (!root.provider.bluetoothInfoMessage || root.provider.bluetoothInfoMessage.length === 0)
                     text: "Scanning nearby devices..."
                     color: StyleTokens.textMuted
                     font.pixelSize: 12

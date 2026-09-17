@@ -3,6 +3,7 @@ import QtQuick.Shapes
 import Quickshell.Bluetooth
 import Quickshell.Io
 import IslandBackend
+import "../connectivity"
 import "../common/BluetoothFormatting.js" as BluetoothFormatting
 
 Item {
@@ -56,6 +57,7 @@ Item {
     property bool bluetoothPanelOpen: false
     property bool powerPanelOpen: false
     property bool powerViewActive: false
+    readonly property bool anyConnectivitySubViewActive: wifiPanelOpen || bluetoothPanelOpen
     property bool batteryDrawerOpen: false
     property bool batteryDrawerDragging: false
     property real batteryDrawerProgress: 0
@@ -482,6 +484,8 @@ Item {
         if (kind === "wifi") {
             changed = wifiPanelOpen !== nextOpen;
             wifiPanelOpen = nextOpen;
+            if (nextOpen)
+                bluetoothPanelOpen = false;
 
             if (nextOpen) {
                 if (showCondition) {
@@ -496,6 +500,8 @@ Item {
         } else if (kind === "bluetooth") {
             changed = bluetoothPanelOpen !== nextOpen;
             bluetoothPanelOpen = nextOpen;
+            if (nextOpen)
+                wifiPanelOpen = false;
 
             if (nextOpen) {
                 if (bluetoothAdapter && bluetoothEnabled && !bluetoothAdapter.discovering) {
@@ -1465,7 +1471,8 @@ Item {
     Column {
         id: mainContent
         anchors.fill: parent
-        visible: !controlCenter.powerViewActive
+        visible: opacity > 0.001
+        opacity: (!controlCenter.powerViewActive && !controlCenter.anyConnectivitySubViewActive) ? 1 : 0
         spacing: 12
 
         Behavior on opacity {
@@ -2596,6 +2603,46 @@ Item {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    Item {
+        id: connectivitySubView
+        anchors.fill: parent
+        visible: opacity > 0.001
+        opacity: controlCenter.anyConnectivitySubViewActive ? 1 : 0
+
+        Behavior on opacity {
+            NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+        }
+
+        ConnectivityDetailPanel {
+            anchors.fill: parent
+            provider: controlCenter
+            panelKind: controlCenter.wifiPanelOpen ? "wifi" : "bluetooth"
+            iconFontFamily: controlCenter.iconFontFamily
+            textFontFamily: controlCenter.textFontFamily
+            heroFontFamily: controlCenter.heroFontFamily
+            showBackground: false
+            presentationProgress: connectivitySubView.opacity
+            onBackRequested: {
+                controlCenter.closeConnectivityPanels();
+            }
+        }
+    }
+
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape) {
+            if (controlCenter.anyConnectivitySubViewActive) {
+                controlCenter.closeConnectivityPanels();
+                event.accepted = true;
+                return;
+            }
+            if (controlCenter.powerViewActive) {
+                controlCenter.powerViewActive = false;
+                event.accepted = true;
+                return;
             }
         }
     }

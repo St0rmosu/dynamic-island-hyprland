@@ -681,54 +681,18 @@ PanelWindow {
     }
 
     function setConnectivityDetailVisible(kind, open) {
-        const nextOpen = !!open;
-
-        if (kind === "wifi") {
-            if (nextOpen) {
-                wifiConnectivityDetailCleanupTimer.stop();
-                wifiConnectivityDetailMounted = true;
-                wifiConnectivityDetailOpen = true;
-            } else {
-                if (!wifiConnectivityDetailMounted && !wifiConnectivityDetailOpen)
-                    return;
-                wifiConnectivityDetailOpen = false;
-                wifiConnectivityDetailCleanupTimer.restart();
-            }
-            return;
+        if (!islandContainer.controlCenterLayerVisible && open) {
+            showControlCenterWindow();
         }
-
-        if (kind === "power") {
-            if (nextOpen) {
-                powerConnectivityDetailCleanupTimer.stop();
-                powerConnectivityDetailMounted = true;
-                powerConnectivityDetailOpen = true;
-            } else {
-                if (!powerConnectivityDetailMounted && !powerConnectivityDetailOpen)
-                    return;
-                powerConnectivityDetailOpen = false;
-                powerConnectivityDetailCleanupTimer.restart();
-            }
-            return;
-        }
-
-        if (kind === "bluetooth") {
-            if (nextOpen) {
-                bluetoothConnectivityDetailCleanupTimer.stop();
-                bluetoothConnectivityDetailMounted = true;
-                bluetoothConnectivityDetailOpen = true;
-            } else {
-                if (!bluetoothConnectivityDetailMounted && !bluetoothConnectivityDetailOpen)
-                    return;
-                bluetoothConnectivityDetailOpen = false;
-                bluetoothConnectivityDetailCleanupTimer.restart();
-            }
+        if (controlCenterLoader.item && controlCenterLoader.item.setConnectivityPanelOpen) {
+            controlCenterLoader.item.setConnectivityPanelOpen(kind, open);
         }
     }
 
     function closeAllConnectivityDetails() {
-        setConnectivityDetailVisible("wifi", false);
-        setConnectivityDetailVisible("bluetooth", false);
-        setConnectivityDetailVisible("power", false);
+        if (controlCenterLoader.item && controlCenterLoader.item.closeConnectivityPanels) {
+            controlCenterLoader.item.closeConnectivityPanels();
+        }
     }
 
     function openOverviewEverywhere() {
@@ -2546,9 +2510,11 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "control_center":
-                    return controlCenterLoader.item && controlCenterLoader.item.powerViewActive
-                        ? 150
-                        : 320 + 60 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
+                    if (controlCenterLoader.item && controlCenterLoader.item.powerViewActive)
+                        return 150;
+                    if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
+                        return 470;
+                    return 320 + 60 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
                 case "wallpaper_picker":
@@ -3256,7 +3222,7 @@ PanelWindow {
             Loader {
                 id: controlCenterLoader
                 anchors.fill: parent
-                active: islandContainer.controlCenterLayerVisible || root.anyConnectivityDetailMounted
+                active: islandContainer.controlCenterLayerVisible
                 asynchronous: false
                 visible: active
 
@@ -3299,7 +3265,6 @@ PanelWindow {
                             islandContainer.showNotificationCapsule(appName, summary, body);
                         }
                         onConnectivityPanelRequested: function(kind, open) {
-                            root.setConnectivityDetailVisible(kind, open);
                         }
                     }
                 }
@@ -3806,56 +3771,26 @@ PanelWindow {
 
         ConnectivityDetailShell {
             id: wifiConnectivityDetailShell
-
-            open: root.wifiConnectivityDetailOpen
-            mounted: root.wifiConnectivityDetailMounted
-            rightSide: false
-            panelKind: "wifi"
-            provider: controlCenterLoader.item
-            mainCapsule: mainCapsule
-            availableWidth: root.width
-            detailWidth: root.connectivityDetailWidth
-            detailHeight: root.connectivityDetailHeight
-            detailGap: root.connectivityDetailGap
-            iconFontFamily: root.iconFontFamily
-            textFontFamily: root.textFontFamily
-            heroFontFamily: root.heroFontFamily
+            open: false
+            mounted: false
+            visible: false
+            enabled: false
         }
 
         ConnectivityDetailShell {
             id: bluetoothConnectivityDetailShell
-
-            open: root.bluetoothConnectivityDetailOpen
-            mounted: root.bluetoothConnectivityDetailMounted
-            rightSide: true
-            panelKind: "bluetooth"
-            provider: controlCenterLoader.item
-            mainCapsule: mainCapsule
-            availableWidth: root.width
-            detailWidth: root.connectivityDetailWidth
-            detailHeight: root.connectivityDetailHeight
-            detailGap: root.connectivityDetailGap
-            iconFontFamily: root.iconFontFamily
-            textFontFamily: root.textFontFamily
-            heroFontFamily: root.heroFontFamily
+            open: false
+            mounted: false
+            visible: false
+            enabled: false
         }
 
         ConnectivityDetailShell {
             id: powerConnectivityDetailShell
-
-            open: root.powerConnectivityDetailOpen
-            mounted: root.powerConnectivityDetailMounted
-            rightSide: true
-            panelKind: "power"
-            provider: controlCenterLoader.item
-            mainCapsule: mainCapsule
-            availableWidth: root.width
-            detailWidth: 260
-            detailHeight: 88
-            detailGap: root.connectivityDetailGap
-            iconFontFamily: root.iconFontFamily
-            textFontFamily: root.textFontFamily
-            heroFontFamily: root.heroFontFamily
+            open: false
+            mounted: false
+            visible: false
+            enabled: false
         }
     }
 
