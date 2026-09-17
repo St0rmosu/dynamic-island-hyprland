@@ -431,6 +431,34 @@ Scope {
             });
         }
 
+        function toggleClipboard() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.toggleClipboardWindow)
+                    window.toggleClipboardWindow();
+            });
+        }
+
+        function showClipboard() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.showClipboardWindow)
+                    window.showClipboardWindow();
+            });
+        }
+
+        function toggleSettingsApp() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.toggleSettingsAppWindow)
+                    window.toggleSettingsAppWindow();
+            });
+        }
+
+        function showSettingsApp() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.showSettingsAppWindow)
+                    window.showSettingsAppWindow();
+            });
+        }
+
         function reload() {
             try {
                 Quickshell.reload(false);
@@ -491,8 +519,36 @@ Scope {
             shellRoot.forFocusedWindow((window) => window.toggleApplicationLauncherWindow());
         }
 
+        function toggleClipboard() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.toggleClipboardWindow)
+                    window.toggleClipboardWindow();
+            });
+        }
+
+        function showClipboard() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.showClipboardWindow)
+                    window.showClipboardWindow();
+            });
+        }
+
         function toggleFileShelf() {
             shellRoot.forFocusedWindow((window) => window.toggleFileShelfWindow());
+        }
+
+        function toggleSettingsApp() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.toggleSettingsAppWindow)
+                    window.toggleSettingsAppWindow();
+            });
+        }
+
+        function showSettingsApp() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.showSettingsAppWindow)
+                    window.showSettingsAppWindow();
+            });
         }
     }
 

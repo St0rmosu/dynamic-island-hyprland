@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -254,6 +255,14 @@ PanelWindow {
 
         Region {
             intersection: Intersection.Combine
+            x: Math.floor(topAnchorProxy.x)
+            y: Math.floor(topAnchorProxy.y)
+            width: (topAnchorProxy.visible && topAnchorProxy.width > 0) ? Math.ceil(topAnchorProxy.width) : 0
+            height: (topAnchorProxy.visible && topAnchorProxy.width > 0) ? Math.ceil(topAnchorProxy.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
             x: musicFloatingIsland ? Math.floor(musicFloatingIsland.x) : 0
             y: musicFloatingIsland ? Math.floor(musicFloatingIsland.y) : 0
             width: (musicFloatingIsland && musicFloatingIsland.visible) ? Math.ceil(musicFloatingIsland.width) : 0
@@ -309,9 +318,12 @@ PanelWindow {
             height: powerConnectivityDetailShell.visible ? Math.ceil(powerConnectivityDetailShell.height) : 0
         }
     }
-    readonly property real capsuleWindowHeight: Math.ceil(
-        userConfig.islandTopMargin + mainCapsule.targetHeight + 12
-    )
+    readonly property real capsuleWindowHeight: {
+        if (islandContainer.islandState === "settings_app" || islandContainer.settingsAppLayerVisible) {
+            return root.screen ? root.screen.height : 1080;
+        }
+        return Math.ceil(userConfig.islandTopMargin + mainCapsule.targetHeight + 12);
+    }
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted
         ? Math.ceil(userConfig.islandTopMargin + root.connectivityDetailHeight + 12)
         : 0
@@ -362,6 +374,8 @@ PanelWindow {
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
     WlrLayershell.layer: islandContainer.wallpaperPickerLayerVisible
         || islandContainer.applicationLauncherLayerVisible
+        || islandContainer.clipboardLayerVisible
+        || islandContainer.settingsAppLayerVisible
         || islandContainer.fileShelfLayerVisible
         || islandContainer.polkitLayerVisible
         ? WlrLayer.Overlay
@@ -370,7 +384,9 @@ PanelWindow {
         if (islandContainer.polkitLayerVisible
                 || islandContainer.controlCenterLayerVisible
                 || islandContainer.wallpaperPickerLayerVisible
-                || islandContainer.applicationLauncherLayerVisible)
+                || islandContainer.applicationLauncherLayerVisible
+                || islandContainer.clipboardLayerVisible
+                || islandContainer.settingsAppLayerVisible)
             return WlrKeyboardFocus.Exclusive;
         if (islandContainer.fileShelfLayerVisible)
             return WlrKeyboardFocus.OnDemand;
@@ -954,6 +970,28 @@ PanelWindow {
             islandContainer.showApplicationLauncher();
     }
 
+    function toggleClipboardWindow() {
+        if (islandContainer.islandState === "clipboard")
+            islandContainer.smartRestoreState();
+        else
+            islandContainer.showClipboard();
+    }
+
+    function showClipboardWindow() {
+        islandContainer.showClipboard();
+    }
+
+    function toggleSettingsAppWindow() {
+        if (islandContainer.islandState === "settings_app")
+            islandContainer.smartRestoreState();
+        else
+            islandContainer.showSettingsApp();
+    }
+
+    function showSettingsAppWindow() {
+        islandContainer.showSettingsApp();
+    }
+
     function toggleFileShelfWindow() {
         if (islandContainer.islandState === "file_shelf")
             islandContainer.smartRestoreState();
@@ -1077,6 +1115,20 @@ PanelWindow {
             applicationLauncherLoader.item.grabKeyboardFocus();
     }
 
+    function focusClipboard() {
+        islandContainer.forceActiveFocus();
+        if (clipboardLoader.item && clipboardLoader.item.grabKeyboardFocus)
+            clipboardLoader.item.grabKeyboardFocus();
+        else if (clipboardLoader.item)
+            clipboardLoader.item.forceActiveFocus();
+    }
+
+    function focusSettingsApp() {
+        islandContainer.forceActiveFocus();
+        if (settingsAppLoader.item && settingsAppLoader.item.forceActiveFocus)
+            settingsAppLoader.item.forceActiveFocus();
+    }
+
     function focusFileShelf() {
         islandContainer.forceActiveFocus();
         if (fileShelfLoader.item && fileShelfLoader.item.grabKeyboardFocus)
@@ -1186,6 +1238,8 @@ PanelWindow {
         focus: controlCenterLayerVisible
             || wallpaperPickerLayerVisible
             || applicationLauncherLayerVisible
+            || clipboardLayerVisible
+            || settingsAppLayerVisible
             || fileShelfLayerVisible
             || polkitLayerVisible
             || expandedPlayerKeyboardFocusRequested
@@ -1296,6 +1350,8 @@ PanelWindow {
             || islandState === "reload"
             || islandState === "wallpaper_picker"
             || islandState === "application_launcher"
+            || islandState === "clipboard"
+            || islandState === "settings_app"
             || islandState === "file_shelf"
             || islandState === "polkit"
             || islandState === "charging"
@@ -1341,6 +1397,9 @@ PanelWindow {
         readonly property bool notificationCenterLayerVisible: !root.overviewVisible && islandState === "notification_center"
         readonly property bool wallpaperPickerLayerVisible: !root.overviewVisible && islandState === "wallpaper_picker"
         readonly property bool applicationLauncherLayerVisible: !root.overviewVisible && islandState === "application_launcher"
+        readonly property bool clipboardLayerVisible: !root.overviewVisible && islandState === "clipboard"
+        readonly property bool settingsAppLayerVisible: !root.overviewVisible && islandState === "settings_app"
+        property bool settingsTopNotificationActive: false
         readonly property bool fileShelfLayerVisible: !root.overviewVisible && islandState === "file_shelf"
         readonly property bool polkitLayerVisible: !root.overviewVisible && islandState === "polkit"
         readonly property var activePlayer: mediaController.activePlayer
@@ -1968,6 +2027,41 @@ PanelWindow {
                 ? cleanedSummary
                 : (cleanedBody !== "" ? cleanedBody : "New notification");
 
+            if (islandState === "settings_app") {
+                const floatingExpanded = (musicFloatingIsland && musicFloatingIsland.isExpanded)
+                    || (headphonesFloatingIsland && headphonesFloatingIsland.isExpanded);
+                if (floatingExpanded) {
+                    // Responsive convergence: suppressed when media or headphones card is expanded
+                    if (notificationHistoryModel) {
+                        notificationHistoryModel.insert(0, {
+                            appName: cleanedAppName !== "" ? cleanedAppName : "Notification",
+                            summary: resolvedSummary,
+                            body: cleanedSummary !== "" ? cleanedBody : "",
+                            timestamp: new Date()
+                        });
+                    }
+                    return;
+                }
+                notificationAppName = cleanedAppName !== "" ? cleanedAppName : "Notification";
+                notificationSummary = resolvedSummary;
+                notificationBody = cleanedSummary !== "" ? cleanedBody : "";
+                notificationIcon = (icon !== undefined && icon !== null) ? String(icon) : "";
+                notificationIconColor = customColor ? customColor : (notificationAppName === "Wi-Fi" ? "#ff9f0a" : "#f4f5f7");
+                settingsTopNotificationActive = true;
+                settingsTopNotificationTimer.restart();
+                if (notificationHistoryModel) {
+                    notificationHistoryModel.insert(0, {
+                        appName: cleanedAppName !== "" ? cleanedAppName : "Notification",
+                        summary: resolvedSummary,
+                        body: cleanedSummary !== "" ? cleanedBody : "",
+                        timestamp: new Date()
+                    });
+                    if (notificationHistoryModel.count > 50)
+                        notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+                }
+                return;
+            }
+
             abortSideTransientMode();
             clearTransientCapsule();
             notificationAppName = cleanedAppName !== "" ? cleanedAppName : "Notification";
@@ -2212,6 +2306,26 @@ PanelWindow {
             stopAutoHideTimer();
         }
 
+        function showClipboard() {
+            cancelSideSwipeSettle();
+            abortSideTransientMode();
+            clearTransientCapsule();
+            islandState = "clipboard";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            stopAutoHideTimer();
+        }
+
+        function showSettingsApp() {
+            cancelSideSwipeSettle();
+            abortSideTransientMode();
+            clearTransientCapsule();
+            settingsTopNotificationActive = false;
+            settingsTopNotificationTimer.stop();
+            islandState = "settings_app";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            stopAutoHideTimer();
+        }
+
         function showFileShelf(manuallyOpened) {
             const manual = manuallyOpened === true;
             if (islandState === "file_shelf") {
@@ -2285,6 +2399,12 @@ PanelWindow {
         }
 
         Timer { id: autoHideTimer; interval: islandContainer.defaultAutoHideInterval; onTriggered: islandContainer.smartRestoreState() }
+        Timer {
+            id: settingsTopNotificationTimer
+            interval: 4000
+            repeat: false
+            onTriggered: islandContainer.settingsTopNotificationActive = false
+        }
         Timer {
             id: islandTimerTick
             interval: 1000
@@ -2394,9 +2514,85 @@ PanelWindow {
             }
         }
 
+        Item {
+            id: topAnchorProxy
+            y: root.userConfig.islandTopMargin
+            height: root.userConfig.islandHeight
+            opacity: mainCapsule.opacity
+            z: 7
+
+            readonly property bool isSettingsApp: islandContainer.islandState === "settings_app"
+            readonly property bool hasTopNotification: islandContainer.settingsTopNotificationActive
+
+            // In settings_app mode:
+            // - If top notification is active: expands to 290px at top center
+            // - If no notification: collapses to 0px at top center, bringing floating islands together!
+            // In normal / other modes: matches mainCapsule
+            width: isSettingsApp ? (hasTopNotification ? 290 : 0) : mainCapsule.width
+            x: isSettingsApp ? Math.round(parent.width / 2 - width / 2) : mainCapsule.x
+
+            Behavior on width {
+                NumberAnimation { duration: 420; easing.type: Easing.OutQuint }
+            }
+            Behavior on x {
+                NumberAnimation { duration: 420; easing.type: Easing.OutQuint }
+            }
+
+            Rectangle {
+                id: topNotificationCapsule
+                anchors.fill: parent
+                radius: height / 2
+                color: "#000000"
+                border.width: 1
+                border.color: "#2a2a2a"
+                clip: true
+                visible: topAnchorProxy.isSettingsApp && topAnchorProxy.width > 20
+                opacity: Math.min(1.0, Math.max(0.0, (topAnchorProxy.width - 50) / 180))
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    spacing: 8
+
+                    Text {
+                        text: islandContainer.notificationIcon !== "" ? islandContainer.notificationIcon : "󰂚"
+                        font.family: root.iconFontFamily
+                        font.pixelSize: 15
+                        color: islandContainer.notificationIconColor
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 0
+
+                        Text {
+                            text: islandContainer.notificationAppName
+                            font.family: root.textFontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: "#ffffff"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: islandContainer.notificationSummary
+                            font.family: root.textFontFamily
+                            font.pixelSize: 10
+                            color: "#a0a0a0"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                        }
+                    }
+                }
+            }
+        }
+
         MusicFloatingIsland {
             id: musicFloatingIsland
-            targetCapsule: mainCapsule
+            targetCapsule: topAnchorProxy
             rootWindow: root
             mprisController: mediaController
             userConfig: root.userConfig
@@ -2407,7 +2603,7 @@ PanelWindow {
 
         HeadphonesFloatingIsland {
             id: headphonesFloatingIsland
-            targetCapsule: mainCapsule
+            targetCapsule: topAnchorProxy
             rootWindow: root
             userConfig: root.userConfig
             islandTopMargin: root.userConfig.islandTopMargin
@@ -2417,7 +2613,7 @@ PanelWindow {
 
         CallFloatingIsland {
             id: callFloatingIsland
-            targetCapsule: mainCapsule
+            targetCapsule: topAnchorProxy
             headphonesFloatingIsland: headphonesFloatingIsland
             rootWindow: root
             userConfig: root.userConfig
@@ -2481,6 +2677,10 @@ PanelWindow {
                     return 1100;
                 case "application_launcher":
                     return 820;
+                case "clipboard":
+                    return 800;
+                case "settings_app":
+                    return 840;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 58;
                     return 400;
@@ -2522,6 +2722,10 @@ PanelWindow {
                     return 260;
                 case "application_launcher":
                     return 428;
+                case "clipboard":
+                    return 520;
+                case "settings_app":
+                    return 560;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 58;
                     return 174;
@@ -2556,7 +2760,10 @@ PanelWindow {
                 case "file_shelf":
                     return 34;
                 case "application_launcher":
+                case "clipboard":
                     return 34;
+                case "settings_app":
+                    return 32;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 29;
                     return 32;
@@ -2591,8 +2798,9 @@ PanelWindow {
             color: root.overviewContentVisible
                 ? root.overviewCapsuleColor
                 : (notificationHistorySurface ? "#080808" : Qt.rgba(0, 0, 0, userConfig.islandBackgroundOpacity / 100.0))
-            y: userConfig.islandTopMargin
-                - (1 - root.autoHideProgress) * (targetHeight + userConfig.islandTopMargin + 8)
+            y: (islandContainer.islandState === "settings_app"
+                ? Math.round(((root.screen ? root.screen.height : 1080) - targetHeight) / 2)
+                : userConfig.islandTopMargin - (1 - root.autoHideProgress) * (targetHeight + userConfig.islandTopMargin + 8))
             x: parent ? parent.width * userConfig.islandPositionX / 100 - width / 2 : 0
             clip: true
             width: displayedWidth
@@ -2616,6 +2824,12 @@ PanelWindow {
             Behavior on height {
                 enabled: !(controlCenterLoader.item && controlCenterLoader.item.batteryDrawerMoving)
 
+                NumberAnimation {
+                    duration: mainCapsule.morphDuration
+                    easing.type: Easing.OutQuint
+                }
+            }
+            Behavior on y {
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
                     easing.type: Easing.OutQuint
@@ -3266,6 +3480,12 @@ PanelWindow {
                         }
                         onConnectivityPanelRequested: function(kind, open) {
                         }
+                        onSettingsRequested: {
+                            islandContainer.showSettingsApp();
+                        }
+                        onClipboardRequested: {
+                            islandContainer.showClipboard();
+                        }
                     }
                 }
             }
@@ -3326,6 +3546,44 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         showCondition: islandContainer.applicationLauncherLayerVisible
+                        onCloseRequested: islandContainer.smartRestoreState()
+                    }
+                }
+            }
+
+            Loader {
+                id: clipboardLoader
+                anchors.fill: parent
+                active: islandContainer.clipboardLayerVisible
+                asynchronous: false
+                visible: islandContainer.clipboardLayerVisible
+                onLoaded: root.focusClipboard()
+
+                sourceComponent: Component {
+                    ClipboardLayer {
+                        iconFontFamily: root.iconFontFamily
+                        textFontFamily: root.textFontFamily
+                        accentColor: pywalColors.accent
+                        showCondition: islandContainer.clipboardLayerVisible
+                        onCloseRequested: islandContainer.smartRestoreState()
+                        onItemCopied: function(msg) {
+                            islandContainer.smartRestoreState();
+                        }
+                    }
+                }
+            }
+
+            Loader {
+                id: settingsAppLoader
+                anchors.fill: parent
+                active: islandContainer.settingsAppLayerVisible
+                asynchronous: false
+                visible: islandContainer.settingsAppLayerVisible
+                onLoaded: root.focusSettingsApp()
+
+                sourceComponent: Component {
+                    SettingsAppLayer {
+                        showCondition: islandContainer.settingsAppLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }
                 }

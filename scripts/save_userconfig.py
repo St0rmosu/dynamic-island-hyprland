@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""
+Save and merge settings into ~/.config/tide-island/userconfig.json atomically.
+Accepts JSON patch either as argv[1] or via stdin.
+"""
+import sys
+import json
+import os
+
+CONFIG_PATH = os.path.expanduser("~/.config/tide-island/userconfig.json")
+
+def main():
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        raw = sys.argv[1]
+    else:
+        raw = sys.stdin.read()
+
+    if not raw or not raw.strip():
+        print("EMPTY")
+        return
+
+    try:
+        patch = json.loads(raw)
+    except Exception as e:
+        sys.stderr.write(f"Invalid JSON: {e}\n")
+        sys.exit(1)
+
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    existing = {}
+    if os.path.exists(CONFIG_PATH):
+        try:
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except Exception as e:
+            sys.stderr.write(f"Warning: failed reading existing config ({e}), starting fresh.\n")
+            existing = {}
+
+    existing.update(patch)
+
+    tmp_path = CONFIG_PATH + ".tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=4, ensure_ascii=False)
+            f.write("\n")
+        os.replace(tmp_path, CONFIG_PATH)
+        print("OK")
+    except Exception as e:
+        sys.stderr.write(f"Error writing config: {e}\n")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

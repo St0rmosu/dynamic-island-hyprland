@@ -13,6 +13,8 @@ Item {
     signal focusModeChanged(bool enabled)
     signal nightLightModeChanged(bool enabled)
     signal requestNotification(string appName, string summary, string body)
+    signal settingsRequested()
+    signal clipboardRequested()
 
     readonly property var userConfig: UserConfig
 
@@ -1522,7 +1524,7 @@ Item {
                 anchors.right: parent.right
                 anchors.rightMargin: 2
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 5
+                spacing: 8
 
                 Text {
                     text: controlCenter.chargingIconGlyph
@@ -1584,6 +1586,47 @@ Item {
                         color: StyleTokens.textSecondary
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                Item {
+                    width: 26
+                    height: 26
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        id: settingsGearBtn
+                        anchors.fill: parent
+                        radius: 13
+                        color: settingsGearMouse.containsMouse ? "#26ffffff" : "#10ffffff"
+
+                        Behavior on color {
+                            ColorAnimation { duration: 150 }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: ""
+                            font.pixelSize: 13
+                            font.family: iconFontFamily
+                            color: settingsGearMouse.containsMouse ? controlCenter.cardAccent : "#d6d8df"
+                            rotation: settingsGearMouse.containsMouse ? 60 : 0
+
+                            Behavior on rotation {
+                                NumberAnimation { duration: 320; easing.type: Easing.OutBack }
+                            }
+                            Behavior on color {
+                                ColorAnimation { duration: 150 }
+                            }
+                        }
+
+                        MouseArea {
+                            id: settingsGearMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: controlCenter.settingsRequested()
+                        }
                     }
                 }
             }
@@ -1852,111 +1895,160 @@ Item {
             }
         }
 
-        Rectangle {
-            id: barSwitcherCard
+        Item {
+            id: secondaryCardsRow
             width: parent.width
             height: 48
-            radius: 18
-            color: StyleTokens.clearBlack
-            clip: true
-
-            MatteSurface {
-                anchors.fill: parent
-                radius: parent.radius
-                hovered: barSwitcherMouse.containsMouse || quickCealestiaMouse.containsMouse
-            }
 
             Row {
-                anchors.left: parent.left
-                anchors.leftMargin: 14
-                anchors.verticalCenter: parent.verticalCenter
+                anchors.fill: parent
                 spacing: 12
 
-                Text {
-                    text: "󰏘"
-                    color: controlCenter.cardAccent
-                    font.pixelSize: 18
-                    font.family: controlCenter.iconFontFamily
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+                Rectangle {
+                    id: barSwitcherCard
+                    width: (parent.width - 12) / 2
+                    height: parent.height
+                    radius: 18
+                    color: StyleTokens.clearBlack
+                    clip: true
 
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-
-                    Text {
-                        text: "Barra Desktop"
-                        color: controlCenter.textPrimary
-                        font.pixelSize: 13
-                        font.family: controlCenter.textFontFamily
-                        font.weight: Font.DemiBold
+                    MatteSurface {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        hovered: barSwitcherMouse.containsMouse
                     }
 
-                    Text {
-                        text: "Attiva: Tide Island (Clicca per cambiare)"
-                        color: StyleTokens.textMuted
-                        font.pixelSize: 10
-                        font.family: controlCenter.textFontFamily
-                        font.weight: Font.Medium
-                    }
-                }
-            }
-
-            Rectangle {
-                id: quickCealestiaBtn
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: parent.verticalCenter
-                width: 92
-                height: 28
-                radius: 14
-                color: quickCealestiaMouse.containsMouse ? controlCenter.cardAccent : "#1affffff"
-
-                Behavior on color {
-                    ColorAnimation { duration: StyleTokens.durationFast }
-                }
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 5
-                    Text {
-                        text: "󰍹"
-                        color: StyleTokens.white
-                        font.pixelSize: 12
-                        font.family: controlCenter.iconFontFamily
+                    Row {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
+                        spacing: 10
+
+                        Rectangle {
+                            width: 30
+                            height: 30
+                            radius: 15
+                            color: barSwitcherMouse.containsMouse ? controlCenter.cardAccent : "#1affffff"
+                            anchors.verticalCenter: parent.verticalCenter
+                            Behavior on color { ColorAnimation { duration: StyleTokens.durationFast } }
+
+                            Text {
+                                text: "󰍹"
+                                color: StyleTokens.white
+                                font.pixelSize: 14
+                                font.family: controlCenter.iconFontFamily
+                                anchors.centerIn: parent
+                            }
+                        }
+
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - 42
+                            spacing: 1
+
+                            Text {
+                                text: "Barra Desktop"
+                                color: controlCenter.textPrimary
+                                font.pixelSize: 12
+                                font.family: controlCenter.textFontFamily
+                                font.weight: Font.DemiBold
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                text: "Cealestia"
+                                color: StyleTokens.textMuted
+                                font.pixelSize: 10
+                                font.family: controlCenter.textFontFamily
+                                font.weight: Font.Medium
+                                elide: Text.ElideRight
+                            }
+                        }
                     }
-                    Text {
-                        text: "Cealestia"
-                        color: StyleTokens.white
-                        font.pixelSize: 11
-                        font.family: controlCenter.textFontFamily
-                        font.weight: Font.DemiBold
+
+                    MouseArea {
+                        id: barSwitcherMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            applyBarProcess.run("cealestia");
+                        }
+                    }
+                }
+
+                Rectangle {
+                    id: clipboardCard
+                    width: (parent.width - 12) / 2
+                    height: parent.height
+                    radius: 18
+                    color: StyleTokens.clearBlack
+                    clip: true
+
+                    MatteSurface {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        hovered: clipboardCardMouse.containsMouse
+                    }
+
+                    Row {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
+                        spacing: 10
 
-                MouseArea {
-                    id: quickCealestiaMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        applyBarProcess.run("cealestia");
-                    }
-                }
-            }
+                        Rectangle {
+                            width: 30
+                            height: 30
+                            radius: 15
+                            color: clipboardCardMouse.containsMouse ? controlCenter.cardAccent : "#1affffff"
+                            anchors.verticalCenter: parent.verticalCenter
+                            Behavior on color { ColorAnimation { duration: StyleTokens.durationFast } }
 
-            MouseArea {
-                id: barSwitcherMouse
-                anchors.left: parent.left
-                anchors.right: quickCealestiaBtn.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    openSwitcherProcess.run();
+                            Text {
+                                text: "󰅍"
+                                color: StyleTokens.white
+                                font.pixelSize: 14
+                                font.family: controlCenter.iconFontFamily
+                                anchors.centerIn: parent
+                            }
+                        }
+
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - 42
+                            spacing: 1
+
+                            Text {
+                                text: "Appunti"
+                                color: controlCenter.textPrimary
+                                font.pixelSize: 12
+                                font.family: controlCenter.textFontFamily
+                                font.weight: Font.DemiBold
+                            }
+
+                            Text {
+                                text: "Cronologia"
+                                color: StyleTokens.textMuted
+                                font.pixelSize: 10
+                                font.family: controlCenter.textFontFamily
+                                font.weight: Font.Medium
+                                elide: Text.ElideRight
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: clipboardCardMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: controlCenter.clipboardRequested()
+                    }
                 }
             }
         }
