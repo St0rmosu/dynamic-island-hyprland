@@ -32,11 +32,26 @@ FocusScope {
     activeFocusOnTab: true
     anchors.fill: parent
     opacity: showCondition ? 1 : 0
+    visible: opacity > 0.001
 
     Behavior on opacity {
         NumberAnimation {
-            duration: root.showCondition ? StyleTokens.durationStandard : StyleTokens.durationFast
-            easing.type: Easing.InOutQuad
+            duration: root.showCondition ? 240 : 120
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    property int renderLimit: 12
+
+    Timer {
+        id: deferredLoadTimer
+        interval: 260
+        repeat: false
+        onTriggered: {
+            if (root.renderLimit < root.filteredItems.length) {
+                root.renderLimit = root.filteredItems.length;
+                root.rebuildMasonryColumns();
+            }
         }
     }
 
@@ -46,9 +61,14 @@ FocusScope {
             searchInput.text = "";
             root.copiedItemId = "";
             root.isLoading = true;
+            root.renderLimit = 12;
             cacheFileView.reload();
             refreshHistory();
+            deferredLoadTimer.restart();
             focusTimer.restart();
+        } else {
+            deferredLoadTimer.stop();
+            root.renderLimit = 12;
         }
     }
 
@@ -135,6 +155,8 @@ FocusScope {
         const q = root.searchQuery.trim().toLowerCase();
         if (q === "") {
             root.filteredItems = root.allItems;
+            root.renderLimit = 12;
+            deferredLoadTimer.restart();
         } else {
             root.filteredItems = root.allItems.filter(item => {
                 if (!item) return false;
@@ -143,6 +165,7 @@ FocusScope {
                 const c = (item.content || "").toLowerCase();
                 return t.indexOf(q) >= 0 || p.indexOf(q) >= 0 || c.indexOf(q) >= 0;
             });
+            root.renderLimit = root.filteredItems.length;
         }
         root.rebuildMasonryColumns();
     }
@@ -153,7 +176,8 @@ FocusScope {
         let leftH = 0;
         let rightH = 0;
 
-        for (let i = 0; i < root.filteredItems.length; ++i) {
+        const count = Math.min(root.filteredItems.length, root.renderLimit);
+        for (let i = 0; i < count; ++i) {
             const item = root.filteredItems[i];
             if (!item) continue;
 
@@ -234,8 +258,10 @@ FocusScope {
     }
 
     Component.onCompleted: {
+        root.renderLimit = 12;
         cacheFileView.reload();
         refreshHistory();
+        deferredLoadTimer.restart();
     }
 
     // Main Container
@@ -547,6 +573,14 @@ FocusScope {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             visible: root.filteredItems.length > 0
+
+            onContentYChanged: {
+                if (contentY > 20 && root.renderLimit < root.filteredItems.length) {
+                    deferredLoadTimer.stop();
+                    root.renderLimit = root.filteredItems.length;
+                    root.rebuildMasonryColumns();
+                }
+            }
 
             ScrollBar.vertical: ScrollBar {
                 id: vbar

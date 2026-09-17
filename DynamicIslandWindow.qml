@@ -3574,7 +3574,10 @@ PanelWindow {
 
             Loader {
                 id: clipboardLoader
-                anchors.fill: parent
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 800
                 active: islandContainer.clipboardLayerVisible
                 asynchronous: false
                 visible: islandContainer.clipboardLayerVisible
