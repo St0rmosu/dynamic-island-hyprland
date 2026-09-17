@@ -185,86 +185,92 @@ Rectangle {
             spacing: 12
 
             // Left: Avatar + Caller Information
-            Row {
-                id: callerInfoRow
+            Item {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 12
+                width: callerInfoRow.implicitWidth
+                height: callerInfoRow.implicitHeight
 
-                Item {
-                    width: 42
-                    height: 42
-                    anchors.verticalCenter: parent.verticalCenter
+                Row {
+                    id: callerInfoRow
+                    anchors.fill: parent
+                    spacing: 12
 
-                    ClippingRectangle {
-                        anchors.fill: parent
-                        radius: 21
-                        color: root.ongoing ? "#23a55a" : "#5865F2"
-                        antialiasing: true
+                    Item {
+                        width: 42
+                        height: 42
+                        anchors.verticalCenter: parent.verticalCenter
 
-                        Image {
-                            id: callerAvatarImg
-                            visible: root.avatarUrl !== ""
+                        ClippingRectangle {
                             anchors.fill: parent
-                            source: root.avatarUrl
-                            fillMode: Image.PreserveAspectCrop
-                            smooth: true
-                            cache: false
+                            radius: 21
+                            color: root.ongoing ? "#23a55a" : "#5865F2"
+                            antialiasing: true
+
+                            Image {
+                                id: callerAvatarImg
+                                visible: root.avatarUrl !== ""
+                                anchors.fill: parent
+                                source: root.avatarUrl
+                                fillMode: Image.PreserveAspectCrop
+                                smooth: true
+                                cache: false
+                            }
+
+                            Image {
+                                visible: root.avatarUrl === "" || callerAvatarImg.status === Image.Error
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: "file:///usr/share/icons/hicolor/256x256/apps/discord.png"
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
                         }
 
-                        Image {
-                            visible: root.avatarUrl === "" || callerAvatarImg.status === Image.Error
-                            anchors.centerIn: parent
-                            width: 24
-                            height: 24
-                            source: "file:///usr/share/icons/hicolor/256x256/apps/discord.png"
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
+                        // Little green phone badge
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            anchors.margins: -2
+                            width: 14
+                            height: 14
+                            radius: 7
+                            color: "#30d158"
+                            border.color: "#000000"
+                            border.width: 1.5
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf095"
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 8
+                                color: "#ffffff"
+                            }
                         }
                     }
 
-                    // Little green phone badge
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        anchors.margins: -2
-                        width: 14
-                        height: 14
-                        radius: 7
-                        color: "#30d158"
-                        border.color: "#000000"
-                        border.width: 1.5
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+                        width: 130
 
                         Text {
-                            anchors.centerIn: parent
-                            text: "\uf095"
-                            font.family: root.iconFontFamily
-                            font.pixelSize: 8
+                            text: root.callerName
                             color: "#ffffff"
+                            font.family: root.textFontFamily
+                            font.pixelSize: 14
+                            font.weight: Font.DemiBold
+                            elide: Text.ElideRight
+                            width: parent.width
                         }
-                    }
-                }
 
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-                    width: 130
-
-                    Text {
-                        text: root.callerName
-                        color: "#ffffff"
-                        font.family: root.textFontFamily
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                        width: parent.width
-                    }
-
-                    Text {
-                        text: root.ongoing ? root.formatTime(root.callSeconds) : root.subtitle
-                        color: root.ongoing ? "#30d158" : "#8e8e93"
-                        font.family: root.heroFontFamily
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
+                        Text {
+                            text: root.ongoing ? root.formatTime(root.callSeconds) : root.subtitle
+                            color: root.ongoing ? "#30d158" : "#8e8e93"
+                            font.family: root.heroFontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                        }
                     }
                 }
 

@@ -2523,19 +2523,40 @@ PanelWindow {
 
             readonly property bool isSettingsApp: islandContainer.islandState === "settings_app"
             readonly property bool hasTopNotification: islandContainer.settingsTopNotificationActive
+            property bool exitingSettingsApp: false
 
-            // In settings_app mode:
-            // - If top notification is active: expands to 290px at top center
-            // - If no notification: collapses to 0px at top center, bringing floating islands together!
-            // In normal / other modes: matches mainCapsule
-            width: isSettingsApp ? (hasTopNotification ? 290 : 0) : mainCapsule.width
-            x: isSettingsApp ? Math.round(parent.width / 2 - width / 2) : mainCapsule.x
+            Timer {
+                id: exitSettingsTimer
+                interval: 420
+                repeat: false
+                onTriggered: topAnchorProxy.exitingSettingsApp = false
+            }
+
+            onIsSettingsAppChanged: {
+                if (!isSettingsApp) {
+                    exitingSettingsApp = true;
+                    exitSettingsTimer.restart();
+                }
+            }
+
+            // In settings_app mode or exiting settings_app:
+            // Animate smoothly between compact center and resting width.
+            // In all normal modes (control_center, clipboard, etc.):
+            // 1:1 locked with mainCapsule with ZERO delay!
+            width: isSettingsApp ? (hasTopNotification ? 290 : 0)
+                 : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width)
+
+            x: (isSettingsApp || exitingSettingsApp)
+                ? Math.round(parent.width * userConfig.islandPositionX / 100 - width / 2)
+                : mainCapsule.x
 
             Behavior on width {
-                NumberAnimation { duration: 420; easing.type: Easing.OutQuint }
+                enabled: topAnchorProxy.isSettingsApp || topAnchorProxy.exitingSettingsApp
+                NumberAnimation { duration: 400; easing.type: Easing.OutQuint }
             }
             Behavior on x {
-                NumberAnimation { duration: 420; easing.type: Easing.OutQuint }
+                enabled: topAnchorProxy.isSettingsApp || topAnchorProxy.exitingSettingsApp
+                NumberAnimation { duration: 400; easing.type: Easing.OutQuint }
             }
 
             Rectangle {
