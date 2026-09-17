@@ -25,8 +25,22 @@ Item {
     signal workspaceSynced(int workspaceId)
     signal workspaceActivated(int workspaceId)
 
-    onMonitorWorkspaceIdChanged: syncWorkspaceState()
+    onMonitorWorkspaceIdChanged: {
+        if (monitorWorkspaceId >= 1 && monitorWorkspaceId !== currentWorkspaceId) {
+            currentWorkspaceId = monitorWorkspaceId;
+            workspaceSynced(monitorWorkspaceId);
+            if (isTargetMonitorActive()) {
+                showWorkspaceForThisMonitor(monitorWorkspaceId);
+            }
+        }
+    }
     Component.onCompleted: syncWorkspaceState()
+
+    function isTargetMonitorActive() {
+        if (root.monitorFocused) return true;
+        if (Hyprland.focusedMonitor && Hyprland.focusedMonitor.name === monitorName) return true;
+        return false;
+    }
 
     function normalizeWorkspaceId(rawValue) {
         const parsed = parseInt(String(rawValue === undefined || rawValue === null ? "" : rawValue), 10);
@@ -59,15 +73,15 @@ Item {
             if (targetWorkspaceId < 1)
                 return;
 
-            Qt.callLater(() => {
-                const focusedWorkspace = Hyprland.focusedWorkspace;
-                if (!root.monitorFocused || !focusedWorkspace)
-                    return;
-                if (focusedWorkspace.id !== targetWorkspaceId)
-                    return;
+            if (!isTargetMonitorActive())
+                return;
 
-                root.showWorkspaceForThisMonitor(targetWorkspaceId);
-            });
+            if (targetWorkspaceId === root.currentWorkspaceId)
+                return;
+
+            root.currentWorkspaceId = targetWorkspaceId;
+            root.workspaceSynced(targetWorkspaceId);
+            root.showWorkspaceForThisMonitor(targetWorkspaceId);
             return;
         }
 
@@ -80,7 +94,12 @@ Item {
             if (monitorName !== "" && targetMonitorName !== monitorName)
                 return;
 
-            showWorkspaceForThisMonitor(targetWorkspaceId);
+            if (targetWorkspaceId === root.currentWorkspaceId)
+                return;
+
+            root.currentWorkspaceId = targetWorkspaceId;
+            root.workspaceSynced(targetWorkspaceId);
+            root.showWorkspaceForThisMonitor(targetWorkspaceId);
         }
     }
 
@@ -96,7 +115,13 @@ Item {
         target: root.hyprMonitor
 
         function onActiveWorkspaceChanged() {
-            root.syncWorkspaceState();
+            if (root.monitorWorkspaceId >= 1 && root.monitorWorkspaceId !== root.currentWorkspaceId) {
+                root.currentWorkspaceId = root.monitorWorkspaceId;
+                root.workspaceSynced(root.monitorWorkspaceId);
+                if (root.isTargetMonitorActive()) {
+                    root.showWorkspaceForThisMonitor(root.monitorWorkspaceId);
+                }
+            }
         }
     }
 }

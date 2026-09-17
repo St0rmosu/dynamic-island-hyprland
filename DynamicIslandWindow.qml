@@ -3049,11 +3049,8 @@ PanelWindow {
                 id: workspaceLayerLoader
                 anchors.fill: parent
                 active: !root.overviewVisible
-                    && islandContainer.islandState === "long_capsule"
-                    && (islandContainer.workspaceOriginSide !== "none"
-                        || Math.abs(islandContainer.swipeTransitionProgress) < 0.001)
                 asynchronous: false
-                visible: active
+                visible: active && islandContainer.islandState === "long_capsule"
 
                 sourceComponent: Component {
                     WorkspaceLayer {
@@ -3063,7 +3060,7 @@ PanelWindow {
                         textPixelSize: root.bodyFontSize
                         animateVisibility: islandContainer.restingState === "normal"
                         transitionProgress: islandContainer.swipeTransitionProgress
-                        showCondition: true
+                        showCondition: islandContainer.islandState === "long_capsule"
                         slideDirection: islandContainer.workspaceOriginSide
                     }
                 }
