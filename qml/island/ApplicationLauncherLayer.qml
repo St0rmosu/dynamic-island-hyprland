@@ -327,7 +327,7 @@ FocusScope {
     FileView {
         id: favoritesFile
         path: StandardPaths.writableLocation(StandardPaths.GenericConfigLocation)
-            + "/tide-island/application-launcher.json"
+            + "/dynamic-island/application-launcher.json"
         preload: true
         watchChanges: true
         atomicWrites: true

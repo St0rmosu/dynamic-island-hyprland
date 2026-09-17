@@ -132,7 +132,7 @@ FocusScope {
     // Read userconfig.json
     FileView {
         id: configFileView
-        path: UserConfig.userConfigPath !== "" ? UserConfig.userConfigPath : (StandardPaths.writableLocation(StandardPaths.GenericConfigLocation) + "/tide-island/userconfig.json")
+        path: UserConfig.userConfigPath !== "" ? UserConfig.userConfigPath : (StandardPaths.writableLocation(StandardPaths.GenericConfigLocation) + "/dynamic-island/userconfig.json")
         preload: true
         watchChanges: true
         printErrors: false
@@ -209,7 +209,7 @@ FocusScope {
             "python3",
             "-c",
             "import sys, json, os\n" +
-            "p = os.path.expanduser('~/.config/tide-island/userconfig.json')\n" +
+            "p = os.path.expanduser('~/.config/dynamic-island/userconfig.json')\n" +
             "os.makedirs(os.path.dirname(p), exist_ok=True)\n" +
             "d = {}\n" +
             "if os.path.exists(p):\n" +

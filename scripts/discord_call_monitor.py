@@ -13,10 +13,10 @@ from resolve_discord_avatar import resolve_avatar
 
 ACTIVE_CALL = False
 LAST_CALL_TIME = 0
-STATE_FILE = "/tmp/tide_discord_call_ongoing"
+STATE_FILE = "/tmp/island_discord_call_ongoing"
 
 def send_ipc(method, *args):
-    ipc_path = os.path.expanduser("~/.config/quickshell/tide-island")
+    ipc_path = os.path.expanduser("~/.config/quickshell/dynamic-island")
     cmd = ["quickshell", "ipc", "-p", ipc_path, "call", "island", method] + list(args)
     try:
         subprocess.run(cmd, timeout=2, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

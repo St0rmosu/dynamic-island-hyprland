@@ -13,16 +13,16 @@ def resolve_avatar(caller_name):
     caller_clean = caller_name.strip()
     caller_lower = caller_clean.lower()
 
-    # 1. Check custom contacts folder in tide-island/avatars
-    custom_dir = os.path.expanduser("~/.config/quickshell/tide-island/avatars")
+    # 1. Check custom contacts folder in dynamic-island/avatars
+    custom_dir = os.path.expanduser("~/.config/quickshell/dynamic-island/avatars")
     for name_candidate in (caller_clean, caller_lower):
         for ext in (".png", ".jpg", ".jpeg", ".webp"):
             candidate_path = os.path.join(custom_dir, name_candidate + ext)
             if os.path.isfile(candidate_path):
                 return f"file://{candidate_path}"
 
-    # 2. Check cached avatars in ~/.cache/tide-island/avatars
-    cache_dir = os.path.expanduser("~/.cache/tide-island/avatars")
+    # 2. Check cached avatars in ~/.cache/dynamic-island/avatars
+    cache_dir = os.path.expanduser("~/.cache/dynamic-island/avatars")
     os.makedirs(cache_dir, exist_ok=True)
     cached_file = os.path.join(cache_dir, f"{caller_lower}.png")
     if os.path.isfile(cached_file) and os.path.getsize(cached_file) > 100:

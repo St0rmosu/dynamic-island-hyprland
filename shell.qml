@@ -20,7 +20,7 @@ Scope {
         id: polkitAgent
 
         onIsActiveChanged: {
-            console.log("[TideIsland] PolkitAgent isActive:", isActive);
+            console.log("[DynamicIsland] PolkitAgent isActive:", isActive);
             if (isActive) {
                 shellRoot.showPolkitPromptAll();
             } else {
@@ -325,7 +325,7 @@ Scope {
             shellRoot.showDiscordCallAll(n, "Chiamata in arrivo...", "");
             avatarResolverProc.pendingCaller = n;
             avatarResolverProc.pendingSubtitle = "Chiamata in arrivo...";
-            avatarResolverProc.command = ["/home/lollo/.config/quickshell/tide-island/scripts/resolve_discord_avatar.py", n];
+            avatarResolverProc.command = ["/home/lollo/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", n];
             avatarResolverProc.running = false;
             avatarResolverProc.running = true;
         }
@@ -459,6 +459,58 @@ Scope {
             });
         }
 
+        function showClock() {
+            shellRoot.forFocusedWindow((window) => window.showClockWindow());
+        }
+
+        function showTimer() {
+            shellRoot.forFocusedWindow((window) => window.showTimerWindow());
+        }
+
+        function showCustom() {
+            shellRoot.forFocusedWindow((window) => window.showCustomInfoWindow());
+        }
+
+        function showLyrics() {
+            shellRoot.forFocusedWindow((window) => window.showLyricsWindow());
+        }
+
+        function swipeRight() {
+            shellRoot.forFocusedWindow((window) => window.swipeRightWindow());
+        }
+
+        function swipeLeft() {
+            shellRoot.forFocusedWindow((window) => window.swipeLeftWindow());
+        }
+
+        function togglePlayer() {
+            shellRoot.forFocusedWindow((window) => window.togglePlayerWindow());
+        }
+
+        function toggleControlCenter() {
+            shellRoot.forFocusedWindow((window) => window.toggleControlCenterWindow());
+        }
+
+        function togglePowerMenu() {
+            shellRoot.forFocusedWindow((window) => window.togglePowerMenuWindow());
+        }
+
+        function toggleNotificationCenter() {
+            shellRoot.forFocusedWindow((window) => window.toggleNotificationCenterWindow());
+        }
+
+        function toggleWallpaperPicker() {
+            shellRoot.forFocusedWindow((window) => window.toggleWallpaperPickerWindow());
+        }
+
+        function toggleApplicationLauncher() {
+            shellRoot.forFocusedWindow((window) => window.toggleApplicationLauncherWindow());
+        }
+
+        function toggleFileShelf() {
+            shellRoot.forFocusedWindow((window) => window.toggleFileShelfWindow());
+        }
+
         function reload() {
             try {
                 Quickshell.reload(false);
@@ -583,7 +635,7 @@ Scope {
 
     Process {
         id: discordCallMonitorProc
-        command: ["/home/lollo/.config/quickshell/tide-island/scripts/discord_call_monitor.py"]
+        command: ["/home/lollo/.config/quickshell/dynamic-island/scripts/discord_call_monitor.py"]
         running: !shellRoot.shuttingDown
     }
 
@@ -615,7 +667,7 @@ Scope {
                     shellRoot.showDiscordCallAll(caller, sub, "");
                     avatarResolverProc.pendingCaller = caller;
                     avatarResolverProc.pendingSubtitle = sub;
-                    avatarResolverProc.command = ["/home/lollo/.config/quickshell/tide-island/scripts/resolve_discord_avatar.py", caller];
+                    avatarResolverProc.command = ["/home/lollo/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", caller];
                     avatarResolverProc.running = false;
                     avatarResolverProc.running = true;
                     return;

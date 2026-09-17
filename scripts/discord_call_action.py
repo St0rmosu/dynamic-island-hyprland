@@ -52,7 +52,7 @@ def accept_call():
             run_hypr_lua('hl.dispatch(hl.dsp.send_shortcut({ mods = "ctrl", key = "Return", window = "class:discord" }))')
 
     # 4. Notify quickshell island
-    ipc_path = os.path.expanduser("~/.config/quickshell/tide-island")
+    ipc_path = os.path.expanduser("~/.config/quickshell/dynamic-island")
     subprocess.run(["quickshell", "ipc", "-p", ipc_path, "call", "island", "callAccepted"], timeout=2, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def decline_call():
@@ -89,7 +89,7 @@ def decline_call():
         pass
 
     # 4. Close call on quickshell island
-    ipc_path = os.path.expanduser("~/.config/quickshell/tide-island")
+    ipc_path = os.path.expanduser("~/.config/quickshell/dynamic-island")
     subprocess.run(["quickshell", "ipc", "-p", ipc_path, "call", "island", "closeCall"], timeout=2, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def focus_discord():

@@ -76,10 +76,10 @@ PanelWindow {
                 var idata = JSON.parse(text());
                 if (idata && idata.accent) {
                     accentHex = idata.accent;
-                    console.log("[TideIsland] Loaded iris colors! accent:", accentHex);
+                    console.log("[DynamicIsland] Loaded iris colors! accent:", accentHex);
                 }
             } catch(e) {
-                console.warn("[TideIsland] Failed to parse iris colors:", e);
+                console.warn("[DynamicIsland] Failed to parse iris colors:", e);
             }
         }
     }
@@ -805,7 +805,7 @@ PanelWindow {
     Process {
         id: discordCallActionProc
         property string action: "accept"
-        command: ["python3", "/home/lollo/.config/quickshell/tide-island/scripts/discord_call_action.py", action]
+        command: ["python3", "/home/lollo/.config/quickshell/dynamic-island/scripts/discord_call_action.py", action]
         running: false
     }
 
