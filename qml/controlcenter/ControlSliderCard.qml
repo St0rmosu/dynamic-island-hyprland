@@ -21,12 +21,13 @@ Rectangle {
     property color textPrimary: StyleTokens.textPrimary
     property color textSecondary: StyleTokens.textSecondary
     readonly property bool pressed: sliderArea.pressed
+    readonly property bool isCompact: root.height < 56
 
     function clamp01(nextValue) {
         return Math.max(0, Math.min(1, nextValue));
     }
 
-    radius: 24
+    radius: Math.min(24, Math.max(12, root.height / 2))
     color: StyleTokens.clearBlack
     clip: true
 
@@ -39,7 +40,7 @@ Rectangle {
 
     Item {
         anchors.fill: parent
-        anchors.margins: Math.min(12, Math.max(6, (root.height - 48) / 2))
+        anchors.margins: root.isCompact ? 6 : Math.min(12, Math.max(6, (root.height - 48) / 2))
 
         Row {
             id: headerRow
@@ -47,6 +48,7 @@ Rectangle {
             anchors.top: parent.top
             spacing: 7
             height: 18
+            visible: !root.isCompact
 
             Text {
                 text: root.iconText
@@ -71,8 +73,9 @@ Rectangle {
             id: sliderTrack
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            height: Math.min(24, Math.max(18, root.height - 46))
+            anchors.bottom: root.isCompact ? undefined : parent.bottom
+            anchors.verticalCenter: root.isCompact ? parent.verticalCenter : undefined
+            height: root.isCompact ? Math.min(28, Math.max(20, root.height - 12)) : Math.min(24, Math.max(18, root.height - 46))
             radius: height / 2
             color: "#1d1f24"
             border.width: 1
@@ -82,7 +85,7 @@ Rectangle {
             Rectangle {
                 width: root.value <= 0.001
                     ? 0
-                    : Math.max(34, Math.min(sliderTrack.width, sliderTrack.width * root.value + 1))
+                    : Math.max(root.isCompact ? 20 : 34, Math.min(sliderTrack.width, sliderTrack.width * root.value + 1))
                 height: parent.height
                 radius: parent.radius
                 color: "#eceef2"
@@ -97,6 +100,18 @@ Rectangle {
                 border.width: 1
                 border.color: "#b8ffffff"
                 color: "#f4f5f7"
+            }
+
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 8
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.iconText
+                color: root.value > 0.25 ? "#111214" : root.textSecondary
+                font.pixelSize: 13
+                font.family: root.iconFontFamily
+                visible: root.isCompact && root.iconText !== ""
+                z: 2
             }
 
             MouseArea {

@@ -160,20 +160,21 @@ Item {
             const item = layout[i];
             if (!item.active) continue;
 
-            let h = 76;
-            if (item.id === "header") h = 32;
-            else if (item.id === "wifi" || item.id === "bluetooth") h = 80;
-            else if (item.id === "battery" || item.id === "toggles") h = 80;
-            else if (item.id === "brightness" || item.id === "volume") h = 76;
-            else if (item.id === "quickactions") h = 48;
-            else if (item.id === "notifications") {
+            let h = (item.height && item.height >= 36) ? Math.round(item.height) : 76;
+            if (item.id === "header") {
+                h = (item.height && item.height >= 26) ? Math.round(item.height) : 32;
+            } else if (item.id === "quickactions") {
+                h = (item.height && item.height >= 36) ? Math.round(item.height) : 48;
+            } else if (item.id === "notifications") {
                 if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                    h = Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10);
+                    h = Math.max(item.height || 64, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
                 } else {
-                    h = 64;
+                    h = (item.height && item.height >= 44) ? Math.round(item.height) : 64;
                 }
-            } else {
-                h = 76;
+            } else if (!item.height) {
+                if (item.id === "wifi" || item.id === "bluetooth") h = 80;
+                else if (item.id === "battery" || item.id === "toggles") h = 80;
+                else if (item.id === "brightness" || item.id === "volume") h = 76;
             }
 
             const isFull = (item.colSpan === 2);
@@ -1790,9 +1791,11 @@ Item {
         id: wifiComponent
         Rectangle {
             anchors.fill: parent
-            radius: 20
+            radius: Math.min(20, Math.max(14, parent.height / 2))
             color: StyleTokens.clearBlack
             clip: true
+
+            readonly property bool isCompact: parent.height < 58
 
             MatteSurface {
                 anchors.fill: parent
@@ -1804,16 +1807,22 @@ Item {
                 id: wifiCardMouse
                 anchors.fill: parent
                 hoverEnabled: true
+                cursorShape: isCompact ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    if (isCompact) controlCenter.toggleConnectivityOverlay("wifi");
+                }
             }
 
             Text {
+                id: wifiIcon
                 anchors.left: parent.left
                 anchors.leftMargin: 14
-                anchors.top: parent.top
-                anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
+                anchors.top: isCompact ? undefined : parent.top
+                anchors.topMargin: isCompact ? 0 : Math.min(14, Math.max(8, (parent.height - 56) / 2))
+                anchors.verticalCenter: isCompact ? parent.verticalCenter : undefined
                 text: controlCenter.wifiGlyph
                 color: controlCenter.wifiEnabled ? controlCenter.cardAccent : StyleTokens.textDisabled
-                font.pixelSize: 18
+                font.pixelSize: isCompact ? 16 : 18
                 font.family: controlCenter.iconFontFamily
             }
 
@@ -1821,11 +1830,12 @@ Item {
                 id: wifiSwitchTrack
                 anchors.right: parent.right
                 anchors.rightMargin: 12
-                anchors.top: parent.top
-                anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
-                width: 34
-                height: 20
-                radius: 10
+                anchors.top: isCompact ? undefined : parent.top
+                anchors.topMargin: isCompact ? 0 : Math.min(12, Math.max(8, (parent.height - 56) / 2))
+                anchors.verticalCenter: isCompact ? parent.verticalCenter : undefined
+                width: isCompact ? 30 : 34
+                height: isCompact ? 18 : 20
+                radius: height / 2
                 color: controlCenter.wifiEnabled ? StyleTokens.success : StyleTokens.switchOff
 
                 Behavior on color {
@@ -1835,11 +1845,11 @@ Item {
                 }
 
                 Rectangle {
-                    width: 16
-                    height: 16
-                    radius: 8
+                    width: parent.height - 4
+                    height: width
+                    radius: width / 2
                     y: 2
-                    x: controlCenter.wifiEnabled ? 16 : 2
+                    x: controlCenter.wifiEnabled ? (parent.width - width - 2) : 2
                     color: StyleTokens.white
 
                     Behavior on x {
@@ -1858,14 +1868,30 @@ Item {
                 }
             }
 
+            Text {
+                anchors.left: wifiIcon.right
+                anchors.leftMargin: 8
+                anchors.right: wifiSwitchTrack.left
+                anchors.rightMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Wi-Fi"
+                color: controlCenter.textPrimary
+                font.pixelSize: 12
+                font.family: controlCenter.textFontFamily
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+                visible: isCompact && (parent.width >= 100)
+            }
+
             Item {
                 id: wifiDetailButton
+                visible: !isCompact
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
-                anchors.bottomMargin: Math.min(8, Math.max(4, (parent.height - 56) / 3))
+                anchors.bottomMargin: Math.min(10, Math.max(6, (parent.height - 56) / 3))
                 height: Math.min(30, Math.max(22, parent.height - 46))
 
                 Column {
@@ -1920,9 +1946,11 @@ Item {
         id: bluetoothComponent
         Rectangle {
             anchors.fill: parent
-            radius: 20
+            radius: Math.min(20, Math.max(14, parent.height / 2))
             color: StyleTokens.clearBlack
             clip: true
+
+            readonly property bool isCompact: parent.height < 58
 
             MatteSurface {
                 anchors.fill: parent
@@ -1934,16 +1962,22 @@ Item {
                 id: bluetoothCardMouse
                 anchors.fill: parent
                 hoverEnabled: true
+                cursorShape: isCompact ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    if (isCompact) controlCenter.toggleConnectivityOverlay("bluetooth");
+                }
             }
 
             Text {
+                id: bluetoothIcon
                 anchors.left: parent.left
                 anchors.leftMargin: 14
-                anchors.top: parent.top
-                anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
+                anchors.top: isCompact ? undefined : parent.top
+                anchors.topMargin: isCompact ? 0 : Math.min(14, Math.max(8, (parent.height - 56) / 2))
+                anchors.verticalCenter: isCompact ? parent.verticalCenter : undefined
                 text: controlCenter.bluetoothGlyph
                 color: controlCenter.bluetoothEnabled ? controlCenter.cardAccent : StyleTokens.textDisabled
-                font.pixelSize: 18
+                font.pixelSize: isCompact ? 16 : 18
                 font.family: controlCenter.iconFontFamily
             }
 
@@ -1951,11 +1985,12 @@ Item {
                 id: bluetoothSwitchTrack
                 anchors.right: parent.right
                 anchors.rightMargin: 12
-                anchors.top: parent.top
-                anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
-                width: 34
-                height: 20
-                radius: 10
+                anchors.top: isCompact ? undefined : parent.top
+                anchors.topMargin: isCompact ? 0 : Math.min(12, Math.max(8, (parent.height - 56) / 2))
+                anchors.verticalCenter: isCompact ? parent.verticalCenter : undefined
+                width: isCompact ? 30 : 34
+                height: isCompact ? 18 : 20
+                radius: height / 2
                 color: controlCenter.bluetoothEnabled ? StyleTokens.success : StyleTokens.switchOff
 
                 Behavior on color {
@@ -1965,11 +2000,11 @@ Item {
                 }
 
                 Rectangle {
-                    width: 16
-                    height: 16
-                    radius: 8
+                    width: parent.height - 4
+                    height: width
+                    radius: width / 2
                     y: 2
-                    x: controlCenter.bluetoothEnabled ? 16 : 2
+                    x: controlCenter.bluetoothEnabled ? (parent.width - width - 2) : 2
                     color: StyleTokens.white
 
                     Behavior on x {
@@ -1988,14 +2023,30 @@ Item {
                 }
             }
 
+            Text {
+                anchors.left: bluetoothIcon.right
+                anchors.leftMargin: 8
+                anchors.right: bluetoothSwitchTrack.left
+                anchors.rightMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Bluetooth"
+                color: controlCenter.textPrimary
+                font.pixelSize: 12
+                font.family: controlCenter.textFontFamily
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+                visible: isCompact && (parent.width >= 100)
+            }
+
             Item {
                 id: bluetoothDetailButton
+                visible: !isCompact
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 anchors.leftMargin: 12
                 anchors.rightMargin: 12
-                anchors.bottomMargin: Math.min(8, Math.max(4, (parent.height - 56) / 3))
+                anchors.bottomMargin: Math.min(10, Math.max(6, (parent.height - 56) / 3))
                 height: Math.min(30, Math.max(22, parent.height - 46))
 
                 Column {
@@ -2141,10 +2192,11 @@ Item {
         Rectangle {
             id: batteryModeCardItem
             anchors.fill: parent
-            radius: 20
+            radius: Math.min(20, Math.max(14, parent.height / 2))
             color: StyleTokens.clearBlack
             clip: true
 
+            readonly property bool isCompact: parent.height < 58
             readonly property real modeSlotWidth: 44
 
             MatteSurface {
@@ -2154,6 +2206,7 @@ Item {
             }
 
             Text {
+                visible: !batteryModeCardItem.isCompact
                 anchors.left: parent.left
                 anchors.leftMargin: 14
                 anchors.top: parent.top
@@ -2166,6 +2219,7 @@ Item {
             }
 
             Text {
+                visible: !batteryModeCardItem.isCompact
                 anchors.right: parent.right
                 anchors.rightMargin: 12
                 anchors.top: parent.top
@@ -2190,9 +2244,10 @@ Item {
                 anchors.leftMargin: 12
                 anchors.right: parent.right
                 anchors.rightMargin: 12
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Math.min(8, Math.max(4, (parent.height - 56) / 3))
-                height: Math.min(34, Math.max(22, parent.height - 46))
+                anchors.bottom: batteryModeCardItem.isCompact ? undefined : parent.bottom
+                anchors.bottomMargin: batteryModeCardItem.isCompact ? 0 : Math.min(8, Math.max(4, (parent.height - 56) / 3))
+                anchors.verticalCenter: batteryModeCardItem.isCompact ? parent.verticalCenter : undefined
+                height: batteryModeCardItem.isCompact ? Math.min(32, Math.max(22, parent.height - 8)) : Math.min(34, Math.max(22, parent.height - 46))
                 clip: true
 
                 Item {
@@ -2341,10 +2396,13 @@ Item {
     Component {
         id: togglesComponent
         Rectangle {
+            id: togglesCardItem
             anchors.fill: parent
-            radius: 20
+            radius: Math.min(20, Math.max(14, parent.height / 2))
             color: StyleTokens.clearBlack
             clip: true
+
+            readonly property bool isCompact: parent.height < 58
 
             MatteSurface {
                 anchors.fill: parent
@@ -2357,7 +2415,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.verticalCenter: parent.verticalCenter
                 width: 1
-                height: parent.height - 34
+                height: Math.max(16, parent.height - (togglesCardItem.isCompact ? 16 : 34))
                 radius: 1
                 color: "#1cffffff"
             }
@@ -2403,8 +2461,9 @@ Item {
                 Item {
                     id: focusIconSlot
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
+                    anchors.top: togglesCardItem.isCompact ? undefined : parent.top
+                    anchors.topMargin: togglesCardItem.isCompact ? 0 : Math.min(12, Math.max(6, (parent.height - 56) / 2))
+                    anchors.verticalCenter: togglesCardItem.isCompact ? parent.verticalCenter : undefined
                     width: parent.width
                     height: 32
 
@@ -2457,6 +2516,7 @@ Item {
                 }
 
                 Text {
+                    visible: !togglesCardItem.isCompact
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
@@ -2504,8 +2564,9 @@ Item {
                 Item {
                     id: nightLightIconSlot
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: parent.top
-                    anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
+                    anchors.top: togglesCardItem.isCompact ? undefined : parent.top
+                    anchors.topMargin: togglesCardItem.isCompact ? 0 : Math.min(12, Math.max(6, (parent.height - 56) / 2))
+                    anchors.verticalCenter: togglesCardItem.isCompact ? parent.verticalCenter : undefined
                     width: parent.width
                     height: 32
 
@@ -2540,6 +2601,7 @@ Item {
                 }
 
                 Text {
+                    visible: !togglesCardItem.isCompact
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
@@ -2734,13 +2796,16 @@ Item {
                 readonly property bool isFullWidth: modelData.colSpan === 2
                 readonly property real slotWidth: isFullWidth ? mainContent.width : ((mainContent.width - mainContent.spacing) / 2)
                 readonly property real slotHeight: {
-                    if (modelData.id === "header") return 32;
-                    if (modelData.id === "quickactions") return 48;
+                    if (modelData.id === "header") return (modelData.height && modelData.height >= 26) ? Math.round(modelData.height) : 32;
+                    if (modelData.id === "quickactions") return (modelData.height && modelData.height >= 36) ? Math.round(modelData.height) : 48;
                     if (modelData.id === "notifications") {
                         if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                            return Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10);
+                            return Math.max(modelData.height || 64, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
                         }
-                        return 64;
+                        return (modelData.height && modelData.height >= 44) ? Math.round(modelData.height) : 64;
+                    }
+                    if (modelData.height && modelData.height >= 36) {
+                        return Math.round(modelData.height);
                     }
                     if (modelData.id === "brightness" || modelData.id === "volume") return 76;
                     if (modelData.id === "wifi" || modelData.id === "bluetooth") return 80;

@@ -36,14 +36,14 @@ Item {
 
     // Live list of modules
     property var modules: [
-        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 60, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
-        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
-        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 56, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 80, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
+        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 38, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
+        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 38, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 44, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
         { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
@@ -87,7 +87,7 @@ Item {
                                 name: m.name,
                                 icon: m.icon,
                                 colSpan: s.colSpan !== undefined ? s.colSpan : m.colSpan,
-                                height: defaultHeight(m.id),
+                                height: (s.height !== undefined && s.height >= (m.minHeight || 26)) ? Math.round(s.height) : (m.height || defaultHeight(m.id)),
                                 minHeight: m.minHeight,
                                 maxHeight: m.maxHeight,
                                 active: s.active !== undefined ? s.active : m.active,
@@ -140,7 +140,7 @@ Item {
             clean.push({
                 id: modules[i].id,
                 colSpan: modules[i].colSpan,
-                height: defaultHeight(modules[i].id),
+                height: Math.round(modules[i].height || defaultHeight(modules[i].id)),
                 active: modules[i].active
             });
         }
@@ -157,6 +157,31 @@ Item {
         }
         modules = copy;
         emitSave();
+    }
+
+    function setModuleHeight(id, h) {
+        let copy = modules.slice();
+        for (let i = 0; i < copy.length; i++) {
+            if (copy[i].id === id) {
+                const minH = copy[i].minHeight || 36;
+                const maxH = copy[i].maxHeight || 320;
+                const nh = Math.max(minH, Math.min(maxH, Math.round(h)));
+                if (copy[i].height === nh) return;
+                copy[i].height = nh;
+                break;
+            }
+        }
+        modules = copy;
+        emitSave();
+    }
+
+    function adjustModuleHeight(id, delta) {
+        for (let i = 0; i < modules.length; i++) {
+            if (modules[i].id === id) {
+                setModuleHeight(id, (modules[i].height || defaultHeight(id)) + delta);
+                break;
+            }
+        }
     }
 
 
@@ -668,11 +693,45 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "100%" : "50%") + ")"
+                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "100%" : "50%") + " • " + Math.round(moduleItemDelegate.modelData.height) + "px)"
                                             font.family: studioRoot.textFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.DemiBold
                                             color: studioRoot.textPrimary
+                                        }
+
+                                        // Height decrease button
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "−"
+                                            font.pixelSize: 12
+                                            font.weight: Font.Bold
+                                            color: minusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
+                                            MouseArea {
+                                                id: minusMouse
+                                                anchors.fill: parent
+                                                anchors.margins: -3
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, -8)
+                                            }
+                                        }
+
+                                        // Height increase button
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "+"
+                                            font.pixelSize: 12
+                                            font.weight: Font.Bold
+                                            color: plusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
+                                            MouseArea {
+                                                id: plusMouse
+                                                anchors.fill: parent
+                                                anchors.margins: -3
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, 8)
+                                            }
                                         }
 
                                         // Move Earlier / Up button
@@ -744,8 +803,88 @@ Item {
                                 }
 
                                 // ====================================================
-                                // RESIZE HANDLES (LATI SINISTRO E DESTRO PER LARGHEZZA ORIZZONTALE)
+                                // RESIZE HANDLES (TUTTI I 4 LATI: ALTEZZA E LARGHEZZA)
                                 // ====================================================
+
+                                // 1. TOP RESIZE HANDLE (Pallino al centro del lato superiore)
+                                Rectangle {
+                                    id: topHandle
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.verticalCenter: parent.top
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: "#ffffff"
+                                    border.width: 2.5
+                                    border.color: studioRoot.accentColor
+                                    z: 55
+                                    scale: topHandleMouse.containsMouse || topHandleMouse.pressed ? 1.25 : 1.0
+
+                                    Behavior on scale { NumberAnimation { duration: 100 } }
+
+                                    MouseArea {
+                                        id: topHandleMouse
+                                        anchors.fill: parent
+                                        anchors.margins: -6
+                                        hoverEnabled: true
+                                        cursorShape: Qt.SizeVerCursor
+
+                                        property real startStageY: 0
+                                        property real startH: 0
+                                        onPressed: function(mouse) {
+                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            startStageY = p.y;
+                                            startH = moduleItemDelegate.modelData.height || 42;
+                                        }
+                                        onPositionChanged: function(mouse) {
+                                            if (pressed) {
+                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                                let delta = startStageY - p.y;
+                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, startH + delta);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 2. BOTTOM RESIZE HANDLE (Pallino al centro del lato inferiore)
+                                Rectangle {
+                                    id: bottomHandle
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.verticalCenter: parent.bottom
+                                    width: 14
+                                    height: 14
+                                    radius: 7
+                                    color: "#ffffff"
+                                    border.width: 2.5
+                                    border.color: studioRoot.accentColor
+                                    z: 55
+                                    scale: bottomHandleMouse.containsMouse || bottomHandleMouse.pressed ? 1.25 : 1.0
+
+                                    Behavior on scale { NumberAnimation { duration: 100 } }
+
+                                    MouseArea {
+                                        id: bottomHandleMouse
+                                        anchors.fill: parent
+                                        anchors.margins: -6
+                                        hoverEnabled: true
+                                        cursorShape: Qt.SizeVerCursor
+
+                                        property real startStageY: 0
+                                        property real startH: 0
+                                        onPressed: function(mouse) {
+                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            startStageY = p.y;
+                                            startH = moduleItemDelegate.modelData.height || 42;
+                                        }
+                                        onPositionChanged: function(mouse) {
+                                            if (pressed) {
+                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                                let delta = p.y - startStageY;
+                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, startH + delta);
+                                            }
+                                        }
+                                    }
+                                }
 
                                 // 3. LEFT RESIZE HANDLE (Pallino al centro del lato sinistro)
                                 Rectangle {
