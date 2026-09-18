@@ -75,6 +75,9 @@ PanelWindow {
             try {
                 parsedData = JSON.parse(text());
                 console.log("[DynamicIsland] Loaded local userconfig. hoverAction:", parsedData.hoverExpandAction, "hoverEnabled:", parsedData.hoverExpandEnabled);
+                if (userConfig && typeof userConfig.reload === "function") {
+                    userConfig.reload();
+                }
             } catch(e) {
                 console.warn("[DynamicIsland] Failed to parse local userconfig:", e);
             }
@@ -340,13 +343,13 @@ PanelWindow {
         if (islandContainer.islandState === "settings_app" || islandContainer.settingsAppLayerVisible) {
             return root.screen ? root.screen.height : 1080;
         }
-        return Math.ceil(userConfig.islandTopMargin + mainCapsule.targetHeight + 12);
+        return Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
     }
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted
-        ? Math.ceil(userConfig.islandTopMargin + root.connectivityDetailHeight + 12)
+        ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 12)
         : 0
     readonly property real overviewWindowHeight: root.overviewVisible
-        ? Math.ceil(userConfig.islandTopMargin + root.overviewCapsuleHeight + 8)
+        ? Math.ceil(effectiveIslandTopMargin + root.overviewCapsuleHeight + 8)
         : 0
     readonly property real musicFloatingIslandHeight: musicFloatingIsland && musicFloatingIsland.visible
         ? Math.ceil(musicFloatingIsland.y + musicFloatingIsland.height + 12)
@@ -418,13 +421,52 @@ PanelWindow {
             return WlrKeyboardFocus.OnDemand;
         return WlrKeyboardFocus.None;
     }
-    readonly property string iconFontFamily: userConfig.iconFontFamily
-    readonly property string textFontFamily: userConfig.textFontFamily
-    readonly property string heroFontFamily: userConfig.heroFontFamily
-    readonly property string timeFontFamily: userConfig.timeFontFamily
-    readonly property int bodyFontSize: userConfig.bodyFontSize
-    readonly property int titleFontSize: userConfig.titleFontSize
-    readonly property int iconFontSize: userConfig.iconFontSize
+    function cfgVal(key, fallback) {
+        if (localUserConfigFile.parsedData && localUserConfigFile.parsedData[key] !== undefined) {
+            return localUserConfigFile.parsedData[key];
+        }
+        if (userConfig && userConfig[key] !== undefined) {
+            return userConfig[key];
+        }
+        return fallback;
+    }
+
+    readonly property real effectiveIslandWidth: {
+        let v = cfgVal("islandWidth", userConfig ? userConfig.islandWidth : 140);
+        return (v !== undefined && !isNaN(Number(v)) && Number(v) > 0) ? Number(v) : 140;
+    }
+    readonly property real effectiveIslandHeight: {
+        let v = cfgVal("islandHeight", userConfig ? userConfig.islandHeight : 40);
+        return (v !== undefined && !isNaN(Number(v)) && Number(v) > 0) ? Number(v) : 40;
+    }
+    readonly property real effectiveIslandTopMargin: {
+        let v = cfgVal("islandTopMargin", userConfig ? userConfig.islandTopMargin : 8);
+        return (v !== undefined && !isNaN(Number(v)) && Number(v) >= 0) ? Number(v) : 8;
+    }
+    readonly property real effectiveIslandBackgroundOpacity: {
+        let v = cfgVal("islandBackgroundOpacity", userConfig ? userConfig.islandBackgroundOpacity : 100);
+        return (v !== undefined && !isNaN(Number(v))) ? Math.max(0, Math.min(100, Number(v))) : 100;
+    }
+    readonly property real effectiveIslandPositionX: {
+        let v = cfgVal("islandPositionX", userConfig ? userConfig.islandPositionX : 50);
+        return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 50;
+    }
+    readonly property real effectiveIslandExclusiveZone: {
+        let v = cfgVal("islandExclusiveZone", userConfig ? userConfig.islandExclusiveZone : 0);
+        return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 0;
+    }
+    readonly property real effectiveIslandCornerRadius: {
+        let v = cfgVal("islandCornerRadius", 0);
+        return (v !== undefined && !isNaN(Number(v)) && Number(v) > 0) ? Number(v) : (effectiveIslandHeight / 2);
+    }
+
+    readonly property string iconFontFamily: cfgVal("iconFontFamily", userConfig ? userConfig.iconFontFamily : "JetBrainsMono Nerd Font")
+    readonly property string textFontFamily: cfgVal("textFontFamily", userConfig ? userConfig.textFontFamily : "Google Sans Flex")
+    readonly property string heroFontFamily: cfgVal("heroFontFamily", userConfig ? userConfig.heroFontFamily : "Google Sans Flex")
+    readonly property string timeFontFamily: cfgVal("timeFontFamily", userConfig ? userConfig.timeFontFamily : "Google Sans Flex")
+    readonly property int bodyFontSize: Number(cfgVal("bodyFontSize", userConfig ? userConfig.bodyFontSize : 14)) || 14
+    readonly property int titleFontSize: Number(cfgVal("titleFontSize", userConfig ? userConfig.titleFontSize : 16)) || 16
+    readonly property int iconFontSize: Number(cfgVal("iconFontSize", userConfig ? userConfig.iconFontSize : 16)) || 16
     readonly property string defaultSplitIcon: "\ud83c\udfa7"
     readonly property string notificationStatusIcon: "\uf0f3"
     readonly property real overviewWindowCornerRadius: 12
@@ -442,7 +484,7 @@ PanelWindow {
         }
         return (action === undefined || isNaN(action)) ? 2 : Math.max(0, Math.min(2, Math.round(action)));
     }
-    readonly property real baseExclusiveZone: userConfig.islandExclusiveZone
+    readonly property real baseExclusiveZone: effectiveIslandExclusiveZone
     readonly property bool hoverExpandEnabled: {
         if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandEnabled !== undefined) {
             return Boolean(localUserConfigFile.parsedData.hoverExpandEnabled);
@@ -456,7 +498,7 @@ PanelWindow {
     readonly property bool autoHideRuntimeEnabled: !shellRootController
         || shellRootController.islandAutoHideRuntimeEnabled === undefined
         || !!shellRootController.islandAutoHideRuntimeEnabled
-    readonly property bool autoHideEnabled: userConfig.islandAutoHideEnabled && autoHideRuntimeEnabled
+    readonly property bool autoHideEnabled: Boolean(cfgVal("islandAutoHideEnabled", userConfig ? userConfig.islandAutoHideEnabled : false)) && autoHideRuntimeEnabled
     readonly property bool autoHideRestingState: islandContainer.islandState === "normal"
         || islandContainer.islandState === "custom"
         || islandContainer.islandState === "lyrics"
@@ -479,11 +521,11 @@ PanelWindow {
         || islandContainer.notificationLayerVisible
         || islandContainer.reloadLayerVisible
     property real exclusiveZoneProgress: exclusiveZoneTargetActive ? 1 : 0
-    readonly property real autoHideRevealWidth: Math.min(root.width, Math.max(userConfig.islandWidth + 120, 240))
+    readonly property real autoHideRevealWidth: Math.min(root.width, Math.max(root.effectiveIslandWidth + 120, 240))
     readonly property real autoHideRevealHeight: autoHideEnabled ? 10 : 0
     readonly property real autoHideRevealX: Math.max(
         0,
-        Math.min(root.width - autoHideRevealWidth, root.width * userConfig.islandPositionX / 100 - autoHideRevealWidth / 2)
+        Math.min(root.width - autoHideRevealWidth, root.width * root.effectiveIslandPositionX / 100 - autoHideRevealWidth / 2)
     )
     readonly property real topGestureInputX: autoHideEnabled ? autoHideRevealX : 0
     readonly property real topGestureInputWidth: topGestureInputActive
@@ -515,11 +557,11 @@ PanelWindow {
         ? controlCenterLoader.item.controlCenterMaximumExtraHeight
         : 120
     readonly property real controlCenterWindowHeight: islandContainer.controlCenterLayerVisible
-        ? userConfig.islandTopMargin + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 450) + 60
+        ? root.effectiveIslandTopMargin + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 450) + 60
         : 0
 
     readonly property real notificationCenterWindowHeight: islandContainer.notificationCenterLayerVisible
-        ? userConfig.islandTopMargin + (notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 400) + 6
+        ? root.effectiveIslandTopMargin + (notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 400) + 6
         : 0
     readonly property real connectivityDetailGap: 16
     readonly property int connectivityDetailAnimationDuration: 360
@@ -1028,9 +1070,17 @@ PanelWindow {
             settingsAppLoader.item.selectedCategoryIndex = catIndex;
     }
 
+    function setSettingsAppCategory(catIndex) {
+        setSettingsCategory(catIndex);
+    }
+
     function setSettingsSubView(sub) {
         if (settingsAppLoader.item)
             settingsAppLoader.item.controlCenterSubView = sub;
+    }
+
+    function setSettingsAppSubView(sub) {
+        setSettingsSubView(sub);
     }
 
     function toggleFileShelfWindow() {
@@ -1402,7 +1452,7 @@ PanelWindow {
         readonly property bool splitShowsText: islandState === "split" && osdProgress < 0 && osdCustomText !== ""
         readonly property bool splitShowsIconOnly: islandState === "split" && osdProgress < 0 && osdCustomText === ""
         readonly property bool splitUsesExtendedLayout: splitShowsProgress || splitShowsText
-        readonly property real splitCapsuleWidth: splitShowsProgress ? 248 : (splitShowsText ? 220 : userConfig.islandWidth)
+        readonly property real splitCapsuleWidth: splitShowsProgress ? 248 : (splitShowsText ? 220 : root.effectiveIslandWidth)
         readonly property bool canShowSideSwipe: false
         readonly property real rightSwipeProgress: Math.max(0, swipeTransitionProgress)
         readonly property var customLeftItems: systemState.customLeftItems
@@ -1842,25 +1892,25 @@ PanelWindow {
         function sideSwipeRestWidthForProgress(progressValue) {
             if (progressValue <= -0.5) return customCapsuleWidth;
             if (progressValue >= 0.5) return lyricsCapsuleWidth;
-            return userConfig.islandWidth;
+            return root.effectiveIslandWidth;
         }
 
         function customSideSwipeDragDistance() {
             const view = customSwipeLoader.item;
             if (view && view.dragDistance > 0) return view.dragDistance;
-            return Math.max(userConfig.islandWidth, customCapsuleWidth + 4);
+            return Math.max(root.effectiveIslandWidth, customCapsuleWidth + 4);
         }
 
         function lyricsSideSwipeDragDistance() {
             const view = lyricsSwipeLoader.item;
             if (view && view.dragDistance > 0) return view.dragDistance;
-            return Math.max(userConfig.islandWidth, lyricsCapsuleWidth + 2);
+            return Math.max(root.effectiveIslandWidth, lyricsCapsuleWidth + 2);
         }
 
         function sideSwipeDragDistanceForDirection(direction) {
             if (direction === "left") return customSideSwipeDragDistance();
             if (direction === "right") return lyricsSideSwipeDragDistance();
-            return userConfig.islandWidth;
+            return root.effectiveIslandWidth;
         }
 
         function advanceSideSwipeProgress(currentProgress, deltaX) {
@@ -1914,18 +1964,18 @@ PanelWindow {
                 if (finalProgress >= -0.44) {
                     settleAction = "time";
                     settleProgress = 0;
-                    settleWidth = userConfig.islandWidth;
+                    settleWidth = root.effectiveIslandWidth;
                 }
             } else if (startProgress >= 0.5) {
                 if (finalProgress <= 0.44) {
                     settleAction = "time";
                     settleProgress = 0;
-                    settleWidth = userConfig.islandWidth;
+                    settleWidth = root.effectiveIslandWidth;
                 }
             } else {
                 settleAction = "time";
                 settleProgress = 0;
-                settleWidth = userConfig.islandWidth;
+                settleWidth = root.effectiveIslandWidth;
             }
 
             return {
@@ -2577,8 +2627,8 @@ PanelWindow {
 
         Item {
             id: topAnchorProxy
-            y: root.userConfig.islandTopMargin
-            height: root.userConfig.islandHeight
+            y: root.effectiveIslandTopMargin
+            height: root.effectiveIslandHeight
             opacity: mainCapsule.opacity
             z: 7
 
@@ -2608,7 +2658,7 @@ PanelWindow {
                  : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width)
 
             x: (isSettingsApp || exitingSettingsApp)
-                ? Math.round(parent.width * userConfig.islandPositionX / 100 - width / 2)
+                ? Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2)
                 : mainCapsule.x
 
             Behavior on width {
@@ -2678,7 +2728,7 @@ PanelWindow {
             rootWindow: root
             mprisController: mediaController
             userConfig: root.userConfig
-            islandTopMargin: root.userConfig.islandTopMargin
+            islandTopMargin: root.effectiveIslandTopMargin
             accentColor: pywalColors.accent
             z: 8
         }
@@ -2688,7 +2738,7 @@ PanelWindow {
             targetCapsule: topAnchorProxy
             rootWindow: root
             userConfig: root.userConfig
-            islandTopMargin: root.userConfig.islandTopMargin
+            islandTopMargin: root.effectiveIslandTopMargin
             accentColor: pywalColors.accent
             z: 8
         }
@@ -2699,7 +2749,7 @@ PanelWindow {
             headphonesFloatingIsland: headphonesFloatingIsland
             rootWindow: root
             userConfig: root.userConfig
-            islandTopMargin: root.userConfig.islandTopMargin
+            islandTopMargin: root.effectiveIslandTopMargin
             accentColor: pywalColors.accent
             hasCall: islandContainer.discordCallActive
             ongoing: islandContainer.discordCallOngoing
@@ -2784,7 +2834,7 @@ PanelWindow {
                 case "discord_call":
                     return islandContainer.discordCallOngoing ? 290 : 340;
                 default:
-                    return userConfig.islandWidth;
+                    return root.effectiveIslandWidth;
                 }
             }
             readonly property real targetHeight: {
@@ -2819,7 +2869,7 @@ PanelWindow {
                         ? Math.max(56, notificationLoader.item.preferredHeight)
                         : 56;
                 case "reload":
-                    return reloadLoader.item ? reloadLoader.item.preferredHeight : userConfig.islandHeight;
+                    return reloadLoader.item ? reloadLoader.item.preferredHeight : root.effectiveIslandHeight;
                 case "charging":
                     return 44;
                 case "silent_ring":
@@ -2827,7 +2877,7 @@ PanelWindow {
                 case "discord_call":
                     return 58;
                 default:
-                    return userConfig.islandHeight;
+                    return root.effectiveIslandHeight;
                 }
             }
             readonly property real targetRadius: {
@@ -2862,28 +2912,28 @@ PanelWindow {
                 case "discord_call":
                     return 29;
                 default:
-                    return userConfig.islandHeight / 2;
+                    return root.effectiveIslandCornerRadius;
                 }
             }
             function sideSwipeWidthForProgress(progressValue) {
                 if (progressValue < 0)
-                    return userConfig.islandWidth + (islandContainer.customCapsuleWidth - userConfig.islandWidth)
+                    return root.effectiveIslandWidth + (islandContainer.customCapsuleWidth - root.effectiveIslandWidth)
                         * islandContainer.clamp01(-progressValue);
                 if (progressValue > 0)
-                    return userConfig.islandWidth + (islandContainer.lyricsCapsuleWidth - userConfig.islandWidth)
+                    return root.effectiveIslandWidth + (islandContainer.lyricsCapsuleWidth - root.effectiveIslandWidth)
                         * islandContainer.clamp01(progressValue);
-                return userConfig.islandWidth;
+                return root.effectiveIslandWidth;
             }
             readonly property real sideSwipePreviewWidth: mainCapsule.sideSwipeWidthForProgress(
                 islandContainer.swipeTransitionProgress
             )
             color: root.overviewContentVisible
                 ? root.overviewCapsuleColor
-                : (notificationHistorySurface ? "#080808" : Qt.rgba(0, 0, 0, userConfig.islandBackgroundOpacity / 100.0))
+                : (notificationHistorySurface ? "#080808" : Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100.0))
             y: (islandContainer.islandState === "settings_app"
                 ? Math.round(((root.screen ? root.screen.height : 1080) - targetHeight) / 2)
-                : userConfig.islandTopMargin - (1 - root.autoHideProgress) * (targetHeight + userConfig.islandTopMargin + 8))
-            x: parent ? parent.width * userConfig.islandPositionX / 100 - width / 2 : 0
+                : root.effectiveIslandTopMargin - (1 - root.autoHideProgress) * (targetHeight + root.effectiveIslandTopMargin + 8))
+            x: parent ? parent.width * root.effectiveIslandPositionX / 100 - width / 2 : 0
             clip: true
             width: displayedWidth
             height: targetHeight
@@ -3558,6 +3608,7 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ControlCenterLayer {
+                        userConfigData: localUserConfigFile.parsedData
                         accentColor: pywalColors.accent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
@@ -3696,6 +3747,10 @@ PanelWindow {
 
                 sourceComponent: Component {
                     SettingsAppLayer {
+                        systemTextFont: root.textFontFamily
+                        systemHeroFont: root.heroFontFamily
+                        systemTimeFont: root.timeFontFamily
+                        systemIconFont: root.iconFontFamily
                         accentColor: pywalColors.accent
                         pywalBackground: pywalColors.background
                         pywalForeground: pywalColors.foreground

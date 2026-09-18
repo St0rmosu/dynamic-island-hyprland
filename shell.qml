@@ -618,17 +618,17 @@ Scope {
             });
         }
 
-        function setSettingsCategory(catIndex) {
+        function setSettingsCategory(catIndex: int) {
             shellRoot.forFocusedWindow((window) => {
-                if (window && window.setSettingsAppCategory)
-                    window.setSettingsAppCategory(catIndex);
+                if (window && window.setSettingsCategory)
+                    window.setSettingsCategory(catIndex);
             });
         }
 
-        function setSettingsSubView(sub) {
+        function setSettingsSubView(sub: string) {
             shellRoot.forFocusedWindow((window) => {
-                if (window && window.setSettingsAppSubView)
-                    window.setSettingsAppSubView(sub);
+                if (window && window.setSettingsSubView)
+                    window.setSettingsSubView(sub);
             });
         }
     }

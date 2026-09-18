@@ -18,6 +18,7 @@ Item {
 
     readonly property var userConfig: UserConfig
     property var notificationModel: null
+    property var userConfigData: null
 
     FileView {
         id: localConfigFile
@@ -29,11 +30,16 @@ Item {
         onLoaded: {
             try {
                 parsedData = JSON.parse(text());
+                if (userConfig && typeof userConfig.reload === "function") {
+                    userConfig.reload();
+                }
             } catch(e) {}
         }
     }
 
     function cfgValue(key, fallback) {
+        if (userConfigData && userConfigData[key] !== undefined)
+            return userConfigData[key];
         if (localConfigFile.parsedData && localConfigFile.parsedData[key] !== undefined)
             return localConfigFile.parsedData[key];
         if (userConfig && userConfig[key] !== undefined)
@@ -108,15 +114,31 @@ Item {
     readonly property real controlCenterPreferredWidth: {
         const customW = Number(cfgValue("controlCenterWidth", 0));
         if (isHorizontal) {
-            return (customW >= 460 && customW <= 720) ? customW : 540;
+            return (customW >= 420 && customW <= 800) ? customW : 540;
         }
-        if (customW >= 360 && customW <= 480) return customW;
+        if (customW >= 340 && customW <= 720) return customW;
         return 380;
+    }
+
+    function getDefaultPos(id) {
+        switch(id) {
+        case "wifi": return { col: 0, row: 0, colSpan: 2, rowSpan: 1, height: 80 };
+        case "bluetooth": return { col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80 };
+        case "brightness": return { col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
+        case "volume": return { col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
+        case "toggles": return { col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
+        case "notifications": return { col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
+        case "battery": return { col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
+        case "quickactions": return { col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
+        default: return { col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        }
     }
 
     readonly property var activeCanvasLayout: {
         let layout = null;
-        if (localConfigFile.parsedData && localConfigFile.parsedData.controlCenterCanvasLayout !== undefined) {
+        if (userConfigData && userConfigData.controlCenterCanvasLayout !== undefined) {
+            layout = userConfigData.controlCenterCanvasLayout;
+        } else if (localConfigFile.parsedData && localConfigFile.parsedData.controlCenterCanvasLayout !== undefined) {
             layout = localConfigFile.parsedData.controlCenterCanvasLayout;
         } else if (userConfig && userConfig.controlCenterCanvasLayout !== undefined) {
             layout = userConfig.controlCenterCanvasLayout;
@@ -127,7 +149,10 @@ Item {
             // Header is unconditionally pinned at the very top (index 0), full width, 32px
             res.push({
                 id: "header",
+                col: 0,
+                row: -1,
                 colSpan: 4,
+                rowSpan: 1,
                 height: 32,
                 active: true
             });
@@ -135,78 +160,136 @@ Item {
             for (let i = 0; i < layout.length; i++) {
                 let m = layout[i];
                 if (!m || !m.id || m.id === "header") continue;
+                let def = getDefaultPos(m.id);
                 let span = Number(m.colSpan);
-                if (isNaN(span) || span < 1) span = 1;
+                if (isNaN(span) || span < 1) span = def.colSpan;
                 if (span > 4) span = 4;
+                let rSpan = Number(m.rowSpan);
+                if (isNaN(rSpan) || rSpan < 1) rSpan = (m.height >= 140 ? 2 : def.rowSpan);
+                if (rSpan > 3) rSpan = 3;
+                let c = Number(m.col);
+                if (isNaN(c) || c < 0) c = def.col;
+                if (c + span > 4) c = Math.max(0, 4 - span);
+                let r = Number(m.row);
+                if (isNaN(r) || r < 0) r = def.row;
+
+                let isAct = true;
+                if (m.active !== undefined) {
+                    isAct = Boolean(m.active);
+                } else {
+                    if (m.id === "wifi" && cfgValue("showWifiCard", null) !== null) isAct = Boolean(cfgValue("showWifiCard", true));
+                    else if (m.id === "bluetooth" && cfgValue("showBluetoothCard", null) !== null) isAct = Boolean(cfgValue("showBluetoothCard", true));
+                    else if (m.id === "brightness" && cfgValue("showDisplaySoundSliders", null) !== null) isAct = Boolean(cfgValue("showDisplaySoundSliders", true));
+                    else if (m.id === "volume" && cfgValue("showDisplaySoundSliders", null) !== null) isAct = Boolean(cfgValue("showDisplaySoundSliders", true));
+                    else if (m.id === "notifications" && cfgValue("controlCenterShowNotifications", null) !== null) isAct = Boolean(cfgValue("controlCenterShowNotifications", true));
+                    else if (m.id === "battery" && cfgValue("showTlpBatteryMode", null) !== null) isAct = Boolean(cfgValue("showTlpBatteryMode", true));
+                    else if (m.id === "toggles" && cfgValue("showNightFocusToggles", null) !== null) isAct = Boolean(cfgValue("showNightFocusToggles", true));
+                    else if (m.id === "quickactions") {
+                        let b1 = cfgValue("showBarraDesktopCard", null);
+                        let b2 = cfgValue("showClipboardQuickAccess", null);
+                        if (b1 !== null || b2 !== null) {
+                            isAct = Boolean((b1 !== null ? b1 : false) || (b2 !== null ? b2 : false));
+                        }
+                    }
+                }
+
                 res.push({
                     id: m.id,
+                    col: c,
+                    row: r,
                     colSpan: span,
-                    height: Number(m.height) || 0,
-                    active: m.active !== undefined ? Boolean(m.active) : true
+                    rowSpan: rSpan,
+                    height: rSpan * 80,
+                    active: isAct
                 });
+            }
+
+            const allStandard = ["wifi", "bluetooth", "brightness", "volume", "toggles", "notifications", "battery", "quickactions"];
+            for (let k = 0; k < allStandard.length; k++) {
+                let modId = allStandard[k];
+                let alreadyInRes = false;
+                for (let rIdx = 0; rIdx < res.length; rIdx++) {
+                    if (res[rIdx].id === modId) { alreadyInRes = true; break; }
+                }
+                if (!alreadyInRes) {
+                    let def = getDefaultPos(modId);
+                    let isAct = false;
+                    if (modId === "wifi" && cfgValue("showWifiCard", null) !== null) isAct = Boolean(cfgValue("showWifiCard", true));
+                    else if (modId === "bluetooth" && cfgValue("showBluetoothCard", null) !== null) isAct = Boolean(cfgValue("showBluetoothCard", true));
+                    else if (modId === "brightness" && cfgValue("showDisplaySoundSliders", null) !== null) isAct = Boolean(cfgValue("showDisplaySoundSliders", true));
+                    else if (modId === "volume" && cfgValue("showDisplaySoundSliders", null) !== null) isAct = Boolean(cfgValue("showDisplaySoundSliders", true));
+                    else if (modId === "notifications" && cfgValue("controlCenterShowNotifications", null) !== null) isAct = Boolean(cfgValue("controlCenterShowNotifications", true));
+                    else if (modId === "battery" && cfgValue("showTlpBatteryMode", null) !== null) isAct = Boolean(cfgValue("showTlpBatteryMode", true));
+                    else if (modId === "toggles" && cfgValue("showNightFocusToggles", null) !== null) isAct = Boolean(cfgValue("showNightFocusToggles", true));
+                    else if (modId === "quickactions") {
+                        let b1 = cfgValue("showBarraDesktopCard", null);
+                        let b2 = cfgValue("showClipboardQuickAccess", null);
+                        if (b1 !== null || b2 !== null) isAct = Boolean((b1 !== null ? b1 : false) || (b2 !== null ? b2 : false));
+                    }
+                    res.push({
+                        id: modId,
+                        col: def.col,
+                        row: def.row,
+                        colSpan: def.colSpan,
+                        rowSpan: def.rowSpan,
+                        height: def.rowSpan * 80,
+                        active: isAct
+                    });
+                }
             }
             return res;
         }
 
         return [
-            { id: "header", colSpan: 4, height: 32, active: true },
-            { id: "wifi", colSpan: 2, height: 80, active: cfgValue("showWifiCard", true) },
-            { id: "bluetooth", colSpan: 2, height: 80, active: cfgValue("showBluetoothCard", true) },
-            { id: "brightness", colSpan: 1, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "volume", colSpan: 1, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "toggles", colSpan: 2, height: 80, active: cfgValue("showNightFocusToggles", true) },
-            { id: "battery", colSpan: 2, height: 80, active: cfgValue("showTlpBatteryMode", true) },
-            { id: "notifications", colSpan: 4, height: 80, active: cfgValue("controlCenterShowNotifications", true) },
-            { id: "quickactions", colSpan: 4, height: 48, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
+            { id: "header", col: 0, row: -1, colSpan: 4, rowSpan: 1, height: 32, active: true },
+            { id: "wifi", col: 0, row: 0, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showWifiCard", true) },
+            { id: "bluetooth", col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showBluetoothCard", true) },
+            { id: "brightness", col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
+            { id: "volume", col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
+            { id: "toggles", col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showNightFocusToggles", true) },
+            { id: "notifications", col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("controlCenterShowNotifications", true) },
+            { id: "battery", col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showTlpBatteryMode", true) },
+            { id: "quickactions", col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
         ];
     }
 
-    function calculateDynamicContentHeight() {
-        const layout = activeCanvasLayout;
-        if (!Array.isArray(layout) || layout.length === 0) return 420;
-
-        let totalH = 0;
-        let rowCols = 0;
-        let rowMaxH = 0;
-        const spacing = 12;
-
-        for (let i = 0; i < layout.length; i++) {
-            const item = layout[i];
-            if (!item.active) continue;
-
-            let h = 80;
-            if (item.id === "header") {
-                h = 32;
-            } else if (item.id === "quickactions") {
-                h = (item.height && item.height >= 48) ? Math.round(item.height) : 48;
-            } else if (item.id === "notifications") {
-                if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                    h = Math.max(item.height || 80, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
-                } else {
-                    h = (item.height && item.height >= 80) ? Math.round(item.height) : 80;
-                }
-            } else if (item.height && item.height >= 80) {
-                h = Math.round(item.height);
-            }
-
-            const span = Math.max(1, Math.min(4, Number(item.colSpan) || 1));
-
-            if (rowCols + span > 4) {
-                totalH += rowMaxH + spacing;
-                rowCols = span;
-                rowMaxH = h;
-            } else {
-                rowCols += span;
-                rowMaxH = Math.max(rowMaxH, h);
-            }
+    onActiveCanvasLayoutChanged: {
+        if (typeof modulesRepeater !== "undefined" && modulesRepeater) {
+            modulesRepeater.model = 0;
+            modulesRepeater.model = controlCenter.activeCanvasLayout;
         }
-        if (rowCols > 0) {
-            totalH += rowMaxH + spacing;
-        }
-        return Math.max(120, totalH + 16);
     }
 
-    readonly property real controlCenterPreferredHeight: calculateDynamicContentHeight()
+    readonly property real controlCenterPreferredHeight: {
+        const layout = controlCenter.activeCanvasLayout;
+        if (!Array.isArray(layout) || layout.length === 0) return 420;
+
+        let maxRow = 0;
+        let extraNotificationH = 0;
+        for (let i = 0; i < layout.length; i++) {
+            const item = layout[i];
+            if (!item.active || item.id === "header") continue;
+            let r = (item.row !== undefined && item.row >= 0) ? item.row : 0;
+            let rSpan = Math.max(1, Math.min(3, Number(item.rowSpan) || (item.height >= 140 ? 2 : 1)));
+            if (r + rSpan > maxRow) maxRow = r + rSpan;
+
+            if (item.id === "notifications" && controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
+                let baseH = rSpan * 80 + (rSpan - 1) * 10;
+                let neededH = Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10);
+                if (neededH > baseH) {
+                    extraNotificationH = Math.max(extraNotificationH, neededH - baseH);
+                }
+            }
+        }
+        maxRow = Math.max(2, maxRow);
+        const spacing = 10;
+        const cellH = 80;
+        const gridH = maxRow * cellH + (maxRow - 1) * spacing;
+        const headerH = 32;
+        const bottomPadding = 24;
+        const padding = 12 + 10 + bottomPadding;
+        return Math.max(160, headerH + gridH + padding + extraNotificationH);
+    }
 
     property bool showCondition: false
     property string iconFontFamily: userConfig.iconFontFamily
@@ -1816,7 +1899,7 @@ Item {
                 anchors.centerIn: parent
                 width: Math.min(parent.width, parent.height)
                 height: width
-                radius: 18
+                radius: width / 2
                 clip: true
 
                 readonly property string modId: (tileContainer.parent && tileContainer.parent.slotModel) ? tileContainer.parent.slotModel.id : (moduleSlot ? moduleSlot.modelData.id : "")
@@ -2920,69 +3003,180 @@ Item {
         }
     }
 
-    Flow {
+    Item {
         id: mainContent
         anchors.fill: parent
         visible: opacity > 0.001
         opacity: (!controlCenter.powerViewActive && !controlCenter.anyConnectivitySubViewActive) ? 1 : 0
-        spacing: 12
 
         Behavior on opacity {
             NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
         }
 
-        Repeater {
-            model: controlCenter.activeCanvasLayout
+        // Pinned Top Header (Clock, Date, Battery, Settings)
+        Loader {
+            id: topHeaderSlot
+            anchors.top: parent.top
+            anchors.topMargin: 12
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            height: 32
+            sourceComponent: headerComponent
+        }
 
-            delegate: Item {
-                id: moduleSlot
-                required property int index
-                required property var modelData
+        // 2D Grid with iPadOS 18 Circular Caselle Underneath
+        Item {
+            id: gridCaselleArea
+            anchors.top: topHeaderSlot.bottom
+            anchors.topMargin: 10
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            anchors.bottomMargin: 24
 
-                readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
-                readonly property bool isFullWidth: colSpan === 4
-                readonly property real unitColWidth: (mainContent.width - (3 * mainContent.spacing)) / 4
-                readonly property real slotHeight: {
-                    if (modelData.id === "header") return 32;
-                    if (modelData.id === "quickactions") return (modelData.height && modelData.height >= 48) ? Math.round(modelData.height) : 48;
-                    if (modelData.id === "notifications") {
-                        if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                            return Math.max(modelData.height || 80, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
+            readonly property real gridSpacing: 10
+            readonly property real unitColWidth: (width - (3 * gridSpacing)) / 4
+            readonly property real unitRowHeight: 80
+
+            readonly property int totalGridRows: {
+                let maxR = 2;
+                const layout = controlCenter.activeCanvasLayout;
+                if (Array.isArray(layout)) {
+                    for (let i = 0; i < layout.length; i++) {
+                        let m = layout[i];
+                        if (m && m.active && m.id !== "header") {
+                            let r = (m.row !== undefined && m.row >= 0) ? m.row : 0;
+                            let rs = Math.max(1, Math.min(3, Number(m.rowSpan) || (m.height >= 140 ? 2 : 1)));
+                            if (r + rs > maxR) maxR = r + rs;
                         }
-                        return (modelData.height && modelData.height >= 80) ? Math.round(modelData.height) : 80;
                     }
-                    if (modelData.height && modelData.height >= 80) {
-                        return Math.round(modelData.height);
-                    }
-                    return 80;
                 }
-                readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
-                readonly property real slotWidth: isFullWidth ? mainContent.width : (colSpan * unitColWidth + (colSpan - 1) * mainContent.spacing)
+                return Math.max(2, maxR);
+            }
 
-                visible: modelData.active
-                width: modelData.active ? slotWidth : 0
-                height: modelData.active ? slotHeight : 0
-
-                Loader {
-                    anchors.fill: parent
-                    property var slotModel: moduleSlot.modelData
-                    property bool isOneByOneSlot: moduleSlot.isOneByOne
-                    active: moduleSlot.visible
-                    sourceComponent: {
-                        if (moduleSlot.isOneByOne) {
-                            return oneByOneComponent;
+            function isSlotOccupied(c, r) {
+                const layout = controlCenter.activeCanvasLayout;
+                if (Array.isArray(layout)) {
+                    for (let i = 0; i < layout.length; i++) {
+                        let m = layout[i];
+                        if (m && m.active && m.id !== "header") {
+                            let mc = (m.col !== undefined && m.col >= 0) ? m.col : 0;
+                            let mr = (m.row !== undefined && m.row >= 0) ? m.row : 0;
+                            let mcs = Math.max(1, Math.min(4, Number(m.colSpan) || 1));
+                            let mrs = Math.max(1, Math.min(3, Number(m.rowSpan) || (m.height >= 140 ? 2 : 1)));
+                            if (c >= mc && c < mc + mcs && r >= mr && r < mr + mrs) {
+                                return true;
+                            }
                         }
-                        switch (moduleSlot.modelData.id) {
-                        case "header": return headerComponent;
-                        case "wifi": return wifiComponent;
-                        case "bluetooth": return bluetoothComponent;
-                        case "brightness": return brightnessComponent;
-                        case "volume": return volumeComponent;
-                        case "notifications": return notificationsComponent;
-                        case "battery": return batteryComponent;
-                        case "toggles": return togglesComponent;
-                        case "quickactions": return quickactionsComponent;
-                        default: return null;
+                    }
+                }
+                return false;
+            }
+
+            // Layer 0: The Caselle (iPadOS 18 Circular Slots Underneath)
+            Repeater {
+                model: Math.max(0, gridCaselleArea.totalGridRows * 4)
+
+                delegate: Rectangle {
+                    required property int index
+                    readonly property int col: index % 4
+                    readonly property int row: Math.floor(index / 4)
+
+                    x: Math.round(col * (gridCaselleArea.unitColWidth + gridCaselleArea.gridSpacing))
+                    y: Math.round(row * (gridCaselleArea.unitRowHeight + gridCaselleArea.gridSpacing))
+                    width: Math.round(gridCaselleArea.unitColWidth)
+                    height: Math.round(gridCaselleArea.unitRowHeight)
+                    radius: Math.min(width, height) / 2 // Circular casella like iPadOS 18
+
+                    color: Qt.rgba(255, 255, 255, 0.055)
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.08)
+
+                    // Subtle dot for empty caselle
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: 6
+                        height: 6
+                        radius: 3
+                        color: Qt.rgba(255, 255, 255, 0.12)
+                        visible: {
+                            const _ = controlCenter.activeCanvasLayout;
+                            return !gridCaselleArea.isSlotOccupied(col, row);
+                        }
+                    }
+                }
+            }
+
+            // Layer 1: Active Modules on 2D Grid
+            Repeater {
+                id: modulesRepeater
+                model: controlCenter.activeCanvasLayout
+
+                delegate: Item {
+                    id: moduleSlot
+                    required property int index
+                    required property var modelData
+
+                    visible: modelData.active && modelData.id !== "header"
+
+                    readonly property int col: (modelData.col !== undefined && modelData.col >= 0) ? modelData.col : 0
+                    readonly property int row: (modelData.row !== undefined && modelData.row >= 0) ? modelData.row : 0
+                    readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
+                    readonly property int rowSpan: Math.max(1, Math.min(3, Number(modelData.rowSpan) || (modelData.height >= 140 ? 2 : 1)))
+
+                    readonly property bool isFullWidth: colSpan === 4
+                    readonly property real slotWidth: isFullWidth
+                        ? gridCaselleArea.width
+                        : Math.round(colSpan * gridCaselleArea.unitColWidth + (colSpan - 1) * gridCaselleArea.gridSpacing)
+                    readonly property real slotHeight: {
+                        if (modelData.id === "quickactions" && rowSpan === 1 && modelData.height && modelData.height < 80)
+                            return Math.round(modelData.height);
+                        if (modelData.id === "notifications") {
+                            if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
+                                return Math.max(rowSpan * gridCaselleArea.unitRowHeight + (rowSpan - 1) * gridCaselleArea.gridSpacing,
+                                                Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
+                            }
+                        }
+                        return Math.round(rowSpan * gridCaselleArea.unitRowHeight + (rowSpan - 1) * gridCaselleArea.gridSpacing);
+                    }
+                    readonly property bool isOneByOne: colSpan === 1 && rowSpan === 1
+
+                    x: Math.round(col * (gridCaselleArea.unitColWidth + gridCaselleArea.gridSpacing))
+                    y: Math.round(row * (gridCaselleArea.unitRowHeight + gridCaselleArea.gridSpacing))
+                    width: slotWidth
+                    height: slotHeight
+
+                    Behavior on x {
+                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on y {
+                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                    }
+
+                    Loader {
+                        anchors.fill: parent
+                        property var slotModel: moduleSlot.modelData
+                        property bool isOneByOneSlot: moduleSlot.isOneByOne
+                        active: moduleSlot.visible
+                        sourceComponent: {
+                            if (moduleSlot.isOneByOne) {
+                                return oneByOneComponent;
+                            }
+                            switch (moduleSlot.modelData.id) {
+                            case "wifi": return wifiComponent;
+                            case "bluetooth": return bluetoothComponent;
+                            case "brightness": return brightnessComponent;
+                            case "volume": return volumeComponent;
+                            case "notifications": return notificationsComponent;
+                            case "battery": return batteryComponent;
+                            case "toggles": return togglesComponent;
+                            case "quickactions": return quickactionsComponent;
+                            default: return null;
+                            }
                         }
                     }
                 }

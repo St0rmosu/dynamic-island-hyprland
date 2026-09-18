@@ -42,16 +42,25 @@ def main():
     existing.update(patch)
 
     try:
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(existing, f, indent=4, ensure_ascii=False)
-            f.write("\n")
+        content = json.dumps(existing, indent=4, ensure_ascii=False) + "\n"
         
-        # Also sync legacy path if it's a separate real directory
+        # Atomic write to primary CONFIG_PATH
+        tmp_config = CONFIG_PATH + ".tmp"
+        with open(tmp_config, "w", encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_config, CONFIG_PATH)
+        
+        # Also sync legacy path atomically if it's a separate real directory
         if os.path.exists(os.path.dirname(LEGACY_CONFIG_PATH)) and not os.path.samefile(os.path.dirname(CONFIG_PATH), os.path.dirname(LEGACY_CONFIG_PATH)):
             try:
-                with open(LEGACY_CONFIG_PATH, "w", encoding="utf-8") as f:
-                    json.dump(existing, f, indent=4, ensure_ascii=False)
-                    f.write("\n")
+                tmp_legacy = LEGACY_CONFIG_PATH + ".tmp"
+                with open(tmp_legacy, "w", encoding="utf-8") as f:
+                    f.write(content)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp_legacy, LEGACY_CONFIG_PATH)
             except Exception:
                 pass
         print("OK")

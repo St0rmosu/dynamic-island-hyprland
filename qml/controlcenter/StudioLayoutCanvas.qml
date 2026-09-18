@@ -29,11 +29,13 @@ Item {
     signal requestWidthChange(int newWidth)
     signal requestReloadQuickshell()
 
-    // Current selection in canvas
+    // Current selection & drag in canvas
     property string selectedModuleId: "wifi"
-    property int dragSourceIndex: -1
-    property int hoverTargetIndex: -1
     property string draggedModuleId: ""
+    property int dragTargetCol: 0
+    property int dragTargetRow: 0
+    property int dragTargetColSpan: 2
+    property int dragTargetRowSpan: 1
     property real dragGhostX: 0
     property real dragGhostY: 0
     property real dragGhostW: 80
@@ -55,17 +57,31 @@ Item {
         return null;
     }
 
-    // Live list of modules (Griglia a 4 colonne stile iOS: 1=25% min, 2=50%, 3=75%, 4=100% max)
+    function getDefaultPos(id) {
+        switch(id) {
+        case "wifi": return { col: 0, row: 0, colSpan: 2, rowSpan: 1, height: 80 };
+        case "bluetooth": return { col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80 };
+        case "brightness": return { col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
+        case "volume": return { col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
+        case "toggles": return { col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
+        case "notifications": return { col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
+        case "battery": return { col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
+        case "quickactions": return { col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
+        default: return { col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        }
+    }
+
+    // Live list of modules with 2D Grid coordinates (iPadOS 18 style)
     property var modules: [
-        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
-        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
-        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 4, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 4, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+        { id: "header", name: "Orologio & Batteria", icon: "\uf017", col: 0, row: -1, colSpan: 4, rowSpan: 1, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", col: 0, row: 0, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
+        { id: "brightness", name: "Luminosità Display", icon: "\uf185", col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
+        { id: "volume", name: "Controllo Volume", icon: "\uf028", col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
     Component.onCompleted: {
@@ -84,18 +100,15 @@ Item {
 
     function snapHeight(id, rawH) {
         if (id === "header") return 32;
-        if (id === "quickactions") return Math.max(48, Math.min(96, Math.round(rawH / 24) * 24));
-        const minH = 80;
-        const maxH = 240;
-        // Griglia a caselle stile iOS: snap a passi di 40px (80 = 1 casella, 120 = 1.5, 160 = 2, 200 = 2.5, 240 = 3)
-        const snapped = Math.round(rawH / 40) * 40;
-        return Math.max(minH, Math.min(maxH, snapped));
+        const snapped = Math.round(rawH / 80) * 80;
+        return Math.max(80, Math.min(240, snapped));
     }
 
     function defaultHeight(id) {
         switch(id) {
         case "header": return 32;
-        case "quickactions": return 48;
+        case "brightness":
+        case "volume": return 160;
         default: return 80;
         }
     }
@@ -108,16 +121,9 @@ Item {
                 let merged = [];
                 let seen = {};
 
-                // Header è permanentemente fisso in cima (index 0, 4 colonne, 32px, sempre attivo)
                 let headerDef = {
-                    id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria"
+                    id: "header", name: "Orologio & Batteria", icon: "\uf017", col: 0, row: -1, colSpan: 4, rowSpan: 1, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria"
                 };
-                for (let h = 0; h < modules.length; h++) {
-                    if (modules[h].id === "header") { headerDef = Object.assign({}, modules[h]); break; }
-                }
-                headerDef.colSpan = 4;
-                headerDef.height = 32;
-                headerDef.active = true;
                 merged.push(headerDef);
                 seen["header"] = true;
 
@@ -127,13 +133,22 @@ Item {
                     for (let j = 0; j < modules.length; j++) {
                         let m = modules[j];
                         if (m.id === s.id) {
+                            let def = getDefaultPos(m.id);
                             let targetH = s.height !== undefined ? snapHeight(m.id, s.height) : defaultHeight(m.id);
+                            let rSpan = s.rowSpan !== undefined ? Math.max(1, Math.min(3, Number(s.rowSpan) || 1)) : (targetH >= 140 ? 2 : def.rowSpan);
+                            let cSpan = s.colSpan !== undefined ? Math.max(1, Math.min(4, Number(s.colSpan) || 1)) : def.colSpan;
+                            let col = s.col !== undefined ? Math.max(0, Math.min(4 - cSpan, Number(s.col) || 0)) : def.col;
+                            let row = s.row !== undefined ? Math.max(0, Number(s.row) || 0) : def.row;
+
                             merged.push({
                                 id: m.id,
                                 name: m.name,
                                 icon: m.icon,
-                                colSpan: s.colSpan !== undefined ? Math.max(1, Math.min(4, Number(s.colSpan) || 1)) : m.colSpan,
-                                height: targetH,
+                                col: col,
+                                row: row,
+                                colSpan: cSpan,
+                                rowSpan: rSpan,
+                                height: rSpan * 80,
                                 minHeight: m.minHeight,
                                 maxHeight: m.maxHeight,
                                 active: s.active !== undefined ? s.active : m.active,
@@ -146,7 +161,10 @@ Item {
                 }
                 for (let j = 0; j < modules.length; j++) {
                     let m = modules[j];
-                    if (!seen[m.id]) merged.push(m);
+                    if (!seen[m.id]) {
+                        let def = getDefaultPos(m.id);
+                        merged.push(Object.assign({}, m, def));
+                    }
                 }
                 modules = merged;
                 return;
@@ -182,21 +200,29 @@ Item {
 
     function emitSave() {
         let clean = [];
-        // Header è sempre al primo posto (index 0), 4 colonne, 32px, attivo
         clean.push({
             id: "header",
+            col: 0,
+            row: -1,
             colSpan: 4,
+            rowSpan: 1,
             height: 32,
             active: true
         });
 
         for (let i = 0; i < modules.length; i++) {
-            if (modules[i].id === "header") continue;
+            let m = modules[i];
+            if (m.id === "header") continue;
+            let cSpan = Math.max(1, Math.min(4, Number(m.colSpan) || 1));
+            let rSpan = Math.max(1, Math.min(3, Number(m.rowSpan) || (m.height >= 140 ? 2 : 1)));
             clean.push({
-                id: modules[i].id,
-                colSpan: modules[i].colSpan,
-                height: Math.round(modules[i].height || defaultHeight(modules[i].id)),
-                active: modules[i].active
+                id: m.id,
+                col: m.col !== undefined ? Math.max(0, Math.min(4 - cSpan, Number(m.col) || 0)) : 0,
+                row: m.row !== undefined ? Math.max(0, Number(m.row) || 0) : 0,
+                colSpan: cSpan,
+                rowSpan: rSpan,
+                height: rSpan * 80,
+                active: m.active
             });
         }
         isInternalSave = true;
@@ -204,20 +230,40 @@ Item {
         isInternalSave = false;
     }
 
-    function toggleColSpan(id) {
-        if (id === "header") return;
-        let copy = [];
-        for (let i = 0; i < modules.length; i++) {
-            let m = Object.assign({}, modules[i]);
-            if (m.id === id) {
-                let next = (Number(m.colSpan) || 1) + 1;
-                if (next > 4) next = 1;
-                m.colSpan = next;
-            }
-            copy.push(m);
+    function resolveResizeCollisions(expandedId, copy) {
+        let exp = null;
+        for (let i = 0; i < copy.length; i++) {
+            if (copy[i].id === expandedId) { exp = copy[i]; break; }
         }
-        modules = copy;
-        emitSave();
+        if (!exp) return;
+
+        let expCol = exp.col || 0;
+        let expRow = exp.row || 0;
+        let expCSpan = exp.colSpan || 1;
+        let expRSpan = exp.rowSpan || 1;
+
+        let iterations = 0;
+        let hasCollision = true;
+        while (hasCollision && iterations < 20) {
+            hasCollision = false;
+            iterations++;
+            for (let i = 0; i < copy.length; i++) {
+                let m = copy[i];
+                if (m.id === expandedId || m.id === "header" || !m.active) continue;
+                let mCol = m.col || 0;
+                let mRow = m.row || 0;
+                let mCSpan = m.colSpan || 1;
+                let mRSpan = m.rowSpan || 1;
+
+                let overlapX = (expCol < mCol + mCSpan) && (expCol + expCSpan > mCol);
+                let overlapY = (expRow < mRow + mRSpan) && (expRow + expRSpan > mRow);
+
+                if (overlapX && overlapY) {
+                    m.row = expRow + expRSpan;
+                    hasCollision = true;
+                }
+            }
+        }
     }
 
     function adjustModuleColSpan(id, delta) {
@@ -231,48 +277,136 @@ Item {
                 let next = Math.max(1, Math.min(4, curr + delta));
                 if (m.colSpan !== next) {
                     m.colSpan = next;
+                    if (m.col + next > 4) {
+                        m.col = 4 - next;
+                    }
                     changed = true;
                 }
             }
             copy.push(m);
         }
         if (changed) {
+            resolveResizeCollisions(id, copy);
+            selectedModuleId = id;
             modules = copy;
             emitSave();
         }
     }
 
-    function setModuleHeight(id, h) {
+    function adjustModuleRowSpan(id, delta) {
         if (id === "header") return;
         let copy = [];
         let changed = false;
         for (let i = 0; i < modules.length; i++) {
             let m = Object.assign({}, modules[i]);
             if (m.id === id) {
-                const nh = snapHeight(id, h);
-                if (m.height !== nh) {
-                    m.height = nh;
+                let curr = Number(m.rowSpan) || (m.height >= 140 ? 2 : 1);
+                let next = Math.max(1, Math.min(3, curr + delta));
+                if (m.rowSpan !== next) {
+                    m.rowSpan = next;
+                    m.height = next * 80;
                     changed = true;
                 }
             }
             copy.push(m);
         }
         if (changed) {
+            resolveResizeCollisions(id, copy);
+            selectedModuleId = id;
             modules = copy;
             emitSave();
         }
     }
 
-    function adjustModuleHeight(id, delta) {
+    function toggleColSpan(id) {
         if (id === "header") return;
         for (let i = 0; i < modules.length; i++) {
             if (modules[i].id === id) {
-                let cur = Number(modules[i].height) || defaultHeight(id);
-                let step = (id === "quickactions") ? 24 : 40;
-                setModuleHeight(id, cur + (delta > 0 ? step : -step));
+                let next = (Number(modules[i].colSpan) || 1) + 1;
+                if (next > 4) next = 1;
+                adjustModuleColSpan(id, next - modules[i].colSpan);
                 break;
             }
         }
+    }
+
+    function anchorModuleToSlot(id, targetCol, targetRow) {
+        if (id === "header") return;
+        let targetModule = null;
+        let otherModules = [];
+
+        for (let i = 0; i < modules.length; i++) {
+            let m = Object.assign({}, modules[i]);
+            if (m.id === id) {
+                targetModule = m;
+            } else {
+                otherModules.push(m);
+            }
+        }
+        if (!targetModule) return;
+
+        let oldCol = targetModule.col !== undefined ? targetModule.col : 0;
+        let oldRow = targetModule.row !== undefined ? targetModule.row : 0;
+        let cSpan = targetModule.colSpan || 1;
+        let rSpan = targetModule.rowSpan || 1;
+
+        targetCol = Math.max(0, Math.min(4 - cSpan, targetCol));
+        targetRow = Math.max(0, targetRow);
+
+        if (targetCol === oldCol && targetRow === oldRow) return;
+
+        targetModule.col = targetCol;
+        targetModule.row = targetRow;
+
+        // Collision check and swap/shift with overlapping active modules
+        for (let j = 0; j < otherModules.length; j++) {
+            let om = otherModules[j];
+            if (!om.active || om.id === "header") continue;
+
+            let omCol = om.col !== undefined ? om.col : 0;
+            let omRow = om.row !== undefined ? om.row : 0;
+            let omCSpan = om.colSpan || 1;
+            let omRSpan = om.rowSpan || 1;
+
+            let overlapX = (targetCol < omCol + omCSpan) && (targetCol + cSpan > omCol);
+            let overlapY = (targetRow < omRow + omRSpan) && (targetRow + rSpan > omRow);
+
+            if (overlapX && overlapY) {
+                if (oldCol + omCSpan <= 4) {
+                    om.col = oldCol;
+                    om.row = oldRow;
+                } else {
+                    om.col = Math.max(0, 4 - omCSpan);
+                    om.row = oldRow;
+                }
+            }
+        }
+
+        let newModules = [targetModule].concat(otherModules);
+        newModules.sort((a, b) => {
+            if (a.id === "header") return -1;
+            if (b.id === "header") return 1;
+            let rowA = a.row !== undefined ? a.row : 0;
+            let rowB = b.row !== undefined ? b.row : 0;
+            if (rowA !== rowB) return rowA - rowB;
+            let colA = a.col !== undefined ? a.col : 0;
+            let colB = b.col !== undefined ? b.col : 0;
+            return colA - colB;
+        });
+
+        selectedModuleId = id;
+        modules = newModules;
+        emitSave();
+    }
+
+    function nudgeSelectedModule(dCol, dRow) {
+        if (!selectedModule || selectedModuleId === "header") return;
+        let cSpan = selectedModule.colSpan || 1;
+        let curCol = selectedModule.col !== undefined ? selectedModule.col : 0;
+        let curRow = selectedModule.row !== undefined ? selectedModule.row : 0;
+        let newCol = Math.max(0, Math.min(4 - cSpan, curCol + dCol));
+        let newRow = Math.max(0, curRow + dRow);
+        anchorModuleToSlot(selectedModuleId, newCol, newRow);
     }
 
     function setModuleActive(id, active) {
@@ -282,6 +416,17 @@ Item {
             let m = Object.assign({}, modules[i]);
             if (m.id === id) {
                 m.active = active;
+                if (active) {
+                    let maxR = 0;
+                    for (let k = 0; k < modules.length; k++) {
+                        if (modules[k].active && modules[k].id !== "header") {
+                            let br = (modules[k].row !== undefined ? modules[k].row : 0) + (modules[k].rowSpan || 1);
+                            if (br > maxR) maxR = br;
+                        }
+                    }
+                    m.row = maxR;
+                    m.col = 0;
+                }
             }
             copy.push(m);
         }
@@ -291,112 +436,17 @@ Item {
         emitSave();
     }
 
-    function moveModule(fromIdx, toIdx) {
-        if (fromIdx < 0 || fromIdx >= modules.length || toIdx < 0 || toIdx >= modules.length || fromIdx === toIdx)
-            return;
-        if (modules[fromIdx].id === "header") return; // Header non si tocca né si sposta
-        if (toIdx <= 0) toIdx = 1; // Non può scavalcare l'header
-        if (fromIdx === toIdx) return;
-        let copy = [];
-        for (let i = 0; i < modules.length; i++) {
-            copy.push(Object.assign({}, modules[i]));
-        }
-        let item = copy.splice(fromIdx, 1)[0];
-        copy.splice(toIdx, 0, item);
-        modules = copy;
-        emitSave();
-    }
-
-    function findDropTargetIndex(layoutX, layoutY, sourceIdx) {
-        if (!capsuleRepeater) return -1;
-        let count = capsuleRepeater.count !== undefined ? capsuleRepeater.count : modules.length;
-        if (count <= 1) return -1;
-
-        let activeItems = [];
-        let maxBottomY = 0;
-        let minTopY = 999999;
-
-        for (let i = 1; i < modules.length; i++) {
-            let it = capsuleRepeater.itemAt(i);
-            if (it && it.visible && it.width > 0 && it.height > 0) {
-                activeItems.push({
-                    index: i,
-                    id: modules[i].id,
-                    x: it.x,
-                    y: it.y,
-                    w: it.width,
-                    h: it.height,
-                    cx: it.x + it.width / 2,
-                    cy: it.y + it.height / 2,
-                    bottom: it.y + it.height
-                });
-                if (it.y + it.height > maxBottomY) maxBottomY = it.y + it.height;
-                if (it.y < minTopY) minTopY = it.y;
-            }
-        }
-
-        if (activeItems.length === 0) return -1;
-
-        // 1. Direct hit test with padding covering 10px spacing
-        const padX = capsuleLayout.spacing;
-        const padY = capsuleLayout.spacing;
-        for (let j = 0; j < activeItems.length; j++) {
-            let it = activeItems[j];
-            if (layoutX >= (it.x - padX) && layoutX <= (it.x + it.w + padX) &&
-                layoutY >= (it.y - padY) && layoutY <= (it.y + it.h + padY)) {
-                return it.index;
-            }
-        }
-
-        // 2. Dragged below the last row: drop at the end
-        if (layoutY > maxBottomY + 10) {
-            return activeItems[activeItems.length - 1].index;
-        }
-
-        // 3. Dragged above the first row (near header): drop at first position
-        if (layoutY < minTopY - 10) {
-            return activeItems[0].index;
-        }
-
-        // 4. Fallback: closest active card by center Euclidean distance
-        let closestIdx = -1;
-        let minDist = 999999;
-        for (let k = 0; k < activeItems.length; k++) {
-            let it = activeItems[k];
-            let dist = Math.hypot(layoutX - it.cx, layoutY - it.cy);
-            if (dist < minDist) {
-                minDist = dist;
-                closestIdx = it.index;
-            }
-        }
-
-        return closestIdx > 0 ? closestIdx : -1;
-    }
-
-    function moveSelectedModule(delta) {
-        if (selectedModuleId === "header") return;
-        for (let i = 0; i < modules.length; i++) {
-            if (modules[i].id === selectedModuleId) {
-                let target = i + delta;
-                if (target >= 1 && target < modules.length) {
-                    moveModule(i, target);
-                }
-                break;
-            }
-        }
-    }
-
     function resetToDefault() {
         modules = [
-            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
-            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
-            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
-            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 4, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 4, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+            { id: "header", name: "Orologio & Batteria", icon: "\uf017", col: 0, row: -1, colSpan: 4, rowSpan: 1, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", col: 0, row: 0, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
+            { id: "brightness", name: "Luminosità Display", icon: "\uf185", col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
+            { id: "volume", name: "Controllo Volume", icon: "\uf028", col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
+            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
         ];
         studioRoot.selectedModuleId = "wifi";
         emitSave();
@@ -404,6 +454,7 @@ Item {
 
     width: parent.width
     implicitHeight: mainColumn.implicitHeight
+    height: implicitHeight
 
     Column {
         id: mainColumn
@@ -639,67 +690,73 @@ Item {
                         spacing: 6
                         visible: studioRoot.selectedModuleId !== "header"
 
-                        // Move Up / Down
+                        // 4-Way Grid Nudge [ ◀ ] [ ▶ ] [ ▲ ] [ ▼ ]
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 3
 
                             Rectangle {
-                                width: 26; height: 26; radius: 6
-                                readonly property bool canMoveUp: {
-                                    for (let i = 0; i < studioRoot.modules.length; i++) {
-                                        if (studioRoot.modules[i].id === studioRoot.selectedModuleId) {
-                                            return i > 1;
-                                        }
-                                    }
-                                    return false;
-                                }
-                                enabled: canMoveUp
-                                opacity: canMoveUp ? 1.0 : 0.35
-                                color: (barUpMouse.containsMouse && canMoveUp) ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                width: 24; height: 26; radius: 6
+                                color: barLeftMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
                                 border.width: 1
-                                border.color: (barUpMouse.containsMouse && canMoveUp) ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                border.color: barLeftMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
                                 anchors.verticalCenter: parent.verticalCenter
-                                Text { anchors.centerIn: parent; text: "▲"; font.pixelSize: 9; color: (barUpMouse.containsMouse && parent.canMoveUp) ? studioRoot.accentColor : studioRoot.textSecondary }
+                                Text { anchors.centerIn: parent; text: "◀"; font.pixelSize: 8; color: barLeftMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
                                 MouseArea {
-                                    id: barUpMouse
+                                    id: barLeftMouse
                                     anchors.fill: parent
-                                    cursorShape: parent.canMoveUp ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    onClicked: {
-                                        if (parent.canMoveUp) studioRoot.moveSelectedModule(-1);
-                                    }
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.nudgeSelectedModule(-1, 0)
                                 }
                             }
 
                             Rectangle {
-                                width: 26; height: 26; radius: 6
-                                readonly property bool canMoveDown: {
-                                    for (let i = 0; i < studioRoot.modules.length; i++) {
-                                        if (studioRoot.modules[i].id === studioRoot.selectedModuleId) {
-                                            return i < studioRoot.modules.length - 1;
-                                        }
-                                    }
-                                    return false;
-                                }
-                                enabled: canMoveDown
-                                opacity: canMoveDown ? 1.0 : 0.35
-                                color: (barDownMouse.containsMouse && canMoveDown) ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                width: 24; height: 26; radius: 6
+                                color: barRightMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
                                 border.width: 1
-                                border.color: (barDownMouse.containsMouse && canMoveDown) ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                border.color: barRightMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
                                 anchors.verticalCenter: parent.verticalCenter
-                                Text { anchors.centerIn: parent; text: "▼"; font.pixelSize: 9; color: (barDownMouse.containsMouse && parent.canMoveDown) ? studioRoot.accentColor : studioRoot.textSecondary }
+                                Text { anchors.centerIn: parent; text: "▶"; font.pixelSize: 8; color: barRightMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
+                                MouseArea {
+                                    id: barRightMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.nudgeSelectedModule(1, 0)
+                                }
+                            }
+
+                            Rectangle {
+                                width: 24; height: 26; radius: 6
+                                color: barUpMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barUpMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "▲"; font.pixelSize: 8; color: barUpMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
+                                MouseArea {
+                                    id: barUpMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.nudgeSelectedModule(0, -1)
+                                }
+                            }
+
+                            Rectangle {
+                                width: 24; height: 26; radius: 6
+                                color: barDownMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barDownMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "▼"; font.pixelSize: 8; color: barDownMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
                                 MouseArea {
                                     id: barDownMouse
                                     anchors.fill: parent
-                                    cursorShape: parent.canMoveDown ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    onClicked: {
-                                        if (parent.canMoveDown) studioRoot.moveSelectedModule(1);
-                                    }
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.nudgeSelectedModule(0, 1)
                                 }
                             }
                         }
 
-                        // Stepper Altezza: [ − ] [ 80px ] [ + ]
+                        // Stepper Altezza / Righe: [ − ] [ X Righe ] [ + ]
                         Row {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 3
@@ -715,21 +772,21 @@ Item {
                                     id: barMinusMouse
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: studioRoot.adjustModuleHeight(studioRoot.selectedModuleId, -40)
+                                    onClicked: studioRoot.adjustModuleRowSpan(studioRoot.selectedModuleId, -1)
                                 }
                             }
 
                             Rectangle {
-                                width: 50; height: 26; radius: 6
+                                width: 56; height: 26; radius: 6
                                 color: Qt.rgba(0, 0, 0, 0.25)
                                 border.width: 1
                                 border.color: Qt.rgba(255, 255, 255, 0.08)
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
-                                    text: studioRoot.selectedModule ? (Math.round(studioRoot.selectedModule.height) + "px") : "80px"
+                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.rowSpan + (studioRoot.selectedModule.rowSpan === 1 ? " Riga" : " Righe")) : "1 Riga"
                                     font.family: studioRoot.textFontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 10
                                     font.weight: Font.DemiBold
                                     color: studioRoot.accentColor
                                 }
@@ -746,7 +803,7 @@ Item {
                                     id: barPlusMouse
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: studioRoot.adjustModuleHeight(studioRoot.selectedModuleId, 40)
+                                    onClicked: studioRoot.adjustModuleRowSpan(studioRoot.selectedModuleId, 1)
                                 }
                             }
                         }
@@ -772,7 +829,7 @@ Item {
                             }
 
                             Rectangle {
-                                width: 62; height: 26; radius: 6
+                                width: 56; height: 26; radius: 6
                                 color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(0, 0, 0, 0.25)
                                 border.width: 1
                                 border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.08)
@@ -858,7 +915,7 @@ Item {
                 opacity: 0.14
 
                 Repeater {
-                    model: Math.ceil(stageContainer.width / 24)
+                    model: Math.max(0, Math.ceil(stageContainer.width / 24))
                     Rectangle {
                         x: index * 24
                         y: 0
@@ -869,7 +926,7 @@ Item {
                 }
 
                 Repeater {
-                    model: Math.ceil(stageContainer.height / 24)
+                    model: Math.max(0, Math.ceil(stageContainer.height / 24))
                     Rectangle {
                         x: 0
                         y: index * 24
@@ -885,7 +942,7 @@ Item {
                 id: stageBgMouse
                 anchors.fill: parent
                 hoverEnabled: true
-                preventStealing: true
+                preventStealing: false
                 onContainsMouseChanged: studioRoot.isStageHovered = containsMouse
                 onClicked: studioRoot.selectedModuleId = ""
             }
@@ -917,7 +974,7 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: 30
                 width: 374
-                height: capsuleLayout.height + 24
+                height: 12 + 32 + 10 + gridCaselleArea.height + 24
                 radius: 24
                 color: Qt.rgba(18/255, 22/255, 30/255, 0.94)
                 border.width: 1.5
@@ -941,17 +998,149 @@ Item {
                     border.color: Qt.rgba(255, 255, 255, 0.05)
                 }
 
-                // Module Grid / Flow Layout
-                Flow {
-                    id: capsuleLayout
+                // Header Module at Top (Clock & Battery)
+                Item {
+                    id: headerSlotItem
                     anchors.top: parent.top
                     anchors.topMargin: 12
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 350
-                    spacing: 10
+                    height: 32
 
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 12
+                        color: studioRoot.selectedModuleId === "header" ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                        border.width: studioRoot.selectedModuleId === "header" ? 2 : 1
+                        border.color: studioRoot.selectedModuleId === "header" ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                        Item {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+
+                            Text {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "16:15"
+                                font.family: studioRoot.heroFontFamily
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                color: studioRoot.textPrimary
+                            }
+
+                            Row {
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 4
+                                Text {
+                                    text: "85%"
+                                    font.family: studioRoot.textFontFamily
+                                    font.pixelSize: 10
+                                    color: studioRoot.textSecondary
+                                }
+                                Text {
+                                    text: ""
+                                    font.family: studioRoot.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: studioRoot.accentColor
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: studioRoot.selectedModuleId = "header"
+                        }
+                    }
+                }
+
+                // Grid of Caselle & Modules Area
+                Item {
+                    id: gridCaselleArea
+                    anchors.top: headerSlotItem.bottom
+                    anchors.topMargin: 10
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 350
+                    height: totalGridRows * 80 + (totalGridRows - 1) * 10
+
+                    readonly property int totalGridRows: {
+                        let maxR = 3;
+                        for (let i = 0; i < studioRoot.modules.length; i++) {
+                            let m = studioRoot.modules[i];
+                            if (m && m.active && m.id !== "header") {
+                                let r = (m.row !== undefined && m.row >= 0) ? m.row : 0;
+                                let rs = Math.max(1, Math.min(3, Number(m.rowSpan) || (m.height >= 140 ? 2 : 1)));
+                                if (r + rs > maxR) maxR = r + rs;
+                            }
+                        }
+                        return maxR + 1; // Always at least 1 extra empty row below for easy drop
+                    }
+
+                    function isSlotOccupied(c, r) {
+                        for (let i = 0; i < studioRoot.modules.length; i++) {
+                            let m = studioRoot.modules[i];
+                            if (m && m.active && m.id !== "header") {
+                                let mc = (m.col !== undefined && m.col >= 0) ? m.col : 0;
+                                let mr = (m.row !== undefined && m.row >= 0) ? m.row : 0;
+                                let mcs = m.colSpan || 1;
+                                let mrs = m.rowSpan || 1;
+                                if (c >= mc && c < mc + mcs && r >= mr && r < mr + mrs) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    // Layer 0: The Caselle (iPadOS 18 Circular Slots)
                     Repeater {
-                        id: capsuleRepeater
+                        model: Math.max(0, gridCaselleArea.totalGridRows * 4)
+
+                        delegate: Rectangle {
+                            required property int index
+                            readonly property int col: index % 4
+                            readonly property int row: Math.floor(index / 4)
+
+                            x: col * (80 + 10)
+                            y: row * (80 + 10)
+                            width: 80
+                            height: 80
+                            radius: 40 // Circular casella like iPadOS 18
+
+                            readonly property bool isDropTarget: studioRoot.isDraggingModule &&
+                                                                col >= studioRoot.dragTargetCol &&
+                                                                col < studioRoot.dragTargetCol + studioRoot.dragTargetColSpan &&
+                                                                row >= studioRoot.dragTargetRow &&
+                                                                row < studioRoot.dragTargetRow + studioRoot.dragTargetRowSpan
+
+                            color: isDropTarget
+                                ? studioRoot.accentSoft
+                                : Qt.rgba(255, 255, 255, 0.055)
+                            border.width: isDropTarget ? 2 : 1
+                            border.color: isDropTarget ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)
+                            scale: isDropTarget ? 1.05 : 1.0
+
+                            Behavior on color { ColorAnimation { duration: 100 } }
+                            Behavior on border.color { ColorAnimation { duration: 100 } }
+                            Behavior on scale { NumberAnimation { duration: 100 } }
+
+                            // Subtle dot for empty caselle
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 6
+                                height: 6
+                                radius: 3
+                                color: parent.isDropTarget ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.12)
+                                visible: !gridCaselleArea.isSlotOccupied(col, row)
+                            }
+                        }
+                    }
+
+                    // Layer 1: Active Modules positioned on Grid
+                    Repeater {
+                        id: modulesRepeater
                         model: studioRoot.modules
 
                         delegate: Item {
@@ -959,21 +1148,35 @@ Item {
                             required property int index
                             required property var modelData
 
+                            visible: modelData.active && modelData.id !== "header"
+
                             readonly property bool isSelected: studioRoot.selectedModuleId === modelData.id
+                            readonly property int col: (modelData.col !== undefined && modelData.col >= 0) ? modelData.col : 0
+                            readonly property int row: (modelData.row !== undefined && modelData.row >= 0) ? modelData.row : 0
                             readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
-                            readonly property bool isFullWidth: colSpan === 4
-                            readonly property real unitColWidth: (capsuleLayout.width - (3 * capsuleLayout.spacing)) / 4
+                            readonly property int rowSpan: Math.max(1, Math.min(3, Number(modelData.rowSpan) || (modelData.height >= 140 ? 2 : 1)))
+
+                            readonly property real slotWidth: colSpan === 4 ? 350 : (colSpan * 80 + (colSpan - 1) * 10)
                             property real overrideHeight: 0
-                            readonly property real slotHeight: (overrideHeight > 0) ? overrideHeight : (modelData.height || studioRoot.defaultHeight(modelData.id))
-                            readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
-                            readonly property real slotWidth: isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing)
+                            readonly property real slotHeight: (overrideHeight > 0) ? overrideHeight : (rowSpan * 80 + (rowSpan - 1) * 10)
+                            readonly property bool isOneByOne: colSpan === 1 && rowSpan === 1
 
-                            visible: modelData.active
-                            width: modelData.active ? slotWidth : 0
-                            height: modelData.active ? slotHeight : 0
-                            opacity: (studioRoot.isDraggingModule && studioRoot.draggedModuleId === modelData.id) ? 0.35 : 1.0
+                            x: col * (80 + 10)
+                            y: row * (80 + 10)
+                            width: slotWidth
+                            height: slotHeight
+                            opacity: (studioRoot.isDraggingModule && studioRoot.draggedModuleId === modelData.id) ? 0.30 : 1.0
+                            z: isSelected ? 25 : 10
 
-                            Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                            Behavior on x {
+                                enabled: !studioRoot.isDraggingModule
+                                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on y {
+                                enabled: !studioRoot.isDraggingModule
+                                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                            }
+                            Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                             Behavior on height {
                                 enabled: !studioRoot.isResizing && !bottomHandleMouse.pressed
                                 NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
@@ -983,77 +1186,31 @@ Item {
                             Rectangle {
                                 id: cardBody
                                 anchors.fill: parent
-                                radius: moduleItemDelegate.isOneByOne ? 18 : 12
-
-                                readonly property bool isHoverDropTarget: studioRoot.isDraggingModule &&
-                                                                         studioRoot.hoverTargetIndex === moduleItemDelegate.index &&
-                                                                         studioRoot.draggedModuleId !== moduleItemDelegate.modelData.id
-
-                                color: isHoverDropTarget
-                                    ? studioRoot.accentSoft
-                                    : (moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.06))
-                                border.width: isHoverDropTarget ? 2.5 : 1
-                                border.color: isHoverDropTarget ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)
-                                scale: isHoverDropTarget ? 1.03 : 1.0
+                                radius: moduleItemDelegate.isOneByOne ? 40 : 16
+                                color: moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.065)
+                                border.width: 1
+                                border.color: Qt.rgba(255, 255, 255, 0.09)
 
                                 Behavior on color { ColorAnimation { duration: 120 } }
-                                Behavior on scale { NumberAnimation { duration: 100 } }
 
                                 // Module Content Rendering
                                 Item {
                                     anchors.fill: parent
-                                    anchors.margins: moduleItemDelegate.isOneByOne ? 0 : 6
+                                    anchors.margins: moduleItemDelegate.isOneByOne ? 0 : 8
 
-                                    // Header Module Special UI
-                                    Row {
-                                        visible: moduleItemDelegate.modelData.id === "header"
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 8
-                                        anchors.rightMargin: 8
-
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "16:15"
-                                            font.family: studioRoot.heroFontFamily
-                                            font.pixelSize: 12
-                                            font.weight: Font.Bold
-                                            color: studioRoot.textPrimary
-                                        }
-
-                                        Item { Layout.fillWidth: true; width: 10 }
-
-                                        Row {
-                                            anchors.right: parent.right
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            spacing: 4
-                                            Text {
-                                                text: "85%"
-                                                font.family: studioRoot.textFontFamily
-                                                font.pixelSize: 10
-                                                color: studioRoot.textSecondary
-                                            }
-                                            Text {
-                                                text: ""
-                                                font.family: studioRoot.iconFontFamily
-                                                font.pixelSize: 11
-                                                color: studioRoot.accentColor
-                                            }
-                                        }
-                                    }
-
-                                    // 1x1 Square Tile UI (Solo Icona centrata)
+                                    // 1x1 Circular Tile UI (Solo Icona centrata stile iPad)
                                     Item {
                                         visible: moduleItemDelegate.isOneByOne
                                         anchors.fill: parent
 
                                         Rectangle {
                                             anchors.centerIn: parent
-                                            width: Math.min(46, Math.max(32, parent.height - 20))
-                                            height: width
-                                            radius: width / 2
-                                            color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.18)
+                                            width: 44
+                                            height: 44
+                                            radius: 22
+                                            color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.20)
                                             border.width: 1
-                                            border.color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.32)
+                                            border.color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.35)
 
                                             Text {
                                                 anchors.centerIn: parent
@@ -1065,34 +1222,34 @@ Item {
                                         }
                                     }
 
-                                    // Standard Module UI (Icon + Name + Live Mini Element)
+                                    // Standard / Expanded Module UI
                                     Row {
-                                        visible: moduleItemDelegate.modelData.id !== "header" && !moduleItemDelegate.isOneByOne
+                                        visible: !moduleItemDelegate.isOneByOne
                                         anchors.fill: parent
                                         anchors.leftMargin: 6
                                         anchors.rightMargin: 6
-                                        spacing: 6
+                                        spacing: 8
 
                                         Rectangle {
-                                            width: 22
-                                            height: 22
-                                            radius: 11
-                                            color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.18)
+                                            width: 26
+                                            height: 26
+                                            radius: 13
+                                            color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.20)
                                             anchors.verticalCenter: parent.verticalCenter
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: moduleItemDelegate.modelData.icon
                                                 font.family: studioRoot.iconFontFamily
-                                                font.pixelSize: 10
+                                                font.pixelSize: 11
                                                 color: studioRoot.accentColor
                                             }
                                         }
 
                                         Column {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            spacing: 1
-                                            width: parent.width - 34
+                                            spacing: 2
+                                            width: parent.width - 38
 
                                             Text {
                                                 width: parent.width
@@ -1104,7 +1261,7 @@ Item {
                                                 elide: Text.ElideRight
                                             }
 
-                                            // Mini interactive visual details depending on type
+                                            // Mini interactive visual details
                                             Item {
                                                 width: parent.width
                                                 height: 10
@@ -1128,7 +1285,7 @@ Item {
 
                                             Text {
                                                 visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight >= 110 && moduleItemDelegate.colSpan === 1)
-                                                text: "Pillola Verticale (1 Col)"
+                                                text: "Cursore Verticale"
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 8
                                                 font.weight: Font.DemiBold
@@ -1138,7 +1295,7 @@ Item {
 
                                             Text {
                                                 visible: moduleItemDelegate.modelData.id === "notifications"
-                                                text: "3 nuove notifiche"
+                                                text: "Centro Notifiche"
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 8
                                                 color: studioRoot.textMuted
@@ -1157,13 +1314,13 @@ Item {
                                     }
                                 }
 
-                                // Selection Click & Drag MouseArea
+                                // Drag & Click MouseArea
                                 MouseArea {
                                     id: moduleMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     preventStealing: true
-                                    cursorShape: (moduleItemDelegate.modelData.id === "header") ? Qt.PointingHandCursor : (isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor)
+                                    cursorShape: isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor
 
                                     property real pressStageX: 0
                                     property real pressStageY: 0
@@ -1178,65 +1335,55 @@ Item {
                                     }
 
                                     onPositionChanged: function(mouse) {
-                                        if (moduleItemDelegate.modelData.id === "header") return; // Header cannot be dragged!
                                         if (pressed) {
                                             let stagePos = mapToItem(stageContainer, mouse.x, mouse.y);
                                             if (!isDragging && (Math.abs(stagePos.x - pressStageX) > 8 || Math.abs(stagePos.y - pressStageY) > 8)) {
                                                 isDragging = true;
                                                 studioRoot.isDraggingModule = true;
                                                 studioRoot.draggedModuleId = moduleItemDelegate.modelData.id;
-                                                studioRoot.dragSourceIndex = moduleItemDelegate.index;
                                                 studioRoot.dragGhostW = moduleItemDelegate.width;
                                                 studioRoot.dragGhostH = moduleItemDelegate.height;
                                                 studioRoot.dragGhostName = moduleItemDelegate.modelData.name;
                                                 studioRoot.dragGhostIcon = moduleItemDelegate.modelData.icon;
                                                 studioRoot.dragGhostColSpan = moduleItemDelegate.colSpan;
+                                                studioRoot.dragTargetColSpan = moduleItemDelegate.colSpan;
+                                                studioRoot.dragTargetRowSpan = moduleItemDelegate.rowSpan;
                                             }
 
                                             if (isDragging) {
                                                 studioRoot.dragGhostX = stagePos.x;
                                                 studioRoot.dragGhostY = stagePos.y;
 
-                                                let layoutPos = stageContainer.mapToItem(capsuleLayout, stagePos.x, stagePos.y);
-                                                let target = studioRoot.findDropTargetIndex(layoutPos.x, layoutPos.y, studioRoot.dragSourceIndex);
-                                                studioRoot.hoverTargetIndex = target;
+                                                let gridPos = mapToItem(gridCaselleArea, mouse.x, mouse.y);
+                                                let targetC = Math.round((gridPos.x - (moduleItemDelegate.slotWidth / 2)) / 90);
+                                                let targetR = Math.round((gridPos.y - (moduleItemDelegate.slotHeight / 2)) / 90);
+                                                targetC = Math.max(0, Math.min(4 - moduleItemDelegate.colSpan, targetC));
+                                                targetR = Math.max(0, targetR);
+
+                                                studioRoot.dragTargetCol = targetC;
+                                                studioRoot.dragTargetRow = targetR;
                                             }
                                         }
                                     }
 
                                     onReleased: function(mouse) {
                                         if (isDragging) {
-                                            let stagePos = mapToItem(stageContainer, mouse.x, mouse.y);
-                                            let layoutPos = stageContainer.mapToItem(capsuleLayout, stagePos.x, stagePos.y);
-                                            let targetIdx = studioRoot.findDropTargetIndex(layoutPos.x, layoutPos.y, studioRoot.dragSourceIndex);
-                                            if (targetIdx <= 0 && studioRoot.hoverTargetIndex > 0) {
-                                                targetIdx = studioRoot.hoverTargetIndex;
-                                            }
-                                            let srcIdx = studioRoot.dragSourceIndex;
-                                            let srcId = studioRoot.draggedModuleId;
+                                            let targetC = studioRoot.dragTargetCol;
+                                            let targetR = studioRoot.dragTargetRow;
+                                            let modId = studioRoot.draggedModuleId;
 
-                                            // Clear drag visual state before moving modules
                                             isDragging = false;
                                             studioRoot.isDraggingModule = false;
                                             studioRoot.draggedModuleId = "";
-                                            studioRoot.dragSourceIndex = -1;
-                                            studioRoot.hoverTargetIndex = -1;
 
-                                            if (targetIdx > 0 && srcIdx > 0 && targetIdx !== srcIdx) {
-                                                studioRoot.moveModule(srcIdx, targetIdx);
-                                                studioRoot.selectedModuleId = srcId;
-                                            }
+                                            studioRoot.anchorModuleToSlot(modId, targetC, targetR);
                                         }
                                     }
 
                                     onCanceled: {
-                                        if (isDragging) {
-                                            isDragging = false;
-                                            studioRoot.isDraggingModule = false;
-                                            studioRoot.draggedModuleId = "";
-                                            studioRoot.dragSourceIndex = -1;
-                                            studioRoot.hoverTargetIndex = -1;
-                                        }
+                                        isDragging = false;
+                                        studioRoot.isDraggingModule = false;
+                                        studioRoot.draggedModuleId = "";
                                     }
 
                                     onClicked: {
@@ -1245,9 +1392,7 @@ Item {
                                 }
                             }
 
-                            // ====================================================
-                            // SELECTION BOUNDING BOX
-                            // ====================================================
+                            // Selection Box & Resize Handles
                             Rectangle {
                                 id: boundingBox
                                 anchors.fill: parent
@@ -1262,9 +1407,8 @@ Item {
                                 Item {
                                     id: resizeHandlesContainer
                                     anchors.fill: parent
-                                    visible: moduleItemDelegate.modelData.id !== "header"
 
-                                    // BOTTOM RESIZE HANDLE (Solo espansione/riduzione verso il basso)
+                                    // Bottom Handle
                                     Rectangle {
                                         id: bottomHandle
                                         anchors.horizontalCenter: parent.horizontalCenter
@@ -1295,7 +1439,7 @@ Item {
                                                 studioRoot.isResizing = true;
                                                 let p = mapToItem(stageContainer, mouse.x, mouse.y);
                                                 startCursorStageY = p.y;
-                                                startCardH = moduleItemDelegate.modelData.height || studioRoot.defaultHeight(moduleItemDelegate.modelData.id);
+                                                startCardH = moduleItemDelegate.slotHeight;
                                                 moduleItemDelegate.overrideHeight = startCardH;
                                             }
 
@@ -1303,18 +1447,21 @@ Item {
                                                 if (pressed) {
                                                     let p = mapToItem(stageContainer, mouse.x, mouse.y);
                                                     let delta = p.y - startCursorStageY;
-                                                    let newH = studioRoot.snapHeight(moduleItemDelegate.modelData.id, startCardH + delta);
-                                                    moduleItemDelegate.overrideHeight = newH;
+                                                    let rSpan = Math.max(1, Math.min(3, Math.round((startCardH + delta) / 90)));
+                                                    moduleItemDelegate.overrideHeight = rSpan * 80 + (rSpan - 1) * 10;
                                                 }
                                             }
 
                                             onReleased: {
                                                 let targetH = moduleItemDelegate.overrideHeight;
-                                                if (targetH > 0) {
-                                                    studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, targetH);
-                                                }
+                                                let modId = (moduleItemDelegate && moduleItemDelegate.modelData) ? moduleItemDelegate.modelData.id : "";
+                                                let curSpan = moduleItemDelegate ? moduleItemDelegate.rowSpan : 1;
                                                 moduleItemDelegate.overrideHeight = 0;
                                                 studioRoot.isResizing = false;
+                                                if (targetH > 0 && modId) {
+                                                    let rSpan = Math.max(1, Math.min(3, Math.round(targetH / 90)));
+                                                    studioRoot.adjustModuleRowSpan(modId, rSpan - curSpan);
+                                                }
                                             }
 
                                             onCanceled: {
@@ -1324,67 +1471,7 @@ Item {
                                         }
                                     }
 
-                                    // LEFT RESIZE HANDLE (Regola colSpan 1..4)
-                                    Rectangle {
-                                        id: leftHandle
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        anchors.horizontalCenter: parent.left
-                                        width: 14
-                                        height: 14
-                                        radius: 7
-                                        color: "#ffffff"
-                                        border.width: 2.5
-                                        border.color: studioRoot.accentColor
-                                        z: 55
-                                        scale: leftHandleMouse.containsMouse || leftHandleMouse.pressed ? 1.3 : 1.0
-
-                                        Behavior on scale { NumberAnimation { duration: 100 } }
-
-                                        MouseArea {
-                                            id: leftHandleMouse
-                                            anchors.fill: parent
-                                            anchors.margins: -8
-                                            hoverEnabled: true
-                                            preventStealing: true
-                                            cursorShape: Qt.SizeHorCursor
-
-                                            property real pressGlobalX: 0
-                                            property bool toggledInDrag: false
-
-                                            onPressed: function(mouse) {
-                                                studioRoot.isResizing = true;
-                                                pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
-                                                toggledInDrag = false;
-                                            }
-                                            onPositionChanged: function(mouse) {
-                                                if (pressed && !toggledInDrag) {
-                                                    let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
-                                                    let diff = currentGlobalX - pressGlobalX;
-                                                    let curr = moduleItemDelegate.colSpan;
-                                                    if (diff < -35 && curr < 4) {
-                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
-                                                        toggledInDrag = true;
-                                                    } else if (diff > 35 && curr > 1) {
-                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
-                                                        toggledInDrag = true;
-                                                    }
-                                                }
-                                            }
-                                            onReleased: {
-                                                studioRoot.isResizing = false;
-                                            }
-                                            onCanceled: {
-                                                studioRoot.isResizing = false;
-                                            }
-                                            onClicked: {
-                                                if (!toggledInDrag) {
-                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // RIGHT RESIZE HANDLE (Regola colSpan 1..4)
+                                    // Right Handle (Width colSpan)
                                     Rectangle {
                                         id: rightHandle
                                         anchors.verticalCenter: parent.verticalCenter
@@ -1413,20 +1500,21 @@ Item {
 
                                             onPressed: function(mouse) {
                                                 studioRoot.isResizing = true;
-                                                pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                pressGlobalX = mapToItem(gridCaselleArea, mouse.x, mouse.y).x;
                                                 toggledInDrag = false;
                                             }
                                             onPositionChanged: function(mouse) {
                                                 if (pressed && !toggledInDrag) {
-                                                    let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                    let currentGlobalX = mapToItem(gridCaselleArea, mouse.x, mouse.y).x;
                                                     let diff = currentGlobalX - pressGlobalX;
                                                     let curr = moduleItemDelegate.colSpan;
-                                                    if (diff > 35 && curr < 4) {
-                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
+                                                    let modId = (moduleItemDelegate && moduleItemDelegate.modelData) ? moduleItemDelegate.modelData.id : "";
+                                                    if (diff > 40 && curr < 4 && modId) {
                                                         toggledInDrag = true;
-                                                    } else if (diff < -35 && curr > 1) {
-                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
+                                                        studioRoot.adjustModuleColSpan(modId, 1);
+                                                    } else if (diff < -40 && curr > 1 && modId) {
                                                         toggledInDrag = true;
+                                                        studioRoot.adjustModuleColSpan(modId, -1);
                                                     }
                                                 }
                                             }
@@ -1438,7 +1526,10 @@ Item {
                                             }
                                             onClicked: {
                                                 if (!toggledInDrag) {
-                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                                    let modId = (moduleItemDelegate && moduleItemDelegate.modelData) ? moduleItemDelegate.modelData.id : "";
+                                                    if (modId) {
+                                                        studioRoot.toggleColSpan(modId);
+                                                    }
                                                 }
                                             }
                                         }
@@ -1458,7 +1549,7 @@ Item {
                 y: studioRoot.dragGhostY - height / 2
                 width: studioRoot.dragGhostW
                 height: studioRoot.dragGhostH
-                radius: (studioRoot.dragGhostColSpan === 1 && studioRoot.dragGhostH <= 100) ? 18 : 12
+                radius: (studioRoot.dragGhostColSpan === 1 && studioRoot.dragGhostH <= 100) ? 40 : 16
                 color: Qt.rgba(20/255, 24/255, 34/255, 0.94)
                 border.width: 2
                 border.color: studioRoot.accentColor
