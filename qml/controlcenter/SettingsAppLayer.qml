@@ -301,6 +301,15 @@ FocusScope {
         }
     }
 
+    function reloadQuickshell() {
+        root.lastSavedStatus = "Ricaricato";
+        try {
+            Quickshell.reload(false);
+        } catch(e) {
+            Quickshell.execDetached(["/home/lollo/.scripts/apply-qs-bar.sh", "dynamic-island"]);
+        }
+    }
+
     Component.onCompleted: {
         root.loadConfigFromDisk();
     }
@@ -687,6 +696,49 @@ FocusScope {
                             font.pixelSize: 18
                             font.weight: Font.Bold
                             color: root.textPrimary
+                        }
+                    }
+
+                    // Reload Quickshell button
+                    Rectangle {
+                        id: reloadQsBtn
+                        anchors.right: closeBtn.left
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: reloadQsRow.width + 16
+                        height: 28
+                        radius: 14
+                        color: reloadQsMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                        border.width: 1
+                        border.color: reloadQsMouse.containsMouse ? root.accentBorder : Qt.rgba(255, 255, 255, 0.08)
+
+                        Row {
+                            id: reloadQsRow
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: ""
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 11
+                                color: root.effectiveAccent
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Ricarica"
+                                font.family: root.textFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: root.textPrimary
+                            }
+                        }
+
+                        MouseArea {
+                            id: reloadQsMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.reloadQuickshell()
                         }
                     }
 
@@ -1213,6 +1265,7 @@ FocusScope {
                                     controlCenterOrientation: root.cfgControlCenterOrientation
                                     controlCenterWidth: root.cfgControlCenterWidth
                                     rawConfig: root.configData
+                                    onRequestReloadQuickshell: root.reloadQuickshell()
 
                                     onLayoutChanged: function(layoutArray) {
                                         root.updateSetting("controlCenterCanvasLayout", layoutArray);

@@ -27,6 +27,7 @@ Item {
     signal layoutChanged(var layoutArray)
     signal requestOrientationChange(string orientation)
     signal requestWidthChange(int newWidth)
+    signal requestReloadQuickshell()
 
     // Current selection in canvas
     property string selectedModuleId: "wifi"
@@ -35,6 +36,7 @@ Item {
     property bool isDraggingModule: false
     property bool isResizing: false
     property bool isInternalSave: false
+    property bool canvasInitialized: false
 
     readonly property var selectedModule: {
         for (let i = 0; i < modules.length; i++) {
@@ -57,12 +59,16 @@ Item {
     ]
 
     Component.onCompleted: {
-        initializeFromConfig();
+        if (rawConfig && (rawConfig.controlCenterCanvasLayout || Object.keys(rawConfig).length > 0)) {
+            initializeFromConfig();
+            canvasInitialized = true;
+        }
     }
 
     onRawConfigChanged: {
-        if (!isInternalSave && !isDraggingModule && !isResizing) {
+        if (!canvasInitialized && rawConfig && (rawConfig.controlCenterCanvasLayout || Object.keys(rawConfig).length > 0)) {
             initializeFromConfig();
+            canvasInitialized = true;
         }
     }
 
@@ -161,30 +167,33 @@ Item {
     }
 
     function toggleColSpan(id) {
-        let copy = modules.slice();
-        for (let i = 0; i < copy.length; i++) {
-            if (copy[i].id === id) {
-                copy[i].colSpan = (copy[i].colSpan === 2) ? 1 : 2;
-                break;
+        let copy = [];
+        for (let i = 0; i < modules.length; i++) {
+            let m = Object.assign({}, modules[i]);
+            if (m.id === id) {
+                m.colSpan = (m.colSpan === 2) ? 1 : 2;
             }
+            copy.push(m);
         }
         modules = copy;
         emitSave();
     }
 
     function setModuleHeight(id, h) {
-        let copy = modules.slice();
+        let copy = [];
         let changed = false;
-        for (let i = 0; i < copy.length; i++) {
-            if (copy[i].id === id) {
-                const minH = copy[i].minHeight || 38;
-                const maxH = copy[i].maxHeight || 320;
+        for (let i = 0; i < modules.length; i++) {
+            let m = Object.assign({}, modules[i]);
+            if (m.id === id) {
+                const minH = m.minHeight || 38;
+                const maxH = m.maxHeight || 320;
                 const nh = Math.max(minH, Math.min(maxH, Math.round(h)));
-                if (copy[i].height === nh) return;
-                copy[i].height = nh;
-                changed = true;
-                break;
+                if (m.height !== nh) {
+                    m.height = nh;
+                    changed = true;
+                }
             }
+            copy.push(m);
         }
         if (changed) {
             modules = copy;
@@ -202,14 +211,14 @@ Item {
         }
     }
 
-
     function setModuleActive(id, active) {
-        let copy = modules.slice();
-        for (let i = 0; i < copy.length; i++) {
-            if (copy[i].id === id) {
-                copy[i].active = active;
-                break;
+        let copy = [];
+        for (let i = 0; i < modules.length; i++) {
+            let m = Object.assign({}, modules[i]);
+            if (m.id === id) {
+                m.active = active;
             }
+            copy.push(m);
         }
         modules = copy;
         if (active) studioRoot.selectedModuleId = id;
@@ -220,7 +229,10 @@ Item {
     function moveModule(fromIdx, toIdx) {
         if (fromIdx < 0 || fromIdx >= modules.length || toIdx < 0 || toIdx >= modules.length || fromIdx === toIdx)
             return;
-        let copy = modules.slice();
+        let copy = [];
+        for (let i = 0; i < modules.length; i++) {
+            copy.push(Object.assign({}, modules[i]));
+        }
         let item = copy.splice(fromIdx, 1)[0];
         copy.splice(toIdx, 0, item);
         modules = copy;
@@ -446,6 +458,46 @@ Item {
                         onClicked: studioRoot.resetToDefault()
                     }
                 }
+
+                // Reload Quickshell Button
+                Rectangle {
+                    width: reloadRow.width + 16
+                    height: 30
+                    radius: 8
+                    color: reloadMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: reloadMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Row {
+                        id: reloadRow
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: ""
+                            font.family: studioRoot.iconFontFamily
+                            font.pixelSize: 11
+                            color: studioRoot.accentColor
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Ricarica Quickshell"
+                            font.family: studioRoot.textFontFamily
+                            font.pixelSize: 10
+                            font.weight: Font.DemiBold
+                            color: studioRoot.textPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        id: reloadMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: studioRoot.requestReloadQuickshell()
+                    }
+                }
             }
         }
 
@@ -579,7 +631,7 @@ Item {
 
                             Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                             Behavior on height {
-                                enabled: !bottomHandleMouse.pressed && !topHandleMouse.pressed
+                                enabled: !studioRoot.isResizing && !bottomHandleMouse.pressed && !topHandleMouse.pressed
                                 NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                             }
 
@@ -994,15 +1046,16 @@ Item {
                                             }
                                         }
                                         onReleased: {
-                                            studioRoot.isResizing = false;
-                                            if (currentH > 0) {
-                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, currentH);
+                                            let targetH = currentH;
+                                            if (targetH > 0) {
+                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, targetH);
                                             }
                                             moduleItemDelegate.overrideHeight = 0;
+                                            studioRoot.isResizing = false;
                                         }
                                         onCanceled: {
-                                            studioRoot.isResizing = false;
                                             moduleItemDelegate.overrideHeight = 0;
+                                            studioRoot.isResizing = false;
                                         }
                                     }
                                 }
@@ -1052,15 +1105,16 @@ Item {
                                             }
                                         }
                                         onReleased: {
-                                            studioRoot.isResizing = false;
-                                            if (currentH > 0) {
-                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, currentH);
+                                            let targetH = currentH;
+                                            if (targetH > 0) {
+                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, targetH);
                                             }
                                             moduleItemDelegate.overrideHeight = 0;
+                                            studioRoot.isResizing = false;
                                         }
                                         onCanceled: {
-                                            studioRoot.isResizing = false;
                                             moduleItemDelegate.overrideHeight = 0;
+                                            studioRoot.isResizing = false;
                                         }
                                     }
                                 }

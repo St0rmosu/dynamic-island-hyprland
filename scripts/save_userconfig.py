@@ -41,12 +41,10 @@ def main():
 
     existing.update(patch)
 
-    tmp_path = CONFIG_PATH + ".tmp"
     try:
-        with open(tmp_path, "w", encoding="utf-8") as f:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=4, ensure_ascii=False)
             f.write("\n")
-        os.replace(tmp_path, CONFIG_PATH)
         
         # Also sync legacy path if it's a separate real directory
         if os.path.exists(os.path.dirname(LEGACY_CONFIG_PATH)) and not os.path.samefile(os.path.dirname(CONFIG_PATH), os.path.dirname(LEGACY_CONFIG_PATH)):
