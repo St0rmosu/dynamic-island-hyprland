@@ -307,6 +307,72 @@ Item {
         emitSave();
     }
 
+    function findDropTargetIndex(layoutX, layoutY, sourceIdx) {
+        if (!capsuleRepeater) return -1;
+        let count = capsuleRepeater.count !== undefined ? capsuleRepeater.count : modules.length;
+        if (count <= 1) return -1;
+
+        let activeItems = [];
+        let maxBottomY = 0;
+        let minTopY = 999999;
+
+        for (let i = 1; i < modules.length; i++) {
+            let it = capsuleRepeater.itemAt(i);
+            if (it && it.visible && it.width > 0 && it.height > 0) {
+                activeItems.push({
+                    index: i,
+                    id: modules[i].id,
+                    x: it.x,
+                    y: it.y,
+                    w: it.width,
+                    h: it.height,
+                    cx: it.x + it.width / 2,
+                    cy: it.y + it.height / 2,
+                    bottom: it.y + it.height
+                });
+                if (it.y + it.height > maxBottomY) maxBottomY = it.y + it.height;
+                if (it.y < minTopY) minTopY = it.y;
+            }
+        }
+
+        if (activeItems.length === 0) return -1;
+
+        // 1. Direct hit test with padding covering 10px spacing
+        const padX = capsuleLayout.spacing;
+        const padY = capsuleLayout.spacing;
+        for (let j = 0; j < activeItems.length; j++) {
+            let it = activeItems[j];
+            if (layoutX >= (it.x - padX) && layoutX <= (it.x + it.w + padX) &&
+                layoutY >= (it.y - padY) && layoutY <= (it.y + it.h + padY)) {
+                return it.index;
+            }
+        }
+
+        // 2. Dragged below the last row: drop at the end
+        if (layoutY > maxBottomY + 10) {
+            return activeItems[activeItems.length - 1].index;
+        }
+
+        // 3. Dragged above the first row (near header): drop at first position
+        if (layoutY < minTopY - 10) {
+            return activeItems[0].index;
+        }
+
+        // 4. Fallback: closest active card by center Euclidean distance
+        let closestIdx = -1;
+        let minDist = 999999;
+        for (let k = 0; k < activeItems.length; k++) {
+            let it = activeItems[k];
+            let dist = Math.hypot(layoutX - it.cx, layoutY - it.cy);
+            if (dist < minDist) {
+                minDist = dist;
+                closestIdx = it.index;
+            }
+        }
+
+        return closestIdx > 0 ? closestIdx : -1;
+    }
+
     function moveSelectedModule(delta) {
         if (selectedModuleId === "header") return;
         for (let i = 0; i < modules.length; i++) {
@@ -885,6 +951,7 @@ Item {
                     spacing: 10
 
                     Repeater {
+                        id: capsuleRepeater
                         model: studioRoot.modules
 
                         delegate: Item {
@@ -917,11 +984,20 @@ Item {
                                 id: cardBody
                                 anchors.fill: parent
                                 radius: moduleItemDelegate.isOneByOne ? 18 : 12
-                                color: moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.06)
-                                border.width: (studioRoot.isDraggingModule && studioRoot.hoverTargetIndex === moduleItemDelegate.index && studioRoot.draggedModuleId !== moduleItemDelegate.modelData.id) ? 2 : 1
-                                border.color: (studioRoot.isDraggingModule && studioRoot.hoverTargetIndex === moduleItemDelegate.index && studioRoot.draggedModuleId !== moduleItemDelegate.modelData.id) ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                                readonly property bool isHoverDropTarget: studioRoot.isDraggingModule &&
+                                                                         studioRoot.hoverTargetIndex === moduleItemDelegate.index &&
+                                                                         studioRoot.draggedModuleId !== moduleItemDelegate.modelData.id
+
+                                color: isHoverDropTarget
+                                    ? studioRoot.accentSoft
+                                    : (moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.06))
+                                border.width: isHoverDropTarget ? 2.5 : 1
+                                border.color: isHoverDropTarget ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)
+                                scale: isHoverDropTarget ? 1.03 : 1.0
 
                                 Behavior on color { ColorAnimation { duration: 120 } }
+                                Behavior on scale { NumberAnimation { duration: 100 } }
 
                                 // Module Content Rendering
                                 Item {
@@ -1104,8 +1180,8 @@ Item {
                                     onPositionChanged: function(mouse) {
                                         if (moduleItemDelegate.modelData.id === "header") return; // Header cannot be dragged!
                                         if (pressed) {
-                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                            if (!isDragging && (Math.abs(p.x - pressStageX) > 8 || Math.abs(p.y - pressStageY) > 8)) {
+                                            let stagePos = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            if (!isDragging && (Math.abs(stagePos.x - pressStageX) > 8 || Math.abs(stagePos.y - pressStageY) > 8)) {
                                                 isDragging = true;
                                                 studioRoot.isDraggingModule = true;
                                                 studioRoot.draggedModuleId = moduleItemDelegate.modelData.id;
@@ -1118,49 +1194,48 @@ Item {
                                             }
 
                                             if (isDragging) {
-                                                studioRoot.dragGhostX = p.x;
-                                                studioRoot.dragGhostY = p.y;
+                                                studioRoot.dragGhostX = stagePos.x;
+                                                studioRoot.dragGhostY = stagePos.y;
 
-                                                let layoutPos = mapToItem(capsuleLayout, mouse.x, mouse.y);
-                                                let found = -1;
-                                                for (let i = 0; i < capsuleLayout.children.length; i++) {
-                                                    let ch = capsuleLayout.children[i];
-                                                    if (ch && ch.visible && ch.width > 0 && ch.height > 0) {
-                                                        if (layoutPos.x >= ch.x && layoutPos.x <= (ch.x + ch.width) &&
-                                                            layoutPos.y >= ch.y && layoutPos.y <= (ch.y + ch.height)) {
-                                                            let idx = (ch.index !== undefined) ? ch.index : i;
-                                                            if (idx > 0 && idx < studioRoot.modules.length) {
-                                                                found = idx;
-                                                            }
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                                studioRoot.hoverTargetIndex = found;
+                                                let layoutPos = stageContainer.mapToItem(capsuleLayout, stagePos.x, stagePos.y);
+                                                let target = studioRoot.findDropTargetIndex(layoutPos.x, layoutPos.y, studioRoot.dragSourceIndex);
+                                                studioRoot.hoverTargetIndex = target;
                                             }
                                         }
                                     }
 
-                                    onReleased: {
+                                    onReleased: function(mouse) {
                                         if (isDragging) {
-                                            if (studioRoot.hoverTargetIndex > 0 && studioRoot.hoverTargetIndex !== studioRoot.dragSourceIndex) {
-                                                studioRoot.moveModule(studioRoot.dragSourceIndex, studioRoot.hoverTargetIndex);
+                                            let stagePos = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            let layoutPos = stageContainer.mapToItem(capsuleLayout, stagePos.x, stagePos.y);
+                                            let targetIdx = studioRoot.findDropTargetIndex(layoutPos.x, layoutPos.y, studioRoot.dragSourceIndex);
+                                            if (targetIdx <= 0 && studioRoot.hoverTargetIndex > 0) {
+                                                targetIdx = studioRoot.hoverTargetIndex;
                                             }
+                                            let srcIdx = studioRoot.dragSourceIndex;
+                                            let srcId = studioRoot.draggedModuleId;
+
+                                            // Clear drag visual state before moving modules
+                                            isDragging = false;
                                             studioRoot.isDraggingModule = false;
                                             studioRoot.draggedModuleId = "";
                                             studioRoot.dragSourceIndex = -1;
                                             studioRoot.hoverTargetIndex = -1;
-                                            isDragging = false;
+
+                                            if (targetIdx > 0 && srcIdx > 0 && targetIdx !== srcIdx) {
+                                                studioRoot.moveModule(srcIdx, targetIdx);
+                                                studioRoot.selectedModuleId = srcId;
+                                            }
                                         }
                                     }
 
                                     onCanceled: {
                                         if (isDragging) {
+                                            isDragging = false;
                                             studioRoot.isDraggingModule = false;
                                             studioRoot.draggedModuleId = "";
                                             studioRoot.dragSourceIndex = -1;
                                             studioRoot.hoverTargetIndex = -1;
-                                            isDragging = false;
                                         }
                                     }
 

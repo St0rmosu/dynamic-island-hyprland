@@ -1298,6 +1298,7 @@ FocusScope {
                                                 root.updateSetting("showClipboardQuickAccess", item.active);
                                             }
                                         }
+                                        root.dispatchSave();
                                     }
 
                                     onRequestOrientationChange: function(ori) {
