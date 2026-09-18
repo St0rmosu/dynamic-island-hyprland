@@ -32,6 +32,15 @@ Item {
     // Current selection in canvas
     property string selectedModuleId: "wifi"
     property int dragSourceIndex: -1
+    property int hoverTargetIndex: -1
+    property string draggedModuleId: ""
+    property real dragGhostX: 0
+    property real dragGhostY: 0
+    property real dragGhostW: 80
+    property real dragGhostH: 80
+    property string dragGhostName: ""
+    property string dragGhostIcon: ""
+    property int dragGhostColSpan: 1
     property bool isDraggingModule: false
     property bool isResizing: false
     readonly property bool isInteracting: isDraggingModule || isResizing
@@ -765,7 +774,7 @@ Item {
         Rectangle {
             id: stageContainer
             width: parent.width
-            height: Math.max(340, islandCapsule.height + 80)
+            height: Math.max(760, islandCapsule.height + 80)
             radius: 20
             color: "#0c0f16"
             border.width: 1
@@ -827,7 +836,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
-                    text: "AREA LIVE CANVAS • " + studioRoot.controlCenterWidth + "px"
+                    text: "AREA LIVE CANVAS • WORKSPACE 8 RIGHE • " + studioRoot.controlCenterWidth + "px"
                     font.family: studioRoot.textFontFamily
                     font.pixelSize: 9
                     font.weight: Font.Bold
@@ -841,7 +850,7 @@ Item {
                 id: islandCapsule
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: 30
-                width: Math.min(stageContainer.width - 40, (studioRoot.controlCenterWidth >= 360 ? studioRoot.controlCenterWidth * 0.85 : (studioRoot.controlCenterOrientation === "horizontal" ? 450 : 340)))
+                width: 374
                 height: capsuleLayout.height + 24
                 radius: 24
                 color: Qt.rgba(18/255, 22/255, 30/255, 0.94)
@@ -872,8 +881,8 @@ Item {
                     anchors.top: parent.top
                     anchors.topMargin: 12
                     anchors.horizontalCenter: parent.horizontalCenter
-                    width: parent.width - 24
-                    spacing: 8
+                    width: 350
+                    spacing: 10
 
                     Repeater {
                         model: studioRoot.modules
@@ -890,28 +899,27 @@ Item {
                             property real overrideHeight: 0
                             readonly property real slotHeight: (overrideHeight > 0) ? overrideHeight : (modelData.height || studioRoot.defaultHeight(modelData.id))
                             readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
-                            readonly property real slotWidth: isOneByOne ? Math.min(unitColWidth, slotHeight) : (isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing))
+                            readonly property real slotWidth: isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing)
 
                             visible: modelData.active
                             width: modelData.active ? slotWidth : 0
                             height: modelData.active ? slotHeight : 0
+                            opacity: (studioRoot.isDraggingModule && studioRoot.draggedModuleId === modelData.id) ? 0.35 : 1.0
 
                             Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                             Behavior on height {
-                                enabled: !studioRoot.isResizing && !bottomHandleMouse.pressed && !topHandleMouse.pressed
+                                enabled: !studioRoot.isResizing && !bottomHandleMouse.pressed
                                 NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                             }
 
                             // Card Surface
                             Rectangle {
                                 id: cardBody
-                                anchors.centerIn: parent
-                                width: moduleItemDelegate.isOneByOne ? Math.min(parent.width, parent.height) : parent.width
-                                height: moduleItemDelegate.isOneByOne ? width : parent.height
+                                anchors.fill: parent
                                 radius: moduleItemDelegate.isOneByOne ? 18 : 12
                                 color: moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.06)
-                                border.width: 1
-                                border.color: Qt.rgba(255, 255, 255, 0.08)
+                                border.width: (studioRoot.isDraggingModule && studioRoot.hoverTargetIndex === moduleItemDelegate.index && studioRoot.draggedModuleId !== moduleItemDelegate.modelData.id) ? 2 : 1
+                                border.color: (studioRoot.isDraggingModule && studioRoot.hoverTargetIndex === moduleItemDelegate.index && studioRoot.draggedModuleId !== moduleItemDelegate.modelData.id) ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)
 
                                 Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -1081,49 +1089,78 @@ Item {
                                     preventStealing: true
                                     cursorShape: (moduleItemDelegate.modelData.id === "header") ? Qt.PointingHandCursor : (isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor)
 
-                                    property real pressX: 0
-                                    property real pressY: 0
-                                    property bool dragging: false
+                                    property real pressStageX: 0
+                                    property real pressStageY: 0
+                                    property bool isDragging: false
 
                                     onPressed: function(mouse) {
                                         studioRoot.selectedModuleId = moduleItemDelegate.modelData.id;
-                                        pressX = mouse.x;
-                                        pressY = mouse.y;
-                                        dragging = false;
+                                        let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                        pressStageX = p.x;
+                                        pressStageY = p.y;
+                                        isDragging = false;
                                     }
 
                                     onPositionChanged: function(mouse) {
                                         if (moduleItemDelegate.modelData.id === "header") return; // Header cannot be dragged!
                                         if (pressed) {
-                                            if (!dragging && (Math.abs(mouse.y - pressY) > 8 || Math.abs(mouse.x - pressX) > 8)) {
-                                                dragging = true;
+                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            if (!isDragging && (Math.abs(p.x - pressStageX) > 8 || Math.abs(p.y - pressStageY) > 8)) {
+                                                isDragging = true;
                                                 studioRoot.isDraggingModule = true;
+                                                studioRoot.draggedModuleId = moduleItemDelegate.modelData.id;
                                                 studioRoot.dragSourceIndex = moduleItemDelegate.index;
+                                                studioRoot.dragGhostW = moduleItemDelegate.width;
+                                                studioRoot.dragGhostH = moduleItemDelegate.height;
+                                                studioRoot.dragGhostName = moduleItemDelegate.modelData.name;
+                                                studioRoot.dragGhostIcon = moduleItemDelegate.modelData.icon;
+                                                studioRoot.dragGhostColSpan = moduleItemDelegate.colSpan;
                                             }
-                                            if (dragging) {
-                                                let scenePos = mapToItem(capsuleLayout, mouse.x, mouse.y);
+
+                                            if (isDragging) {
+                                                studioRoot.dragGhostX = p.x;
+                                                studioRoot.dragGhostY = p.y;
+
+                                                let layoutPos = mapToItem(capsuleLayout, mouse.x, mouse.y);
+                                                let found = -1;
                                                 for (let i = 0; i < capsuleLayout.children.length; i++) {
-                                                    let targetChild = capsuleLayout.children[i];
-                                                    if (targetChild && targetChild.visible && targetChild.width > 0 && targetChild.height > 0) {
-                                                        if (scenePos.x >= targetChild.x && scenePos.x <= (targetChild.x + targetChild.width) &&
-                                                            scenePos.y >= targetChild.y && scenePos.y <= (targetChild.y + targetChild.height)) {
-                                                            let targetIndex = targetChild.index !== undefined ? targetChild.index : i;
-                                                            // Header at index 0 can never be swapped or displaced
-                                                            if (targetIndex > 0 && targetIndex !== moduleItemDelegate.index && targetIndex < studioRoot.modules.length) {
-                                                                studioRoot.moveModule(moduleItemDelegate.index, targetIndex);
-                                                                break;
+                                                    let ch = capsuleLayout.children[i];
+                                                    if (ch && ch.visible && ch.width > 0 && ch.height > 0) {
+                                                        if (layoutPos.x >= ch.x && layoutPos.x <= (ch.x + ch.width) &&
+                                                            layoutPos.y >= ch.y && layoutPos.y <= (ch.y + ch.height)) {
+                                                            let idx = (ch.index !== undefined) ? ch.index : i;
+                                                            if (idx > 0 && idx < studioRoot.modules.length) {
+                                                                found = idx;
                                                             }
+                                                            break;
                                                         }
                                                     }
                                                 }
+                                                studioRoot.hoverTargetIndex = found;
                                             }
                                         }
                                     }
 
                                     onReleased: {
-                                        if (dragging) {
+                                        if (isDragging) {
+                                            if (studioRoot.hoverTargetIndex > 0 && studioRoot.hoverTargetIndex !== studioRoot.dragSourceIndex) {
+                                                studioRoot.moveModule(studioRoot.dragSourceIndex, studioRoot.hoverTargetIndex);
+                                            }
                                             studioRoot.isDraggingModule = false;
-                                            dragging = false;
+                                            studioRoot.draggedModuleId = "";
+                                            studioRoot.dragSourceIndex = -1;
+                                            studioRoot.hoverTargetIndex = -1;
+                                            isDragging = false;
+                                        }
+                                    }
+
+                                    onCanceled: {
+                                        if (isDragging) {
+                                            studioRoot.isDraggingModule = false;
+                                            studioRoot.draggedModuleId = "";
+                                            studioRoot.dragSourceIndex = -1;
+                                            studioRoot.hoverTargetIndex = -1;
+                                            isDragging = false;
                                         }
                                     }
 
@@ -1134,7 +1171,7 @@ Item {
                             }
 
                             // ====================================================
-                            // SELECTION BOUNDING BOX ("IL COSO INTORNO")
+                            // SELECTION BOUNDING BOX
                             // ====================================================
                             Rectangle {
                                 id: boundingBox
@@ -1144,254 +1181,253 @@ Item {
                                 color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.08)
                                 border.width: 2
                                 border.color: studioRoot.accentColor
-                                visible: moduleItemDelegate.isSelected
+                                visible: moduleItemDelegate.isSelected && !studioRoot.isDraggingModule
                                 z: 50
 
-                                // ====================================================
-                                // RESIZE HANDLES (TUTTI I 4 LATI: ALTEZZA E LARGHEZZA)
-                                // ====================================================
                                 Item {
                                     id: resizeHandlesContainer
                                     anchors.fill: parent
                                     visible: moduleItemDelegate.modelData.id !== "header"
 
-                                    // 1. TOP RESIZE HANDLE (Pallino al centro del lato superiore)
-                                Rectangle {
-                                    id: topHandle
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.verticalCenter: parent.top
-                                    width: 14
-                                    height: 14
-                                    radius: 7
-                                    color: "#ffffff"
-                                    border.width: 2.5
-                                    border.color: studioRoot.accentColor
-                                    z: 55
-                                    scale: topHandleMouse.containsMouse || topHandleMouse.pressed ? 1.25 : 1.0
+                                    // BOTTOM RESIZE HANDLE (Solo espansione/riduzione verso il basso)
+                                    Rectangle {
+                                        id: bottomHandle
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        anchors.verticalCenter: parent.bottom
+                                        width: 14
+                                        height: 14
+                                        radius: 7
+                                        color: "#ffffff"
+                                        border.width: 2.5
+                                        border.color: studioRoot.accentColor
+                                        z: 55
+                                        scale: bottomHandleMouse.containsMouse || bottomHandleMouse.pressed ? 1.3 : 1.0
 
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
+                                        Behavior on scale { NumberAnimation { duration: 100 } }
 
-                                    MouseArea {
-                                        id: topHandleMouse
-                                        anchors.fill: parent
-                                        anchors.margins: -10
-                                        hoverEnabled: true
-                                        preventStealing: true
-                                        cursorShape: Qt.SizeVerCursor
+                                        MouseArea {
+                                            id: bottomHandleMouse
+                                            anchors.fill: parent
+                                            anchors.margins: -10
+                                            hoverEnabled: true
+                                            preventStealing: true
+                                            cursorShape: Qt.SizeVerCursor
 
-                                        property real startStageY: 0
-                                        property real startH: 0
-                                        property real currentH: 0
+                                            property real startCursorStageY: 0
+                                            property real startCardH: 0
 
-                                        onPressed: function(mouse) {
-                                            studioRoot.isResizing = true;
-                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                            startStageY = p.y;
-                                            startH = moduleItemDelegate.modelData.height || studioRoot.defaultHeight(moduleItemDelegate.modelData.id);
-                                            currentH = startH;
-                                        }
-                                        onPositionChanged: function(mouse) {
-                                            if (pressed) {
+                                            onPressed: function(mouse) {
+                                                studioRoot.isResizing = true;
                                                 let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                                let delta = startStageY - p.y;
-                                                currentH = studioRoot.snapHeight(moduleItemDelegate.modelData.id, startH + delta);
-                                                moduleItemDelegate.overrideHeight = currentH;
+                                                startCursorStageY = p.y;
+                                                startCardH = moduleItemDelegate.modelData.height || studioRoot.defaultHeight(moduleItemDelegate.modelData.id);
+                                                moduleItemDelegate.overrideHeight = startCardH;
                                             }
-                                        }
-                                        onReleased: {
-                                            let targetH = currentH;
-                                            if (targetH > 0) {
-                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, targetH);
+
+                                            onPositionChanged: function(mouse) {
+                                                if (pressed) {
+                                                    let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                                    let delta = p.y - startCursorStageY;
+                                                    let newH = studioRoot.snapHeight(moduleItemDelegate.modelData.id, startCardH + delta);
+                                                    moduleItemDelegate.overrideHeight = newH;
+                                                }
                                             }
-                                            moduleItemDelegate.overrideHeight = 0;
-                                            studioRoot.isResizing = false;
-                                        }
-                                        onCanceled: {
-                                            moduleItemDelegate.overrideHeight = 0;
-                                            studioRoot.isResizing = false;
+
+                                            onReleased: {
+                                                let targetH = moduleItemDelegate.overrideHeight;
+                                                if (targetH > 0) {
+                                                    studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, targetH);
+                                                }
+                                                moduleItemDelegate.overrideHeight = 0;
+                                                studioRoot.isResizing = false;
+                                            }
+
+                                            onCanceled: {
+                                                moduleItemDelegate.overrideHeight = 0;
+                                                studioRoot.isResizing = false;
+                                            }
                                         }
                                     }
-                                }
 
-                                // 2. BOTTOM RESIZE HANDLE (Pallino al centro del lato inferiore)
-                                Rectangle {
-                                    id: bottomHandle
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.verticalCenter: parent.bottom
-                                    width: 14
-                                    height: 14
-                                    radius: 7
-                                    color: "#ffffff"
-                                    border.width: 2.5
-                                    border.color: studioRoot.accentColor
-                                    z: 55
-                                    scale: bottomHandleMouse.containsMouse || bottomHandleMouse.pressed ? 1.25 : 1.0
+                                    // LEFT RESIZE HANDLE (Regola colSpan 1..4)
+                                    Rectangle {
+                                        id: leftHandle
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.horizontalCenter: parent.left
+                                        width: 14
+                                        height: 14
+                                        radius: 7
+                                        color: "#ffffff"
+                                        border.width: 2.5
+                                        border.color: studioRoot.accentColor
+                                        z: 55
+                                        scale: leftHandleMouse.containsMouse || leftHandleMouse.pressed ? 1.3 : 1.0
 
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
+                                        Behavior on scale { NumberAnimation { duration: 100 } }
 
-                                    MouseArea {
-                                        id: bottomHandleMouse
-                                        anchors.fill: parent
-                                        anchors.margins: -10
-                                        hoverEnabled: true
-                                        preventStealing: true
-                                        cursorShape: Qt.SizeVerCursor
+                                        MouseArea {
+                                            id: leftHandleMouse
+                                            anchors.fill: parent
+                                            anchors.margins: -8
+                                            hoverEnabled: true
+                                            preventStealing: true
+                                            cursorShape: Qt.SizeHorCursor
 
-                                        property real startStageY: 0
-                                        property real startH: 0
-                                        property real currentH: 0
+                                            property real pressGlobalX: 0
+                                            property bool toggledInDrag: false
 
-                                        onPressed: function(mouse) {
-                                            studioRoot.isResizing = true;
-                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                            startStageY = p.y;
-                                            startH = moduleItemDelegate.modelData.height || studioRoot.defaultHeight(moduleItemDelegate.modelData.id);
-                                            currentH = startH;
-                                        }
-                                        onPositionChanged: function(mouse) {
-                                            if (pressed) {
-                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                                let delta = p.y - startStageY;
-                                                currentH = studioRoot.snapHeight(moduleItemDelegate.modelData.id, startH + delta);
-                                                moduleItemDelegate.overrideHeight = currentH;
+                                            onPressed: function(mouse) {
+                                                studioRoot.isResizing = true;
+                                                pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                toggledInDrag = false;
                                             }
-                                        }
-                                        onReleased: {
-                                            let targetH = currentH;
-                                            if (targetH > 0) {
-                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, targetH);
+                                            onPositionChanged: function(mouse) {
+                                                if (pressed && !toggledInDrag) {
+                                                    let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                    let diff = currentGlobalX - pressGlobalX;
+                                                    let curr = moduleItemDelegate.colSpan;
+                                                    if (diff < -35 && curr < 4) {
+                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
+                                                        toggledInDrag = true;
+                                                    } else if (diff > 35 && curr > 1) {
+                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
+                                                        toggledInDrag = true;
+                                                    }
+                                                }
                                             }
-                                            moduleItemDelegate.overrideHeight = 0;
-                                            studioRoot.isResizing = false;
-                                        }
-                                        onCanceled: {
-                                            moduleItemDelegate.overrideHeight = 0;
-                                            studioRoot.isResizing = false;
-                                        }
-                                    }
-                                }
-
-                                // 3. LEFT RESIZE HANDLE (Pallino al centro del lato sinistro)
-                                Rectangle {
-                                    id: leftHandle
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.horizontalCenter: parent.left
-                                    width: 14
-                                    height: 14
-                                    radius: 7
-                                    color: "#ffffff"
-                                    border.width: 2.5
-                                    border.color: studioRoot.accentColor
-                                    z: 55
-                                    scale: leftHandleMouse.containsMouse || leftHandleMouse.pressed ? 1.25 : 1.0
-
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
-
-                                    MouseArea {
-                                        id: leftHandleMouse
-                                        anchors.fill: parent
-                                        anchors.margins: -8
-                                        hoverEnabled: true
-                                        preventStealing: true
-                                        cursorShape: Qt.SizeHorCursor
-
-                                        property real pressGlobalX: 0
-                                        property bool toggledInDrag: false
-
-                                        onPressed: function(mouse) {
-                                            studioRoot.isResizing = true;
-                                            pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
-                                            toggledInDrag = false;
-                                        }
-                                        onPositionChanged: function(mouse) {
-                                            if (pressed && !toggledInDrag) {
-                                                let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
-                                                let diff = currentGlobalX - pressGlobalX;
-                                                let curr = moduleItemDelegate.colSpan;
-                                                if (diff < -35 && curr < 4) {
-                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
-                                                    toggledInDrag = true;
-                                                } else if (diff > 35 && curr > 1) {
-                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
-                                                    toggledInDrag = true;
+                                            onReleased: {
+                                                studioRoot.isResizing = false;
+                                            }
+                                            onCanceled: {
+                                                studioRoot.isResizing = false;
+                                            }
+                                            onClicked: {
+                                                if (!toggledInDrag) {
+                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
                                                 }
                                             }
                                         }
-                                        onReleased: {
-                                            studioRoot.isResizing = false;
-                                        }
-                                        onCanceled: {
-                                            studioRoot.isResizing = false;
-                                        }
-                                        onClicked: {
-                                            if (!toggledInDrag) {
-                                                studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
-                                            }
-                                        }
                                     }
-                                }
 
-                                // 4. RIGHT RESIZE HANDLE (Pallino al centro del lato destro)
-                                Rectangle {
-                                    id: rightHandle
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.horizontalCenter: parent.right
-                                    width: 14
-                                    height: 14
-                                    radius: 7
-                                    color: "#ffffff"
-                                    border.width: 2.5
-                                    border.color: studioRoot.accentColor
-                                    z: 55
-                                    scale: rightHandleMouse.containsMouse || rightHandleMouse.pressed ? 1.25 : 1.0
+                                    // RIGHT RESIZE HANDLE (Regola colSpan 1..4)
+                                    Rectangle {
+                                        id: rightHandle
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.horizontalCenter: parent.right
+                                        width: 14
+                                        height: 14
+                                        radius: 7
+                                        color: "#ffffff"
+                                        border.width: 2.5
+                                        border.color: studioRoot.accentColor
+                                        z: 55
+                                        scale: rightHandleMouse.containsMouse || rightHandleMouse.pressed ? 1.3 : 1.0
 
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
+                                        Behavior on scale { NumberAnimation { duration: 100 } }
 
-                                    MouseArea {
-                                        id: rightHandleMouse
-                                        anchors.fill: parent
-                                        anchors.margins: -8
-                                        hoverEnabled: true
-                                        preventStealing: true
-                                        cursorShape: Qt.SizeHorCursor
+                                        MouseArea {
+                                            id: rightHandleMouse
+                                            anchors.fill: parent
+                                            anchors.margins: -8
+                                            hoverEnabled: true
+                                            preventStealing: true
+                                            cursorShape: Qt.SizeHorCursor
 
-                                        property real pressGlobalX: 0
-                                        property bool toggledInDrag: false
+                                            property real pressGlobalX: 0
+                                            property bool toggledInDrag: false
 
-                                        onPressed: function(mouse) {
-                                            studioRoot.isResizing = true;
-                                            pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
-                                            toggledInDrag = false;
-                                        }
-                                        onPositionChanged: function(mouse) {
-                                            if (pressed && !toggledInDrag) {
-                                                let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
-                                                let diff = currentGlobalX - pressGlobalX;
-                                                let curr = moduleItemDelegate.colSpan;
-                                                if (diff > 35 && curr < 4) {
-                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
-                                                    toggledInDrag = true;
-                                                } else if (diff < -35 && curr > 1) {
-                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
-                                                    toggledInDrag = true;
+                                            onPressed: function(mouse) {
+                                                studioRoot.isResizing = true;
+                                                pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                toggledInDrag = false;
+                                            }
+                                            onPositionChanged: function(mouse) {
+                                                if (pressed && !toggledInDrag) {
+                                                    let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                    let diff = currentGlobalX - pressGlobalX;
+                                                    let curr = moduleItemDelegate.colSpan;
+                                                    if (diff > 35 && curr < 4) {
+                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
+                                                        toggledInDrag = true;
+                                                    } else if (diff < -35 && curr > 1) {
+                                                        studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
+                                                        toggledInDrag = true;
+                                                    }
                                                 }
                                             }
-                                        }
-                                        onReleased: {
-                                            studioRoot.isResizing = false;
-                                        }
-                                        onCanceled: {
-                                            studioRoot.isResizing = false;
-                                        }
-                                        onClicked: {
-                                            if (!toggledInDrag) {
-                                                studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                            onReleased: {
+                                                studioRoot.isResizing = false;
+                                            }
+                                            onCanceled: {
+                                                studioRoot.isResizing = false;
+                                            }
+                                            onClicked: {
+                                                if (!toggledInDrag) {
+                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            // Floating Drag & Drop Ghost
+            Rectangle {
+                id: dragGhost
+                visible: studioRoot.isDraggingModule
+                x: studioRoot.dragGhostX - width / 2
+                y: studioRoot.dragGhostY - height / 2
+                width: studioRoot.dragGhostW
+                height: studioRoot.dragGhostH
+                radius: (studioRoot.dragGhostColSpan === 1 && studioRoot.dragGhostH <= 100) ? 18 : 12
+                color: Qt.rgba(20/255, 24/255, 34/255, 0.94)
+                border.width: 2
+                border.color: studioRoot.accentColor
+                z: 200
+                scale: 1.04
+                opacity: 0.95
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: -4
+                    radius: parent.radius + 4
+                    color: StyleTokens.transparent
+                    border.width: 2
+                    border.color: studioRoot.accentSoft
+                    z: -1
+                }
+
+                Item {
+                    anchors.fill: parent
+                    anchors.margins: 8
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
+                        Rectangle {
+                            width: 28; height: 28; radius: 14
+                            color: studioRoot.accentSoft
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text {
+                                anchors.centerIn: parent
+                                text: studioRoot.dragGhostIcon
+                                font.family: studioRoot.iconFontFamily
+                                font.pixelSize: 14
+                                color: studioRoot.accentColor
                             }
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: studioRoot.dragGhostColSpan > 1 || studioRoot.dragGhostH > 100
+                            text: studioRoot.dragGhostName
+                            font.family: studioRoot.textFontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: studioRoot.textPrimary
                         }
                     }
                 }

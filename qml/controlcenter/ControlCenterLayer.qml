@@ -111,7 +111,7 @@ Item {
             return (customW >= 460 && customW <= 720) ? customW : 540;
         }
         if (customW >= 360 && customW <= 480) return customW;
-        return 390;
+        return 380;
     }
 
     readonly property var activeCanvasLayout: {
@@ -2957,7 +2957,7 @@ Item {
                     return 80;
                 }
                 readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
-                readonly property real slotWidth: isOneByOne ? Math.min(unitColWidth, slotHeight) : (isFullWidth ? mainContent.width : (colSpan * unitColWidth + (colSpan - 1) * mainContent.spacing))
+                readonly property real slotWidth: isFullWidth ? mainContent.width : (colSpan * unitColWidth + (colSpan - 1) * mainContent.spacing)
 
                 visible: modelData.active
                 width: modelData.active ? slotWidth : 0
