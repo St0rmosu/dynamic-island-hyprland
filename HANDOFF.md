@@ -50,6 +50,23 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 - Added `toggleSettingsApp`, `showSettingsApp`, `setSettingsCategory`, and `setSettingsSubView` to both `IpcHandler { target: "island" }` and `IpcHandler { target: "tide" }` in `shell.qml`.
 - Ensured `/home/lollo/.scripts/shell-dispatcher.sh settings` reliably invokes `call_island tide toggleSettingsApp`.
 
+### E. Fully Dynamic Studio Canvas Control Center Layout & Instant Sliders
+- Replaced the hardcoded static `Column` in `ControlCenterLayer.qml` with a reactive `Flow` and modular `Component` loaders for all 9 modules (`header`, `wifi`, `bluetooth`, `brightness`, `volume`, `notifications`, `battery`, `toggles`, `quickactions`).
+- Removed `Behavior on displayedBrightness` and `Behavior on displayedVolume` to eliminate slider lag/animation, giving crisp and instantaneous slider tracking.
+- Implemented interactive drag-and-drop live reordering in `StudioLayoutCanvas.qml`.
+
+### F. Free Form Sizing, Height Adjustment Fix, & Token-Saving Skills
+- **Removed Fixed Presets**: Removed "Compatto (420) / Ampio (540)" segmented toggle from `StudioLayoutCanvas.qml` top bar. Users can freely arrange modules and adjust dimensions without rigid preset constraints.
+- **Fixed Module Height Resizing**:
+  - Identified root cause of resize handle bug: `onPositionChanged` in `topHandleMouse` / `bottomHandleMouse` was measuring local coordinates against a moving handle and lacked a fixed reference frame, causing jitter and exponential jumps.
+  - Fixed by mapping coordinates to static `stageContainer` via `mapToItem(stageContainer, mouse.x, mouse.y).y`.
+  - Relaxed `maxHeight` restrictions (from 80px up to 260–320px) across all module defaults and `initializeFromConfig()`.
+  - Added dedicated `−` and `+` single-click height adjustment buttons in the floating `infoPill` for fast, accurate nudging.
+  - Updated `ControlCenterLayer.qml` (`slotHeight`, `wifiComponent`, `bluetoothComponent`, `batteryComponent`) and `ControlSliderCard.qml` to adapt gracefully and dynamically to custom heights without clipping.
+- **Installed Skills for Token Optimization**:
+  - `caveman` (`~/.agents/skills/caveman/SKILL.md`): Ultra-concise, filler-free communication mode that saves 60-70% conversation output tokens while preserving 100% technical fidelity, code correctness, and clickable links.
+  - `ponytail` (`~/.agents/skills/ponytail/SKILL.md`): Pragmatic senior developer mindset emphasizing the "Laziness Ladder" (YAGNI, standard platform primitives, minimal diffs, anti-overengineering).
+
 ---
 
 ## 3. Architecture & File Reference

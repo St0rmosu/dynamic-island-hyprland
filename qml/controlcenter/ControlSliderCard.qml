@@ -39,7 +39,7 @@ Rectangle {
 
     Item {
         anchors.fill: parent
-        anchors.margins: 12
+        anchors.margins: Math.min(12, Math.max(6, (root.height - 48) / 2))
 
         Row {
             id: headerRow
@@ -72,8 +72,8 @@ Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            height: 22
-            radius: 11
+            height: Math.min(24, Math.max(18, root.height - 46))
+            radius: height / 2
             color: "#1d1f24"
             border.width: 1
             border.color: "#30333a"
@@ -90,10 +90,10 @@ Rectangle {
 
             Rectangle {
                 x: Math.max(0, Math.min(parent.width - width, parent.width * root.value - width / 2))
-                y: -1
-                width: root.knobSize
-                height: root.knobSize
-                radius: root.knobSize / 2
+                y: (sliderTrack.height - height) / 2
+                width: Math.min(root.knobSize, sliderTrack.height + 2)
+                height: width
+                radius: width / 2
                 border.width: 1
                 border.color: "#b8ffffff"
                 color: "#f4f5f7"

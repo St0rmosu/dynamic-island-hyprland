@@ -1342,7 +1342,7 @@ FocusScope {
                                                 }
 
                                                 Text {
-                                                    text: "Disposizione verticale (standard) o orizzontale (compatta con slider affiancati)"
+                                                    text: "Profilo larghezza: Compatto (420px) o Ampio (540px). La disposizione dei singoli moduli è dinamica dallo Studio Canvas."
                                                     font.family: root.textFontFamily
                                                     font.pixelSize: 10
                                                     color: root.textMuted

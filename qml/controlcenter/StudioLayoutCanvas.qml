@@ -36,15 +36,15 @@ Item {
 
     // Live list of modules
     property var modules: [
-        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 28, maxHeight: 44, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Controller bluetooth e periferiche connesse" },
-        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Cursore retroilluminazione schermo" },
-        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Cursore volume audio master" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 68, minHeight: 44, maxHeight: 160, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 44, minHeight: 32, maxHeight: 80, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 60, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
+        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
+        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 44, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
     Component.onCompleted: {
@@ -72,7 +72,7 @@ Item {
                                 name: m.name,
                                 icon: m.icon,
                                 colSpan: s.colSpan !== undefined ? s.colSpan : m.colSpan,
-                                height: s.height !== undefined ? s.height : m.height,
+                                height: s.height !== undefined ? Math.max(m.minHeight || 26, Math.min(m.maxHeight || 320, s.height)) : m.height,
                                 minHeight: m.minHeight,
                                 maxHeight: m.maxHeight,
                                 active: s.active !== undefined ? s.active : m.active,
@@ -144,17 +144,29 @@ Item {
         emitSave();
     }
 
-    function adjustModuleHeight(id, delta) {
+    function setModuleHeight(id, h) {
         let copy = modules.slice();
         for (let i = 0; i < copy.length; i++) {
             if (copy[i].id === id) {
-                const nh = Math.max(copy[i].minHeight || 28, Math.min(copy[i].maxHeight || 180, copy[i].height + delta));
+                const minH = copy[i].minHeight || 26;
+                const maxH = copy[i].maxHeight || 320;
+                const nh = Math.max(minH, Math.min(maxH, Math.round(h)));
+                if (copy[i].height === nh) return;
                 copy[i].height = nh;
                 break;
             }
         }
         modules = copy;
         emitSave();
+    }
+
+    function adjustModuleHeight(id, delta) {
+        for (let i = 0; i < modules.length; i++) {
+            if (modules[i].id === id) {
+                setModuleHeight(id, (modules[i].height || 42) + delta);
+                break;
+            }
+        }
     }
 
     function setModuleActive(id, active) {
@@ -183,21 +195,17 @@ Item {
 
     function resetToDefault() {
         modules = [
-            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 28, maxHeight: 44, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Controller bluetooth e periferiche connesse" },
-            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Cursore retroilluminazione schermo" },
-            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Cursore volume audio master" },
-            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 68, minHeight: 44, maxHeight: 160, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 46, minHeight: 32, maxHeight: 80, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 44, minHeight: 32, maxHeight: 80, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 60, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
+            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
+            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
+            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 44, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
         ];
         studioRoot.selectedModuleId = "wifi";
-        studioRoot.controlCenterOrientation = "vertical";
-        studioRoot.controlCenterWidth = 420;
-        studioRoot.requestOrientationChange("vertical");
-        studioRoot.requestWidthChange(420);
         emitSave();
     }
 
@@ -247,14 +255,14 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
                     Text {
-                        text: "Studio Canvas & Griglia Isola"
+                        text: "Studio Canvas • Griglia Dinamica"
                         font.family: studioRoot.textFontFamily
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
                         color: studioRoot.textPrimary
                     }
                     Text {
-                        text: "Clicca su un modulo per ridimensionarlo con i pallini laterali o riposizionarlo."
+                        text: "Disponi liberamente i moduli: posizione, ordine e dimensioni si riflettono direttamente nel Centro di Controllo."
                         font.family: studioRoot.textFontFamily
                         font.pixelSize: 10
                         color: studioRoot.textMuted
@@ -267,69 +275,6 @@ Item {
                 anchors.rightMargin: 14
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-
-                // Orientation toggle
-                Rectangle {
-                    width: 120
-                    height: 30
-                    radius: 8
-                    color: Qt.rgba(255, 255, 255, 0.05)
-                    border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.08)
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.margins: 2
-                        spacing: 2
-
-                        Rectangle {
-                            width: (parent.width - 2) / 2
-                            height: parent.height
-                            radius: 6
-                            color: studioRoot.controlCenterOrientation === "vertical" ? studioRoot.accentColor : StyleTokens.transparent
-                            Text {
-                                anchors.centerIn: parent
-                                text: "Verticale"
-                                font.family: studioRoot.textFontFamily
-                                font.pixelSize: 10
-                                font.weight: Font.Medium
-                                color: studioRoot.controlCenterOrientation === "vertical" ? "#10141b" : studioRoot.textSecondary
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    studioRoot.controlCenterOrientation = "vertical";
-                                    studioRoot.requestOrientationChange("vertical");
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            width: (parent.width - 2) / 2
-                            height: parent.height
-                            radius: 6
-                            color: studioRoot.controlCenterOrientation === "horizontal" ? studioRoot.accentColor : StyleTokens.transparent
-                            Text {
-                                anchors.centerIn: parent
-                                text: "Orizzontale"
-                                font.family: studioRoot.textFontFamily
-                                font.pixelSize: 10
-                                font.weight: Font.Medium
-                                color: studioRoot.controlCenterOrientation === "horizontal" ? "#10141b" : studioRoot.textSecondary
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    studioRoot.controlCenterOrientation = "horizontal";
-                                    studioRoot.requestOrientationChange("horizontal");
-                                }
-                            }
-                        }
-                    }
-                }
 
                 // Reset Layout Button
                 Rectangle {
@@ -449,7 +394,7 @@ Item {
                 id: islandCapsule
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: 30
-                width: Math.min(stageContainer.width - 40, studioRoot.controlCenterOrientation === "horizontal" ? 440 : 330)
+                width: Math.min(stageContainer.width - 40, (studioRoot.controlCenterWidth >= 360 ? studioRoot.controlCenterWidth * 0.85 : (studioRoot.controlCenterOrientation === "horizontal" ? 450 : 340)))
                 height: capsuleLayout.height + 24
                 radius: 24
                 color: Qt.rgba(18/255, 22/255, 30/255, 0.94)
@@ -500,7 +445,10 @@ Item {
                             height: modelData.active ? slotHeight : 0
 
                             Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                            Behavior on height { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                            Behavior on height {
+                                enabled: !bottomHandleMouse.pressed && !topHandleMouse.pressed
+                                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                            }
 
                             // Card Surface
                             Rectangle {
@@ -644,20 +592,40 @@ Item {
                                     hoverEnabled: true
                                     cursorShape: isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor
 
+                                    property real pressX: 0
                                     property real pressY: 0
                                     property bool dragging: false
 
                                     onPressed: function(mouse) {
                                         studioRoot.selectedModuleId = moduleItemDelegate.modelData.id;
+                                        pressX = mouse.x;
                                         pressY = mouse.y;
                                         dragging = false;
                                     }
 
                                     onPositionChanged: function(mouse) {
-                                        if (pressed && Math.abs(mouse.y - pressY) > 12) {
-                                            dragging = true;
-                                            studioRoot.isDraggingModule = true;
-                                            studioRoot.dragSourceIndex = moduleItemDelegate.index;
+                                        if (pressed) {
+                                            if (!dragging && (Math.abs(mouse.y - pressY) > 8 || Math.abs(mouse.x - pressX) > 8)) {
+                                                dragging = true;
+                                                studioRoot.isDraggingModule = true;
+                                                studioRoot.dragSourceIndex = moduleItemDelegate.index;
+                                            }
+                                            if (dragging) {
+                                                let scenePos = mapToItem(capsuleLayout, mouse.x, mouse.y);
+                                                for (let i = 0; i < capsuleLayout.children.length; i++) {
+                                                    let targetChild = capsuleLayout.children[i];
+                                                    if (targetChild && targetChild.visible && targetChild.width > 0 && targetChild.height > 0) {
+                                                        if (scenePos.x >= targetChild.x && scenePos.x <= (targetChild.x + targetChild.width) &&
+                                                            scenePos.y >= targetChild.y && scenePos.y <= (targetChild.y + targetChild.height)) {
+                                                            let targetIndex = targetChild.index !== undefined ? targetChild.index : i;
+                                                            if (targetIndex !== moduleItemDelegate.index && targetIndex >= 0 && targetIndex < studioRoot.modules.length) {
+                                                                studioRoot.moveModule(moduleItemDelegate.index, targetIndex);
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 
@@ -714,6 +682,40 @@ Item {
                                             font.pixelSize: 9
                                             font.weight: Font.DemiBold
                                             color: studioRoot.textPrimary
+                                        }
+
+                                        // Height decrease button
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "−"
+                                            font.pixelSize: 12
+                                            font.weight: Font.Bold
+                                            color: minusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
+                                            MouseArea {
+                                                id: minusMouse
+                                                anchors.fill: parent
+                                                anchors.margins: -3
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, -8)
+                                            }
+                                        }
+
+                                        // Height increase button
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: "+"
+                                            font.pixelSize: 12
+                                            font.weight: Font.Bold
+                                            color: plusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
+                                            MouseArea {
+                                                id: plusMouse
+                                                anchors.fill: parent
+                                                anchors.margins: -3
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, 8)
+                                            }
                                         }
 
                                         // Move Earlier / Up button
@@ -811,14 +813,18 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: Qt.SizeVerCursor
 
-                                        property real startY: 0
-                                        onPressed: function(mouse) { startY = mouse.y; }
+                                        property real startStageY: 0
+                                        property real startH: 0
+                                        onPressed: function(mouse) {
+                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            startStageY = p.y;
+                                            startH = moduleItemDelegate.modelData.height || 42;
+                                        }
                                         onPositionChanged: function(mouse) {
                                             if (pressed) {
-                                                let delta = startY - mouse.y;
-                                                if (Math.abs(delta) >= 2) {
-                                                    studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, delta);
-                                                }
+                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                                let delta = startStageY - p.y;
+                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, startH + delta);
                                             }
                                         }
                                     }
@@ -847,14 +853,18 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: Qt.SizeVerCursor
 
-                                        property real startY: 0
-                                        onPressed: function(mouse) { startY = mouse.y; }
+                                        property real startStageY: 0
+                                        property real startH: 0
+                                        onPressed: function(mouse) {
+                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                            startStageY = p.y;
+                                            startH = moduleItemDelegate.modelData.height || 42;
+                                        }
                                         onPositionChanged: function(mouse) {
                                             if (pressed) {
-                                                let delta = mouse.y - startY;
-                                                if (Math.abs(delta) >= 2) {
-                                                    studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, delta);
-                                                }
+                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
+                                                let delta = p.y - startStageY;
+                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, startH + delta);
                                             }
                                         }
                                     }
