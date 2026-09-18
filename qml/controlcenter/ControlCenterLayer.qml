@@ -246,7 +246,8 @@ Item {
     property bool bluetoothPanelOpen: false
     property bool powerPanelOpen: false
     property bool powerViewActive: false
-    readonly property bool anyConnectivitySubViewActive: wifiPanelOpen || bluetoothPanelOpen
+    property string activeDetailModule: ""
+    readonly property bool anyConnectivitySubViewActive: wifiPanelOpen || bluetoothPanelOpen || (activeDetailModule !== "")
     property bool batteryDrawerOpen: false
     property bool batteryDrawerDragging: false
     property real batteryDrawerProgress: 0
@@ -352,7 +353,7 @@ Item {
     readonly property string bluetoothPairingMessage: bluetoothPairingAgent ? bluetoothPairingAgent.promptMessage : ""
     readonly property string bluetoothPairingDisplayedCode: bluetoothPairingAgent ? bluetoothPairingAgent.displayedCode : ""
     readonly property bool hasConnectivityPrompt: wifiPendingPasswordSsid.length > 0 || bluetoothPairingActive
-    readonly property bool anyConnectivityPanelOpen: wifiPanelOpen || bluetoothPanelOpen
+    readonly property bool anyConnectivityPanelOpen: wifiPanelOpen || bluetoothPanelOpen || (activeDetailModule !== "")
     readonly property string wifiStatusText: wifiController ? wifiController.statusText : "Unavailable"
     readonly property string bluetoothStatusText: buildBluetoothStatusText()
     readonly property string bluetoothAvailabilityMessage: bluetoothAvailable ? "" : "No Bluetooth adapter is available."
@@ -748,9 +749,22 @@ Item {
 
         setConnectivityPanelOpen("wifi", false, emitSignals);
         setConnectivityPanelOpen("bluetooth", false, emitSignals);
+        activeDetailModule = "";
         clearWifiPrompt();
         clearWifiMessages();
         clearBluetoothMessages();
+    }
+
+    function openModuleDetail(kind) {
+        if (kind === "wifi") {
+            setConnectivityPanelOpen("wifi", true);
+            return;
+        }
+        if (kind === "bluetooth") {
+            setConnectivityPanelOpen("bluetooth", true);
+            return;
+        }
+        activeDetailModule = kind;
     }
 
     function requestWifiStateRefresh() {
@@ -1789,6 +1803,127 @@ Item {
     }
 
     Component {
+        id: oneByOneComponent
+        Rectangle {
+            id: tileRoot
+            anchors.fill: parent
+            radius: 18
+            clip: true
+
+            readonly property string modId: (parent && parent.slotModel) ? parent.slotModel.id : (moduleSlot ? moduleSlot.modelData.id : "")
+            readonly property bool isModuleActive: {
+                switch (modId) {
+                case "wifi": return controlCenter.wifiEnabled;
+                case "bluetooth": return controlCenter.bluetoothEnabled;
+                case "volume": return controlCenter.displayedVolume > 0.01;
+                case "brightness": return controlCenter.displayedBrightness > 0.01;
+                case "toggles": return controlCenter.focusEnabled || controlCenter.nightLightEnabled;
+                case "notifications": return controlCenter.notificationModel && controlCenter.notificationModel.count > 0;
+                case "battery": return true;
+                case "quickactions": return true;
+                default: return false;
+                }
+            }
+
+            readonly property string iconGlyph: {
+                switch (modId) {
+                case "wifi": return controlCenter.wifiGlyph;
+                case "bluetooth": return "\uf294";
+                case "volume": return controlCenter.volumeIconGlyph;
+                case "brightness": return controlCenter.brightnessIconGlyph;
+                case "toggles": return controlCenter.focusEnabled ? "\uf186" : (controlCenter.nightLightEnabled ? "\uf185" : "\uf186");
+                case "battery": return (controlCenter.batteryModeGlyphs && controlCenter.batteryModeGlyphs[controlCenter.batteryModeIndex]) || "\uf0e7";
+                case "notifications": return "\uf0f3";
+                case "quickactions": return "\uf108";
+                default: return "\uf013";
+                }
+            }
+
+            readonly property color activeColor: {
+                switch (modId) {
+                case "wifi": return "#0a84ff";
+                case "bluetooth": return "#0a84ff";
+                case "volume": return controlCenter.cardAccent;
+                case "brightness": return "#ff9f0a";
+                case "toggles": return controlCenter.focusEnabled ? "#af52de" : "#ff9f0a";
+                case "battery": {
+                    if (controlCenter.batteryModeIndex === 0) return "#30d158";
+                    if (controlCenter.batteryModeIndex === 2) return "#ff453a";
+                    return controlCenter.cardAccent;
+                }
+                case "notifications": return controlCenter.cardAccent;
+                default: return controlCenter.cardAccent;
+                }
+            }
+
+            color: isModuleActive
+                ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, tileMouse.containsMouse ? 0.28 : 0.18)
+                : (tileMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.05))
+
+            border.width: 1
+            border.color: isModuleActive
+                ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.42)
+                : Qt.rgba(255, 255, 255, 0.08)
+
+            Behavior on color { ColorAnimation { duration: 140 } }
+            Behavior on border.color { ColorAnimation { duration: 140 } }
+
+            MatteSurface {
+                anchors.fill: parent
+                radius: parent.radius
+                hovered: tileMouse.containsMouse
+                pressed: tileMouse.pressed
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: tileRoot.iconGlyph
+                font.family: controlCenter.iconFontFamily
+                font.pixelSize: 26
+                color: tileRoot.isModuleActive ? tileRoot.activeColor : StyleTokens.textSecondary
+                scale: tileMouse.pressed ? 0.90 : (tileMouse.containsMouse ? 1.10 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                }
+                Behavior on color {
+                    ColorAnimation { duration: 140 }
+                }
+            }
+
+            Rectangle {
+                visible: tileRoot.modId === "notifications" && controlCenter.notificationModel && controlCenter.notificationModel.count > 0
+                anchors.top: parent.top
+                anchors.right: parent.right
+                anchors.topMargin: 8
+                anchors.rightMargin: 8
+                width: 18
+                height: 18
+                radius: 9
+                color: "#ff3b30"
+                Text {
+                    anchors.centerIn: parent
+                    text: String(controlCenter.notificationModel ? controlCenter.notificationModel.count : 0)
+                    font.pixelSize: 9
+                    font.family: controlCenter.textFontFamily
+                    font.weight: Font.Bold
+                    color: "#ffffff"
+                }
+            }
+
+            MouseArea {
+                id: tileMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    controlCenter.openModuleDetail(tileRoot.modId);
+                }
+            }
+        }
+    }
+
+    Component {
         id: wifiComponent
         Rectangle {
             anchors.fill: parent
@@ -2812,6 +2947,7 @@ Item {
                     }
                     return 80;
                 }
+                readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
 
                 visible: modelData.active
                 width: modelData.active ? slotWidth : 0
@@ -2819,8 +2955,13 @@ Item {
 
                 Loader {
                     anchors.fill: parent
+                    property var slotModel: moduleSlot.modelData
+                    property bool isOneByOneSlot: moduleSlot.isOneByOne
                     active: moduleSlot.visible
                     sourceComponent: {
+                        if (moduleSlot.isOneByOne) {
+                            return oneByOneComponent;
+                        }
                         switch (moduleSlot.modelData.id) {
                         case "header": return headerComponent;
                         case "wifi": return wifiComponent;
@@ -2892,8 +3033,10 @@ Item {
             NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
         }
 
+        // 1. Wifi / Bluetooth Detail Panel
         ConnectivityDetailPanel {
             anchors.fill: parent
+            visible: controlCenter.wifiPanelOpen || controlCenter.bluetoothPanelOpen
             provider: controlCenter
             panelKind: controlCenter.wifiPanelOpen ? "wifi" : "bluetooth"
             iconFontFamily: controlCenter.iconFontFamily
@@ -2903,6 +3046,146 @@ Item {
             presentationProgress: connectivitySubView.opacity
             onBackRequested: {
                 controlCenter.closeConnectivityPanels();
+            }
+        }
+
+        // 2. Generic Module Detail View (Volume, Brightness, Battery, Toggles, Notifications, Quickactions)
+        Item {
+            id: genericDetailView
+            anchors.fill: parent
+            anchors.margins: 14
+            visible: controlCenter.activeDetailModule !== "" && !controlCenter.wifiPanelOpen && !controlCenter.bluetoothPanelOpen
+
+            // Header top bar with Back button and Module title
+            Item {
+                id: detailTopBar
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: 36
+
+                Rectangle {
+                    id: backBtn
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: backRow.width + 18
+                    height: 30
+                    radius: 15
+                    color: backBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                    border.width: 1
+                    border.color: backBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.18) : Qt.rgba(255, 255, 255, 0.10)
+
+                    Row {
+                        id: backRow
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: ""
+                            font.family: controlCenter.iconFontFamily
+                            font.pixelSize: 11
+                            color: controlCenter.cardAccent
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Indietro"
+                            font.family: controlCenter.textFontFamily
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            color: controlCenter.textPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        id: backBtnMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: controlCenter.activeDetailModule = ""
+                    }
+                }
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 7
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            switch (controlCenter.activeDetailModule) {
+                            case "volume": return controlCenter.volumeIconGlyph;
+                            case "brightness": return controlCenter.brightnessIconGlyph;
+                            case "battery": return "\uf0e7";
+                            case "toggles": return "\uf186";
+                            case "notifications": return "\uf0f3";
+                            case "quickactions": return "\uf108";
+                            default: return "";
+                            }
+                        }
+                        font.family: controlCenter.iconFontFamily
+                        font.pixelSize: 14
+                        color: controlCenter.cardAccent
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            switch (controlCenter.activeDetailModule) {
+                            case "volume": return "Controllo Volume";
+                            case "brightness": return "Luminosità Display";
+                            case "battery": return "Profilo Batteria TLP";
+                            case "toggles": return "Luce Notturna & Focus";
+                            case "notifications": return "Centro Notifiche";
+                            case "quickactions": return "Barra & Appunti";
+                            default: return "";
+                            }
+                        }
+                        font.family: controlCenter.textFontFamily
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: controlCenter.textPrimary
+                    }
+                }
+            }
+
+            // Interactive component body
+            Item {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: detailTopBar.bottom
+                anchors.bottom: parent.bottom
+                anchors.topMargin: 14
+
+                Loader {
+                    id: detailLoader
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: (controlCenter.activeDetailModule === "notifications") ? parent.top : undefined
+                    anchors.verticalCenter: (controlCenter.activeDetailModule !== "notifications") ? parent.verticalCenter : undefined
+                    width: parent.width
+                    height: {
+                        switch (controlCenter.activeDetailModule) {
+                        case "volume": return 90;
+                        case "brightness": return 90;
+                        case "battery": return 100;
+                        case "toggles": return 100;
+                        case "quickactions": return 64;
+                        case "notifications": return Math.min(parent.height, 320);
+                        default: return 90;
+                        }
+                    }
+                    active: genericDetailView.visible
+                    sourceComponent: {
+                        switch (controlCenter.activeDetailModule) {
+                        case "volume": return volumeComponent;
+                        case "brightness": return brightnessComponent;
+                        case "battery": return batteryComponent;
+                        case "toggles": return togglesComponent;
+                        case "notifications": return notificationsComponent;
+                        case "quickactions": return quickactionsComponent;
+                        default: return null;
+                        }
+                    }
+                }
             }
         }
     }

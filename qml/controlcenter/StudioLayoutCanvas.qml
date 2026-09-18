@@ -883,6 +883,7 @@ Item {
                             readonly property real slotWidth: isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing)
                             property real overrideHeight: 0
                             readonly property real slotHeight: (overrideHeight > 0) ? overrideHeight : (modelData.height || studioRoot.defaultHeight(modelData.id))
+                            readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
 
                             visible: modelData.active
                             width: modelData.active ? slotWidth : 0
@@ -947,9 +948,33 @@ Item {
                                         }
                                     }
 
+                                    // 1x1 Square Tile UI (Solo Icona centrata)
+                                    Item {
+                                        visible: moduleItemDelegate.isOneByOne
+                                        anchors.fill: parent
+
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            width: Math.min(46, Math.max(32, parent.height - 20))
+                                            height: width
+                                            radius: width / 2
+                                            color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.18)
+                                            border.width: 1
+                                            border.color: Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.32)
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: moduleItemDelegate.modelData.icon
+                                                font.family: studioRoot.iconFontFamily
+                                                font.pixelSize: 18
+                                                color: studioRoot.accentColor
+                                            }
+                                        }
+                                    }
+
                                     // Standard Module UI (Icon + Name + Live Mini Element)
                                     Row {
-                                        visible: moduleItemDelegate.modelData.id !== "header"
+                                        visible: moduleItemDelegate.modelData.id !== "header" && !moduleItemDelegate.isOneByOne
                                         anchors.fill: parent
                                         anchors.leftMargin: 6
                                         anchors.rightMargin: 6
