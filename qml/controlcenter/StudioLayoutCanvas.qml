@@ -97,8 +97,23 @@ Item {
                 let saved = rawConfig.controlCenterCanvasLayout;
                 let merged = [];
                 let seen = {};
+
+                // Header è permanentemente fisso in cima (index 0, 4 colonne, 32px, sempre attivo)
+                let headerDef = {
+                    id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria"
+                };
+                for (let h = 0; h < modules.length; h++) {
+                    if (modules[h].id === "header") { headerDef = Object.assign({}, modules[h]); break; }
+                }
+                headerDef.colSpan = 4;
+                headerDef.height = 32;
+                headerDef.active = true;
+                merged.push(headerDef);
+                seen["header"] = true;
+
                 for (let i = 0; i < saved.length; i++) {
                     let s = saved[i];
+                    if (s.id === "header") continue;
                     for (let j = 0; j < modules.length; j++) {
                         let m = modules[j];
                         if (m.id === s.id) {
@@ -157,7 +172,16 @@ Item {
 
     function emitSave() {
         let clean = [];
+        // Header è sempre al primo posto (index 0), 4 colonne, 32px, attivo
+        clean.push({
+            id: "header",
+            colSpan: 4,
+            height: 32,
+            active: true
+        });
+
         for (let i = 0; i < modules.length; i++) {
+            if (modules[i].id === "header") continue;
             clean.push({
                 id: modules[i].id,
                 colSpan: modules[i].colSpan,
@@ -171,6 +195,7 @@ Item {
     }
 
     function toggleColSpan(id) {
+        if (id === "header") return;
         let copy = [];
         for (let i = 0; i < modules.length; i++) {
             let m = Object.assign({}, modules[i]);
@@ -186,6 +211,7 @@ Item {
     }
 
     function adjustModuleColSpan(id, delta) {
+        if (id === "header") return;
         let copy = [];
         let changed = false;
         for (let i = 0; i < modules.length; i++) {
@@ -207,6 +233,7 @@ Item {
     }
 
     function setModuleHeight(id, h) {
+        if (id === "header") return;
         let copy = [];
         let changed = false;
         for (let i = 0; i < modules.length; i++) {
@@ -227,9 +254,9 @@ Item {
     }
 
     function adjustModuleHeight(id, delta) {
+        if (id === "header") return;
         for (let i = 0; i < modules.length; i++) {
             if (modules[i].id === id) {
-                if (id === "header") return;
                 let cur = Number(modules[i].height) || defaultHeight(id);
                 let step = (id === "quickactions") ? 24 : 40;
                 setModuleHeight(id, cur + (delta > 0 ? step : -step));
@@ -239,6 +266,7 @@ Item {
     }
 
     function setModuleActive(id, active) {
+        if (id === "header") return;
         let copy = [];
         for (let i = 0; i < modules.length; i++) {
             let m = Object.assign({}, modules[i]);
@@ -256,6 +284,9 @@ Item {
     function moveModule(fromIdx, toIdx) {
         if (fromIdx < 0 || fromIdx >= modules.length || toIdx < 0 || toIdx >= modules.length || fromIdx === toIdx)
             return;
+        if (modules[fromIdx].id === "header") return; // Header non si tocca né si sposta
+        if (toIdx <= 0) toIdx = 1; // Non può scavalcare l'header
+        if (fromIdx === toIdx) return;
         let copy = [];
         for (let i = 0; i < modules.length; i++) {
             copy.push(Object.assign({}, modules[i]));
@@ -267,10 +298,11 @@ Item {
     }
 
     function moveSelectedModule(delta) {
+        if (selectedModuleId === "header") return;
         for (let i = 0; i < modules.length; i++) {
             if (modules[i].id === selectedModuleId) {
                 let target = i + delta;
-                if (target >= 0 && target < modules.length) {
+                if (target >= 1 && target < modules.length) {
                     moveModule(i, target);
                 }
                 break;
@@ -483,7 +515,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + studioRoot.selectedModule.colSpan + "/4 Col)") : ""
+                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.id === "header" ? "Orologio & Batteria (Fisso in Cima)" : (studioRoot.selectedModule.name + " (" + studioRoot.selectedModule.colSpan + "/4 Col)")) : ""
                             font.family: studioRoot.textFontFamily
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -491,10 +523,45 @@ Item {
                         }
                     }
 
+                    // Header locked pill when selected
+                    Rectangle {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: studioRoot.selectedModuleId === "header"
+                        height: 26
+                        width: lockedRow.width + 16
+                        radius: 6
+                        color: Qt.rgba(255, 255, 255, 0.05)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.10)
+
+                        Row {
+                            id: lockedRow
+                            anchors.centerIn: parent
+                            spacing: 5
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: ""
+                                font.family: studioRoot.iconFontFamily
+                                font.pixelSize: 10
+                                color: studioRoot.accentColor
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "Barra Fissa in Cima (Immobile)"
+                                font.family: studioRoot.textFontFamily
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                color: studioRoot.textPrimary
+                            }
+                        }
+                    }
+
                     Row {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 6
+                        visible: studioRoot.selectedModuleId !== "header"
 
                         // Move Up / Down
                         Row {
@@ -503,31 +570,55 @@ Item {
 
                             Rectangle {
                                 width: 26; height: 26; radius: 6
-                                color: barUpMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                readonly property bool canMoveUp: {
+                                    for (let i = 0; i < studioRoot.modules.length; i++) {
+                                        if (studioRoot.modules[i].id === studioRoot.selectedModuleId) {
+                                            return i > 1;
+                                        }
+                                    }
+                                    return false;
+                                }
+                                enabled: canMoveUp
+                                opacity: canMoveUp ? 1.0 : 0.35
+                                color: (barUpMouse.containsMouse && canMoveUp) ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
                                 border.width: 1
-                                border.color: barUpMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                border.color: (barUpMouse.containsMouse && canMoveUp) ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
                                 anchors.verticalCenter: parent.verticalCenter
-                                Text { anchors.centerIn: parent; text: "▲"; font.pixelSize: 9; color: barUpMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
+                                Text { anchors.centerIn: parent; text: "▲"; font.pixelSize: 9; color: (barUpMouse.containsMouse && parent.canMoveUp) ? studioRoot.accentColor : studioRoot.textSecondary }
                                 MouseArea {
                                     id: barUpMouse
                                     anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: studioRoot.moveSelectedModule(-1)
+                                    cursorShape: parent.canMoveUp ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        if (parent.canMoveUp) studioRoot.moveSelectedModule(-1);
+                                    }
                                 }
                             }
 
                             Rectangle {
                                 width: 26; height: 26; radius: 6
-                                color: barDownMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                readonly property bool canMoveDown: {
+                                    for (let i = 0; i < studioRoot.modules.length; i++) {
+                                        if (studioRoot.modules[i].id === studioRoot.selectedModuleId) {
+                                            return i < studioRoot.modules.length - 1;
+                                        }
+                                    }
+                                    return false;
+                                }
+                                enabled: canMoveDown
+                                opacity: canMoveDown ? 1.0 : 0.35
+                                color: (barDownMouse.containsMouse && canMoveDown) ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
                                 border.width: 1
-                                border.color: barDownMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                border.color: (barDownMouse.containsMouse && canMoveDown) ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
                                 anchors.verticalCenter: parent.verticalCenter
-                                Text { anchors.centerIn: parent; text: "▼"; font.pixelSize: 9; color: barDownMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
+                                Text { anchors.centerIn: parent; text: "▼"; font.pixelSize: 9; color: (barDownMouse.containsMouse && parent.canMoveDown) ? studioRoot.accentColor : studioRoot.textSecondary }
                                 MouseArea {
                                     id: barDownMouse
                                     anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: studioRoot.moveSelectedModule(1)
+                                    cursorShape: parent.canMoveDown ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: {
+                                        if (parent.canMoveDown) studioRoot.moveSelectedModule(1);
+                                    }
                                 }
                             }
                         }
@@ -953,7 +1044,7 @@ Item {
                                     id: moduleMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    cursorShape: isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor
+                                    cursorShape: (moduleItemDelegate.modelData.id === "header") ? Qt.PointingHandCursor : (isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor)
 
                                     property real pressX: 0
                                     property real pressY: 0
@@ -967,6 +1058,7 @@ Item {
                                     }
 
                                     onPositionChanged: function(mouse) {
+                                        if (moduleItemDelegate.modelData.id === "header") return; // Header cannot be dragged!
                                         if (pressed) {
                                             if (!dragging && (Math.abs(mouse.y - pressY) > 8 || Math.abs(mouse.x - pressX) > 8)) {
                                                 dragging = true;
@@ -981,7 +1073,8 @@ Item {
                                                         if (scenePos.x >= targetChild.x && scenePos.x <= (targetChild.x + targetChild.width) &&
                                                             scenePos.y >= targetChild.y && scenePos.y <= (targetChild.y + targetChild.height)) {
                                                             let targetIndex = targetChild.index !== undefined ? targetChild.index : i;
-                                                            if (targetIndex !== moduleItemDelegate.index && targetIndex >= 0 && targetIndex < studioRoot.modules.length) {
+                                                            // Header at index 0 can never be swapped or displaced
+                                                            if (targetIndex > 0 && targetIndex !== moduleItemDelegate.index && targetIndex < studioRoot.modules.length) {
                                                                 studioRoot.moveModule(moduleItemDelegate.index, targetIndex);
                                                                 break;
                                                             }
@@ -1022,8 +1115,12 @@ Item {
                                 // ====================================================
                                 // RESIZE HANDLES (TUTTI I 4 LATI: ALTEZZA E LARGHEZZA)
                                 // ====================================================
+                                Item {
+                                    id: resizeHandlesContainer
+                                    anchors.fill: parent
+                                    visible: moduleItemDelegate.modelData.id !== "header"
 
-                                // 1. TOP RESIZE HANDLE (Pallino al centro del lato superiore)
+                                    // 1. TOP RESIZE HANDLE (Pallino al centro del lato superiore)
                                 Rectangle {
                                     id: topHandle
                                     anchors.horizontalCenter: parent.horizontalCenter
@@ -1241,6 +1338,7 @@ Item {
                                     }
                                 }
                             }
+                            }
                         }
                     }
                 }
@@ -1327,6 +1425,7 @@ Item {
 
                             readonly property bool isInCanvas: modelData.active
                             readonly property bool isSelected: studioRoot.selectedModuleId === modelData.id
+                            readonly property bool isHeader: modelData.id === "header"
 
                             width: (parent.width - 8) / 2
                             height: 60
@@ -1395,13 +1494,17 @@ Item {
                                     width: btnRow.width + 12
                                     height: 26
                                     radius: 13
-                                    color: isInCanvas
-                                        ? (btnMouse.containsMouse ? "#33ff453a" : Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.16))
-                                        : (btnMouse.containsMouse ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08))
+                                    color: libraryCard.isHeader
+                                        ? Qt.rgba(255, 255, 255, 0.05)
+                                        : (isInCanvas
+                                            ? (btnMouse.containsMouse ? "#33ff453a" : Qt.rgba(studioRoot.accentColor.r, studioRoot.accentColor.g, studioRoot.accentColor.b, 0.16))
+                                            : (btnMouse.containsMouse ? studioRoot.accentColor : Qt.rgba(255, 255, 255, 0.08)))
                                     border.width: 1
-                                    border.color: isInCanvas
-                                        ? (btnMouse.containsMouse ? "#ff453a" : studioRoot.accentBorder)
-                                        : Qt.rgba(255, 255, 255, 0.12)
+                                    border.color: libraryCard.isHeader
+                                        ? Qt.rgba(255, 255, 255, 0.10)
+                                        : (isInCanvas
+                                            ? (btnMouse.containsMouse ? "#ff453a" : studioRoot.accentBorder)
+                                            : Qt.rgba(255, 255, 255, 0.12))
 
                                     Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -1412,33 +1515,41 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: isInCanvas ? (btnMouse.containsMouse ? "✕" : "✓") : "+"
+                                            text: libraryCard.isHeader ? "" : (isInCanvas ? (btnMouse.containsMouse ? "✕" : "✓") : "+")
                                             font.family: studioRoot.iconFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.Bold
-                                            color: isInCanvas
-                                                ? (btnMouse.containsMouse ? "#ff453a" : studioRoot.accentColor)
-                                                : (btnMouse.containsMouse ? "#10141b" : studioRoot.textPrimary)
+                                            color: libraryCard.isHeader
+                                                ? studioRoot.textSecondary
+                                                : (isInCanvas
+                                                    ? (btnMouse.containsMouse ? "#ff453a" : studioRoot.accentColor)
+                                                    : (btnMouse.containsMouse ? "#10141b" : studioRoot.textPrimary))
                                         }
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: isInCanvas ? (btnMouse.containsMouse ? "Rimuovi" : "Attivo") : "Aggiungi"
+                                            text: libraryCard.isHeader ? "Fisso" : (isInCanvas ? (btnMouse.containsMouse ? "Rimuovi" : "Attivo") : "Aggiungi")
                                             font.family: studioRoot.textFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.Medium
-                                            color: isInCanvas
-                                                ? (btnMouse.containsMouse ? "#ff453a" : studioRoot.accentColor)
-                                                : (btnMouse.containsMouse ? "#10141b" : studioRoot.textPrimary)
+                                            color: libraryCard.isHeader
+                                                ? studioRoot.textSecondary
+                                                : (isInCanvas
+                                                    ? (btnMouse.containsMouse ? "#ff453a" : studioRoot.accentColor)
+                                                    : (btnMouse.containsMouse ? "#10141b" : studioRoot.textPrimary))
                                         }
                                     }
 
                                     MouseArea {
                                         id: btnMouse
                                         anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
+                                        hoverEnabled: !libraryCard.isHeader
+                                        cursorShape: libraryCard.isHeader ? Qt.PointingHandCursor : Qt.PointingHandCursor
                                         onClicked: {
+                                            if (libraryCard.isHeader) {
+                                                studioRoot.selectedModuleId = "header";
+                                                return;
+                                            }
                                             if (libraryCard.isInCanvas) {
                                                 studioRoot.setModuleActive(libraryCard.modelData.id, false);
                                             } else {

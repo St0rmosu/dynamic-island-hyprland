@@ -121,9 +121,17 @@ Item {
 
         if (Array.isArray(layout) && layout.length > 0) {
             let res = [];
+            // Header is unconditionally pinned at the very top (index 0), full width, 32px
+            res.push({
+                id: "header",
+                colSpan: 4,
+                height: 32,
+                active: true
+            });
+
             for (let i = 0; i < layout.length; i++) {
                 let m = layout[i];
-                if (!m || !m.id) continue;
+                if (!m || !m.id || m.id === "header") continue;
                 let span = Number(m.colSpan);
                 if (isNaN(span) || span < 1) span = 1;
                 if (span > 4) span = 4;
