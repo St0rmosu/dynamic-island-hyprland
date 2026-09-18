@@ -22,7 +22,7 @@ Rectangle {
     property color textSecondary: StyleTokens.textSecondary
     readonly property bool pressed: isVertical ? verticalMouse.pressed : sliderArea.pressed
     readonly property bool isCompact: root.height < 56
-    readonly property bool isVertical: root.height >= 110 && root.width < 320
+    property bool isVertical: root.height >= 110 && root.width < 160
 
     function clamp01(nextValue) {
         return Math.max(0, Math.min(1, nextValue));

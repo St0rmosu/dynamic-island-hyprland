@@ -91,11 +91,11 @@ Item {
     }
     readonly property bool isBrightnessFullSpan: {
         const c = getModuleConfig("brightness");
-        return c !== null ? (c.colSpan === 2) : false;
+        return c !== null ? (c.colSpan === 4) : false;
     }
     readonly property bool isVolumeFullSpan: {
         const c = getModuleConfig("volume");
-        return c !== null ? (c.colSpan === 2) : false;
+        return c !== null ? (c.colSpan === 4) : false;
     }
 
     readonly property bool cfgShowNotifications: {
@@ -124,9 +124,12 @@ Item {
             for (let i = 0; i < layout.length; i++) {
                 let m = layout[i];
                 if (!m || !m.id) continue;
+                let span = Number(m.colSpan);
+                if (isNaN(span) || span < 1) span = 1;
+                if (span > 4) span = 4;
                 res.push({
                     id: m.id,
-                    colSpan: (m.colSpan === 2 || m.colSpan === 1) ? m.colSpan : 1,
+                    colSpan: span,
                     height: Number(m.height) || 0,
                     active: m.active !== undefined ? Boolean(m.active) : true
                 });
@@ -135,15 +138,15 @@ Item {
         }
 
         return [
-            { id: "header", colSpan: 2, height: 32, active: true },
-            { id: "wifi", colSpan: 1, height: 80, active: cfgValue("showWifiCard", true) },
-            { id: "bluetooth", colSpan: 1, height: 80, active: cfgValue("showBluetoothCard", true) },
-            { id: "battery", colSpan: 1, height: 80, active: cfgValue("showTlpBatteryMode", true) },
-            { id: "toggles", colSpan: 1, height: 80, active: cfgValue("showNightFocusToggles", true) },
-            { id: "brightness", colSpan: isHorizontal ? 1 : 2, height: 80, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "volume", colSpan: isHorizontal ? 1 : 2, height: 80, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "notifications", colSpan: 2, height: 80, active: cfgValue("controlCenterShowNotifications", true) },
-            { id: "quickactions", colSpan: 2, height: 48, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
+            { id: "header", colSpan: 4, height: 32, active: true },
+            { id: "wifi", colSpan: 2, height: 80, active: cfgValue("showWifiCard", true) },
+            { id: "bluetooth", colSpan: 2, height: 80, active: cfgValue("showBluetoothCard", true) },
+            { id: "brightness", colSpan: 1, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
+            { id: "volume", colSpan: 1, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
+            { id: "toggles", colSpan: 2, height: 80, active: cfgValue("showNightFocusToggles", true) },
+            { id: "battery", colSpan: 2, height: 80, active: cfgValue("showTlpBatteryMode", true) },
+            { id: "notifications", colSpan: 4, height: 80, active: cfgValue("controlCenterShowNotifications", true) },
+            { id: "quickactions", colSpan: 4, height: 48, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
         ];
     }
 
@@ -152,8 +155,8 @@ Item {
         if (!Array.isArray(layout) || layout.length === 0) return 420;
 
         let totalH = 0;
-        let pendingHalfH = 0;
-        let inHalf = false;
+        let rowCols = 0;
+        let rowMaxH = 0;
         const spacing = 12;
 
         for (let i = 0; i < layout.length; i++) {
@@ -175,27 +178,19 @@ Item {
                 h = Math.round(item.height);
             }
 
-            const isFull = (item.colSpan === 2);
-            if (isFull) {
-                if (inHalf) {
-                    totalH += pendingHalfH + spacing;
-                    inHalf = false;
-                    pendingHalfH = 0;
-                }
-                totalH += h + spacing;
+            const span = Math.max(1, Math.min(4, Number(item.colSpan) || 1));
+
+            if (rowCols + span > 4) {
+                totalH += rowMaxH + spacing;
+                rowCols = span;
+                rowMaxH = h;
             } else {
-                if (inHalf) {
-                    totalH += Math.max(pendingHalfH, h) + spacing;
-                    inHalf = false;
-                    pendingHalfH = 0;
-                } else {
-                    inHalf = true;
-                    pendingHalfH = h;
-                }
+                rowCols += span;
+                rowMaxH = Math.max(rowMaxH, h);
             }
         }
-        if (inHalf) {
-            totalH += pendingHalfH + spacing;
+        if (rowCols > 0) {
+            totalH += rowMaxH + spacing;
         }
         return Math.max(120, totalH + 16);
     }
@@ -2791,8 +2786,10 @@ Item {
                 required property int index
                 required property var modelData
 
-                readonly property bool isFullWidth: modelData.colSpan === 2
-                readonly property real slotWidth: isFullWidth ? mainContent.width : ((mainContent.width - mainContent.spacing) / 2)
+                readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
+                readonly property bool isFullWidth: colSpan === 4
+                readonly property real unitColWidth: (mainContent.width - (3 * mainContent.spacing)) / 4
+                readonly property real slotWidth: isFullWidth ? mainContent.width : (colSpan * unitColWidth + (colSpan - 1) * mainContent.spacing)
                 readonly property real slotHeight: {
                     if (modelData.id === "header") return 32;
                     if (modelData.id === "quickactions") return (modelData.height && modelData.height >= 48) ? Math.round(modelData.height) : 48;

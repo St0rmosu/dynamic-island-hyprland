@@ -45,17 +45,17 @@ Item {
         return null;
     }
 
-    // Live list of modules
+    // Live list of modules (Griglia a 4 colonne stile iOS: 1=25% min, 2=50%, 3=75%, 4=100% max)
     property var modules: [
-        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
-        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
-        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
+        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
+        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 4, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 4, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
     Component.onCompleted: {
@@ -107,7 +107,7 @@ Item {
                                 id: m.id,
                                 name: m.name,
                                 icon: m.icon,
-                                colSpan: s.colSpan !== undefined ? s.colSpan : m.colSpan,
+                                colSpan: s.colSpan !== undefined ? Math.max(1, Math.min(4, Number(s.colSpan) || 1)) : m.colSpan,
                                 height: targetH,
                                 minHeight: m.minHeight,
                                 maxHeight: m.maxHeight,
@@ -175,12 +175,35 @@ Item {
         for (let i = 0; i < modules.length; i++) {
             let m = Object.assign({}, modules[i]);
             if (m.id === id) {
-                m.colSpan = (m.colSpan === 2) ? 1 : 2;
+                let next = (Number(m.colSpan) || 1) + 1;
+                if (next > 4) next = 1;
+                m.colSpan = next;
             }
             copy.push(m);
         }
         modules = copy;
         emitSave();
+    }
+
+    function adjustModuleColSpan(id, delta) {
+        let copy = [];
+        let changed = false;
+        for (let i = 0; i < modules.length; i++) {
+            let m = Object.assign({}, modules[i]);
+            if (m.id === id) {
+                let curr = Number(m.colSpan) || 1;
+                let next = Math.max(1, Math.min(4, curr + delta));
+                if (m.colSpan !== next) {
+                    m.colSpan = next;
+                    changed = true;
+                }
+            }
+            copy.push(m);
+        }
+        if (changed) {
+            modules = copy;
+            emitSave();
+        }
     }
 
     function setModuleHeight(id, h) {
@@ -245,15 +268,15 @@ Item {
 
     function resetToDefault() {
         modules = [
-            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
-            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
-            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
-            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
+            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
+            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
+            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 4, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 4, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
         ];
         studioRoot.selectedModuleId = "wifi";
         emitSave();
@@ -448,7 +471,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + (studioRoot.selectedModule.colSpan === 2 ? "2 Col • 100%" : "1 Col • 50%") + ")") : ""
+                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + studioRoot.selectedModule.colSpan + "/4 Col)") : ""
                             font.family: studioRoot.textFontFamily
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -513,31 +536,66 @@ Item {
                             }
                         }
 
-                        // Larghezza Toggle: 1 Col (50%) / 2 Col (100%)
-                        Rectangle {
-                            width: 88; height: 26; radius: 6
-                            color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
-                            border.width: 1
-                            border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                        // Stepper Larghezza: [ − ] [ X Col ] [ + ] (1=min, 4=max)
+                        Row {
                             anchors.verticalCenter: parent.verticalCenter
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 4
-                                Text { anchors.verticalCenter: parent.verticalCenter; text: "↔"; font.pixelSize: 11; font.weight: Font.Bold; color: studioRoot.accentColor }
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan === 2 ? "2 Col (100%)" : "1 Col (50%)") : "1 Col (50%)"
-                                    font.family: studioRoot.textFontFamily
-                                    font.pixelSize: 10
-                                    font.weight: Font.DemiBold
-                                    color: studioRoot.textPrimary
+                            spacing: 3
+
+                            Rectangle {
+                                width: 26; height: 26; radius: 6
+                                color: barColMinusMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barColMinusMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 14; font.weight: Font.Bold; color: studioRoot.accentColor }
+                                MouseArea {
+                                    id: barColMinusMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.adjustModuleColSpan(studioRoot.selectedModuleId, -1)
                                 }
                             }
-                            MouseArea {
-                                id: barWidthMouse
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: studioRoot.toggleColSpan(studioRoot.selectedModuleId)
+
+                            Rectangle {
+                                width: 66; height: 26; radius: 6
+                                color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(0, 0, 0, 0.25)
+                                border.width: 1
+                                border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.08)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Row {
+                                    anchors.centerIn: parent
+                                    spacing: 4
+                                    Text { anchors.verticalCenter: parent.verticalCenter; text: "↔"; font.pixelSize: 10; font.weight: Font.Bold; color: studioRoot.accentColor }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan + " Col") : "1 Col"
+                                        font.family: studioRoot.textFontFamily
+                                        font.pixelSize: 10
+                                        font.weight: Font.DemiBold
+                                        color: studioRoot.textPrimary
+                                    }
+                                }
+                                MouseArea {
+                                    id: barWidthMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.toggleColSpan(studioRoot.selectedModuleId)
+                                }
+                            }
+
+                            Rectangle {
+                                width: 26; height: 26; radius: 6
+                                color: barColPlusMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barColPlusMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 14; font.weight: Font.Bold; color: studioRoot.accentColor }
+                                MouseArea {
+                                    id: barColPlusMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.adjustModuleColSpan(studioRoot.selectedModuleId, 1)
+                                }
                             }
                         }
                     }
@@ -664,8 +722,10 @@ Item {
                             required property var modelData
 
                             readonly property bool isSelected: studioRoot.selectedModuleId === modelData.id
-                            readonly property bool isFullWidth: modelData.colSpan === 2
-                            readonly property real slotWidth: isFullWidth ? capsuleLayout.width : ((capsuleLayout.width - 8) / 2)
+                            readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
+                            readonly property bool isFullWidth: colSpan === 4
+                            readonly property real unitColWidth: (capsuleLayout.width - (3 * capsuleLayout.spacing)) / 4
+                            readonly property real slotWidth: isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing)
                             property real overrideHeight: 0
                             readonly property real slotHeight: (overrideHeight > 0) ? overrideHeight : (modelData.height || studioRoot.defaultHeight(modelData.id))
 
@@ -777,7 +837,7 @@ Item {
                                             Item {
                                                 width: parent.width
                                                 height: 10
-                                                visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight < 110 || moduleItemDelegate.isFullWidth)
+                                                visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight < 110 || moduleItemDelegate.colSpan > 1)
 
                                                 Rectangle {
                                                     anchors.fill: parent
@@ -796,8 +856,8 @@ Item {
                                             }
 
                                             Text {
-                                                visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight >= 110 && !moduleItemDelegate.isFullWidth)
-                                                text: "Pillola Verticale iOS"
+                                                visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight >= 110 && moduleItemDelegate.colSpan === 1)
+                                                text: "Pillola Verticale (1 Col)"
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 8
                                                 font.weight: Font.DemiBold
@@ -918,7 +978,7 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "2 Col" : "1 Col") + " • " + Math.round(moduleItemDelegate.slotHeight) + "px)"
+                                            text: moduleItemDelegate.modelData.name + " (" + moduleItemDelegate.colSpan + "/4 Col • " + Math.round(moduleItemDelegate.slotHeight) + "px)"
                                             font.family: studioRoot.textFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.DemiBold
@@ -1203,11 +1263,12 @@ Item {
                                             if (pressed && !toggledInDrag) {
                                                 let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
                                                 let diff = currentGlobalX - pressGlobalX;
-                                                if (diff < -35 && moduleItemDelegate.modelData.colSpan === 1) {
-                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                                let curr = moduleItemDelegate.colSpan;
+                                                if (diff < -35 && curr < 4) {
+                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
                                                     toggledInDrag = true;
-                                                } else if (diff > 35 && moduleItemDelegate.modelData.colSpan === 2) {
-                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                                } else if (diff > 35 && curr > 1) {
+                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
                                                     toggledInDrag = true;
                                                 }
                                             }
@@ -1254,11 +1315,12 @@ Item {
                                             if (pressed && !toggledInDrag) {
                                                 let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
                                                 let diff = currentGlobalX - pressGlobalX;
-                                                if (diff > 35 && moduleItemDelegate.modelData.colSpan === 1) {
-                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                                let curr = moduleItemDelegate.colSpan;
+                                                if (diff > 35 && curr < 4) {
+                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, 1);
                                                     toggledInDrag = true;
-                                                } else if (diff < -35 && moduleItemDelegate.modelData.colSpan === 2) {
-                                                    studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                                } else if (diff < -35 && curr > 1) {
+                                                    studioRoot.adjustModuleColSpan(moduleItemDelegate.modelData.id, -1);
                                                     toggledInDrag = true;
                                                 }
                                             }
