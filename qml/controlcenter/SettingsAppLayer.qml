@@ -1402,6 +1402,10 @@ FocusScope {
                                                             onClicked: {
                                                                 root.cfgControlCenterOrientation = "vertical";
                                                                 root.updateSetting("controlCenterOrientation", "vertical");
+                                                                if (root.cfgControlCenterWidth > 450) {
+                                                                    root.cfgControlCenterWidth = 390;
+                                                                    root.updateSetting("controlCenterWidth", 390);
+                                                                }
                                                             }
                                                         }
                                                     }

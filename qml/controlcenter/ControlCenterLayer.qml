@@ -107,8 +107,11 @@ Item {
 
     readonly property real controlCenterPreferredWidth: {
         const customW = Number(cfgValue("controlCenterWidth", 0));
-        if (customW >= 360 && customW <= 640) return customW;
-        return isHorizontal ? 540 : 420;
+        if (isHorizontal) {
+            return (customW >= 460 && customW <= 720) ? customW : 540;
+        }
+        if (customW >= 360 && customW <= 480) return customW;
+        return 390;
     }
 
     readonly property var activeCanvasLayout: {
@@ -1804,120 +1807,127 @@ Item {
 
     Component {
         id: oneByOneComponent
-        Rectangle {
-            id: tileRoot
+        Item {
+            id: tileContainer
             anchors.fill: parent
-            radius: 18
-            clip: true
-
-            readonly property string modId: (parent && parent.slotModel) ? parent.slotModel.id : (moduleSlot ? moduleSlot.modelData.id : "")
-            readonly property bool isModuleActive: {
-                switch (modId) {
-                case "wifi": return controlCenter.wifiEnabled;
-                case "bluetooth": return controlCenter.bluetoothEnabled;
-                case "volume": return controlCenter.displayedVolume > 0.01;
-                case "brightness": return controlCenter.displayedBrightness > 0.01;
-                case "toggles": return controlCenter.focusEnabled || controlCenter.nightLightEnabled;
-                case "notifications": return controlCenter.notificationModel && controlCenter.notificationModel.count > 0;
-                case "battery": return true;
-                case "quickactions": return true;
-                default: return false;
-                }
-            }
-
-            readonly property string iconGlyph: {
-                switch (modId) {
-                case "wifi": return controlCenter.wifiGlyph;
-                case "bluetooth": return "\uf294";
-                case "volume": return controlCenter.volumeIconGlyph;
-                case "brightness": return controlCenter.brightnessIconGlyph;
-                case "toggles": return controlCenter.focusEnabled ? "\uf186" : (controlCenter.nightLightEnabled ? "\uf185" : "\uf186");
-                case "battery": return (controlCenter.batteryModeGlyphs && controlCenter.batteryModeGlyphs[controlCenter.batteryModeIndex]) || "\uf0e7";
-                case "notifications": return "\uf0f3";
-                case "quickactions": return "\uf108";
-                default: return "\uf013";
-                }
-            }
-
-            readonly property color activeColor: {
-                switch (modId) {
-                case "wifi": return "#0a84ff";
-                case "bluetooth": return "#0a84ff";
-                case "volume": return controlCenter.cardAccent;
-                case "brightness": return "#ff9f0a";
-                case "toggles": return controlCenter.focusEnabled ? "#af52de" : "#ff9f0a";
-                case "battery": {
-                    if (controlCenter.batteryModeIndex === 0) return "#30d158";
-                    if (controlCenter.batteryModeIndex === 2) return "#ff453a";
-                    return controlCenter.cardAccent;
-                }
-                case "notifications": return controlCenter.cardAccent;
-                default: return controlCenter.cardAccent;
-                }
-            }
-
-            color: isModuleActive
-                ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, tileMouse.containsMouse ? 0.28 : 0.18)
-                : (tileMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.05))
-
-            border.width: 1
-            border.color: isModuleActive
-                ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.42)
-                : Qt.rgba(255, 255, 255, 0.08)
-
-            Behavior on color { ColorAnimation { duration: 140 } }
-            Behavior on border.color { ColorAnimation { duration: 140 } }
-
-            MatteSurface {
-                anchors.fill: parent
-                radius: parent.radius
-                hovered: tileMouse.containsMouse
-                pressed: tileMouse.pressed
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: tileRoot.iconGlyph
-                font.family: controlCenter.iconFontFamily
-                font.pixelSize: 26
-                color: tileRoot.isModuleActive ? tileRoot.activeColor : StyleTokens.textSecondary
-                scale: tileMouse.pressed ? 0.90 : (tileMouse.containsMouse ? 1.10 : 1.0)
-
-                Behavior on scale {
-                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-                }
-                Behavior on color {
-                    ColorAnimation { duration: 140 }
-                }
-            }
 
             Rectangle {
-                visible: tileRoot.modId === "notifications" && controlCenter.notificationModel && controlCenter.notificationModel.count > 0
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.topMargin: 8
-                anchors.rightMargin: 8
-                width: 18
-                height: 18
-                radius: 9
-                color: "#ff3b30"
+                id: tileRoot
+                anchors.centerIn: parent
+                width: Math.min(parent.width, parent.height)
+                height: width
+                radius: 18
+                clip: true
+
+                readonly property string modId: (tileContainer.parent && tileContainer.parent.slotModel) ? tileContainer.parent.slotModel.id : (moduleSlot ? moduleSlot.modelData.id : "")
+                readonly property bool isModuleActive: {
+                    switch (modId) {
+                    case "wifi": return controlCenter.wifiEnabled;
+                    case "bluetooth": return controlCenter.bluetoothEnabled;
+                    case "volume": return controlCenter.displayedVolume > 0.01;
+                    case "brightness": return controlCenter.displayedBrightness > 0.01;
+                    case "toggles": return controlCenter.focusEnabled || controlCenter.nightLightEnabled;
+                    case "notifications": return controlCenter.notificationModel && controlCenter.notificationModel.count > 0;
+                    case "battery": return true;
+                    case "quickactions": return true;
+                    default: return false;
+                    }
+                }
+
+                readonly property string iconGlyph: {
+                    switch (modId) {
+                    case "wifi": return controlCenter.wifiGlyph;
+                    case "bluetooth": return "\uf294";
+                    case "volume": return controlCenter.volumeIconGlyph;
+                    case "brightness": return controlCenter.brightnessIconGlyph;
+                    case "toggles": return controlCenter.focusEnabled ? "\uf186" : (controlCenter.nightLightEnabled ? "\uf185" : "\uf186");
+                    case "battery": return (controlCenter.batteryModeGlyphs && controlCenter.batteryModeGlyphs[controlCenter.batteryModeIndex]) || "\uf0e7";
+                    case "notifications": return "\uf0f3";
+                    case "quickactions": return "\uf108";
+                    default: return "\uf013";
+                    }
+                }
+
+                readonly property color activeColor: {
+                    switch (modId) {
+                    case "wifi": return "#0a84ff";
+                    case "bluetooth": return "#0a84ff";
+                    case "volume": return controlCenter.cardAccent;
+                    case "brightness": return "#ff9f0a";
+                    case "toggles": return controlCenter.focusEnabled ? "#af52de" : "#ff9f0a";
+                    case "battery": {
+                        if (controlCenter.batteryModeIndex === 0) return "#30d158";
+                        if (controlCenter.batteryModeIndex === 2) return "#ff453a";
+                        return controlCenter.cardAccent;
+                    }
+                    case "notifications": return controlCenter.cardAccent;
+                    default: return controlCenter.cardAccent;
+                    }
+                }
+
+                color: isModuleActive
+                    ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, tileMouse.containsMouse ? 0.28 : 0.18)
+                    : (tileMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.05))
+
+                border.width: 1
+                border.color: isModuleActive
+                    ? Qt.rgba(activeColor.r, activeColor.g, activeColor.b, 0.42)
+                    : Qt.rgba(255, 255, 255, 0.08)
+
+                Behavior on color { ColorAnimation { duration: 140 } }
+                Behavior on border.color { ColorAnimation { duration: 140 } }
+
+                MatteSurface {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    hovered: tileMouse.containsMouse
+                    pressed: tileMouse.pressed
+                }
+
                 Text {
                     anchors.centerIn: parent
-                    text: String(controlCenter.notificationModel ? controlCenter.notificationModel.count : 0)
-                    font.pixelSize: 9
-                    font.family: controlCenter.textFontFamily
-                    font.weight: Font.Bold
-                    color: "#ffffff"
-                }
-            }
+                    text: tileRoot.iconGlyph
+                    font.family: controlCenter.iconFontFamily
+                    font.pixelSize: 26
+                    color: tileRoot.isModuleActive ? tileRoot.activeColor : StyleTokens.textSecondary
+                    scale: tileMouse.pressed ? 0.90 : (tileMouse.containsMouse ? 1.10 : 1.0)
 
-            MouseArea {
-                id: tileMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    controlCenter.openModuleDetail(tileRoot.modId);
+                    Behavior on scale {
+                        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                    }
+                    Behavior on color {
+                        ColorAnimation { duration: 140 }
+                    }
+                }
+
+                Rectangle {
+                    visible: tileRoot.modId === "notifications" && controlCenter.notificationModel && controlCenter.notificationModel.count > 0
+                    anchors.top: parent.top
+                    anchors.right: parent.right
+                    anchors.topMargin: 8
+                    anchors.rightMargin: 8
+                    width: 18
+                    height: 18
+                    radius: 9
+                    color: "#ff3b30"
+                    Text {
+                        anchors.centerIn: parent
+                        text: String(controlCenter.notificationModel ? controlCenter.notificationModel.count : 0)
+                        font.pixelSize: 9
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.Bold
+                        color: "#ffffff"
+                    }
+                }
+
+                MouseArea {
+                    id: tileMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        controlCenter.openModuleDetail(tileRoot.modId);
+                    }
                 }
             }
         }
@@ -2932,7 +2942,6 @@ Item {
                 readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
                 readonly property bool isFullWidth: colSpan === 4
                 readonly property real unitColWidth: (mainContent.width - (3 * mainContent.spacing)) / 4
-                readonly property real slotWidth: isFullWidth ? mainContent.width : (colSpan * unitColWidth + (colSpan - 1) * mainContent.spacing)
                 readonly property real slotHeight: {
                     if (modelData.id === "header") return 32;
                     if (modelData.id === "quickactions") return (modelData.height && modelData.height >= 48) ? Math.round(modelData.height) : 48;
@@ -2948,6 +2957,7 @@ Item {
                     return 80;
                 }
                 readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
+                readonly property real slotWidth: isOneByOne ? Math.min(unitColWidth, slotHeight) : (isFullWidth ? mainContent.width : (colSpan * unitColWidth + (colSpan - 1) * mainContent.spacing))
 
                 visible: modelData.active
                 width: modelData.active ? slotWidth : 0

@@ -880,10 +880,10 @@ Item {
                             readonly property int colSpan: Math.max(1, Math.min(4, Number(modelData.colSpan) || 1))
                             readonly property bool isFullWidth: colSpan === 4
                             readonly property real unitColWidth: (capsuleLayout.width - (3 * capsuleLayout.spacing)) / 4
-                            readonly property real slotWidth: isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing)
                             property real overrideHeight: 0
                             readonly property real slotHeight: (overrideHeight > 0) ? overrideHeight : (modelData.height || studioRoot.defaultHeight(modelData.id))
                             readonly property bool isOneByOne: colSpan === 1 && slotHeight <= 100 && modelData.id !== "header"
+                            readonly property real slotWidth: isOneByOne ? Math.min(unitColWidth, slotHeight) : (isFullWidth ? capsuleLayout.width : (colSpan * unitColWidth + (colSpan - 1) * capsuleLayout.spacing))
 
                             visible: modelData.active
                             width: modelData.active ? slotWidth : 0
@@ -898,8 +898,10 @@ Item {
                             // Card Surface
                             Rectangle {
                                 id: cardBody
-                                anchors.fill: parent
-                                radius: 12
+                                anchors.centerIn: parent
+                                width: moduleItemDelegate.isOneByOne ? Math.min(parent.width, parent.height) : parent.width
+                                height: moduleItemDelegate.isOneByOne ? width : parent.height
+                                radius: moduleItemDelegate.isOneByOne ? 18 : 12
                                 color: moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.06)
                                 border.width: 1
                                 border.color: Qt.rgba(255, 255, 255, 0.08)
@@ -909,7 +911,7 @@ Item {
                                 // Module Content Rendering
                                 Item {
                                     anchors.fill: parent
-                                    anchors.margins: 6
+                                    anchors.margins: moduleItemDelegate.isOneByOne ? 0 : 6
 
                                     // Header Module Special UI
                                     Row {
