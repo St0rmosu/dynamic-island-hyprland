@@ -266,6 +266,18 @@ Item {
         emitSave();
     }
 
+    function moveSelectedModule(delta) {
+        for (let i = 0; i < modules.length; i++) {
+            if (modules[i].id === selectedModuleId) {
+                let target = i + delta;
+                if (target >= 0 && target < modules.length) {
+                    moveModule(i, target);
+                }
+                break;
+            }
+        }
+    }
+
     function resetToDefault() {
         modules = [
             { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 4, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
@@ -482,7 +494,43 @@ Item {
                     Row {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
+                        spacing: 6
+
+                        // Move Up / Down
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+
+                            Rectangle {
+                                width: 26; height: 26; radius: 6
+                                color: barUpMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barUpMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "▲"; font.pixelSize: 9; color: barUpMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
+                                MouseArea {
+                                    id: barUpMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.moveSelectedModule(-1)
+                                }
+                            }
+
+                            Rectangle {
+                                width: 26; height: 26; radius: 6
+                                color: barDownMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barDownMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "▼"; font.pixelSize: 9; color: barDownMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary }
+                                MouseArea {
+                                    id: barDownMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.moveSelectedModule(1)
+                                }
+                            }
+                        }
 
                         // Stepper Altezza: [ − ] [ 80px ] [ + ]
                         Row {
@@ -557,7 +605,7 @@ Item {
                             }
 
                             Rectangle {
-                                width: 66; height: 26; radius: 6
+                                width: 62; height: 26; radius: 6
                                 color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(0, 0, 0, 0.25)
                                 border.width: 1
                                 border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.08)
@@ -596,6 +644,22 @@ Item {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: studioRoot.adjustModuleColSpan(studioRoot.selectedModuleId, 1)
                                 }
+                            }
+                        }
+
+                        // Remove / Delete button [ ✕ ]
+                        Rectangle {
+                            width: 26; height: 26; radius: 6
+                            color: barDelMouse.containsMouse ? Qt.rgba(255, 69, 58, 0.22) : Qt.rgba(255, 255, 255, 0.06)
+                            border.width: 1
+                            border.color: barDelMouse.containsMouse ? Qt.rgba(255, 69, 58, 0.45) : Qt.rgba(255, 255, 255, 0.10)
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text { anchors.centerIn: parent; text: "✕"; font.pixelSize: 11; font.weight: Font.Bold; color: barDelMouse.containsMouse ? "#ff453a" : studioRoot.textSecondary }
+                            MouseArea {
+                                id: barDelMouse
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: studioRoot.setModuleActive(studioRoot.selectedModuleId, false)
                             }
                         }
                     }
@@ -754,8 +818,6 @@ Item {
                                 Item {
                                     anchors.fill: parent
                                     anchors.margins: 6
-                                    anchors.topMargin: moduleItemDelegate.isSelected ? 28 : 6
-                                    Behavior on anchors.topMargin { NumberAnimation { duration: 120 } }
 
                                     // Header Module Special UI
                                     Row {
@@ -956,160 +1018,6 @@ Item {
                                 border.color: studioRoot.accentColor
                                 visible: moduleItemDelegate.isSelected
                                 z: 50
-
-                                // Top Floating Action & Dimension Pill
-                                Rectangle {
-                                    id: infoPill
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 4
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    height: 24
-                                    width: pillRow.width + 16
-                                    radius: 12
-                                    color: "#161b24"
-                                    border.width: 1
-                                    border.color: studioRoot.accentColor
-                                    z: 60
-
-                                    Row {
-                                        id: pillRow
-                                        anchors.centerIn: parent
-                                        spacing: 6
-
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: moduleItemDelegate.modelData.name + " (" + moduleItemDelegate.colSpan + "/4 Col • " + Math.round(moduleItemDelegate.slotHeight) + "px)"
-                                            font.family: studioRoot.textFontFamily
-                                            font.pixelSize: 9
-                                            font.weight: Font.DemiBold
-                                            color: studioRoot.textPrimary
-                                        }
-
-                                        // Height decrease button
-                                        Item {
-                                            width: 18
-                                            height: 18
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "−"
-                                                font.pixelSize: 13
-                                                font.weight: Font.Bold
-                                                color: minusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            }
-                                            MouseArea {
-                                                id: minusMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, -10)
-                                            }
-                                        }
-
-                                        // Height increase button
-                                        Item {
-                                            width: 18
-                                            height: 18
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "+"
-                                                font.pixelSize: 13
-                                                font.weight: Font.Bold
-                                                color: plusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            }
-                                            MouseArea {
-                                                id: plusMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, 10)
-                                            }
-                                        }
-
-                                        // Move Earlier / Up button
-                                        Item {
-                                            width: 16
-                                            height: 18
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "▲"
-                                                font.pixelSize: 9
-                                                color: upMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            }
-                                            MouseArea {
-                                                id: upMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.moveModule(moduleItemDelegate.index, Math.max(0, moduleItemDelegate.index - 1))
-                                            }
-                                        }
-
-                                        // Move Later / Down button
-                                        Item {
-                                            width: 16
-                                            height: 18
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "▼"
-                                                font.pixelSize: 9
-                                                color: downMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            }
-                                            MouseArea {
-                                                id: downMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.moveModule(moduleItemDelegate.index, Math.min(studioRoot.modules.length - 1, moduleItemDelegate.index + 1))
-                                            }
-                                        }
-
-                                        // Span Width Toggle button
-                                        Item {
-                                            width: 18
-                                            height: 18
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "↔"
-                                                font.pixelSize: 10
-                                                font.weight: Font.Bold
-                                                color: spanMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            }
-                                            MouseArea {
-                                                id: spanMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.toggleColSpan(moduleItemDelegate.modelData.id)
-                                            }
-                                        }
-
-                                        // Delete / Remove from grid button
-                                        Item {
-                                            width: 16
-                                            height: 18
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "✕"
-                                                font.pixelSize: 9
-                                                font.weight: Font.Bold
-                                                color: delMouse.containsMouse ? "#ff453a" : studioRoot.textSecondary
-                                            }
-                                            MouseArea {
-                                                id: delMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.setModuleActive(moduleItemDelegate.modelData.id, false)
-                                            }
-                                        }
-                                    }
-                                }
 
                                 // ====================================================
                                 // RESIZE HANDLES (TUTTI I 4 LATI: ALTEZZA E LARGHEZZA)
