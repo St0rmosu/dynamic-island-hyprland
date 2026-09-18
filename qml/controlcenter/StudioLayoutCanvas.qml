@@ -448,7 +448,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + (studioRoot.selectedModule.colSpan === 2 ? "100%" : "50%") + ")") : ""
+                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + (studioRoot.selectedModule.colSpan === 2 ? "2 Col • 100%" : "1 Col • 50%") + ")") : ""
                             font.family: studioRoot.textFontFamily
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -513,9 +513,9 @@ Item {
                             }
                         }
 
-                        // Larghezza Toggle: 50% / 100%
+                        // Larghezza Toggle: 1 Col (50%) / 2 Col (100%)
                         Rectangle {
-                            width: 66; height: 26; radius: 6
+                            width: 88; height: 26; radius: 6
                             color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
                             border.width: 1
                             border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
@@ -526,7 +526,7 @@ Item {
                                 Text { anchors.verticalCenter: parent.verticalCenter; text: "↔"; font.pixelSize: 11; font.weight: Font.Bold; color: studioRoot.accentColor }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan === 2 ? "100%" : "50%") : "50%"
+                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan === 2 ? "2 Col (100%)" : "1 Col (50%)") : "1 Col (50%)"
                                     font.family: studioRoot.textFontFamily
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
@@ -777,7 +777,7 @@ Item {
                                             Item {
                                                 width: parent.width
                                                 height: 10
-                                                visible: moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume"
+                                                visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight < 110 || moduleItemDelegate.isFullWidth)
 
                                                 Rectangle {
                                                     anchors.fill: parent
@@ -793,6 +793,16 @@ Item {
                                                         color: studioRoot.accentColor
                                                     }
                                                 }
+                                            }
+
+                                            Text {
+                                                visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight >= 110 && !moduleItemDelegate.isFullWidth)
+                                                text: "Pillola Verticale iOS"
+                                                font.family: studioRoot.textFontFamily
+                                                font.pixelSize: 8
+                                                font.weight: Font.DemiBold
+                                                color: studioRoot.accentColor
+                                                elide: Text.ElideRight
                                             }
 
                                             Text {
@@ -908,7 +918,7 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "100%" : "50%") + " • " + Math.round(moduleItemDelegate.slotHeight) + "px)"
+                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "2 Col" : "1 Col") + " • " + Math.round(moduleItemDelegate.slotHeight) + "px)"
                                             font.family: studioRoot.textFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.DemiBold
@@ -1182,21 +1192,29 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: Qt.SizeHorCursor
 
-                                        property real startX: 0
-                                        onPressed: function(mouse) { startX = mouse.x; }
-                                        onClicked: {
-                                            studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                        property real pressGlobalX: 0
+                                        property bool toggledInDrag: false
+
+                                        onPressed: function(mouse) {
+                                            pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                            toggledInDrag = false;
                                         }
                                         onPositionChanged: function(mouse) {
-                                            if (pressed) {
-                                                let diff = startX - mouse.x;
-                                                if (diff > 25 && moduleItemDelegate.modelData.colSpan === 1) {
+                                            if (pressed && !toggledInDrag) {
+                                                let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                let diff = currentGlobalX - pressGlobalX;
+                                                if (diff < -35 && moduleItemDelegate.modelData.colSpan === 1) {
                                                     studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
-                                                    startX = mouse.x;
-                                                } else if (diff < -25 && moduleItemDelegate.modelData.colSpan === 2) {
+                                                    toggledInDrag = true;
+                                                } else if (diff > 35 && moduleItemDelegate.modelData.colSpan === 2) {
                                                     studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
-                                                    startX = mouse.x;
+                                                    toggledInDrag = true;
                                                 }
+                                            }
+                                        }
+                                        onClicked: {
+                                            if (!toggledInDrag) {
+                                                studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
                                             }
                                         }
                                     }
@@ -1225,21 +1243,29 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: Qt.SizeHorCursor
 
-                                        property real startX: 0
-                                        onPressed: function(mouse) { startX = mouse.x; }
-                                        onClicked: {
-                                            studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
+                                        property real pressGlobalX: 0
+                                        property bool toggledInDrag: false
+
+                                        onPressed: function(mouse) {
+                                            pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                            toggledInDrag = false;
                                         }
                                         onPositionChanged: function(mouse) {
-                                            if (pressed) {
-                                                let diff = mouse.x - startX;
-                                                if (diff > 25 && moduleItemDelegate.modelData.colSpan === 1) {
+                                            if (pressed && !toggledInDrag) {
+                                                let currentGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
+                                                let diff = currentGlobalX - pressGlobalX;
+                                                if (diff > 35 && moduleItemDelegate.modelData.colSpan === 1) {
                                                     studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
-                                                    startX = mouse.x;
-                                                } else if (diff < -25 && moduleItemDelegate.modelData.colSpan === 2) {
+                                                    toggledInDrag = true;
+                                                } else if (diff < -35 && moduleItemDelegate.modelData.colSpan === 2) {
                                                     studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
-                                                    startX = mouse.x;
+                                                    toggledInDrag = true;
                                                 }
+                                            }
+                                        }
+                                        onClicked: {
+                                            if (!toggledInDrag) {
+                                                studioRoot.toggleColSpan(moduleItemDelegate.modelData.id);
                                             }
                                         }
                                     }

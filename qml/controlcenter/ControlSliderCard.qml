@@ -20,8 +20,9 @@ Rectangle {
     property color trackColor: StyleTokens.track
     property color textPrimary: StyleTokens.textPrimary
     property color textSecondary: StyleTokens.textSecondary
-    readonly property bool pressed: sliderArea.pressed
+    readonly property bool pressed: isVertical ? verticalMouse.pressed : sliderArea.pressed
     readonly property bool isCompact: root.height < 56
+    readonly property bool isVertical: root.height >= 110 && root.width < 320
 
     function clamp01(nextValue) {
         return Math.max(0, Math.min(1, nextValue));
@@ -34,12 +35,89 @@ Rectangle {
     MatteSurface {
         anchors.fill: parent
         radius: root.radius
-        hovered: sliderArea.containsMouse
-        pressed: sliderArea.pressed
+        hovered: root.isVertical ? verticalMouse.containsMouse : sliderArea.containsMouse
+        pressed: root.pressed
     }
 
+    // --- VERTICAL SLIDER (iOS Style: pillola alta con scorrimento verticale su/giù) ---
+    Item {
+        id: verticalContainer
+        anchors.fill: parent
+        visible: root.isVertical
+
+        Rectangle {
+            id: verticalTrack
+            anchors.fill: parent
+            anchors.margins: 6
+            radius: Math.max(12, root.radius - 4)
+            color: "#1d1f24"
+            border.width: 1
+            border.color: "#30333a"
+            clip: true
+
+            // Riempimento dal basso verso l'alto
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: Math.max(0, Math.min(parent.height, parent.height * root.value))
+                radius: parent.radius
+                color: "#eceef2"
+            }
+
+            // Percentuale in alto
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                text: Math.round(root.value * 100) + "%"
+                font.pixelSize: 11
+                font.family: root.textFontFamily
+                font.weight: Font.Bold
+                color: (root.value > 0.88) ? "#111214" : root.textSecondary
+                z: 4
+            }
+
+            // Icona in basso
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 14
+                text: root.iconText
+                font.pixelSize: 18
+                font.family: root.iconFontFamily
+                color: (root.value > 0.18) ? "#111214" : root.textSecondary
+                z: 4
+            }
+
+            MouseArea {
+                id: verticalMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+
+                function update(mouseY) {
+                    let ratio = 1.0 - (mouseY / height);
+                    root.valueMoved(root.clamp01(ratio));
+                }
+
+                onPressed: function(mouse) {
+                    root.interactionStarted();
+                    update(mouse.y);
+                }
+                onPositionChanged: function(mouse) {
+                    if (pressed) update(mouse.y);
+                }
+                onReleased: root.commitRequested()
+                onCanceled: root.cancelRequested()
+            }
+        }
+    }
+
+    // --- HORIZONTAL SLIDER (Disposizione classica orizzontale) ---
     Item {
         anchors.fill: parent
+        visible: !root.isVertical
         anchors.margins: root.isCompact ? 6 : Math.min(12, Math.max(6, (root.height - 48) / 2))
 
         Row {
