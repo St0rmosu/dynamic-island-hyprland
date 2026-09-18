@@ -55,6 +55,21 @@ Item {
         initializeFromConfig();
     }
 
+    function defaultHeight(id) {
+        switch(id) {
+        case "header": return 32;
+        case "wifi": return 80;
+        case "bluetooth": return 80;
+        case "brightness": return 76;
+        case "volume": return 76;
+        case "notifications": return 68;
+        case "battery": return 80;
+        case "toggles": return 80;
+        case "quickactions": return 48;
+        default: return 76;
+        }
+    }
+
     function initializeFromConfig() {
         if (!rawConfig) return;
         try {
@@ -72,7 +87,7 @@ Item {
                                 name: m.name,
                                 icon: m.icon,
                                 colSpan: s.colSpan !== undefined ? s.colSpan : m.colSpan,
-                                height: s.height !== undefined ? Math.max(m.minHeight || 26, Math.min(m.maxHeight || 320, s.height)) : m.height,
+                                height: defaultHeight(m.id),
                                 minHeight: m.minHeight,
                                 maxHeight: m.maxHeight,
                                 active: s.active !== undefined ? s.active : m.active,
@@ -125,7 +140,7 @@ Item {
             clean.push({
                 id: modules[i].id,
                 colSpan: modules[i].colSpan,
-                height: modules[i].height,
+                height: defaultHeight(modules[i].id),
                 active: modules[i].active
             });
         }
@@ -144,30 +159,6 @@ Item {
         emitSave();
     }
 
-    function setModuleHeight(id, h) {
-        let copy = modules.slice();
-        for (let i = 0; i < copy.length; i++) {
-            if (copy[i].id === id) {
-                const minH = copy[i].minHeight || 26;
-                const maxH = copy[i].maxHeight || 320;
-                const nh = Math.max(minH, Math.min(maxH, Math.round(h)));
-                if (copy[i].height === nh) return;
-                copy[i].height = nh;
-                break;
-            }
-        }
-        modules = copy;
-        emitSave();
-    }
-
-    function adjustModuleHeight(id, delta) {
-        for (let i = 0; i < modules.length; i++) {
-            if (modules[i].id === id) {
-                setModuleHeight(id, (modules[i].height || 42) + delta);
-                break;
-            }
-        }
-    }
 
     function setModuleActive(id, active) {
         let copy = modules.slice();
@@ -677,45 +668,11 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "100%" : "50%") + " • " + Math.round(moduleItemDelegate.modelData.height) + "px)"
+                                            text: moduleItemDelegate.modelData.name + " (" + (moduleItemDelegate.modelData.colSpan === 2 ? "100%" : "50%") + ")"
                                             font.family: studioRoot.textFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.DemiBold
                                             color: studioRoot.textPrimary
-                                        }
-
-                                        // Height decrease button
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "−"
-                                            font.pixelSize: 12
-                                            font.weight: Font.Bold
-                                            color: minusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            MouseArea {
-                                                id: minusMouse
-                                                anchors.fill: parent
-                                                anchors.margins: -3
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, -8)
-                                            }
-                                        }
-
-                                        // Height increase button
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "+"
-                                            font.pixelSize: 12
-                                            font.weight: Font.Bold
-                                            color: plusMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                                            MouseArea {
-                                                id: plusMouse
-                                                anchors.fill: parent
-                                                anchors.margins: -3
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: studioRoot.adjustModuleHeight(moduleItemDelegate.modelData.id, 8)
-                                            }
                                         }
 
                                         // Move Earlier / Up button
@@ -787,88 +744,8 @@ Item {
                                 }
 
                                 // ====================================================
-                                // RESIZE HANDLES ("PALLINI AL CENTRO DI TUTTI I LATI")
+                                // RESIZE HANDLES (LATI SINISTRO E DESTRO PER LARGHEZZA ORIZZONTALE)
                                 // ====================================================
-
-                                // 1. TOP RESIZE HANDLE (Pallino al centro del lato superiore)
-                                Rectangle {
-                                    id: topHandle
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.verticalCenter: parent.top
-                                    width: 14
-                                    height: 14
-                                    radius: 7
-                                    color: "#ffffff"
-                                    border.width: 2.5
-                                    border.color: studioRoot.accentColor
-                                    z: 55
-                                    scale: topHandleMouse.containsMouse || topHandleMouse.pressed ? 1.25 : 1.0
-
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
-
-                                    MouseArea {
-                                        id: topHandleMouse
-                                        anchors.fill: parent
-                                        anchors.margins: -6
-                                        hoverEnabled: true
-                                        cursorShape: Qt.SizeVerCursor
-
-                                        property real startStageY: 0
-                                        property real startH: 0
-                                        onPressed: function(mouse) {
-                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                            startStageY = p.y;
-                                            startH = moduleItemDelegate.modelData.height || 42;
-                                        }
-                                        onPositionChanged: function(mouse) {
-                                            if (pressed) {
-                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                                let delta = startStageY - p.y;
-                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, startH + delta);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // 2. BOTTOM RESIZE HANDLE (Pallino al centro del lato inferiore)
-                                Rectangle {
-                                    id: bottomHandle
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    anchors.verticalCenter: parent.bottom
-                                    width: 14
-                                    height: 14
-                                    radius: 7
-                                    color: "#ffffff"
-                                    border.width: 2.5
-                                    border.color: studioRoot.accentColor
-                                    z: 55
-                                    scale: bottomHandleMouse.containsMouse || bottomHandleMouse.pressed ? 1.25 : 1.0
-
-                                    Behavior on scale { NumberAnimation { duration: 100 } }
-
-                                    MouseArea {
-                                        id: bottomHandleMouse
-                                        anchors.fill: parent
-                                        anchors.margins: -6
-                                        hoverEnabled: true
-                                        cursorShape: Qt.SizeVerCursor
-
-                                        property real startStageY: 0
-                                        property real startH: 0
-                                        onPressed: function(mouse) {
-                                            let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                            startStageY = p.y;
-                                            startH = moduleItemDelegate.modelData.height || 42;
-                                        }
-                                        onPositionChanged: function(mouse) {
-                                            if (pressed) {
-                                                let p = mapToItem(stageContainer, mouse.x, mouse.y);
-                                                let delta = p.y - startStageY;
-                                                studioRoot.setModuleHeight(moduleItemDelegate.modelData.id, startH + delta);
-                                            }
-                                        }
-                                    }
-                                }
 
                                 // 3. LEFT RESIZE HANDLE (Pallino al centro del lato sinistro)
                                 Rectangle {
