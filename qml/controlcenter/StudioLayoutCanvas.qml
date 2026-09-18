@@ -272,234 +272,274 @@ Item {
         // ====================================================
         Rectangle {
             width: parent.width
-            height: 52
+            implicitHeight: topBarCol.implicitHeight + 20
             radius: 16
             color: studioRoot.bgCard
             border.width: 1
             border.color: studioRoot.borderCard
 
-            Row {
+            Column {
+                id: topBarCol
                 anchors.left: parent.left
-                anchors.leftMargin: 16
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 10
-
-                Rectangle {
-                    width: 28
-                    height: 28
-                    radius: 14
-                    color: studioRoot.accentSoft
-                    border.width: 1
-                    border.color: studioRoot.accentBorder
-                    anchors.verticalCenter: parent.verticalCenter
-                    Text {
-                        anchors.centerIn: parent
-                        text: "" // Grid icon
-                        font.family: studioRoot.iconFontFamily
-                        font.pixelSize: 12
-                        color: studioRoot.accentColor
-                    }
-                }
-
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-                    Text {
-                        text: "Studio Canvas • Griglia Dinamica"
-                        font.family: studioRoot.textFontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        color: studioRoot.textPrimary
-                    }
-                    Text {
-                        text: "Disponi liberamente i moduli: posizione, ordine e dimensioni si riflettono direttamente nel Centro di Controllo."
-                        font.family: studioRoot.textFontFamily
-                        font.pixelSize: 10
-                        color: studioRoot.textMuted
-                    }
-                }
-            }
-
-            Row {
                 anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: 10
+                anchors.leftMargin: 14
                 anchors.rightMargin: 14
-                anchors.verticalCenter: parent.verticalCenter
                 spacing: 10
 
-                // Quick Controls for Selected Module
-                Row {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
-                    visible: studioRoot.selectedModule !== null
+                // Line 1: Canvas Title & Subtitle (Left) + Ripristina & Ricarica (Right)
+                Item {
+                    width: parent.width
+                    height: 32
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + (studioRoot.selectedModule.colSpan === 2 ? "100%" : "50%") + ")") : ""
-                        font.family: studioRoot.textFontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        color: studioRoot.textPrimary
-                    }
-
-                    // Stepper Altezza: [ − ] [ 80px ] [ + ]
                     Row {
+                        anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 3
+                        spacing: 9
 
                         Rectangle {
-                            width: 26; height: 26; radius: 6
-                            color: barMinusMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: studioRoot.accentSoft
                             border.width: 1
-                            border.color: barMinusMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
-                            anchors.verticalCenter: parent.verticalCenter
-                            Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 14; font.weight: Font.Bold; color: studioRoot.accentColor }
-                            MouseArea {
-                                id: barMinusMouse
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: studioRoot.adjustModuleHeight(studioRoot.selectedModuleId, -10)
-                            }
-                        }
-
-                        Rectangle {
-                            width: 48; height: 26; radius: 6
-                            color: Qt.rgba(0, 0, 0, 0.25)
-                            border.width: 1
-                            border.color: Qt.rgba(255, 255, 255, 0.08)
+                            border.color: studioRoot.accentBorder
                             anchors.verticalCenter: parent.verticalCenter
                             Text {
                                 anchors.centerIn: parent
-                                text: studioRoot.selectedModule ? (Math.round(studioRoot.selectedModule.height) + "px") : "80px"
-                                font.family: studioRoot.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
+                                text: "" // Grid icon
+                                font.family: studioRoot.iconFontFamily
+                                font.pixelSize: 12
                                 color: studioRoot.accentColor
                             }
                         }
 
-                        Rectangle {
-                            width: 26; height: 26; radius: 6
-                            color: barPlusMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
-                            border.width: 1
-                            border.color: barPlusMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                        Column {
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 14; font.weight: Font.Bold; color: studioRoot.accentColor }
-                            MouseArea {
-                                id: barPlusMouse
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: studioRoot.adjustModuleHeight(studioRoot.selectedModuleId, 10)
-                            }
-                        }
-                    }
-
-                    // Larghezza Toggle: 50% / 100%
-                    Rectangle {
-                        width: 68; height: 26; radius: 6
-                        color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
-                        border.width: 1
-                        border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
-                        anchors.verticalCenter: parent.verticalCenter
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 4
-                            Text { anchors.verticalCenter: parent.verticalCenter; text: "↔"; font.pixelSize: 11; font.weight: Font.Bold; color: studioRoot.accentColor }
+                            spacing: 1
                             Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan === 2 ? "100%" : "50%") : "50%"
+                                text: "Studio Canvas • Griglia a Caselle"
                                 font.family: studioRoot.textFontFamily
-                                font.pixelSize: 10
+                                font.pixelSize: 13
                                 font.weight: Font.DemiBold
                                 color: studioRoot.textPrimary
                             }
-                        }
-                        MouseArea {
-                            id: barWidthMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: studioRoot.toggleColSpan(studioRoot.selectedModuleId)
+                            Text {
+                                text: "Trascina per ordinare • Ridimensiona per caselle stile iOS"
+                                font.family: studioRoot.textFontFamily
+                                font.pixelSize: 10
+                                color: studioRoot.textMuted
+                            }
                         }
                     }
-
-                    Rectangle { width: 1; height: 20; color: Qt.rgba(255, 255, 255, 0.12); anchors.verticalCenter: parent.verticalCenter }
-                }
-
-                // Reset Layout Button
-                Rectangle {
-                    width: resetRow.width + 16
-                    height: 30
-                    radius: 8
-                    color: resetMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.09) : Qt.rgba(255, 255, 255, 0.04)
-                    border.width: 1
-                    border.color: resetMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.08)
-                    anchors.verticalCenter: parent.verticalCenter
 
                     Row {
-                        id: resetRow
-                        anchors.centerIn: parent
-                        spacing: 5
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "" // Reset
-                            font.family: studioRoot.iconFontFamily
-                            font.pixelSize: 10
-                            color: resetMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Ripristina"
-                            font.family: studioRoot.textFontFamily
-                            font.pixelSize: 10
-                            color: resetMouse.containsMouse ? studioRoot.textPrimary : studioRoot.textSecondary
-                        }
-                    }
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 8
 
-                    MouseArea {
-                        id: resetMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: studioRoot.resetToDefault()
+                        // Reset Layout Button
+                        Rectangle {
+                            width: resetRow.width + 14
+                            height: 28
+                            radius: 8
+                            color: resetMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.09) : Qt.rgba(255, 255, 255, 0.04)
+                            border.width: 1
+                            border.color: resetMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.08)
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Row {
+                                id: resetRow
+                                anchors.centerIn: parent
+                                spacing: 5
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ""
+                                    font.family: studioRoot.iconFontFamily
+                                    font.pixelSize: 10
+                                    color: resetMouse.containsMouse ? studioRoot.accentColor : studioRoot.textSecondary
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Ripristina"
+                                    font.family: studioRoot.textFontFamily
+                                    font.pixelSize: 10
+                                    color: resetMouse.containsMouse ? studioRoot.textPrimary : studioRoot.textSecondary
+                                }
+                            }
+
+                            MouseArea {
+                                id: resetMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: studioRoot.resetToDefault()
+                            }
+                        }
+
+                        // Reload Quickshell Button
+                        Rectangle {
+                            width: reloadRow.width + 14
+                            height: 28
+                            radius: 8
+                            color: reloadMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.05)
+                            border.width: 1
+                            border.color: reloadMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Row {
+                                id: reloadRow
+                                anchors.centerIn: parent
+                                spacing: 5
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ""
+                                    font.family: studioRoot.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: studioRoot.accentColor
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Ricarica"
+                                    font.family: studioRoot.textFontFamily
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                    color: studioRoot.textPrimary
+                                }
+                            }
+
+                            MouseArea {
+                                id: reloadMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: studioRoot.requestReloadQuickshell()
+                            }
+                        }
                     }
                 }
 
-                // Reload Quickshell Button
+                // Line 2: Contextual Module Controls Bar (When selected)
                 Rectangle {
-                    width: reloadRow.width + 16
-                    height: 30
-                    radius: 8
-                    color: reloadMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.05)
-                    border.width: 1
-                    border.color: reloadMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
-                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.06)
+                    visible: studioRoot.selectedModule !== null
+                }
+
+                Item {
+                    width: parent.width
+                    height: 28
+                    visible: studioRoot.selectedModule !== null
 
                     Row {
-                        id: reloadRow
-                        anchors.centerIn: parent
-                        spacing: 6
+                        anchors.left: parent.left
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 8
+
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: ""
+                            text: studioRoot.selectedModule ? studioRoot.selectedModule.icon : ""
                             font.family: studioRoot.iconFontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 12
                             color: studioRoot.accentColor
                         }
+
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Ricarica Quickshell"
+                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.name + " (" + (studioRoot.selectedModule.colSpan === 2 ? "100%" : "50%") + ")") : ""
                             font.family: studioRoot.textFontFamily
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             font.weight: Font.DemiBold
                             color: studioRoot.textPrimary
                         }
                     }
 
-                    MouseArea {
-                        id: reloadMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: studioRoot.requestReloadQuickshell()
+                    Row {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 8
+
+                        // Stepper Altezza: [ − ] [ 80px ] [ + ]
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 3
+
+                            Rectangle {
+                                width: 26; height: 26; radius: 6
+                                color: barMinusMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barMinusMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "−"; font.pixelSize: 14; font.weight: Font.Bold; color: studioRoot.accentColor }
+                                MouseArea {
+                                    id: barMinusMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.adjustModuleHeight(studioRoot.selectedModuleId, -40)
+                                }
+                            }
+
+                            Rectangle {
+                                width: 50; height: 26; radius: 6
+                                color: Qt.rgba(0, 0, 0, 0.25)
+                                border.width: 1
+                                border.color: Qt.rgba(255, 255, 255, 0.08)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: studioRoot.selectedModule ? (Math.round(studioRoot.selectedModule.height) + "px") : "80px"
+                                    font.family: studioRoot.textFontFamily
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    color: studioRoot.accentColor
+                                }
+                            }
+
+                            Rectangle {
+                                width: 26; height: 26; radius: 6
+                                color: barPlusMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: barPlusMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { anchors.centerIn: parent; text: "+"; font.pixelSize: 14; font.weight: Font.Bold; color: studioRoot.accentColor }
+                                MouseArea {
+                                    id: barPlusMouse
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: studioRoot.adjustModuleHeight(studioRoot.selectedModuleId, 40)
+                                }
+                            }
+                        }
+
+                        // Larghezza Toggle: 50% / 100%
+                        Rectangle {
+                            width: 66; height: 26; radius: 6
+                            color: barWidthMouse.containsMouse ? studioRoot.accentSoft : Qt.rgba(255, 255, 255, 0.06)
+                            border.width: 1
+                            border.color: barWidthMouse.containsMouse ? studioRoot.accentBorder : Qt.rgba(255, 255, 255, 0.10)
+                            anchors.verticalCenter: parent.verticalCenter
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 4
+                                Text { anchors.verticalCenter: parent.verticalCenter; text: "↔"; font.pixelSize: 11; font.weight: Font.Bold; color: studioRoot.accentColor }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan === 2 ? "100%" : "50%") : "50%"
+                                    font.family: studioRoot.textFontFamily
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                    color: studioRoot.textPrimary
+                                }
+                            }
+                            MouseArea {
+                                id: barWidthMouse
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: studioRoot.toggleColSpan(studioRoot.selectedModuleId)
+                            }
+                        }
                     }
                 }
             }
