@@ -161,19 +161,19 @@ Item {
             if (!item.active) continue;
 
             let h = 76;
-            if (item.id === "header") h = 28;
-            else if (item.id === "wifi" || item.id === "bluetooth") h = (item.height && item.height >= 40) ? item.height : 80;
-            else if (item.id === "battery" || item.id === "toggles") h = (item.height && item.height >= 40) ? item.height : 80;
-            else if (item.id === "brightness" || item.id === "volume") h = (item.height && item.height >= 40) ? item.height : 76;
-            else if (item.id === "quickactions") h = (item.height && item.height >= 36) ? item.height : 48;
+            if (item.id === "header") h = Math.max(26, item.height || 28);
+            else if (item.id === "wifi" || item.id === "bluetooth") h = Math.max(70, item.height || 80);
+            else if (item.id === "battery" || item.id === "toggles") h = Math.max(70, item.height || 80);
+            else if (item.id === "brightness" || item.id === "volume") h = Math.max(64, item.height || 76);
+            else if (item.id === "quickactions") h = Math.max(36, item.height || 48);
             else if (item.id === "notifications") {
                 if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                    h = Math.min(240, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10);
+                    h = Math.max(item.height || 64, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
                 } else {
-                    h = 64;
+                    h = Math.max(56, item.height || 64);
                 }
             } else {
-                h = item.height || 76;
+                h = Math.max(50, item.height || 76);
             }
 
             const isFull = (item.colSpan === 2);
@@ -1868,30 +1868,32 @@ Item {
                 anchors.bottomMargin: Math.min(8, Math.max(4, (parent.height - 56) / 3))
                 height: Math.min(30, Math.max(22, parent.height - 46))
 
-                Text {
+                Column {
                     anchors.left: parent.left
                     anchors.right: wifiChevron.left
                     anchors.rightMargin: 8
-                    anchors.top: parent.top
-                    text: "Wi-Fi"
-                    color: controlCenter.textPrimary
-                    font.pixelSize: 13
-                    font.family: controlCenter.textFontFamily
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1
 
-                Text {
-                    anchors.left: parent.left
-                    anchors.right: wifiChevron.left
-                    anchors.rightMargin: 8
-                    anchors.bottom: parent.bottom
-                    text: controlCenter.wifiStatusText
-                    color: StyleTokens.textMuted
-                    font.pixelSize: 10
-                    font.family: controlCenter.textFontFamily
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
+                    Text {
+                        width: parent.width
+                        text: "Wi-Fi"
+                        color: controlCenter.textPrimary
+                        font.pixelSize: 13
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: controlCenter.wifiStatusText
+                        color: StyleTokens.textMuted
+                        font.pixelSize: 10
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
+                    }
                 }
 
                 Text {
@@ -1996,30 +1998,32 @@ Item {
                 anchors.bottomMargin: Math.min(8, Math.max(4, (parent.height - 56) / 3))
                 height: Math.min(30, Math.max(22, parent.height - 46))
 
-                Text {
+                Column {
                     anchors.left: parent.left
                     anchors.right: bluetoothChevron.left
                     anchors.rightMargin: 8
-                    anchors.top: parent.top
-                    text: "Bluetooth"
-                    color: controlCenter.textPrimary
-                    font.pixelSize: 13
-                    font.family: controlCenter.textFontFamily
-                    font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1
 
-                Text {
-                    anchors.left: parent.left
-                    anchors.right: bluetoothChevron.left
-                    anchors.rightMargin: 8
-                    anchors.bottom: parent.bottom
-                    text: controlCenter.bluetoothStatusText
-                    color: StyleTokens.textMuted
-                    font.pixelSize: 10
-                    font.family: controlCenter.textFontFamily
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
+                    Text {
+                        width: parent.width
+                        text: "Bluetooth"
+                        color: controlCenter.textPrimary
+                        font.pixelSize: 13
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        width: parent.width
+                        text: controlCenter.bluetoothStatusText
+                        color: StyleTokens.textMuted
+                        font.pixelSize: 10
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.Medium
+                        elide: Text.ElideRight
+                    }
                 }
 
                 Text {
@@ -2399,7 +2403,8 @@ Item {
                 Item {
                     id: focusIconSlot
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: 12
+                    anchors.top: parent.top
+                    anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
                     width: parent.width
                     height: 32
 
@@ -2453,7 +2458,8 @@ Item {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: 55
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
                     width: parent.width
                     text: "Silent"
                     color: controlCenter.focusEnabled ? StyleTokens.textPrimaryBright : StyleTokens.textMuted
@@ -2498,7 +2504,8 @@ Item {
                 Item {
                     id: nightLightIconSlot
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: 12
+                    anchors.top: parent.top
+                    anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
                     width: parent.width
                     height: 32
 
@@ -2534,7 +2541,8 @@ Item {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: 55
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
                     width: parent.width
                     text: "Night mode"
                     color: controlCenter.nightLightEnabled ? StyleTokens.textPrimaryBright : StyleTokens.textMuted
@@ -2732,15 +2740,12 @@ Item {
                         if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
                             return Math.max(modelData.height || 64, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
                         }
-                        return Math.max(40, modelData.height || 64);
+                        return Math.max(56, modelData.height || 64);
                     }
-                    if (modelData.height !== undefined && modelData.height > 0) {
-                        return Math.max(36, modelData.height);
-                    }
-                    if (modelData.id === "brightness" || modelData.id === "volume") return 76;
-                    if (modelData.id === "wifi" || modelData.id === "bluetooth") return 80;
-                    if (modelData.id === "battery" || modelData.id === "toggles") return 80;
-                    return 76;
+                    if (modelData.id === "brightness" || modelData.id === "volume") return Math.max(64, modelData.height || 76);
+                    if (modelData.id === "wifi" || modelData.id === "bluetooth") return Math.max(70, modelData.height || 80);
+                    if (modelData.id === "battery" || modelData.id === "toggles") return Math.max(70, modelData.height || 80);
+                    return Math.max(50, modelData.height || 76);
                 }
 
                 visible: modelData.active

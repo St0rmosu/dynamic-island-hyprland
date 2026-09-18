@@ -37,13 +37,13 @@ Item {
     // Live list of modules
     property var modules: [
         { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 60, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
-        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
-        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 44, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
+        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
+        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 56, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
         { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
@@ -196,13 +196,13 @@ Item {
     function resetToDefault() {
         modules = [
             { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 60, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
-            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
-            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 36, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
-            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 44, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
+            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
+            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
+            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 56, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
             { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
         ];
         studioRoot.selectedModuleId = "wifi";

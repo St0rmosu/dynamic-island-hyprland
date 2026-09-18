@@ -284,58 +284,21 @@ FocusScope {
         onTriggered: root.dispatchSave()
     }
 
-    Process {
-        id: saveProcess
-        property string payload: ""
-        command: [
-            "python3",
-            "-c",
-            "import sys, json, os\n" +
-            "paths = [os.path.expanduser('~/.config/dynamic-island/userconfig.json'), os.path.expanduser('~/.config/tide-island/userconfig.json')]\n" +
-            "patch = json.loads(sys.argv[1])\n" +
-            "for p in paths:\n" +
-            "    os.makedirs(os.path.dirname(p), exist_ok=True)\n" +
-            "    d = {}\n" +
-            "    if os.path.exists(p):\n" +
-            "        try:\n" +
-            "            with open(p, 'r', encoding='utf-8') as f: d = json.load(f)\n" +
-            "        except: d = {}\n" +
-            "    d.update(patch)\n" +
-            "    tmp = p + '.tmp'\n" +
-            "    with open(tmp, 'w', encoding='utf-8') as f:\n" +
-            "        json.dump(d, f, indent=4, ensure_ascii=False)\n" +
-            "        f.write('\\n')\n" +
-            "    os.replace(tmp, p)\n",
-            payload
-        ]
-        running: false
-        onExited: function(code) {
-            root.isSaving = false;
-            if (code === 0) {
-                root.lastSavedStatus = "Live Synced";
-                try {
-                    UserConfig.reload();
-                } catch(e) {
-                    console.log("[SettingsApp] Error reloading UserConfig:", e);
-                }
-            } else {
-                root.lastSavedStatus = "Error saving";
-            }
-            if (root.hasPendingSave) {
-                root.hasPendingSave = false;
-                saveDebounceTimer.restart();
-            }
-        }
-    }
-
     function dispatchSave() {
-        if (saveProcess.running) {
-            root.hasPendingSave = true;
-            return;
-        }
         root.isSaving = true;
-        saveProcess.payload = JSON.stringify(root.configData);
-        saveProcess.running = true;
+        try {
+            const payload = JSON.stringify(root.configData);
+            Quickshell.execDetached(["python3", "/home/lollo/.config/quickshell/dynamic-island/scripts/save_userconfig.py", payload]);
+            root.lastSavedStatus = "Live Synced";
+            root.isSaving = false;
+            try {
+                UserConfig.reload();
+            } catch(e) {}
+        } catch(e) {
+            console.log("[SettingsApp] Error saving config:", e);
+            root.lastSavedStatus = "Error saving";
+            root.isSaving = false;
+        }
     }
 
     Component.onCompleted: {
