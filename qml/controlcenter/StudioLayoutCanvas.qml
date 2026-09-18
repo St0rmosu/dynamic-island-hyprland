@@ -47,15 +47,15 @@ Item {
 
     // Live list of modules
     property var modules: [
-        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 80, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
-        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 38, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
-        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 38, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 44, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 38, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+        { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+        { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+        { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
+        { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
+        { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
     Component.onCompleted: {
@@ -72,18 +72,21 @@ Item {
         }
     }
 
+    function snapHeight(id, rawH) {
+        if (id === "header") return 32;
+        if (id === "quickactions") return Math.max(48, Math.min(96, Math.round(rawH / 24) * 24));
+        const minH = 80;
+        const maxH = 240;
+        // Griglia a caselle stile iOS: snap a passi di 40px (80 = 1 casella, 120 = 1.5, 160 = 2, 200 = 2.5, 240 = 3)
+        const snapped = Math.round(rawH / 40) * 40;
+        return Math.max(minH, Math.min(maxH, snapped));
+    }
+
     function defaultHeight(id) {
         switch(id) {
         case "header": return 32;
-        case "wifi": return 80;
-        case "bluetooth": return 80;
-        case "brightness": return 76;
-        case "volume": return 76;
-        case "notifications": return 68;
-        case "battery": return 80;
-        case "toggles": return 80;
         case "quickactions": return 48;
-        default: return 76;
+        default: return 80;
         }
     }
 
@@ -99,12 +102,13 @@ Item {
                     for (let j = 0; j < modules.length; j++) {
                         let m = modules[j];
                         if (m.id === s.id) {
+                            let targetH = s.height !== undefined ? snapHeight(m.id, s.height) : defaultHeight(m.id);
                             merged.push({
                                 id: m.id,
                                 name: m.name,
                                 icon: m.icon,
                                 colSpan: s.colSpan !== undefined ? s.colSpan : m.colSpan,
-                                height: (s.height !== undefined && s.height >= (m.minHeight || 26)) ? Math.round(s.height) : (m.height || defaultHeight(m.id)),
+                                height: targetH,
                                 minHeight: m.minHeight,
                                 maxHeight: m.maxHeight,
                                 active: s.active !== undefined ? s.active : m.active,
@@ -185,9 +189,7 @@ Item {
         for (let i = 0; i < modules.length; i++) {
             let m = Object.assign({}, modules[i]);
             if (m.id === id) {
-                const minH = m.minHeight || 38;
-                const maxH = m.maxHeight || 320;
-                const nh = Math.max(minH, Math.min(maxH, Math.round(h)));
+                const nh = snapHeight(id, h);
                 if (m.height !== nh) {
                     m.height = nh;
                     changed = true;
@@ -204,8 +206,10 @@ Item {
     function adjustModuleHeight(id, delta) {
         for (let i = 0; i < modules.length; i++) {
             if (modules[i].id === id) {
+                if (id === "header") return;
                 let cur = Number(modules[i].height) || defaultHeight(id);
-                setModuleHeight(id, cur + delta);
+                let step = (id === "quickactions") ? 24 : 40;
+                setModuleHeight(id, cur + (delta > 0 ? step : -step));
                 break;
             }
         }
@@ -241,15 +245,15 @@ Item {
 
     function resetToDefault() {
         modules = [
-            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 26, maxHeight: 60, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
-            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
-            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Controller bluetooth e periferiche connesse" },
-            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore retroilluminazione schermo" },
-            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 76, minHeight: 64, maxHeight: 260, active: true, desc: "Cursore volume audio master" },
-            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 72, minHeight: 56, maxHeight: 320, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 70, maxHeight: 260, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 36, maxHeight: 200, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+            { id: "header", name: "Orologio & Batteria", icon: "\uf017", colSpan: 2, height: 32, minHeight: 32, maxHeight: 32, active: true, desc: "Pillola superiore con orologio e percentuale batteria" },
+            { id: "wifi", name: "Scheda Wi-Fi", icon: "\uf1eb", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Stato connessione, rete attiva e discovery drawer" },
+            { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
+            { id: "brightness", name: "Luminosità Display", icon: "\uf185", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
+            { id: "volume", name: "Controllo Volume", icon: "\uf028", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
+            { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", colSpan: 2, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+            { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+            { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", colSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
+            { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", colSpan: 2, height: 48, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
         ];
         studioRoot.selectedModuleId = "wifi";
         emitSave();
@@ -1039,9 +1043,7 @@ Item {
                                             if (pressed) {
                                                 let p = mapToItem(stageContainer, mouse.x, mouse.y);
                                                 let delta = startStageY - p.y;
-                                                let minH = moduleItemDelegate.modelData.minHeight || 38;
-                                                let maxH = moduleItemDelegate.modelData.maxHeight || 320;
-                                                currentH = Math.max(minH, Math.min(maxH, Math.round(startH + delta)));
+                                                currentH = studioRoot.snapHeight(moduleItemDelegate.modelData.id, startH + delta);
                                                 moduleItemDelegate.overrideHeight = currentH;
                                             }
                                         }
@@ -1098,9 +1100,7 @@ Item {
                                             if (pressed) {
                                                 let p = mapToItem(stageContainer, mouse.x, mouse.y);
                                                 let delta = p.y - startStageY;
-                                                let minH = moduleItemDelegate.modelData.minHeight || 38;
-                                                let maxH = moduleItemDelegate.modelData.maxHeight || 320;
-                                                currentH = Math.max(minH, Math.min(maxH, Math.round(startH + delta)));
+                                                currentH = studioRoot.snapHeight(moduleItemDelegate.modelData.id, startH + delta);
                                                 moduleItemDelegate.overrideHeight = currentH;
                                             }
                                         }

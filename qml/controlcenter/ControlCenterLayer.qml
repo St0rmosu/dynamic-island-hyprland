@@ -135,14 +135,14 @@ Item {
         }
 
         return [
-            { id: "header", colSpan: 2, height: 28, active: true },
+            { id: "header", colSpan: 2, height: 32, active: true },
             { id: "wifi", colSpan: 1, height: 80, active: cfgValue("showWifiCard", true) },
             { id: "bluetooth", colSpan: 1, height: 80, active: cfgValue("showBluetoothCard", true) },
             { id: "battery", colSpan: 1, height: 80, active: cfgValue("showTlpBatteryMode", true) },
             { id: "toggles", colSpan: 1, height: 80, active: cfgValue("showNightFocusToggles", true) },
-            { id: "brightness", colSpan: isHorizontal ? 1 : 2, height: 76, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "volume", colSpan: isHorizontal ? 1 : 2, height: 76, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "notifications", colSpan: 2, height: 68, active: cfgValue("controlCenterShowNotifications", true) },
+            { id: "brightness", colSpan: isHorizontal ? 1 : 2, height: 80, active: cfgValue("showDisplaySoundSliders", true) },
+            { id: "volume", colSpan: isHorizontal ? 1 : 2, height: 80, active: cfgValue("showDisplaySoundSliders", true) },
+            { id: "notifications", colSpan: 2, height: 80, active: cfgValue("controlCenterShowNotifications", true) },
             { id: "quickactions", colSpan: 2, height: 48, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
         ];
     }
@@ -160,21 +160,19 @@ Item {
             const item = layout[i];
             if (!item.active) continue;
 
-            let h = (item.height && item.height >= 36) ? Math.round(item.height) : 76;
+            let h = 80;
             if (item.id === "header") {
-                h = (item.height && item.height >= 26) ? Math.round(item.height) : 32;
+                h = 32;
             } else if (item.id === "quickactions") {
-                h = (item.height && item.height >= 36) ? Math.round(item.height) : 48;
+                h = (item.height && item.height >= 48) ? Math.round(item.height) : 48;
             } else if (item.id === "notifications") {
                 if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                    h = Math.max(item.height || 64, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
+                    h = Math.max(item.height || 80, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
                 } else {
-                    h = (item.height && item.height >= 44) ? Math.round(item.height) : 64;
+                    h = (item.height && item.height >= 80) ? Math.round(item.height) : 80;
                 }
-            } else if (!item.height) {
-                if (item.id === "wifi" || item.id === "bluetooth") h = 80;
-                else if (item.id === "battery" || item.id === "toggles") h = 80;
-                else if (item.id === "brightness" || item.id === "volume") h = 76;
+            } else if (item.height && item.height >= 80) {
+                h = Math.round(item.height);
             }
 
             const isFull = (item.colSpan === 2);
@@ -2796,21 +2794,18 @@ Item {
                 readonly property bool isFullWidth: modelData.colSpan === 2
                 readonly property real slotWidth: isFullWidth ? mainContent.width : ((mainContent.width - mainContent.spacing) / 2)
                 readonly property real slotHeight: {
-                    if (modelData.id === "header") return (modelData.height && modelData.height >= 26) ? Math.round(modelData.height) : 32;
-                    if (modelData.id === "quickactions") return (modelData.height && modelData.height >= 36) ? Math.round(modelData.height) : 48;
+                    if (modelData.id === "header") return 32;
+                    if (modelData.id === "quickactions") return (modelData.height && modelData.height >= 48) ? Math.round(modelData.height) : 48;
                     if (modelData.id === "notifications") {
                         if (controlCenter.notificationModel && controlCenter.notificationModel.count > 0) {
-                            return Math.max(modelData.height || 64, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
+                            return Math.max(modelData.height || 80, Math.min(260, 38 + Math.min(3, controlCenter.notificationModel.count) * 58 + 10));
                         }
-                        return (modelData.height && modelData.height >= 44) ? Math.round(modelData.height) : 64;
+                        return (modelData.height && modelData.height >= 80) ? Math.round(modelData.height) : 80;
                     }
-                    if (modelData.height && modelData.height >= 36) {
+                    if (modelData.height && modelData.height >= 80) {
                         return Math.round(modelData.height);
                     }
-                    if (modelData.id === "brightness" || modelData.id === "volume") return 76;
-                    if (modelData.id === "wifi" || modelData.id === "bluetooth") return 80;
-                    if (modelData.id === "battery" || modelData.id === "toggles") return 80;
-                    return 76;
+                    return 80;
                 }
 
                 visible: modelData.active
