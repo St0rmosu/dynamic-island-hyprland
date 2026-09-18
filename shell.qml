@@ -460,6 +460,20 @@ Scope {
             });
         }
 
+        function setSettingsCategory(catIndex: int) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.setSettingsCategory)
+                    window.setSettingsCategory(catIndex);
+            });
+        }
+
+        function setSettingsSubView(sub: string) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.setSettingsSubView)
+                    window.setSettingsSubView(sub);
+            });
+        }
+
         function showClock() {
             shellRoot.forFocusedWindow((window) => window.showClockWindow());
         }
@@ -601,6 +615,20 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.showSettingsAppWindow)
                     window.showSettingsAppWindow();
+            });
+        }
+
+        function setSettingsCategory(catIndex) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.setSettingsAppCategory)
+                    window.setSettingsAppCategory(catIndex);
+            });
+        }
+
+        function setSettingsSubView(sub) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.setSettingsAppSubView)
+                    window.setSettingsAppSubView(sub);
             });
         }
     }

@@ -425,12 +425,28 @@ FocusScope {
         latestAppliedWallpaper = filePath;
         wallpaperApplied(filePath);
         closeAfterApply = true;
-        if (customApplyProcess.running)
-            customApplyProcess.running = false;
-        customApplyProcess.wallpaperPath = filePath;
-        customApplyProcess.targetPath = root.targetWallpaperPath;
-        customApplyProcess.running = true;
+
+        var detachedStarted = false;
+        try {
+            Quickshell.execDetached(["/home/lollo/.scripts/apply-wallpaper.sh", filePath]);
+            detachedStarted = true;
+            root.wallpaperApplySucceeded(filePath);
+        } catch (e) {
+            console.warn("[WallpaperPickerLayer] execDetached failed, fallback to Process:", e);
+        }
+
+        if (!detachedStarted) {
+            if (customApplyProcess.running)
+                customApplyProcess.running = false;
+            customApplyProcess.wallpaperPath = filePath;
+            customApplyProcess.command = ["/home/lollo/.scripts/apply-wallpaper.sh", filePath];
+            customApplyProcess.targetPath = root.targetWallpaperPath;
+            customApplyProcess.running = true;
+        }
+
+        root.closeRequested();
     }
+
 
     Process {
         id: scanProcess

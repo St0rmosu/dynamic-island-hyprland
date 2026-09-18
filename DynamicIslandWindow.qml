@@ -1023,6 +1023,16 @@ PanelWindow {
         islandContainer.showSettingsApp();
     }
 
+    function setSettingsCategory(catIndex) {
+        if (settingsAppLoader.item)
+            settingsAppLoader.item.selectedCategoryIndex = catIndex;
+    }
+
+    function setSettingsSubView(sub) {
+        if (settingsAppLoader.item)
+            settingsAppLoader.item.controlCenterSubView = sub;
+    }
+
     function toggleFileShelfWindow() {
         if (islandContainer.islandState === "file_shelf")
             islandContainer.smartRestoreState();
@@ -2752,7 +2762,7 @@ PanelWindow {
                 case "clipboard":
                     return 800;
                 case "settings_app":
-                    return 840;
+                    return 980;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 58;
                     return 400;
@@ -2797,7 +2807,7 @@ PanelWindow {
                 case "clipboard":
                     return 520;
                 case "settings_app":
-                    return 560;
+                    return 680;
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph) return 58;
                     return 174;
