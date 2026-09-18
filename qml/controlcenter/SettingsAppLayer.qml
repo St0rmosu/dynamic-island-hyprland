@@ -788,6 +788,7 @@ FocusScope {
                     contentHeight: contentColumn.height + 40
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
+                    interactive: (typeof studioCanvasItem !== "undefined" && studioCanvasItem) ? (!studioCanvasItem.isInteracting && !studioCanvasItem.isStageHovered) : true
 
                     Column {
                         id: contentColumn

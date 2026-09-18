@@ -32,9 +32,10 @@ Item {
     // Current selection in canvas
     property string selectedModuleId: "wifi"
     property int dragSourceIndex: -1
-    property int dragTargetIndex: -1
     property bool isDraggingModule: false
     property bool isResizing: false
+    readonly property bool isInteracting: isDraggingModule || isResizing
+    property bool isStageHovered: false
     property bool isInternalSave: false
     property bool canvasInitialized: false
 
@@ -764,7 +765,7 @@ Item {
         Rectangle {
             id: stageContainer
             width: parent.width
-            height: Math.max(340, islandCapsule.height + 60)
+            height: Math.max(340, islandCapsule.height + 80)
             radius: 20
             color: "#0c0f16"
             border.width: 1
@@ -772,6 +773,7 @@ Item {
             clip: true
 
             Behavior on height {
+                enabled: !studioRoot.isResizing
                 NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
             }
 
@@ -803,9 +805,13 @@ Item {
                 }
             }
 
-            // Click outside deselects
+            // Click outside deselects & stage hover tracking
             MouseArea {
+                id: stageBgMouse
                 anchors.fill: parent
+                hoverEnabled: true
+                preventStealing: true
+                onContainsMouseChanged: studioRoot.isStageHovered = containsMouse
                 onClicked: studioRoot.selectedModuleId = ""
             }
 
@@ -846,6 +852,7 @@ Item {
                     NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
                 }
                 Behavior on height {
+                    enabled: !studioRoot.isResizing
                     NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
                 }
 
@@ -1071,6 +1078,7 @@ Item {
                                     id: moduleMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    preventStealing: true
                                     cursorShape: (moduleItemDelegate.modelData.id === "header") ? Qt.PointingHandCursor : (isSelected ? Qt.SizeAllCursor : Qt.PointingHandCursor)
 
                                     property real pressX: 0
@@ -1166,8 +1174,9 @@ Item {
                                     MouseArea {
                                         id: topHandleMouse
                                         anchors.fill: parent
-                                        anchors.margins: -8
+                                        anchors.margins: -10
                                         hoverEnabled: true
+                                        preventStealing: true
                                         cursorShape: Qt.SizeVerCursor
 
                                         property real startStageY: 0
@@ -1223,8 +1232,9 @@ Item {
                                     MouseArea {
                                         id: bottomHandleMouse
                                         anchors.fill: parent
-                                        anchors.margins: -8
+                                        anchors.margins: -10
                                         hoverEnabled: true
+                                        preventStealing: true
                                         cursorShape: Qt.SizeVerCursor
 
                                         property real startStageY: 0
@@ -1280,14 +1290,16 @@ Item {
                                     MouseArea {
                                         id: leftHandleMouse
                                         anchors.fill: parent
-                                        anchors.margins: -6
+                                        anchors.margins: -8
                                         hoverEnabled: true
+                                        preventStealing: true
                                         cursorShape: Qt.SizeHorCursor
 
                                         property real pressGlobalX: 0
                                         property bool toggledInDrag: false
 
                                         onPressed: function(mouse) {
+                                            studioRoot.isResizing = true;
                                             pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
                                             toggledInDrag = false;
                                         }
@@ -1304,6 +1316,12 @@ Item {
                                                     toggledInDrag = true;
                                                 }
                                             }
+                                        }
+                                        onReleased: {
+                                            studioRoot.isResizing = false;
+                                        }
+                                        onCanceled: {
+                                            studioRoot.isResizing = false;
                                         }
                                         onClicked: {
                                             if (!toggledInDrag) {
@@ -1332,14 +1350,16 @@ Item {
                                     MouseArea {
                                         id: rightHandleMouse
                                         anchors.fill: parent
-                                        anchors.margins: -6
+                                        anchors.margins: -8
                                         hoverEnabled: true
+                                        preventStealing: true
                                         cursorShape: Qt.SizeHorCursor
 
                                         property real pressGlobalX: 0
                                         property bool toggledInDrag: false
 
                                         onPressed: function(mouse) {
+                                            studioRoot.isResizing = true;
                                             pressGlobalX = mapToItem(capsuleLayout, mouse.x, mouse.y).x;
                                             toggledInDrag = false;
                                         }
@@ -1356,6 +1376,12 @@ Item {
                                                     toggledInDrag = true;
                                                 }
                                             }
+                                        }
+                                        onReleased: {
+                                            studioRoot.isResizing = false;
+                                        }
+                                        onCanceled: {
+                                            studioRoot.isResizing = false;
                                         }
                                         onClicked: {
                                             if (!toggledInDrag) {
