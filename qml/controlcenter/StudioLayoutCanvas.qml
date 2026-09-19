@@ -63,11 +63,11 @@ Item {
         case "bluetooth": return { col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80 };
         case "brightness": return { col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
         case "volume": return { col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
-        case "toggles": return { col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
-        case "notifications": return { col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
-        case "battery": return { col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
-        case "quickactions": return { col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
-        default: return { col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        case "notifications": return { col: 0, row: 2, colSpan: 4, rowSpan: 2, height: 160 };
+        case "toggles": return { col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        case "battery": return { col: 0, row: 5, colSpan: 2, rowSpan: 1, height: 80 };
+        case "quickactions": return { col: 2, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        default: return { col: 0, row: 6, colSpan: 2, rowSpan: 1, height: 80 };
         }
     }
 
@@ -78,10 +78,10 @@ Item {
         { id: "bluetooth", name: "Scheda Bluetooth", icon: "\uf294", col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Controller bluetooth e periferiche connesse" },
         { id: "brightness", name: "Luminosità Display", icon: "\uf185", col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore retroilluminazione schermo" },
         { id: "volume", name: "Controllo Volume", icon: "\uf028", col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cursore volume audio master" },
-        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Filtro luce blu e modalità non disturbare" },
-        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
-        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: true, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
-        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
+        { id: "notifications", name: "Centro Notifiche", icon: "\uf0f3", col: 0, row: 2, colSpan: 4, rowSpan: 2, height: 160, minHeight: 80, maxHeight: 240, active: true, desc: "Cronologia notifiche, contatore e cancellazione rapida" },
+        { id: "toggles", name: "Luce Notturna & Focus", icon: "\uf186", col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: false, desc: "Filtro luce blu e modalità non disturbare" },
+        { id: "battery", name: "Profilo Batteria TLP", icon: "\uf0e7", col: 0, row: 5, colSpan: 2, rowSpan: 1, height: 80, minHeight: 80, maxHeight: 240, active: false, desc: "Selettore Risparmio, Bilanciato, Prestazioni" },
+        { id: "quickactions", name: "Barra & Appunti", icon: "\uf108", col: 2, row: 4, colSpan: 2, rowSpan: 1, height: 80, minHeight: 48, maxHeight: 96, active: false, desc: "Pulsanti rapidi desktop workspace e cronologia appunti" }
     ]
 
     Component.onCompleted: {

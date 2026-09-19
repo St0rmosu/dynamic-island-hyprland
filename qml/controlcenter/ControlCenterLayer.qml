@@ -79,11 +79,11 @@ Item {
 
     readonly property bool cfgShowTlpBattery: {
         const c = getModuleConfig("battery");
-        return c !== null ? c.active : cfgValue("showTlpBatteryMode", true);
+        return c !== null ? c.active : cfgValue("showTlpBatteryMode", false);
     }
     readonly property bool cfgShowNightFocus: {
         const c = getModuleConfig("toggles");
-        return c !== null ? c.active : cfgValue("showNightFocusToggles", true);
+        return c !== null ? c.active : cfgValue("showNightFocusToggles", false);
     }
     readonly property bool cfgShowBatteryDrawer: cfgShowTlpBattery || cfgShowNightFocus
 
@@ -126,11 +126,11 @@ Item {
         case "bluetooth": return { col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80 };
         case "brightness": return { col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
         case "volume": return { col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160 };
-        case "toggles": return { col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
-        case "notifications": return { col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80 };
-        case "battery": return { col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
-        case "quickactions": return { col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80 };
-        default: return { col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        case "notifications": return { col: 0, row: 2, colSpan: 4, rowSpan: 2, height: 160 };
+        case "toggles": return { col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        case "battery": return { col: 0, row: 5, colSpan: 2, rowSpan: 1, height: 80 };
+        case "quickactions": return { col: 2, row: 4, colSpan: 2, rowSpan: 1, height: 80 };
+        default: return { col: 0, row: 6, colSpan: 2, rowSpan: 1, height: 80 };
         }
     }
 
@@ -213,19 +213,6 @@ Item {
                 }
                 if (!alreadyInRes) {
                     let def = getDefaultPos(modId);
-                    let isAct = false;
-                    if (modId === "wifi" && cfgValue("showWifiCard", null) !== null) isAct = Boolean(cfgValue("showWifiCard", true));
-                    else if (modId === "bluetooth" && cfgValue("showBluetoothCard", null) !== null) isAct = Boolean(cfgValue("showBluetoothCard", true));
-                    else if (modId === "brightness" && cfgValue("showDisplaySoundSliders", null) !== null) isAct = Boolean(cfgValue("showDisplaySoundSliders", true));
-                    else if (modId === "volume" && cfgValue("showDisplaySoundSliders", null) !== null) isAct = Boolean(cfgValue("showDisplaySoundSliders", true));
-                    else if (modId === "notifications" && cfgValue("controlCenterShowNotifications", null) !== null) isAct = Boolean(cfgValue("controlCenterShowNotifications", true));
-                    else if (modId === "battery" && cfgValue("showTlpBatteryMode", null) !== null) isAct = Boolean(cfgValue("showTlpBatteryMode", true));
-                    else if (modId === "toggles" && cfgValue("showNightFocusToggles", null) !== null) isAct = Boolean(cfgValue("showNightFocusToggles", true));
-                    else if (modId === "quickactions") {
-                        let b1 = cfgValue("showBarraDesktopCard", null);
-                        let b2 = cfgValue("showClipboardQuickAccess", null);
-                        if (b1 !== null || b2 !== null) isAct = Boolean((b1 !== null ? b1 : false) || (b2 !== null ? b2 : false));
-                    }
                     res.push({
                         id: modId,
                         col: def.col,
@@ -233,7 +220,7 @@ Item {
                         colSpan: def.colSpan,
                         rowSpan: def.rowSpan,
                         height: def.rowSpan * 80,
-                        active: isAct
+                        active: false
                     });
                 }
             }
@@ -246,10 +233,10 @@ Item {
             { id: "bluetooth", col: 0, row: 1, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showBluetoothCard", true) },
             { id: "brightness", col: 2, row: 0, colSpan: 1, rowSpan: 2, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
             { id: "volume", col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
-            { id: "toggles", col: 0, row: 2, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showNightFocusToggles", true) },
-            { id: "notifications", col: 2, row: 2, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("controlCenterShowNotifications", true) },
-            { id: "battery", col: 0, row: 3, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showTlpBatteryMode", true) },
-            { id: "quickactions", col: 2, row: 3, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
+            { id: "notifications", col: 0, row: 2, colSpan: 4, rowSpan: 2, height: 160, active: cfgValue("controlCenterShowNotifications", true) },
+            { id: "toggles", col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showNightFocusToggles", false) },
+            { id: "battery", col: 0, row: 5, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showTlpBatteryMode", false) },
+            { id: "quickactions", col: 2, row: 4, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
         ];
     }
 
@@ -3009,32 +2996,15 @@ Item {
             anchors.bottomMargin: 24
 
             readonly property real gridSpacing: 10
-            readonly property real sliderColWidth: 50
-            readonly property real leftAreaWidth: Math.max(140, width - (sliderColWidth * 2 + gridSpacing) - gridSpacing)
-            readonly property real leftColWidth: (leftAreaWidth - gridSpacing) / 2
             readonly property real unitColWidth: (width - (3 * gridSpacing)) / 4
             readonly property real unitRowHeight: 80
 
             function colWidth(c, cSpan) {
                 if (cSpan === 4) return width;
-                if (c === 2 || c === 3) {
-                    if (cSpan === 1) return sliderColWidth;
-                    if (cSpan === 2) return sliderColWidth * 2 + gridSpacing;
-                }
-                if (cSpan === 2 && c === 0) {
-                    return leftAreaWidth;
-                }
-                if (cSpan === 1) {
-                    if (c === 0 || c === 1) return leftColWidth;
-                }
                 return Math.round(cSpan * unitColWidth + (cSpan - 1) * gridSpacing);
             }
 
             function colX(c) {
-                if (c === 0) return 0;
-                if (c === 1) return Math.round(leftColWidth + gridSpacing);
-                if (c === 2) return Math.round(leftAreaWidth + gridSpacing);
-                if (c === 3) return Math.round(leftAreaWidth + gridSpacing + sliderColWidth + gridSpacing);
                 return Math.round(c * (unitColWidth + gridSpacing));
             }
 
