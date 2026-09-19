@@ -1083,6 +1083,16 @@ PanelWindow {
         setSettingsSubView(sub);
     }
 
+    function openSettingsFontBrowser(target) {
+        if (islandContainer.islandState !== "settings_app") {
+            islandContainer.showSettingsApp();
+        }
+        if (settingsAppLoader.item) {
+            settingsAppLoader.item.selectedCategoryIndex = 2;
+            settingsAppLoader.item.openFontBrowser(target || "global");
+        }
+    }
+
     function toggleFileShelfWindow() {
         if (islandContainer.islandState === "file_shelf")
             islandContainer.smartRestoreState();

@@ -20,6 +20,10 @@ FocusScope {
 
     Keys.onEscapePressed: function(event) {
         event.accepted = true;
+        if (root.fontBrowserVisible) {
+            root.fontBrowserVisible = false;
+            return;
+        }
         root.closeRequested();
     }
 
@@ -38,6 +42,15 @@ FocusScope {
     readonly property string textFontFamily: cfgTextFontFamily !== "" ? cfgTextFontFamily : (UserConfig.textFontFamily !== "" ? UserConfig.textFontFamily : systemTextFont)
     readonly property string heroFontFamily: cfgHeroFontFamily !== "" ? cfgHeroFontFamily : (UserConfig.heroFontFamily !== "" ? UserConfig.heroFontFamily : systemHeroFont)
     readonly property string timeFontFamily: cfgTimeFontFamily !== "" ? cfgTimeFontFamily : (UserConfig.timeFontFamily !== "" ? UserConfig.timeFontFamily : systemTimeFont)
+
+    // System font database & browser state
+    property var systemFontsList: []
+    property bool systemFontsLoaded: false
+    property bool fontBrowserVisible: false
+    property string fontBrowserTarget: "global" // "global", "text", "hero", "time", "icon"
+    property string fontBrowserSearchQuery: ""
+    property string fontBrowserCategoryFilter: "all" // "all", "popular", "nerd", "mono"
+    property var fontBrowserFilteredList: []
 
     // External theme inputs (from DynamicIslandWindow)
     property color accentColor: StyleTokens.accent
@@ -404,8 +417,109 @@ FocusScope {
         root.updateSetting("iconFontSize", 16);
     }
 
+    readonly property var popularFontPresets: [
+        "Google Sans Flex",
+        "Inter",
+        "JetBrains Mono",
+        "JetBrainsMono Nerd Font",
+        "Roboto",
+        "Ubuntu",
+        "Cantarell",
+        "Adwaita Sans",
+        "Iosevka Nerd Font",
+        "Symbols Nerd Font",
+        "Hack Nerd Font",
+        "Fira Code",
+        "Noto Sans"
+    ]
+
+    function loadSystemFonts() {
+        if (root.systemFontsLoaded && root.systemFontsList.length > 0) return;
+        try {
+            const raw = Qt.fontFamilies();
+            if (raw && raw.length > 0) {
+                let seen = {};
+                let list = [];
+                for (let i = 0; i < raw.length; i++) {
+                    let name = String(raw[i]).trim();
+                    if (name.length > 0 && !name.startsWith("@") && !seen[name]) {
+                        seen[name] = true;
+                        list.push(name);
+                    }
+                }
+                list.sort(function(a, b) {
+                    return a.toLowerCase().localeCompare(b.toLowerCase());
+                });
+                root.systemFontsList = list;
+                root.systemFontsLoaded = true;
+            }
+        } catch(e) {
+            console.log("[SettingsApp] Error loading system fonts:", e);
+        }
+    }
+
+    function getFilteredFonts(query, filterCategory) {
+        if (!root.systemFontsList || root.systemFontsList.length === 0) return [];
+        let q = (query || "").toLowerCase().trim();
+        let cat = filterCategory || "all";
+        let result = [];
+        let list = root.systemFontsList;
+
+        for (let i = 0; i < list.length; i++) {
+            let font = list[i];
+            let fontLower = font.toLowerCase();
+
+            if (cat === "nerd") {
+                if (fontLower.indexOf("nerd") === -1 && fontLower.indexOf("nf") === -1 && fontLower.indexOf("symbol") === -1) continue;
+            } else if (cat === "mono") {
+                if (fontLower.indexOf("mono") === -1 && fontLower.indexOf("code") === -1) continue;
+            } else if (cat === "popular") {
+                let matchPop = false;
+                for (let p = 0; p < root.popularFontPresets.length; p++) {
+                    if (fontLower.indexOf(root.popularFontPresets[p].toLowerCase()) >= 0) {
+                        matchPop = true;
+                        break;
+                    }
+                }
+                if (!matchPop) continue;
+            }
+
+            if (q !== "") {
+                if (fontLower.indexOf(q) === -1) continue;
+            }
+
+            result.push(font);
+            if (result.length >= 600) break;
+        }
+        return result;
+    }
+
+    function updateFontBrowserList() {
+        root.fontBrowserFilteredList = root.getFilteredFonts(root.fontBrowserSearchQuery, root.fontBrowserCategoryFilter);
+    }
+
+    function openFontBrowser(target) {
+        root.loadSystemFonts();
+        root.fontBrowserTarget = target || "global";
+        root.fontBrowserSearchQuery = "";
+        if (target === "icon") {
+            root.fontBrowserCategoryFilter = "nerd";
+        } else {
+            root.fontBrowserCategoryFilter = "all";
+        }
+        root.updateFontBrowserList();
+        root.fontBrowserVisible = true;
+    }
+
+    onCurrentCategoryKeyChanged: {
+        if (root.currentCategoryKey === "fonts") {
+            root.loadSystemFonts();
+        }
+    }
+
     Component.onCompleted: {
         root.loadConfigFromDisk();
+        root.loadSystemFonts();
     }
 
     // Outer Window Shell: 840x560 with smooth radius
@@ -1889,14 +2003,14 @@ FocusScope {
                                         }
                                     }
 
-                                    // Input + Global Apply Button
+                                    // Input + Browse All + Global Apply Button
                                     Row {
                                         width: parent.width
                                         height: 38
-                                        spacing: 10
+                                        spacing: 8
 
                                         Rectangle {
-                                            width: parent.width - 150
+                                            width: parent.width - 292
                                             height: 38
                                             radius: 12
                                             color: root.bgInput
@@ -1938,7 +2052,7 @@ FocusScope {
 
                                                     Text {
                                                         anchors.fill: parent
-                                                        text: "Inserisci o scegli font per tutto..."
+                                                        text: "Inserisci o sfoglia font per tutto..."
                                                         font.family: root.textFontFamily
                                                         font.pixelSize: 13
                                                         color: root.textMuted
@@ -1948,9 +2062,51 @@ FocusScope {
                                             }
                                         }
 
+                                        // Browse All System Fonts Button
+                                        Rectangle {
+                                            width: 146
+                                            height: 38
+                                            radius: 12
+                                            color: browseAllGlobalMouse.pressed ? root.accentPressed : (browseAllGlobalMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.06))
+                                            border.width: 1
+                                            border.color: root.accentBorder
+
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                                            Row {
+                                                anchors.centerIn: parent
+                                                spacing: 6
+
+                                                Text {
+                                                    text: "\uf07c"
+                                                    font.family: root.iconFontFamily
+                                                    font.pixelSize: 12
+                                                    color: root.effectiveAccent
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+
+                                                Text {
+                                                    text: "Sfoglia Tutti (" + (root.systemFontsList.length > 0 ? root.systemFontsList.length : "4.800+") + ")"
+                                                    font.family: root.textFontFamily
+                                                    font.pixelSize: 11
+                                                    font.weight: Font.DemiBold
+                                                    color: root.textPrimary
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+                                            }
+
+                                            MouseArea {
+                                                id: browseAllGlobalMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.openFontBrowser("global")
+                                            }
+                                        }
+
                                         // Big Gradient Apply Button
                                         Rectangle {
-                                            width: 140
+                                            width: 130
                                             height: 38
                                             radius: 12
                                             color: globalApplyMouse.pressed ? root.accentPressed : (globalApplyMouse.containsMouse ? Qt.lighter(root.effectiveAccent, 1.12) : root.effectiveAccent)
@@ -1970,7 +2126,7 @@ FocusScope {
                                                 }
 
                                                 Text {
-                                                    text: "Applica a Tutto"
+                                                    text: "Applica"
                                                     font.family: root.textFontFamily
                                                     font.pixelSize: 12
                                                     font.weight: Font.Bold
@@ -2152,6 +2308,7 @@ FocusScope {
                                         onFontApplied: function(name) {
                                             root.setFontSetting("text", name);
                                         }
+                                        onBrowseRequested: root.openFontBrowser("text")
                                     }
 
                                     Rectangle { width: parent.width; height: 1; color: root.dividerColor }
@@ -2166,6 +2323,7 @@ FocusScope {
                                         onFontApplied: function(name) {
                                             root.setFontSetting("hero", name);
                                         }
+                                        onBrowseRequested: root.openFontBrowser("hero")
                                     }
 
                                     Rectangle { width: parent.width; height: 1; color: root.dividerColor }
@@ -2180,6 +2338,7 @@ FocusScope {
                                         onFontApplied: function(name) {
                                             root.setFontSetting("time", name);
                                         }
+                                        onBrowseRequested: root.openFontBrowser("time")
                                     }
 
                                     Rectangle { width: parent.width; height: 1; color: root.dividerColor }
@@ -2194,6 +2353,7 @@ FocusScope {
                                         onFontApplied: function(name) {
                                             root.setFontSetting("icon", name);
                                         }
+                                        onBrowseRequested: root.openFontBrowser("icon")
                                     }
                                 }
                             }
@@ -2912,6 +3072,496 @@ FocusScope {
                 }
             }
         }
+
+        // ==========================================
+        // SYSTEM FONT BROWSER MODAL SHEET
+        // ==========================================
+        Rectangle {
+            id: fontBrowserModal
+            anchors.fill: parent
+            radius: windowFrame.radius
+            color: Qt.rgba(8/255, 10/255, 15/255, 0.78)
+            z: 100
+            visible: opacity > 0
+            opacity: root.fontBrowserVisible ? 1.0 : 0.0
+
+            Behavior on opacity {
+                NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
+            }
+
+            // Click backdrop to dismiss
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.fontBrowserVisible = false
+            }
+
+            // Dialog Card
+            Rectangle {
+                id: fontBrowserCard
+                width: Math.min(840, parent.width - 48)
+                height: Math.min(600, parent.height - 48)
+                anchors.centerIn: parent
+                radius: 22
+                color: root.bgGlass
+                border.width: 1
+                border.color: root.borderCard
+                clip: true
+
+                // Prevent click pass-through
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {}
+                }
+
+                // Accent glow top accent line
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 2
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: StyleTokens.transparent }
+                        GradientStop { position: 0.5; color: root.effectiveAccent }
+                        GradientStop { position: 1.0; color: StyleTokens.transparent }
+                    }
+                }
+
+                Column {
+                    anchors.fill: parent
+                    anchors.margins: 20
+                    spacing: 12
+
+                    // Header Bar
+                    Row {
+                        width: parent.width
+                        height: 38
+
+                        Row {
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 10
+
+                            Rectangle {
+                                width: 34
+                                height: 34
+                                radius: 11
+                                color: root.accentSoft
+                                border.width: 1
+                                border.color: root.accentBorder
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "\uf031"
+                                    font.family: root.iconFontFamily
+                                    font.pixelSize: 15
+                                    color: root.effectiveAccent
+                                }
+                            }
+
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 2
+
+                                Row {
+                                    spacing: 8
+
+                                    Text {
+                                        text: {
+                                            if (root.fontBrowserTarget === "global") return "Sfoglia Font per Tutto il Sistema";
+                                            if (root.fontBrowserTarget === "text") return "Sfoglia Font per Testo & Interfaccia";
+                                            if (root.fontBrowserTarget === "hero") return "Sfoglia Font per Titoli & Header";
+                                            if (root.fontBrowserTarget === "time") return "Sfoglia Font per Orologio Digitale";
+                                            if (root.fontBrowserTarget === "icon") return "Sfoglia Font per Icone & Glifi";
+                                            return "Sfoglia Font di Sistema";
+                                        }
+                                        font.family: root.textFontFamily
+                                        font.pixelSize: 15
+                                        font.weight: Font.Bold
+                                        color: root.textPrimary
+                                    }
+
+                                    Rectangle {
+                                        height: 18
+                                        width: fontCountLabel.implicitWidth + 12
+                                        radius: 9
+                                        color: root.accentSoft
+                                        border.width: 1
+                                        border.color: root.accentBorder
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        Text {
+                                            id: fontCountLabel
+                                            anchors.centerIn: parent
+                                            text: root.fontBrowserFilteredList.length + " font"
+                                            font.family: root.textFontFamily
+                                            font.pixelSize: 10
+                                            font.weight: Font.Bold
+                                            color: root.effectiveAccent
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "Tutti i font disponibili sul portatile (" + root.systemFontsList.length + " famiglie totali rilevate)"
+                                    font.family: root.textFontFamily
+                                    font.pixelSize: 11
+                                    color: root.textSecondary
+                                }
+                            }
+                        }
+
+                        // Close Button (X)
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 32
+                            height: 32
+                            radius: 16
+                            color: closeBrowserMouse.pressed ? Qt.rgba(255, 255, 255, 0.15) : (closeBrowserMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(255, 255, 255, 0.04))
+                            border.width: 1
+                            border.color: root.borderCard
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf00d"
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 13
+                                color: closeBrowserMouse.containsMouse ? "#ffffff" : root.textSecondary
+                            }
+
+                            MouseArea {
+                                id: closeBrowserMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.fontBrowserVisible = false
+                            }
+                        }
+                    }
+
+                    // Search Bar + Filter Tabs Row
+                    Row {
+                        width: parent.width
+                        height: 38
+                        spacing: 10
+
+                        // Search input
+                        Rectangle {
+                            width: parent.width - 340
+                            height: 38
+                            radius: 12
+                            color: root.bgInput
+                            border.width: 1
+                            border.color: modalSearchInput.activeFocus ? root.effectiveAccent : root.borderCard
+
+                            Behavior on border.color { ColorAnimation { duration: 140 } }
+
+                            Row {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: 8
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "\uf002"
+                                    font.family: root.iconFontFamily
+                                    font.pixelSize: 12
+                                    color: root.textMuted
+                                }
+
+                                TextInput {
+                                    id: modalSearchInput
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - 48
+                                    font.family: root.textFontFamily
+                                    font.pixelSize: 12
+                                    color: root.textPrimary
+                                    clip: true
+                                    selectByMouse: true
+                                    text: root.fontBrowserSearchQuery
+
+                                    onTextChanged: {
+                                        root.fontBrowserSearchQuery = text;
+                                        root.updateFontBrowserList();
+                                    }
+
+                                    Text {
+                                        anchors.fill: parent
+                                        text: "Cerca font per nome (es. Inter, JetBrains, Roboto, Nerd)..."
+                                        font.family: root.textFontFamily
+                                        font.pixelSize: 12
+                                        color: root.textMuted
+                                        visible: modalSearchInput.text === "" && !modalSearchInput.activeFocus
+                                    }
+                                }
+
+                                Text {
+                                    text: "\uf00d"
+                                    font.family: root.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: root.textMuted
+                                    visible: modalSearchInput.text !== ""
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: modalSearchInput.text = ""
+                                    }
+                                }
+                            }
+                        }
+
+                        // Category Filter Tabs
+                        Row {
+                            height: 38
+                            spacing: 6
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Repeater {
+                                model: [
+                                    { id: "all", label: "Tutti" },
+                                    { id: "popular", label: "Popolari" },
+                                    { id: "nerd", label: "Nerd / Icone" },
+                                    { id: "mono", label: "Monospace" }
+                                ]
+
+                                delegate: Rectangle {
+                                    id: filterTab
+                                    required property var modelData
+                                    readonly property bool isSelected: root.fontBrowserCategoryFilter === filterTab.modelData.id
+                                    readonly property bool isHovered: filterTabMouse.containsMouse
+
+                                    height: 32
+                                    width: tabLabel.implicitWidth + 20
+                                    radius: 16
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: isSelected ? root.effectiveAccent : (isHovered ? Qt.rgba(255, 255, 255, 0.1) : Qt.rgba(255, 255, 255, 0.04))
+                                    border.width: 1
+                                    border.color: isSelected ? root.effectiveAccent : root.borderCard
+
+                                    Text {
+                                        id: tabLabel
+                                        anchors.centerIn: parent
+                                        text: filterTab.modelData.label
+                                        font.family: root.textFontFamily
+                                        font.pixelSize: 11
+                                        font.weight: filterTab.isSelected ? Font.Bold : Font.Normal
+                                        color: filterTab.isSelected ? "#ffffff" : (filterTab.isHovered ? root.textPrimary : root.textSecondary)
+                                    }
+
+                                    MouseArea {
+                                        id: filterTabMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            root.fontBrowserCategoryFilter = filterTab.modelData.id;
+                                            root.updateFontBrowserList();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
+
+                    // Virtualized Font List
+                    Item {
+                        width: parent.width
+                        height: parent.height - 120
+                        clip: true
+
+                        ListView {
+                            id: fontListView
+                            anchors.fill: parent
+                            model: root.fontBrowserFilteredList
+                            spacing: 4
+                            boundsBehavior: Flickable.StopAtBounds
+
+                            delegate: Rectangle {
+                                id: fontDelegate
+                                required property string modelData
+                                readonly property bool isSelected: {
+                                    if (root.fontBrowserTarget === "global") return root.cfgTextFontFamily.toLowerCase() === modelData.toLowerCase();
+                                    if (root.fontBrowserTarget === "text") return root.cfgTextFontFamily.toLowerCase() === modelData.toLowerCase();
+                                    if (root.fontBrowserTarget === "hero") return root.cfgHeroFontFamily.toLowerCase() === modelData.toLowerCase();
+                                    if (root.fontBrowserTarget === "time") return root.cfgTimeFontFamily.toLowerCase() === modelData.toLowerCase();
+                                    if (root.fontBrowserTarget === "icon") return root.cfgIconFontFamily.toLowerCase() === modelData.toLowerCase();
+                                    return false;
+                                }
+                                readonly property bool isHovered: fontRowMouse.containsMouse
+                                readonly property bool isNerdFont: modelData.toLowerCase().indexOf("nerd") >= 0 || modelData.toLowerCase().indexOf("nf") >= 0 || modelData.toLowerCase().indexOf("symbols") >= 0
+
+                                width: fontListView.width - 12
+                                height: 52
+                                radius: 12
+                                color: isSelected ? root.accentSoft : (isHovered ? Qt.rgba(255, 255, 255, 0.06) : Qt.rgba(255, 255, 255, 0.025))
+                                border.width: 1
+                                border.color: isSelected ? root.accentBorder : (isHovered ? Qt.rgba(255, 255, 255, 0.1) : root.borderCard)
+
+                                Behavior on color { ColorAnimation { duration: 100 } }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 14
+                                    anchors.rightMargin: 14
+                                    spacing: 14
+
+                                    // Left: Font Family Name + Tag
+                                    Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 230
+                                        spacing: 2
+
+                                        Row {
+                                            spacing: 6
+                                            width: parent.width
+
+                                            Text {
+                                                text: fontDelegate.modelData
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 12
+                                                font.weight: fontDelegate.isSelected ? Font.Bold : Font.DemiBold
+                                                color: fontDelegate.isSelected ? root.effectiveAccent : root.textPrimary
+                                                elide: Text.ElideRight
+                                                width: Math.min(implicitWidth, parent.width - (fontDelegate.isNerdFont ? 44 : 0))
+                                            }
+
+                                            Rectangle {
+                                                visible: fontDelegate.isNerdFont
+                                                height: 16
+                                                width: 38
+                                                radius: 8
+                                                color: Qt.rgba(255, 255, 255, 0.08)
+                                                anchors.verticalCenter: parent.verticalCenter
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "NERD"
+                                                    font.family: root.textFontFamily
+                                                    font.pixelSize: 8
+                                                    font.weight: Font.Bold
+                                                    color: root.textSecondary
+                                                }
+                                            }
+                                        }
+
+                                        Text {
+                                            text: fontDelegate.isSelected ? "Attualmente in uso" : "Clicca per applicare"
+                                            font.family: root.textFontFamily
+                                            font.pixelSize: 10
+                                            color: fontDelegate.isSelected ? root.effectiveAccent : root.textMuted
+                                        }
+                                    }
+
+                                    // Center: Live Typography Sample rendered in THAT font!
+                                    Rectangle {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: parent.width - 340
+                                        height: 36
+                                        radius: 8
+                                        color: Qt.rgba(0, 0, 0, 0.22)
+                                        clip: true
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: {
+                                                if (root.fontBrowserTarget === "icon") {
+                                                    return "          󰍹    Dynamic Glyphs";
+                                                }
+                                                if (root.fontBrowserTarget === "time") {
+                                                    return "14:35:22 - 09:41 AM (24h/12h)";
+                                                }
+                                                return "Aa Bb Gg 123 - Dynamic Island Hyprland";
+                                            }
+                                            font.family: fontDelegate.modelData
+                                            font.pixelSize: 13
+                                            color: fontDelegate.isSelected ? "#ffffff" : "#c4cce0"
+                                            elide: Text.ElideRight
+                                            width: parent.width - 16
+                                            horizontalAlignment: Text.AlignHCenter
+                                        }
+                                    }
+
+                                    // Right: Selection button
+                                    Rectangle {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        height: 28
+                                        width: 82
+                                        radius: 14
+                                        color: fontDelegate.isSelected ? root.effectiveAccent : (fontDelegate.isHovered ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05))
+                                        border.width: 1
+                                        border.color: fontDelegate.isSelected ? root.effectiveAccent : (fontDelegate.isHovered ? root.accentBorder : root.borderCard)
+
+                                        Row {
+                                            anchors.centerIn: parent
+                                            spacing: 4
+
+                                            Text {
+                                                text: fontDelegate.isSelected ? "\uf00c" : "\uf054"
+                                                font.family: root.iconFontFamily
+                                                font.pixelSize: 10
+                                                color: fontDelegate.isSelected ? "#ffffff" : (fontDelegate.isHovered ? root.effectiveAccent : root.textSecondary)
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+
+                                            Text {
+                                                text: fontDelegate.isSelected ? "Attivo" : "Applica"
+                                                font.family: root.textFontFamily
+                                                font.pixelSize: 10
+                                                font.weight: Font.Bold
+                                                color: fontDelegate.isSelected ? "#ffffff" : (fontDelegate.isHovered ? root.effectiveAccent : root.textSecondary)
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                        }
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: fontRowMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        const fontName = fontDelegate.modelData;
+                                        if (root.fontBrowserTarget === "global") {
+                                            root.applyGlobalFont(fontName, includeIconsInGlobalSwitch.checked);
+                                        } else if (root.fontBrowserTarget === "text") {
+                                            root.setFontSetting("text", fontName);
+                                        } else if (root.fontBrowserTarget === "hero") {
+                                            root.setFontSetting("hero", fontName);
+                                        } else if (root.fontBrowserTarget === "time") {
+                                            root.setFontSetting("time", fontName);
+                                        } else if (root.fontBrowserTarget === "icon") {
+                                            root.setFontSetting("icon", fontName);
+                                        }
+                                        root.fontBrowserVisible = false;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Floating scrollbar for font list
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 2
+                            y: fontListView.visibleArea.yPosition * fontListView.height
+                            width: 4
+                            height: Math.max(30, fontListView.visibleArea.heightRatio * fontListView.height)
+                            radius: 2
+                            color: Qt.rgba(255, 255, 255, 0.4)
+                            visible: fontListView.visibleArea.heightRatio < 1.0
+                            opacity: (fontListView.moving || fontListView.flicking) ? 1.0 : 0.4
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // ==========================================
@@ -3204,6 +3854,7 @@ FocusScope {
         property var presets: []
         property string iconGlyph: "\uf031"
         signal fontApplied(string fontName)
+        signal browseRequested()
 
         width: parent ? parent.width : 500
         spacing: 8
@@ -3256,37 +3907,61 @@ FocusScope {
                 }
             }
 
-            // Current font badge
+            // Current font badge (clickable to browse)
             Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: 26
-                width: currentFontLabel.implicitWidth + 20
+                width: currentFontBadgeRow.implicitWidth + 20
                 radius: 13
-                color: root.accentSoft
+                color: currentBadgeMouse.containsMouse ? Qt.lighter(root.accentSoft, 1.25) : root.accentSoft
                 border.width: 1
                 border.color: root.accentBorder
 
-                Text {
-                    id: currentFontLabel
+                Behavior on color { ColorAnimation { duration: 120 } }
+
+                Row {
+                    id: currentFontBadgeRow
                     anchors.centerIn: parent
-                    text: fontPickerCol.currentFont
-                    font.family: fontPickerCol.currentFont
-                    font.pixelSize: 11
-                    font.weight: Font.Medium
-                    color: root.effectiveAccent
+                    spacing: 5
+
+                    Text {
+                        id: currentFontLabel
+                        text: fontPickerCol.currentFont
+                        font.family: fontPickerCol.currentFont
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: root.effectiveAccent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "\uf0d7"
+                        font.family: root.iconFontFamily
+                        font.pixelSize: 9
+                        color: root.effectiveAccent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                MouseArea {
+                    id: currentBadgeMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: fontPickerCol.browseRequested()
                 }
             }
         }
 
-        // Custom Font Input Bar
+        // Custom Font Input Bar + Browse + Apply Buttons
         Row {
             width: parent.width
             height: 34
             spacing: 8
 
             Rectangle {
-                width: parent.width - 92
+                width: parent.width - 176
                 height: 34
                 radius: 10
                 color: root.bgInput
@@ -3328,7 +4003,7 @@ FocusScope {
 
                         Text {
                             anchors.fill: parent
-                            text: "Digita nome font..."
+                            text: "Digita nome o clicca Sfoglia..."
                             font.family: root.textFontFamily
                             font.pixelSize: 12
                             color: root.textMuted
@@ -3338,9 +4013,51 @@ FocusScope {
                 }
             }
 
+            // Sfoglia Button
+            Rectangle {
+                width: 80
+                height: 34
+                radius: 10
+                color: browseRowBtnMouse.pressed ? root.accentPressed : (browseRowBtnMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.06))
+                border.width: 1
+                border.color: root.accentBorder
+
+                Behavior on color { ColorAnimation { duration: 120 } }
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Text {
+                        text: "\uf07c"
+                        font.family: root.iconFontFamily
+                        font.pixelSize: 11
+                        color: root.effectiveAccent
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "Sfoglia"
+                        font.family: root.textFontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: root.textPrimary
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                MouseArea {
+                    id: browseRowBtnMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: fontPickerCol.browseRequested()
+                }
+            }
+
             // Apply Button
             Rectangle {
-                width: 84
+                width: 80
                 height: 34
                 radius: 10
                 color: applyMouse.pressed ? root.accentPressed : (applyMouse.containsMouse ? Qt.lighter(root.effectiveAccent, 1.1) : root.effectiveAccent)

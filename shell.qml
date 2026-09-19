@@ -474,6 +474,13 @@ Scope {
             });
         }
 
+        function openFontBrowser(target: string) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.openSettingsFontBrowser)
+                    window.openSettingsFontBrowser(target);
+            });
+        }
+
         function showClock() {
             shellRoot.forFocusedWindow((window) => window.showClockWindow());
         }
@@ -629,6 +636,13 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.setSettingsSubView)
                     window.setSettingsSubView(sub);
+            });
+        }
+
+        function openFontBrowser(target: string) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.openSettingsFontBrowser)
+                    window.openSettingsFontBrowser(target);
             });
         }
     }
