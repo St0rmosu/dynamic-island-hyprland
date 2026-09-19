@@ -67,6 +67,18 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
   - `caveman` (`~/.agents/skills/caveman/SKILL.md`): Ultra-concise, filler-free communication mode that saves 60-70% conversation output tokens while preserving 100% technical fidelity, code correctness, and clickable links.
   - `ponytail` (`~/.agents/skills/ponytail/SKILL.md`): Pragmatic senior developer mindset emphasizing the "Laziness Ladder" (YAGNI, standard platform primitives, minimal diffs, anti-overengineering).
 
+### G. Wlogout / Power Menu Animation Fix ("Coso del wlogout della isola")
+- **Issue**: Toggling the island's power/wlogout menu (`shell-dispatcher.sh power` / `togglePowerMenu`) produced a glitchy, bouncing animation where the capsule momentarily expanded to full Control Center height (~420px), flashed Control Center tiles/sliders, jerked down to 150px, and abruptly disappeared on close.
+- **Root Causes**:
+  1. The power view was embedded as a subview (`powerViewActive`) within the heavy `ControlCenterLayer.qml`.
+  2. In `DynamicIslandWindow.qml`, `targetHeight` fell back to `420` before the loader initialized, triggering a bounce from 420px to 150px.
+  3. Closing the menu flipped `powerViewActive = false` before closing the capsule, flashing Control Center cards on screen.
+  4. The 4 buttons were in a 150px tall container with no opacity fade, causing abrupt pop-in.
+- **Fix Applied**:
+  1. Created a dedicated lightweight [`PowerMenuLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/PowerMenuLayer.qml) with smooth fade/scale transitions, circular glass action buttons (Lock, Sleep, Restart, Shutdown), hover colors, Escape key dismissal, and auto-collapse timer.
+  2. Promoted power menu to a first-class island state (`islandState === "power_menu"`) in [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml) with native 340x92 pill geometry and smooth `Easing.OutQuint` morph animations.
+  3. Cleaned up dead subview hacks from [`ControlCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlCenterLayer.qml) and added `closeRequested` signal for Escape key dismissal.
+
 ---
 
 ## 3. Architecture & File Reference
