@@ -49,8 +49,6 @@ Rectangle {
     radius: 20
     color: StyleTokens.clearBlack
     clip: true
-    border.width: 1
-    border.color: "#18ffffff"
 
     Behavior on height {
         NumberAnimation {

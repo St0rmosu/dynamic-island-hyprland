@@ -28,7 +28,7 @@ Rectangle {
         return Math.max(0, Math.min(1, nextValue));
     }
 
-    radius: isVertical ? (root.width / 2) : Math.min(24, Math.max(12, root.height / 2))
+    radius: Math.min(20, Math.max(14, root.height / 2))
     color: StyleTokens.clearBlack
     clip: true
 
@@ -52,7 +52,7 @@ Rectangle {
             radius: root.radius
             color: "#1d1f24"
             border.width: 1
-            border.color: "#30333a"
+            border.color: verticalMouse.containsMouse ? "#3d4149" : "#2b2e35"
             clip: true
 
             // Riempimento dal basso verso l'alto

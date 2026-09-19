@@ -3056,7 +3056,7 @@ Item {
                     y: Math.round(row * (gridCaselleArea.unitRowHeight + gridCaselleArea.gridSpacing))
                     width: Math.round(gridCaselleArea.colWidth(col, 1))
                     height: Math.round(gridCaselleArea.unitRowHeight)
-                    radius: Math.min(width, height) / 2 // Circular casella like iPadOS 18
+                    radius: 20
 
                     color: Qt.rgba(255, 255, 255, 0.055)
                     border.width: 1

@@ -1107,7 +1107,7 @@ Item {
                             y: row * (80 + 10)
                             width: 80
                             height: 80
-                            radius: 40 // Circular casella like iPadOS 18
+                            radius: 20
 
                             readonly property bool isDropTarget: studioRoot.isDraggingModule &&
                                                                 col >= studioRoot.dragTargetCol &&
@@ -1186,7 +1186,7 @@ Item {
                             Rectangle {
                                 id: cardBody
                                 anchors.fill: parent
-                                radius: moduleItemDelegate.isOneByOne ? 40 : 16
+                                radius: 20
                                 color: moduleMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.065)
                                 border.width: 1
                                 border.color: Qt.rgba(255, 255, 255, 0.09)
