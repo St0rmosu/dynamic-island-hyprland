@@ -399,11 +399,13 @@ PanelWindow {
         || islandContainer.settingsAppLayerVisible
         || islandContainer.fileShelfLayerVisible
         || islandContainer.polkitLayerVisible
+        || islandContainer.powerMenuLayerVisible
         ? WlrLayer.Overlay
         : WlrLayer.Top
     WlrLayershell.keyboardFocus: {
         if (islandContainer.polkitLayerVisible
                 || islandContainer.controlCenterLayerVisible
+                || islandContainer.powerMenuLayerVisible
                 || islandContainer.wallpaperPickerLayerVisible
                 || islandContainer.applicationLauncherLayerVisible
                 || islandContainer.clipboardLayerVisible
@@ -1007,19 +1009,10 @@ PanelWindow {
     }
 
     function togglePowerMenuWindow() {
-        if (islandContainer.islandState === "control_center"
-                && controlCenterLoader.item
-                && controlCenterLoader.item.powerViewActive) {
+        if (islandContainer.islandState === "power_menu")
             islandContainer.smartRestoreState();
-            return;
-        }
-
-        islandContainer.pendingPowerView = true;
-        islandContainer.showControlCenter();
-        if (controlCenterLoader.item) {
-            controlCenterLoader.item.powerViewActive = true;
-            islandContainer.pendingPowerView = false;
-        }
+        else
+            islandContainer.showPowerMenu();
     }
 
     function toggleNotificationCenterWindow() {
@@ -1447,6 +1440,7 @@ PanelWindow {
         readonly property bool blocksTransientSplit: islandState === "expanded"
             || islandState === "bluetooth_expanded"
             || islandState === "control_center"
+            || islandState === "power_menu"
             || islandState === "notification"
             || islandState === "reload"
             || islandState === "wallpaper_picker"
@@ -1495,6 +1489,7 @@ PanelWindow {
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
         readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
         readonly property bool controlCenterLayerVisible: !root.overviewVisible && islandState === "control_center"
+        readonly property bool powerMenuLayerVisible: !root.overviewVisible && islandState === "power_menu"
         readonly property bool notificationCenterLayerVisible: !root.overviewVisible && islandState === "notification_center"
         readonly property bool wallpaperPickerLayerVisible: !root.overviewVisible && islandState === "wallpaper_picker"
         readonly property bool applicationLauncherLayerVisible: !root.overviewVisible && islandState === "application_launcher"
@@ -1668,6 +1663,12 @@ PanelWindow {
                     event.accepted = true;
                     return;
                 }
+
+                if (islandContainer.powerMenuLayerVisible) {
+                    islandContainer.smartRestoreState();
+                    event.accepted = true;
+                    return;
+                }
             }
 
             if (!root.overviewVisible) return;
@@ -1755,6 +1756,19 @@ PanelWindow {
                 return;
             case "closeControlCenter":
                 if (islandState === "control_center")
+                    smartRestoreState();
+                return;
+            case "togglePowerMenu":
+                if (islandState === "power_menu")
+                    smartRestoreState();
+                else
+                    showPowerMenu();
+                return;
+            case "openPowerMenu":
+                showPowerMenu();
+                return;
+            case "closePowerMenu":
+                if (islandState === "power_menu")
                     smartRestoreState();
                 return;
             case "toggleOverview":
@@ -2331,10 +2345,10 @@ PanelWindow {
             controlCenterAutoCollapseTimer.stop();
             controlCenterHadPointer = false;
             pendingPowerView = false;
-            if (controlCenterLoader.item)
-                controlCenterLoader.item.powerViewActive = false;
             root.closeAllConnectivityDetails();
             restoreRestingCapsule();
+            if (controlCenterLoader.item)
+                controlCenterLoader.item.powerViewActive = false;
         }
 
         function showRestingCapsule(nextState) {
@@ -2368,6 +2382,15 @@ PanelWindow {
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             expandedByPlayerAutoOpen = false;
             restartAutoHideTimer(bluetoothExpandedAutoHideInterval);
+        }
+
+        function showPowerMenu() {
+            cancelSideSwipeSettle();
+            abortSideTransientMode();
+            clearTransientCapsule();
+            islandState = "power_menu";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            stopAutoHideTimer();
         }
 
         function showControlCenter() {
@@ -2810,6 +2833,8 @@ PanelWindow {
                     return islandContainer.customCapsuleWidth;
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
+                case "power_menu":
+                    return 340;
                 case "control_center":
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 420;
                 case "notification_center":
@@ -2851,9 +2876,9 @@ PanelWindow {
                 if (root.overviewVisible) return root.overviewCapsuleHeight;
 
                 switch (islandContainer.islandState) {
+                case "power_menu":
+                    return 92;
                 case "control_center":
-                    if (controlCenterLoader.item && controlCenterLoader.item.powerViewActive)
-                        return 150;
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
                         return 470;
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 420;
@@ -2894,6 +2919,8 @@ PanelWindow {
                 if (root.overviewVisible) return root.overviewCapsuleRadius;
 
                 switch (islandContainer.islandState) {
+                case "power_menu":
+                    return 36;
                 case "control_center":
                     return 34;
                 case "notification_center":
@@ -3609,13 +3636,6 @@ PanelWindow {
                 asynchronous: false
                 visible: active
 
-                onLoaded: {
-                    if (islandContainer.pendingPowerView && item) {
-                        item.powerViewActive = true;
-                        islandContainer.pendingPowerView = false;
-                    }
-                }
-
                 sourceComponent: Component {
                     ControlCenterLayer {
                         userConfigData: localUserConfigFile.parsedData
@@ -3656,6 +3676,28 @@ PanelWindow {
                         onClipboardRequested: {
                             islandContainer.showClipboard();
                         }
+                        onCloseRequested: islandContainer.smartRestoreState()
+                    }
+                }
+            }
+
+            Loader {
+                id: powerMenuLoader
+                anchors.fill: parent
+                active: islandContainer.powerMenuLayerVisible
+                asynchronous: false
+                visible: islandContainer.powerMenuLayerVisible
+                onLoaded: {
+                    if (item) item.forceActiveFocus();
+                }
+
+                sourceComponent: Component {
+                    PowerMenuLayer {
+                        iconFontFamily: root.iconFontFamily
+                        textFontFamily: root.textFontFamily
+                        accentColor: pywalColors.accent
+                        showCondition: islandContainer.powerMenuLayerVisible
+                        onCloseRequested: islandContainer.smartRestoreState()
                     }
                 }
             }

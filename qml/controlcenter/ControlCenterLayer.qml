@@ -15,6 +15,7 @@ Item {
     signal requestNotification(string appName, string summary, string body)
     signal settingsRequested()
     signal clipboardRequested()
+    signal closeRequested()
 
     readonly property var userConfig: UserConfig
     property var notificationModel: null
@@ -2964,7 +2965,7 @@ Item {
         id: mainContent
         anchors.fill: parent
         visible: opacity > 0.001
-        opacity: (!controlCenter.powerViewActive && !controlCenter.anyConnectivitySubViewActive) ? 1 : 0
+        opacity: !controlCenter.anyConnectivitySubViewActive ? 1 : 0
 
         Behavior on opacity {
             NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
@@ -3142,49 +3143,7 @@ Item {
             }
         }
     }
-    Item {
-        anchors.fill: parent
-        visible: controlCenter.powerViewActive
 
-        Behavior on opacity {
-            NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
-        }
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 26
-
-            Repeater {
-                model: [
-                    { glyph: "\uf023", action: "triggerLock" },
-                    { glyph: "\uf186", action: "triggerSleep" },
-                    { glyph: "\uf021", action: "triggerRestart" },
-                    { glyph: "\uf011", action: "triggerShutdown" }
-                ]
-
-                delegate: Item {
-                    width: 56
-                    height: 56
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: modelData.glyph
-                        color: StyleTokens.textPrimary
-                        font.pixelSize: 38
-                        font.family: controlCenter.iconFontFamily
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            if (controlCenter[modelData.action])
-                                controlCenter[modelData.action]();
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     Item {
         id: connectivitySubView
@@ -3360,11 +3319,8 @@ Item {
                 event.accepted = true;
                 return;
             }
-            if (controlCenter.powerViewActive) {
-                controlCenter.powerViewActive = false;
-                event.accepted = true;
-                return;
-            }
+            controlCenter.closeRequested();
+            event.accepted = true;
         }
     }
 }
