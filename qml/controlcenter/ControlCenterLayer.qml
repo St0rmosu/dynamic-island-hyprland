@@ -273,7 +273,7 @@ Item {
         const cellH = 80;
         const gridH = maxRow * cellH + (maxRow - 1) * spacing;
         const headerH = 32;
-        const bottomPadding = 24;
+        const bottomPadding = 12;
         const padding = 12 + 10 + bottomPadding;
         return Math.max(160, headerH + gridH + padding + extraNotificationH);
     }
@@ -2993,7 +2993,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            anchors.bottomMargin: 24
+            anchors.bottomMargin: 12
 
             readonly property real gridSpacing: 10
             readonly property real unitColWidth: (width - (3 * gridSpacing)) / 4
