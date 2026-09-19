@@ -312,7 +312,6 @@ Item {
     property bool isCharging: false
     property real volumeLevel: -1
     property real brightnessLevel: -1
-    property int sliderIntroDelay: 400
     property int currentWorkspace: 1
     property string currentTrack: ""
     property string currentArtist: ""
@@ -327,7 +326,6 @@ Item {
     property real lastAppliedBrightness: -1
     property bool brightnessSetterRunning: false
     property bool volumeSetterRunning: false
-    property bool sliderIntroPending: false
     property bool wifiPanelOpen: false
     property bool bluetoothPanelOpen: false
     property bool powerPanelOpen: false
@@ -980,7 +978,7 @@ Item {
 
     function queueBrightness(value) {
         localBrightness = clamp01(value);
-        if (showCondition && !sliderIntroPending) displayedBrightness = localBrightness;
+        displayedBrightness = localBrightness;
         pendingBrightness = localBrightness;
         brightnessApplyTimer.restart();
     }
@@ -1000,7 +998,7 @@ Item {
 
     function queueVolume(value) {
         localVolume = clamp01(value);
-        if (showCondition && !sliderIntroPending) displayedVolume = localVolume;
+        displayedVolume = localVolume;
         pendingVolume = localVolume;
         volumeApplyTimer.restart();
     }
@@ -1008,7 +1006,7 @@ Item {
     function syncBrightnessFromLevel(level) {
         if (level < 0) return;
         localBrightness = clamp01(level);
-        if (showCondition && !sliderIntroPending) displayedBrightness = localBrightness;
+        displayedBrightness = localBrightness;
         pendingBrightness = localBrightness;
         lastAppliedBrightness = localBrightness;
     }
@@ -1016,7 +1014,7 @@ Item {
     function syncVolumeFromLevel(level) {
         if (level < 0) return;
         localVolume = clamp01(level);
-        if (showCondition && !sliderIntroPending) displayedVolume = localVolume;
+        displayedVolume = localVolume;
         pendingVolume = localVolume;
         lastAppliedVolume = localVolume;
     }
@@ -1283,7 +1281,6 @@ Item {
         if (showCondition) {
             localConfigFile.reload();
             syncLevelsFromProps();
-            sliderIntroPending = false;
             displayedBrightness = localBrightness;
             displayedVolume = localVolume;
             refreshBatteryModeState();
@@ -1291,7 +1288,6 @@ Item {
             if (wifiPanelOpen && wifiSupported && wifiEnabled)
                 requestWifiListRefresh(true);
         } else {
-            sliderIntroPending = false;
             displayedBrightness = localBrightness;
             displayedVolume = localVolume;
             closeConnectivityPanels();
@@ -1552,18 +1548,6 @@ Item {
         interval: 55
         repeat: false
         onTriggered: controlCenter.flushVolume(false)
-    }
-
-    Timer {
-        id: sliderIntroTimer
-        interval: controlCenter.sliderIntroDelay
-        repeat: false
-
-        onTriggered: {
-            controlCenter.sliderIntroPending = false;
-            controlCenter.displayedBrightness = controlCenter.localBrightness;
-            controlCenter.displayedVolume = controlCenter.localVolume;
-        }
     }
 
     Timer {
@@ -2342,14 +2326,7 @@ Item {
             textPrimary: controlCenter.textPrimary
             textSecondary: controlCenter.textSecondary
 
-            onInteractionStarted: {
-                if (controlCenter.sliderIntroPending) {
-                    sliderIntroTimer.stop();
-                    controlCenter.sliderIntroPending = false;
-                    controlCenter.displayedBrightness = controlCenter.localBrightness;
-                    controlCenter.displayedVolume = controlCenter.localVolume;
-                }
-            }
+            onInteractionStarted: {}
             onValueMoved: function(value) {
                 controlCenter.queueBrightness(value);
             }
@@ -2377,14 +2354,7 @@ Item {
             textPrimary: controlCenter.textPrimary
             textSecondary: controlCenter.textSecondary
 
-            onInteractionStarted: {
-                if (controlCenter.sliderIntroPending) {
-                    sliderIntroTimer.stop();
-                    controlCenter.sliderIntroPending = false;
-                    controlCenter.displayedBrightness = controlCenter.localBrightness;
-                    controlCenter.displayedVolume = controlCenter.localVolume;
-                }
-            }
+            onInteractionStarted: {}
             onValueMoved: function(value) {
                 controlCenter.queueVolume(value);
             }
@@ -3039,8 +3009,34 @@ Item {
             anchors.bottomMargin: 24
 
             readonly property real gridSpacing: 10
+            readonly property real sliderColWidth: 50
+            readonly property real leftAreaWidth: Math.max(140, width - (sliderColWidth * 2 + gridSpacing) - gridSpacing)
+            readonly property real leftColWidth: (leftAreaWidth - gridSpacing) / 2
             readonly property real unitColWidth: (width - (3 * gridSpacing)) / 4
             readonly property real unitRowHeight: 80
+
+            function colWidth(c, cSpan) {
+                if (cSpan === 4) return width;
+                if (c === 2 || c === 3) {
+                    if (cSpan === 1) return sliderColWidth;
+                    if (cSpan === 2) return sliderColWidth * 2 + gridSpacing;
+                }
+                if (cSpan === 2 && c === 0) {
+                    return leftAreaWidth;
+                }
+                if (cSpan === 1) {
+                    if (c === 0 || c === 1) return leftColWidth;
+                }
+                return Math.round(cSpan * unitColWidth + (cSpan - 1) * gridSpacing);
+            }
+
+            function colX(c) {
+                if (c === 0) return 0;
+                if (c === 1) return Math.round(leftColWidth + gridSpacing);
+                if (c === 2) return Math.round(leftAreaWidth + gridSpacing);
+                if (c === 3) return Math.round(leftAreaWidth + gridSpacing + sliderColWidth + gridSpacing);
+                return Math.round(c * (unitColWidth + gridSpacing));
+            }
 
             readonly property int totalGridRows: {
                 let maxR = 2;
@@ -3086,9 +3082,9 @@ Item {
                     readonly property int col: index % 4
                     readonly property int row: Math.floor(index / 4)
 
-                    x: Math.round(col * (gridCaselleArea.unitColWidth + gridCaselleArea.gridSpacing))
+                    x: gridCaselleArea.colX(col)
                     y: Math.round(row * (gridCaselleArea.unitRowHeight + gridCaselleArea.gridSpacing))
-                    width: Math.round(gridCaselleArea.unitColWidth)
+                    width: Math.round(gridCaselleArea.colWidth(col, 1))
                     height: Math.round(gridCaselleArea.unitRowHeight)
                     radius: Math.min(width, height) / 2 // Circular casella like iPadOS 18
 
@@ -3131,7 +3127,7 @@ Item {
                     readonly property bool isFullWidth: colSpan === 4
                     readonly property real slotWidth: isFullWidth
                         ? gridCaselleArea.width
-                        : Math.round(colSpan * gridCaselleArea.unitColWidth + (colSpan - 1) * gridCaselleArea.gridSpacing)
+                        : Math.round(gridCaselleArea.colWidth(col, colSpan))
                     readonly property real slotHeight: {
                         if (modelData.id === "quickactions" && rowSpan === 1 && modelData.height && modelData.height < 80)
                             return Math.round(modelData.height);
@@ -3145,17 +3141,10 @@ Item {
                     }
                     readonly property bool isOneByOne: colSpan === 1 && rowSpan === 1
 
-                    x: Math.round(col * (gridCaselleArea.unitColWidth + gridCaselleArea.gridSpacing))
+                    x: gridCaselleArea.colX(col)
                     y: Math.round(row * (gridCaselleArea.unitRowHeight + gridCaselleArea.gridSpacing))
                     width: slotWidth
                     height: slotHeight
-
-                    Behavior on x {
-                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                    }
-                    Behavior on y {
-                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                    }
 
                     Loader {
                         anchors.fill: parent

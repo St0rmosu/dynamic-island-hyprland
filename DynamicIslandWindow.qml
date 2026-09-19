@@ -3623,7 +3623,6 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
-                        sliderIntroDelay: mainCapsule.morphDuration
                         currentTime: timeObj.currentTime
                         currentDateLabel: timeObj.currentDateLabel
                         batteryCapacity: islandContainer.batteryCapacity

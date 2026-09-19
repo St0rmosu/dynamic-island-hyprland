@@ -28,7 +28,7 @@ Rectangle {
         return Math.max(0, Math.min(1, nextValue));
     }
 
-    radius: Math.min(24, Math.max(12, root.height / 2))
+    radius: isVertical ? (root.width / 2) : Math.min(24, Math.max(12, root.height / 2))
     color: StyleTokens.clearBlack
     clip: true
 
@@ -37,6 +37,7 @@ Rectangle {
         radius: root.radius
         hovered: root.isVertical ? verticalMouse.containsMouse : sliderArea.containsMouse
         pressed: root.pressed
+        visible: !root.isVertical
     }
 
     // --- VERTICAL SLIDER (iOS Style: pillola alta con scorrimento verticale su/giù) ---
@@ -48,8 +49,7 @@ Rectangle {
         Rectangle {
             id: verticalTrack
             anchors.fill: parent
-            anchors.margins: 6
-            radius: Math.max(12, root.radius - 4)
+            radius: root.radius
             color: "#1d1f24"
             border.width: 1
             border.color: "#30333a"
