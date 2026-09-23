@@ -401,7 +401,7 @@ Rectangle {
                 }
             }
 
-            // Quick Dismiss '✕' Button
+            // Quick Dismiss Trash Button
             Rectangle {
                 id: dismissBtn
                 anchors.right: parent.right
@@ -416,9 +416,9 @@ Rectangle {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "✕"
-                    font.pixelSize: 10
-                    font.weight: Font.Bold
+                    text: ""
+                    font.pixelSize: 11
+                    font.family: cardRoot.iconFontFamily
                     color: dismissMouse.containsMouse ? "#ff453a" : "#727582"
                 }
 

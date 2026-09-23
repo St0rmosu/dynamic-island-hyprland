@@ -1,6 +1,6 @@
 # Dynamic Island Hyprland — Project Handoff Document
 
-> **Last Updated**: 2026-09-19  
+> **Last Updated**: 2026-09-23  
 > **Repository**: `/home/lollo/Progetti/dynamic-island-hyprland` (Branch: `main`)  
 > **Active Runtime Config**: `/home/lollo/.config/quickshell/dynamic-island`  
 > **OS & Environment**: Arch Linux, Hyprland (All-AMD), Waybar ('Cealestia' theme) & Quickshell ('dynamic-island'), Pywal16 + Iris color scheme generation.
@@ -64,6 +64,15 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 - Removed `Behavior on displayedBrightness` and `displayedVolume` to eliminate slider lag and provide zero-latency tracking.
 - Fixed module height resize jitter by mapping handle coordinates to static `stageContainer`.
 - Added dedicated `−` and `+` single-click height adjustment buttons in the floating `infoPill`.
+
+### G. Clipboard Empty State, Liquid Glass Image Scrim & Trash Can Icons
+- **Clipboard Empty State**: Removed the circular tag icon and the lengthy "Siri Cards" subtitle from [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml), replacing it with clean, minimal text ("Nessun elemento copiato" / "Nessun risultato trovato").
+- **Liquid Glass Gradient for Images**: Image cards in [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml) now fill the card surface smoothly with a dedicated dark `#0f1117` liquid glass multi-stop gradient rising from the bottom up to several pixels above the file title, ensuring high contrast and seamless Apple Intelligence styling.
+- **Trash Can Icon Standardization**: Replaced legacy `✕` and rotated plus delete markers across the system with the clean FontAwesome / Nerd Font trash can glyph (`\uf2ed` / ``):
+  - In [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml) card hover delete button.
+  - In [`FileShelfLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/FileShelfLayer.qml) staged file delete button.
+  - In [`NotificationCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/NotificationCard.qml) quick dismiss action.
+  - In [`StudioLayoutCanvas.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/StudioLayoutCanvas.qml) module delete button and library card hover remove.
 
 ---
 

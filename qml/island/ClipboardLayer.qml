@@ -514,46 +514,13 @@ FocusScope {
             anchors.right: parent.right
             visible: root.filteredItems.length === 0
 
-            Column {
+            Text {
                 anchors.centerIn: parent
-                spacing: 12
-
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 58
-                    height: 58
-                    radius: 29
-                    color: "#14ffffff"
-                    border.width: 1
-                    border.color: "#20ffffff"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "\uf0ea"
-                        font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
-                        font.pixelSize: 24
-                        color: "#6c6c70"
-                    }
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.searchQuery === "" ? "Clipboard is empty" : "No matching items"
-                    color: "#f5f5f7"
-                    font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
-                    font.pixelSize: 16
-                    font.weight: Font.SemiBold
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: root.searchQuery === ""
-                        ? "Copied text and images will appear here as Siri Cards"
-                        : "Try a different search term"
-                    color: "#8e8e93"
-                    font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
-                    font.pixelSize: 13
-                }
+                text: root.searchQuery === "" ? "Nessun elemento copiato" : "Nessun risultato trovato"
+                color: "#8e8e93"
+                font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
+                font.pixelSize: 14
+                font.weight: Font.Medium
             }
         }
 
@@ -698,13 +665,10 @@ FocusScope {
                 anchors.fill: parent
                 visible: cardWrapper.isImage
 
-                // Image Thumbnail
+                // Image Thumbnail (fills card surface)
                 Image {
                     id: thumbImage
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 146
+                    anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     source: cardWrapper.isImage && modelData.thumb ? `file://${modelData.thumb}` : ""
                     asynchronous: true
@@ -716,18 +680,6 @@ FocusScope {
                         anchors.fill: parent
                         color: "#1c1d22"
                         visible: thumbImage.status !== Image.Ready
-                    }
-
-                    // Soft bottom gradient scrim to blend into bottom label
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 48
-                        gradient: Gradient {
-                            GradientStop { position: 0.0; color: "transparent" }
-                            GradientStop { position: 1.0; color: "#bb0f1117" }
-                        }
                     }
                 }
 
@@ -799,26 +751,46 @@ FocusScope {
                     }
                 }
 
-                // Bottom Label & Info Area
-                Item {
-                    anchors.top: thumbImage.bottom
+                // Liquid glass bottom gradient overlay (rising from bottom to a few px above file name)
+                Rectangle {
+                    id: liquidGlassGradient
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.leftMargin: 15
-                    anchors.rightMargin: 15
+                    height: bottomInfoArea.height + 34
+                    z: 6
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "transparent" }
+                        GradientStop { position: 0.25; color: "#440f1117" }
+                        GradientStop { position: 0.60; color: "#bb0f1117" }
+                        GradientStop { position: 1.0; color: "#f00f1117" }
+                    }
+                }
+
+                // Bottom Label & Info Area (Sitting on the liquid glass gradient)
+                Item {
+                    id: bottomInfoArea
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 12
+                    anchors.left: parent.left
+                    anchors.leftMargin: 14
+                    anchors.right: parent.right
+                    anchors.rightMargin: 14
+                    height: infoCol.implicitHeight
+                    z: 7
 
                     Column {
-                        anchors.verticalCenter: parent.verticalCenter
+                        id: infoCol
+                        anchors.bottom: parent.bottom
                         width: parent.width
                         spacing: 2
 
                         Text {
                             width: parent.width
                             text: modelData.title || "Clipboard Image"
-                            color: "#f5f5f7"
+                            color: "#ffffff"
                             font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
-                            font.pixelSize: 14
+                            font.pixelSize: 13
                             font.weight: Font.Bold
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -827,9 +799,10 @@ FocusScope {
                         Text {
                             width: parent.width
                             text: modelData.preview || ""
-                            color: "#8e8e93"
+                            color: "#c7c7cc"
                             font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                             font.pixelSize: 11
+                            font.weight: Font.Medium
                             elide: Text.ElideRight
                             maximumLineCount: 1
                         }
@@ -1003,17 +976,17 @@ FocusScope {
                 }
             }
 
-            // Hover Delete Button (Discreet '✕' in corner when card is hovered)
+            // Hover Delete Button (Discreet Trash icon in corner when card is hovered)
             Rectangle {
                 id: deleteCardBtn
                 anchors.top: parent.top
                 anchors.topMargin: cardWrapper.isImage ? 40 : 8
                 anchors.right: parent.right
                 anchors.rightMargin: 8
-                width: 22
-                height: 22
-                radius: 11
-                color: deleteMouse.containsMouse ? "#ff453a" : "#44000000"
+                width: 24
+                height: 24
+                radius: 12
+                color: deleteMouse.containsMouse ? "#ff453a" : "#55000000"
                 border.width: 1
                 border.color: deleteMouse.containsMouse ? "#ff453a" : "#40ffffff"
                 opacity: cardMouse.containsMouse ? 1 : 0
@@ -1022,12 +995,13 @@ FocusScope {
 
                 Behavior on opacity { NumberAnimation { duration: 140 } }
                 Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { ColorAnimation { duration: 120 } }
 
                 Text {
                     anchors.centerIn: parent
-                    text: "✕"
-                    font.pixelSize: 9
-                    font.weight: Font.Bold
+                    text: "\uf2ed"
+                    font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
+                    font.pixelSize: 11
                     color: "#ffffff"
                 }
 

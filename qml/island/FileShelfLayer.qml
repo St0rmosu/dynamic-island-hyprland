@@ -483,7 +483,7 @@ FocusScope {
                     width: 26
                     height: 26
                     radius: width / 2
-                    color: "white"
+                    color: deleteArea.containsMouse ? "#ff453a" : "white"
                     opacity: (fileArea.containsMouse || deleteArea.containsMouse)
                         && !fileDrag.active && !root.reorderActive ? 1 : 0
                     visible: opacity > 0
@@ -495,27 +495,18 @@ FocusScope {
                         }
                     }
 
-                    Item {
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 120
+                        }
+                    }
+
+                    Text {
                         anchors.centerIn: parent
-                        width: 11
-                        height: 11
-                        rotation: 45
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: parent.width
-                            height: 2
-                            radius: 1
-                            color: "#242424"
-                        }
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 2
-                            height: parent.height
-                            radius: 1
-                            color: "#242424"
-                        }
+                        text: "\uf2ed"
+                        font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
+                        font.pixelSize: 12
+                        color: deleteArea.containsMouse ? "#ffffff" : "#242424"
                     }
 
                     MouseArea {
