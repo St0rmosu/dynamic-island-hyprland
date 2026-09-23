@@ -35,39 +35,50 @@ FocusScope {
         }
     }
 
+    function runCealestiaCommand(cmd) {
+        var finalCmd = cmd.trim();
+        var fullBash = "nohup setsid " + finalCmd + " >/dev/null 2>&1 &";
+        try {
+            Quickshell.execDetached(["bash", "-c", fullBash]);
+        } catch(e) {
+            console.warn("[PowerMenuLayer] execDetached bash failed, attempting direct exec:", e);
+            try {
+                Quickshell.execDetached(finalCmd.split(" "));
+            } catch(e2) {
+                console.warn("[PowerMenuLayer] direct execDetached failed:", e2);
+            }
+        }
+    }
+
+    function triggerAction(cmd) {
+        runCealestiaCommand(cmd);
+        root.closeRequested();
+    }
+
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Escape) {
             root.closeRequested();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_L) {
+            triggerAction("/home/lollo/.scripts/qslock-wrapper.sh");
+            event.accepted = true;
+        } else if (event.key === Qt.Key_E) {
+            triggerAction("hyprctl dispatch exit");
+            event.accepted = true;
+        } else if (event.key === Qt.Key_U) {
+            triggerAction("systemctl suspend");
+            event.accepted = true;
+        } else if (event.key === Qt.Key_R) {
+            triggerAction("systemctl reboot");
+            event.accepted = true;
+        } else if (event.key === Qt.Key_S) {
+            triggerAction("systemctl poweroff");
             event.accepted = true;
         }
     }
     Keys.onEscapePressed: (event) => {
         root.closeRequested();
         event.accepted = true;
-    }
-
-    Process {
-        id: lockProcess
-        command: ["/home/lollo/.scripts/qslock-wrapper.sh"]
-        running: false
-    }
-
-    Process {
-        id: sleepProcess
-        command: ["systemctl", "suspend"]
-        running: false
-    }
-
-    Process {
-        id: restartProcess
-        command: ["systemctl", "reboot"]
-        running: false
-    }
-
-    Process {
-        id: shutdownProcess
-        command: ["systemctl", "poweroff"]
-        running: false
     }
 
     // Dismiss if background within capsule is clicked
@@ -104,7 +115,7 @@ FocusScope {
 
     Row {
         anchors.centerIn: parent
-        spacing: 20
+        spacing: 16
 
         Repeater {
             model: [
@@ -113,47 +124,42 @@ FocusScope {
                     glyph: "\uf023",
                     name: "Blocca",
                     accentColor: "#c084fc",
-                    action: () => {
-                        lockProcess.running = true;
-                        root.closeRequested();
-                    }
+                    command: "/home/lollo/.scripts/qslock-wrapper.sh"
+                },
+                {
+                    id: "logout",
+                    glyph: "\uf2f5",
+                    name: "Esci",
+                    accentColor: "#34d399",
+                    command: "hyprctl dispatch exit"
                 },
                 {
                     id: "sleep",
                     glyph: "\uf186",
                     name: "Sospendi",
                     accentColor: "#60a5fa",
-                    action: () => {
-                        sleepProcess.running = true;
-                        root.closeRequested();
-                    }
+                    command: "systemctl suspend"
                 },
                 {
                     id: "restart",
                     glyph: "\uf021",
                     name: "Riavvia",
                     accentColor: "#fbbf24",
-                    action: () => {
-                        restartProcess.running = true;
-                        root.closeRequested();
-                    }
+                    command: "systemctl reboot"
                 },
                 {
                     id: "shutdown",
                     glyph: "\uf011",
                     name: "Spegni",
                     accentColor: "#f87171",
-                    action: () => {
-                        shutdownProcess.running = true;
-                        root.closeRequested();
-                    }
+                    command: "systemctl poweroff"
                 }
             ]
 
             delegate: Item {
                 id: btnItem
-                width: 54
-                height: 54
+                width: 50
+                height: 50
 
                 Rectangle {
                     id: btnBg
@@ -181,7 +187,7 @@ FocusScope {
                     Text {
                         anchors.centerIn: parent
                         text: modelData.glyph
-                        font.pixelSize: 24
+                        font.pixelSize: 22
                         font.family: root.iconFontFamily
                         color: btnMouse.containsMouse ? modelData.accentColor : StyleTokens.textPrimary
 
@@ -196,7 +202,7 @@ FocusScope {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: modelData.action()
+                    onClicked: root.triggerAction(modelData.command)
                 }
             }
         }

@@ -2834,7 +2834,7 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "power_menu":
-                    return 340;
+                    return 380;
                 case "control_center":
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 420;
                 case "notification_center":

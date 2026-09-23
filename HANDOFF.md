@@ -72,7 +72,16 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
   - In [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml) card hover delete button.
   - In [`FileShelfLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/FileShelfLayer.qml) staged file delete button.
   - In [`NotificationCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/NotificationCard.qml) quick dismiss action.
-  - In [`StudioLayoutCanvas.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/StudioLayoutCanvas.qml) module delete button and library card hover remove.
+### H. Dedicated Power Menu Cealestia Execution Fix & 5-Action Parity
+- **Root Cause Identified**: `PowerMenuLayer.qml` previously used short-lived QML `Process` elements. When clicking a button, `root.closeRequested()` immediately unloaded the layer, terminating the child processes before the OS kernel or systemd received the commands.
+- **Cealestia Detached Execution**: Ported the exact execution paradigm from Cealestia's `shell.qml` using `Quickshell.execDetached(["bash", "-c", "nohup setsid " + cmd + " >/dev/null 2>&1 &"])`, ensuring commands run detached in the background without being affected by QML component lifecycle.
+- **5 Cealestia Actions**:
+  1. `Blocca`: `/home/lollo/.scripts/qslock-wrapper.sh` (Key: `L`)
+  2. `Esci`: `hyprctl dispatch exit` (Key: `E`)
+  3. `Sospendi`: `systemctl suspend` (Key: `U`)
+  4. `Riavvia`: `systemctl reboot` (Key: `R`)
+  5. `Spegni`: `systemctl poweroff` (Key: `S`)
+- **Geometry**: Adjusted pill width from `340px` to `380px` in [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml) to perfectly accommodate all 5 glass buttons with balanced padding and micro-interactions.
 
 ---
 
@@ -81,7 +90,7 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 | File Path | Description |
 | :--- | :--- |
 | [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml) | Core layer-shell window, state machine (`islandState`), size calculations, morph animations, and dynamic component loaders. |
-| [`qml/island/PowerMenuLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/PowerMenuLayer.qml) | Dedicated 4-button power & session menu (Lock, Sleep, Restart, Shutdown) with glass styling and fade/scale transitions. |
+| [`qml/island/PowerMenuLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/PowerMenuLayer.qml) | Dedicated 5-button power & session menu (Lock, Logout, Sleep, Restart, Shutdown) with Cealestia detached execution, keyboard hotkeys, and glass styling. |
 | [`qml/controlcenter/SettingsAppLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SettingsAppLayer.qml) | Standalone 980x680 Settings App with category sidebar, segmented Studio switcher, and JSON IO. |
 | [`qml/controlcenter/StudioLayoutCanvas.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/StudioLayoutCanvas.qml) | Visual drag/drop grid canvas for sizing and positioning Control Center cards. |
 | [`qml/controlcenter/ControlCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlCenterLayer.qml) | Expanded Control Center overlay with cards, volume/brightness sliders, and network controls. |
