@@ -1,7 +1,9 @@
 import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
-import IslandBackend
+import "../settings"
 
 FocusScope {
     id: root
@@ -13,73 +15,33 @@ FocusScope {
     width: 980
     height: 680
 
-    property string controlCenterSubView: "studio" // "studio" or "modules"
+    property var dynamicConfig: null
+
     property bool showCondition: true
     focus: showCondition
     activeFocusOnTab: true
 
     Keys.onEscapePressed: function(event) {
         event.accepted = true;
-        if (root.fontBrowserVisible) {
-            root.fontBrowserVisible = false;
+        if (fontBrowserVisible) {
+            fontBrowserVisible = false;
             return;
         }
         root.closeRequested();
     }
 
-    // Typography and fonts
-    property string systemTextFont: "Google Sans Flex"
-    property string systemHeroFont: "Google Sans Flex"
-    property string systemTimeFont: "Google Sans Flex"
-    property string systemIconFont: "JetBrainsMono Nerd Font"
+    // Theme & Styling
+    property color accentColor: "#0a84ff"
+    property color bgDark: "#0c0e14"
+    property color bgSidebar: "#080a0f"
+    property color borderSubtle: Qt.rgba(255, 255, 255, 0.08)
 
-    property string cfgTextFontFamily: systemTextFont
-    property string cfgHeroFontFamily: systemHeroFont
-    property string cfgTimeFontFamily: systemTimeFont
-    property string cfgIconFontFamily: systemIconFont
-
-    readonly property string iconFontFamily: cfgIconFontFamily !== "" ? cfgIconFontFamily : (UserConfig.iconFontFamily !== "" ? UserConfig.iconFontFamily : systemIconFont)
-    readonly property string textFontFamily: cfgTextFontFamily !== "" ? cfgTextFontFamily : (UserConfig.textFontFamily !== "" ? UserConfig.textFontFamily : systemTextFont)
-    readonly property string heroFontFamily: cfgHeroFontFamily !== "" ? cfgHeroFontFamily : (UserConfig.heroFontFamily !== "" ? UserConfig.heroFontFamily : systemHeroFont)
-    readonly property string timeFontFamily: cfgTimeFontFamily !== "" ? cfgTimeFontFamily : (UserConfig.timeFontFamily !== "" ? UserConfig.timeFontFamily : systemTimeFont)
-
-    // System font database & browser state
-    property var systemFontsList: []
-    property bool systemFontsLoaded: false
-    property bool fontBrowserVisible: false
-    property string fontBrowserTarget: "global" // "global", "text", "hero", "time", "icon"
-    property string fontBrowserSearchQuery: ""
-    property string fontBrowserCategoryFilter: "all" // "all", "popular", "nerd", "mono"
-    property var fontBrowserFilteredList: []
-
-    // External theme inputs (from DynamicIslandWindow)
-    property color accentColor: StyleTokens.accent
-    property color pywalBackground: "#0f141c"
-    property color pywalForeground: "#ffffff"
-
-    // Live watchers for Iris and Pywal palette files
-    FileView {
-        id: localIrisColors
-        path: "/home/lollo/.cache/iris/colors.json"
-        watchChanges: true
-        property string accentHex: ""
-        Component.onCompleted: reload()
-        onFileChanged: reload()
-        onLoaded: {
-            try {
-                const d = JSON.parse(text());
-                if (d && d.accent) accentHex = d.accent;
-            } catch(e) {}
-        }
-    }
-
+    // Watch dynamic pywal/iris colors
     FileView {
         id: localWalColors
         path: "/home/lollo/.cache/wal/colors.json"
         watchChanges: true
         property string walAccent: ""
-        property color walBg: "#0f141c"
-        property color walFg: "#ffffff"
         Component.onCompleted: reload()
         onFileChanged: reload()
         onLoaded: {
@@ -88,4046 +50,519 @@ FocusScope {
                 if (d && d.colors) {
                     walAccent = d.colors.color4 || d.colors.color2 || "#0a84ff";
                 }
-                if (d && d.special) {
-                    if (d.special.background) walBg = d.special.background;
-                    if (d.special.foreground) walFg = d.special.foreground;
-                }
             } catch(e) {}
         }
     }
 
-    // Unified dynamic theme tokens
     readonly property color effectiveAccent: {
-        if (accentColor !== StyleTokens.accent && String(accentColor) !== "#00000000") return accentColor;
-        if (localIrisColors.accentHex !== "") return localIrisColors.accentHex;
-        if (localWalColors.walAccent !== "") return localWalColors.walAccent;
-        return StyleTokens.accent;
+        if (dynamicConfig && dynamicConfig.customAccentColor !== "" && !dynamicConfig.pywalEnabled)
+            return dynamicConfig.customAccentColor;
+        if (localWalColors.walAccent !== "")
+            return localWalColors.walAccent;
+        return accentColor;
     }
 
-    readonly property color effectiveBg: {
-        const base = pywalBackground !== "#0f141c" ? pywalBackground : localWalColors.walBg;
-        return Qt.darker(base, 1.15);
-    }
+    readonly property string textFontFamily: dynamicConfig ? dynamicConfig.textFontFamily : "Google Sans Flex"
+    readonly property string heroFontFamily: dynamicConfig ? dynamicConfig.heroFontFamily : "Google Sans Flex"
+    readonly property string iconFontFamily: dynamicConfig ? dynamicConfig.iconFontFamily : "JetBrainsMono Nerd Font"
 
-    readonly property color effectiveFg: {
-        return pywalForeground !== "#ffffff" ? pywalForeground : localWalColors.walFg;
-    }
-
-    // Glass & Accent Derivations
-    readonly property color accentSoft: Qt.rgba(effectiveAccent.r, effectiveAccent.g, effectiveAccent.b, 0.16)
-    readonly property color accentBorder: Qt.rgba(effectiveAccent.r, effectiveAccent.g, effectiveAccent.b, 0.42)
-    readonly property color accentGlow: Qt.rgba(effectiveAccent.r, effectiveAccent.g, effectiveAccent.b, 0.28)
-    readonly property color accentPressed: Qt.darker(effectiveAccent, 1.3)
-
-    readonly property color bgGlass: Qt.rgba(14/255, 17/255, 24/255, 0.94)
-    readonly property color bgSidebar: Qt.rgba(10/255, 12/255, 17/255, 0.97)
-    readonly property color bgCard: Qt.rgba(255, 255, 255, 0.045)
-    readonly property color bgCardHover: Qt.rgba(255, 255, 255, 0.08)
-    readonly property color borderCard: Qt.rgba(255, 255, 255, 0.08)
-    readonly property color bgInput: Qt.rgba(255, 255, 255, 0.06)
-    readonly property color borderSubtle: Qt.rgba(255, 255, 255, 0.05)
-    readonly property color dividerColor: Qt.rgba(255, 255, 255, 0.04)
-    readonly property color textPrimary: "#f2f4f8"
-    readonly property color textSecondary: "#9aa3b5"
-    readonly property color textMuted: "#656f82"
-    readonly property color successColor: "#34c759"
-    readonly property color switchOffColor: Qt.rgba(255, 255, 255, 0.12)
-
-    // Active navigation
     property int selectedCategoryIndex: 0
-    property string searchQuery: ""
 
-    // Raw configuration store
-    property var configData: ({})
-    property bool configLoaded: false
-    property bool hasPendingSave: false
-    property bool isSaving: false
-    property string lastSavedStatus: "Live Synced"
-
-    // Live configurable properties mirroring userconfig.json
-    property int cfgCornerRadius: 32
-    property int cfgIslandHeight: UserConfig.islandHeight > 0 ? UserConfig.islandHeight : 40
-    property int cfgIslandWidth: UserConfig.islandWidth > 0 ? UserConfig.islandWidth : 140
-    property int cfgTopMargin: UserConfig.islandTopMargin >= 0 ? UserConfig.islandTopMargin : 8
-    property int cfgExclusiveZone: UserConfig.islandExclusiveZone >= 0 ? UserConfig.islandExclusiveZone : 0
-    property int cfgClusterGap: 12
-    property int cfgStageLift: 0
-    property int cfgBackgroundOpacity: UserConfig.islandBackgroundOpacity > 0 ? UserConfig.islandBackgroundOpacity : 100
-    property int cfgAutoHideDelay: UserConfig.islandAutoHideDelayMs > 0 ? UserConfig.islandAutoHideDelayMs : 2000
-    property bool cfgAutoHideEnabled: UserConfig.islandAutoHideEnabled
-    property bool cfgShowWorkspaceOnAutoHide: UserConfig.islandShowWorkspaceOnAutoHide
-    property bool cfgDisableAutoExpand: UserConfig.disableAutoExpandOnTrackChange
-
-    // Hover & Interaction Properties
-    property bool cfgHoverExpandEnabled: true
-    property int cfgHoverExpandAction: 2 // 1: Player, 2: Control Center
-    property int cfgHoverExpandDelay: 200
-
-    // Control Center Module Toggles & Live Layout
-    property bool cfgShowWifiCard: true
-    property bool cfgShowBluetoothCard: true
-    property bool cfgShowBarraDesktopCard: true
-    property bool cfgShowTlpBatteryMode: true
-    property bool cfgShowDisplaySoundSliders: true
-    property bool cfgShowNightFocusToggles: true
-    property bool cfgShowClipboardQuickAccess: true
-    property bool cfgShowNotifications: true
-    property string cfgControlCenterOrientation: "vertical" // "vertical" or "horizontal"
-    property int cfgControlCenterWidth: 420
-
-    // Appearance & Typography
-    property string cfgClockFormat: UserConfig.clockFormat !== "" ? UserConfig.clockFormat : "24"
-    property int cfgBodyFontSize: UserConfig.bodyFontSize > 0 ? UserConfig.bodyFontSize : 20
-    property int cfgTitleFontSize: UserConfig.titleFontSize > 0 ? UserConfig.titleFontSize : 24
-    property int cfgIconFontSize: UserConfig.iconFontSize > 0 ? UserConfig.iconFontSize : 22
-    property bool cfgPywalEnabled: UserConfig.wallpaperPywalEnabled
-
-    // Motion & Animation
-    property string cfgTransitionType: UserConfig.wallpaperTransitionType !== "" ? UserConfig.wallpaperTransitionType : "random"
-    property real cfgTransitionDuration: UserConfig.wallpaperTransitionDuration > 0 ? UserConfig.wallpaperTransitionDuration : 1.0
-    property int cfgTransitionFps: UserConfig.wallpaperTransitionFps > 0 ? UserConfig.wallpaperTransitionFps : 60
-    property int cfgAnimationSpeedMode: 0 // 0: Snappy, 1: Smooth, 2: Bouncy
-
-    // Modules & Actions
-    property string cfgPrimaryAction: UserConfig.dynamicIslandPrimaryAction !== "" ? UserConfig.dynamicIslandPrimaryAction : "toggleControlCenter"
-    property string cfgSecondaryAction: UserConfig.dynamicIslandSecondaryAction !== "" ? UserConfig.dynamicIslandSecondaryAction : "toggleControlCenter"
-    property var cfgSwipeItems: ["albumcover", "trackname", "date", "time", "workspace", "battery"]
-
-    // Categories list definition
-    readonly property var categories: [
+    readonly property var navigationPages: [
         {
-            key: "bar",
-            title: "Bar & Island",
-            icon: "\uf108", // desktop
-            subtitle: "Geometry, margins & hover behavior"
+            title: "Isola & Geometria",
+            icon: "\uf108",
+            subtitle: "Dimensioni, margini & hover"
         },
         {
-            key: "controlcenter",
-            title: "Control Center",
-            icon: "\uf462", // sliders
-            subtitle: "Studio Canvas, moduli & toggles"
+            title: "Interazioni & Mouse",
+            icon: "\uf245",
+            subtitle: "Click, rotella volume & gesti"
         },
         {
-            key: "fonts",
-            title: "Font & Tipografia",
-            icon: "\uf031", // font
-            subtitle: "Caratteri globali, titoli, orologio & icone"
+            title: "Control Center & Studio",
+            icon: "\uf462",
+            subtitle: "Griglia 2D, moduli & cestino"
         },
         {
-            key: "appearance",
-            title: "Appearance",
-            icon: "\uf1fc", // palette
-            subtitle: "Opacity, fonts & clock format"
+            title: "Aspetto, Sfondi & Font",
+            icon: "\uf1fc",
+            subtitle: "Trasparenza, sfondi & font"
         },
         {
-            key: "motion",
-            title: "Motion & Animation",
-            icon: "\uf0e7", // bolt
-            subtitle: "Transitions, FPS & dynamics"
-        },
-        {
-            key: "modules",
-            title: "Modules",
-            icon: "\uf1b2", // cube
-            subtitle: "Island swipe pills & actions"
+            title: "Scorciatoie da Tastiera",
+            icon: "\uf11c",
+            subtitle: "7 comandi Hyprland & test"
         }
     ]
 
-    readonly property string currentCategoryKey: (categories[selectedCategoryIndex] && categories[selectedCategoryIndex].key) ? categories[selectedCategoryIndex].key : "bar"
-
-    // Read userconfig.json
-    FileView {
-        id: configFileView
-        path: UserConfig.userConfigPath !== "" ? UserConfig.userConfigPath : (StandardPaths.writableLocation(StandardPaths.GenericConfigLocation) + "/dynamic-island/userconfig.json")
-        preload: true
-        watchChanges: true
-        printErrors: false
-
-        onLoaded: root.loadConfigFromDisk()
-        onFileChanged: root.loadConfigFromDisk()
-    }
-
-    function loadConfigFromDisk() {
-        try {
-            const raw = configFileView.text();
-            if (!raw || raw.trim() === "") return;
-            const parsed = JSON.parse(raw);
-            root.configData = parsed;
-
-            if (parsed.islandCornerRadius !== undefined) root.cfgCornerRadius = Math.round(Number(parsed.islandCornerRadius));
-            if (parsed.islandHeight !== undefined) root.cfgIslandHeight = Math.round(Number(parsed.islandHeight));
-            if (parsed.islandWidth !== undefined) root.cfgIslandWidth = Math.round(Number(parsed.islandWidth));
-            if (parsed.islandTopMargin !== undefined) root.cfgTopMargin = Math.round(Number(parsed.islandTopMargin));
-            if (parsed.islandExclusiveZone !== undefined) root.cfgExclusiveZone = Math.round(Number(parsed.islandExclusiveZone));
-            if (parsed.islandClusterGap !== undefined) root.cfgClusterGap = Math.round(Number(parsed.islandClusterGap));
-            if (parsed.islandStageLift !== undefined) root.cfgStageLift = Math.round(Number(parsed.islandStageLift));
-            if (parsed.islandBackgroundOpacity !== undefined) root.cfgBackgroundOpacity = Math.round(Number(parsed.islandBackgroundOpacity));
-            if (parsed.islandAutoHideEnabled !== undefined) root.cfgAutoHideEnabled = Boolean(parsed.islandAutoHideEnabled);
-            if (parsed.islandAutoHideDelayMs !== undefined) root.cfgAutoHideDelay = Math.round(Number(parsed.islandAutoHideDelayMs));
-            if (parsed.islandShowWorkspaceOnAutoHide !== undefined) root.cfgShowWorkspaceOnAutoHide = Boolean(parsed.islandShowWorkspaceOnAutoHide);
-            if (parsed.disableAutoExpandOnTrackChange !== undefined) root.cfgDisableAutoExpand = Boolean(parsed.disableAutoExpandOnTrackChange);
-
-            if (parsed.hoverExpandEnabled !== undefined) root.cfgHoverExpandEnabled = Boolean(parsed.hoverExpandEnabled);
-            if (parsed.hoverExpandAction !== undefined) root.cfgHoverExpandAction = Math.round(Number(parsed.hoverExpandAction));
-            if (parsed.hoverExpandDelayMs !== undefined) root.cfgHoverExpandDelay = Math.round(Number(parsed.hoverExpandDelayMs));
-
-            if (parsed.showWifiCard !== undefined) root.cfgShowWifiCard = Boolean(parsed.showWifiCard);
-            if (parsed.showBluetoothCard !== undefined) root.cfgShowBluetoothCard = Boolean(parsed.showBluetoothCard);
-            if (parsed.showBarraDesktopCard !== undefined) root.cfgShowBarraDesktopCard = Boolean(parsed.showBarraDesktopCard);
-            if (parsed.showTlpBatteryMode !== undefined) root.cfgShowTlpBatteryMode = Boolean(parsed.showTlpBatteryMode);
-            if (parsed.showDisplaySoundSliders !== undefined) root.cfgShowDisplaySoundSliders = Boolean(parsed.showDisplaySoundSliders);
-            if (parsed.showNightFocusToggles !== undefined) root.cfgShowNightFocusToggles = Boolean(parsed.showNightFocusToggles);
-            if (parsed.showClipboardQuickAccess !== undefined) root.cfgShowClipboardQuickAccess = Boolean(parsed.showClipboardQuickAccess);
-            if (parsed.controlCenterShowNotifications !== undefined) root.cfgShowNotifications = Boolean(parsed.controlCenterShowNotifications);
-            if (parsed.controlCenterOrientation !== undefined) root.cfgControlCenterOrientation = String(parsed.controlCenterOrientation);
-            if (parsed.controlCenterWidth !== undefined) root.cfgControlCenterWidth = Math.round(Number(parsed.controlCenterWidth));
-
-            if (parsed.clockFormat !== undefined) root.cfgClockFormat = String(parsed.clockFormat);
-            if (parsed.bodyFontSize !== undefined) root.cfgBodyFontSize = Math.round(Number(parsed.bodyFontSize));
-            if (parsed.titleFontSize !== undefined) root.cfgTitleFontSize = Math.round(Number(parsed.titleFontSize));
-            if (parsed.iconFontSize !== undefined) root.cfgIconFontSize = Math.round(Number(parsed.iconFontSize));
-            if (parsed.wallpaperPywalEnabled !== undefined) root.cfgPywalEnabled = Boolean(parsed.wallpaperPywalEnabled);
-            if (parsed.wallpaperTransitionType !== undefined) root.cfgTransitionType = String(parsed.wallpaperTransitionType);
-            if (parsed.wallpaperTransitionDuration !== undefined) root.cfgTransitionDuration = Number(parsed.wallpaperTransitionDuration);
-            if (parsed.wallpaperTransitionFps !== undefined) root.cfgTransitionFps = Math.round(Number(parsed.wallpaperTransitionFps));
-            if (parsed.dynamicIslandPrimaryAction !== undefined) root.cfgPrimaryAction = String(parsed.dynamicIslandPrimaryAction);
-            if (parsed.dynamicIslandSecondaryAction !== undefined) root.cfgSecondaryAction = String(parsed.dynamicIslandSecondaryAction);
-            if (Array.isArray(parsed.dynamicIslandLeftSwipeItems)) root.cfgSwipeItems = parsed.dynamicIslandLeftSwipeItems.slice();
-
-            if (parsed.textFontFamily !== undefined && String(parsed.textFontFamily).trim() !== "") root.cfgTextFontFamily = String(parsed.textFontFamily).trim();
-            if (parsed.heroFontFamily !== undefined && String(parsed.heroFontFamily).trim() !== "") root.cfgHeroFontFamily = String(parsed.heroFontFamily).trim();
-            if (parsed.timeFontFamily !== undefined && String(parsed.timeFontFamily).trim() !== "") root.cfgTimeFontFamily = String(parsed.timeFontFamily).trim();
-            if (parsed.iconFontFamily !== undefined && String(parsed.iconFontFamily).trim() !== "") root.cfgIconFontFamily = String(parsed.iconFontFamily).trim();
-
-            root.configLoaded = true;
-        } catch(e) {
-            console.log("[SettingsApp] Error loading config:", e);
-        }
-    }
-
-    // Debounced live save
-    function updateSetting(key, val) {
-        if (!root.configData) root.configData = {};
-        root.configData[key] = val;
-        root.lastSavedStatus = "Saving...";
-        saveDebounceTimer.restart();
-    }
-
-    Timer {
-        id: saveDebounceTimer
-        interval: 100
-        repeat: false
-        onTriggered: root.dispatchSave()
-    }
-
-    function dispatchSave() {
-        root.isSaving = true;
-        try {
-            const payload = JSON.stringify(root.configData);
-            Quickshell.execDetached(["python3", "/home/lollo/.config/quickshell/dynamic-island/scripts/save_userconfig.py", payload]);
-            root.lastSavedStatus = "Live Synced";
-            root.isSaving = false;
-            try {
-                UserConfig.reload();
-            } catch(e) {}
-        } catch(e) {
-            console.log("[SettingsApp] Error saving config:", e);
-            root.lastSavedStatus = "Error saving";
-            root.isSaving = false;
-        }
-    }
-
-    function syncModuleActiveInCanvas(modId, active) {
-        if (!root.configData) root.configData = {};
-        let layout = root.configData.controlCenterCanvasLayout;
-        if (Array.isArray(layout)) {
-            let updated = false;
-            let newLayout = [];
-            for (let i = 0; i < layout.length; i++) {
-                let item = Object.assign({}, layout[i]);
-                if (item.id === modId) {
-                    item.active = active;
-                    updated = true;
-                }
-                newLayout.push(item);
-            }
-            if (updated) {
-                root.configData.controlCenterCanvasLayout = newLayout;
-                root.updateSetting("controlCenterCanvasLayout", newLayout);
-            }
-        }
-    }
-
-    function reloadQuickshell() {
-        root.lastSavedStatus = "Ricaricato";
-        try {
-            Quickshell.reload(false);
-        } catch(e) {
-            Quickshell.execDetached(["/home/lollo/.scripts/apply-qs-bar.sh", "dynamic-island"]);
-        }
-    }
-
-    function applyGlobalFont(family, includeIcons) {
-        if (!family || family.trim() === "") return;
-        const fontName = family.trim();
-        root.cfgTextFontFamily = fontName;
-        root.cfgHeroFontFamily = fontName;
-        root.cfgTimeFontFamily = fontName;
-        root.updateSetting("textFontFamily", fontName);
-        root.updateSetting("heroFontFamily", fontName);
-        root.updateSetting("timeFontFamily", fontName);
-        if (includeIcons) {
-            root.cfgIconFontFamily = fontName;
-            root.updateSetting("iconFontFamily", fontName);
-        }
-    }
-
-    function setFontSetting(targetKey, family) {
-        if (!family) return;
-        const fontName = family.trim();
-        if (targetKey === "text") {
-            root.cfgTextFontFamily = fontName;
-            root.updateSetting("textFontFamily", fontName);
-        } else if (targetKey === "hero") {
-            root.cfgHeroFontFamily = fontName;
-            root.updateSetting("heroFontFamily", fontName);
-        } else if (targetKey === "time") {
-            root.cfgTimeFontFamily = fontName;
-            root.updateSetting("timeFontFamily", fontName);
-        } else if (targetKey === "icon") {
-            root.cfgIconFontFamily = fontName;
-            root.updateSetting("iconFontFamily", fontName);
-        }
-    }
-
-    function resetFontsToDefault() {
-        root.cfgTextFontFamily = "Google Sans Flex";
-        root.cfgHeroFontFamily = "Google Sans Flex";
-        root.cfgTimeFontFamily = "Google Sans Flex";
-        root.cfgIconFontFamily = "JetBrainsMono Nerd Font";
-        root.cfgBodyFontSize = 14;
-        root.cfgTitleFontSize = 16;
-        root.cfgIconFontSize = 16;
-        root.updateSetting("textFontFamily", "Google Sans Flex");
-        root.updateSetting("heroFontFamily", "Google Sans Flex");
-        root.updateSetting("timeFontFamily", "Google Sans Flex");
-        root.updateSetting("iconFontFamily", "JetBrainsMono Nerd Font");
-        root.updateSetting("bodyFontSize", 14);
-        root.updateSetting("titleFontSize", 16);
-        root.updateSetting("iconFontSize", 16);
-    }
-
-    readonly property var popularFontPresets: [
-        "Google Sans Flex",
-        "Inter",
-        "JetBrains Mono",
-        "JetBrainsMono Nerd Font",
-        "Roboto",
-        "Ubuntu",
-        "Cantarell",
-        "Adwaita Sans",
-        "Iosevka Nerd Font",
-        "Symbols Nerd Font",
-        "Hack Nerd Font",
-        "Fira Code",
-        "Noto Sans"
-    ]
-
-    function loadSystemFonts() {
-        if (root.systemFontsLoaded && root.systemFontsList.length > 0) return;
-        try {
-            const raw = Qt.fontFamilies();
-            if (raw && raw.length > 0) {
-                let seen = {};
-                let list = [];
-                for (let i = 0; i < raw.length; i++) {
-                    let name = String(raw[i]).trim();
-                    if (name.length > 0 && !name.startsWith("@") && !seen[name]) {
-                        seen[name] = true;
-                        list.push(name);
-                    }
-                }
-                list.sort(function(a, b) {
-                    return a.toLowerCase().localeCompare(b.toLowerCase());
-                });
-                root.systemFontsList = list;
-                root.systemFontsLoaded = true;
-            }
-        } catch(e) {
-            console.log("[SettingsApp] Error loading system fonts:", e);
-        }
-    }
-
-    function getFilteredFonts(query, filterCategory) {
-        if (!root.systemFontsList || root.systemFontsList.length === 0) return [];
-        let q = (query || "").toLowerCase().trim();
-        let cat = filterCategory || "all";
-        let result = [];
-        let list = root.systemFontsList;
-
-        for (let i = 0; i < list.length; i++) {
-            let font = list[i];
-            let fontLower = font.toLowerCase();
-
-            if (cat === "nerd") {
-                if (fontLower.indexOf("nerd") === -1 && fontLower.indexOf("nf") === -1 && fontLower.indexOf("symbol") === -1) continue;
-            } else if (cat === "mono") {
-                if (fontLower.indexOf("mono") === -1 && fontLower.indexOf("code") === -1) continue;
-            } else if (cat === "popular") {
-                let matchPop = false;
-                for (let p = 0; p < root.popularFontPresets.length; p++) {
-                    if (fontLower.indexOf(root.popularFontPresets[p].toLowerCase()) >= 0) {
-                        matchPop = true;
-                        break;
-                    }
-                }
-                if (!matchPop) continue;
-            }
-
-            if (q !== "") {
-                if (fontLower.indexOf(q) === -1) continue;
-            }
-
-            result.push(font);
-            if (result.length >= 600) break;
-        }
-        return result;
-    }
-
-    function updateFontBrowserList() {
-        root.fontBrowserFilteredList = root.getFilteredFonts(root.fontBrowserSearchQuery, root.fontBrowserCategoryFilter);
-    }
-
-    function openFontBrowser(target) {
-        root.loadSystemFonts();
-        root.fontBrowserTarget = target || "global";
-        root.fontBrowserSearchQuery = "";
-        if (target === "icon") {
-            root.fontBrowserCategoryFilter = "nerd";
-        } else {
-            root.fontBrowserCategoryFilter = "all";
-        }
-        root.updateFontBrowserList();
-        root.fontBrowserVisible = true;
-    }
-
-    onCurrentCategoryKeyChanged: {
-        if (root.currentCategoryKey === "fonts") {
-            root.loadSystemFonts();
-        }
-    }
-
-    Component.onCompleted: {
-        root.loadConfigFromDisk();
-        root.loadSystemFonts();
-    }
-
-    // Outer Window Shell: 840x560 with smooth radius
+    // ── Layout Principale a Due Colonne ────────────────────────────────
     Rectangle {
-        id: windowFrame
         anchors.fill: parent
-        radius: 28
-        color: root.bgGlass
+        radius: 32
+        color: root.bgDark
         border.width: 1
-        border.color: root.borderCard
+        border.color: root.borderSubtle
         clip: true
 
-        // Ambient theme accent background glow
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: root.accentGlow }
-                GradientStop { position: 0.12; color: Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.04) }
-                GradientStop { position: 1.0; color: StyleTokens.transparent }
-            }
-        }
-
-        // Inner subtle specular highlight rim
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 1
-            radius: Math.max(0, parent.radius - 1)
-            color: StyleTokens.transparent
-            border.width: 1
-            border.color: Qt.rgba(255, 255, 255, 0.07)
-        }
-
-        // Main Horizontal Split: Left Sidebar (220px) + Right Content Area - Unified all-in-one
         Row {
             anchors.fill: parent
 
-            // ==========================================
-            // LEFT SIDEBAR (Width: 220px) - Seamlessly Unified
-            // ==========================================
-            Item {
-                id: sidebar
-                width: 230
-                height: parent.height
-
-                // Top Search Bar (matching reference layout)
-                Rectangle {
-                    id: searchBox
-                    anchors.top: parent.top
-                    anchors.topMargin: 16
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
-                    height: 38
-                    radius: 19
-                    color: Qt.rgba(255, 255, 255, 0.05)
-                    border.width: 1
-                    border.color: searchInput.activeFocus ? root.effectiveAccent : Qt.rgba(255, 255, 255, 0.08)
-
-                    Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 10
-                        spacing: 8
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "\uf002" // Search icon
-                            font.family: root.iconFontFamily
-                            font.pixelSize: 12
-                            color: root.textMuted
-                        }
-
-                        TextInput {
-                            id: searchInput
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - 44
-                            font.family: root.textFontFamily
-                            font.pixelSize: 12
-                            color: root.textPrimary
-                            clip: true
-                            onTextChanged: root.searchQuery = text.toLowerCase().trim()
-
-                            Text {
-                                anchors.fill: parent
-                                text: "Search Settings"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 12
-                                color: root.textMuted
-                                visible: !searchInput.text && !searchInput.activeFocus
-                            }
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "\u2715"
-                            font.pixelSize: 10
-                            color: root.textMuted
-                            visible: searchInput.text !== ""
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: searchInput.text = ""
-                            }
-                        }
-                    }
-                }
-
-                // Categories Navigation List
-                Column {
-                    id: categoriesCol
-                    anchors.top: searchBox.bottom
-                    anchors.topMargin: 14
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
-                    spacing: 5
-
-                    Repeater {
-                        model: root.categories
-
-                        delegate: Rectangle {
-                            id: navItem
-                            required property int index
-                            required property var modelData
-
-                            readonly property bool isSelected: root.selectedCategoryIndex === index
-                            readonly property bool isHovered: navMouse.containsMouse
-
-                            width: parent.width
-                            height: 44
-                            radius: 14
-                            color: isSelected
-                                ? Qt.rgba(255, 255, 255, 0.08)
-                                : (isHovered ? Qt.rgba(255, 255, 255, 0.04) : StyleTokens.transparent)
-                            border.width: isSelected ? 1 : 0
-                            border.color: Qt.rgba(255, 255, 255, 0.06)
-
-                            Behavior on color { ColorAnimation { duration: 140 } }
-
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: 10
-                                anchors.rightMargin: 10
-                                spacing: 10
-
-                                Rectangle {
-                                    id: iconCircle
-                                    width: 30
-                                    height: 30
-                                    radius: 15
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: navItem.isSelected
-                                        ? root.effectiveAccent
-                                        : Qt.rgba(255, 255, 255, 0.06)
-                                    border.width: navItem.isSelected ? 0 : 1
-                                    border.color: Qt.rgba(255, 255, 255, 0.04)
-
-                                    Behavior on color { ColorAnimation { duration: 140 } }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: navItem.modelData.icon
-                                        font.family: root.iconFontFamily
-                                        font.pixelSize: 13
-                                        color: navItem.isSelected ? "#10141b" : (navItem.isHovered ? root.textPrimary : root.textSecondary)
-                                    }
-                                }
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: navItem.modelData.title
-                                    font.family: root.textFontFamily
-                                    font.pixelSize: 13
-                                    font.weight: navItem.isSelected ? Font.DemiBold : Font.Normal
-                                    color: navItem.isSelected ? root.textPrimary : (navItem.isHovered ? "#ffffff" : root.textSecondary)
-                                }
-                            }
-
-                            MouseArea {
-                                id: navMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    root.selectedCategoryIndex = navItem.index;
-                                    root.searchQuery = "";
-                                    searchInput.text = "";
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Sidebar Footer: Minimal Sync Status
-                // Reliably anchored above bottom corner radius curve so it is never cut in half!
-                Rectangle {
-                    id: sidebarFooter
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 18
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 16
-                    anchors.rightMargin: 16
-                    height: 40
-                    radius: 14
-                    color: Qt.rgba(255, 255, 255, 0.035)
-                    border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.05)
-
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
-
-                        Rectangle {
-                            width: 8
-                            height: 8
-                            radius: 4
-                            color: root.isSaving ? "#e5a93b" : root.effectiveAccent
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            SequentialAnimation on opacity {
-                                running: root.isSaving
-                                loops: Animation.Infinite
-                                NumberAnimation { to: 0.3; duration: 400 }
-                                NumberAnimation { to: 1.0; duration: 400 }
-                            }
-                        }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: root.lastSavedStatus
-                            font.family: root.textFontFamily
-                            font.pixelSize: 11
-                            color: root.isSaving ? "#e5a93b" : root.textSecondary
-                        }
-                    }
-
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 26
-                        height: 26
-                        radius: 13
-                        color: reloadMouse.containsMouse ? root.accentSoft : StyleTokens.transparent
-
-                        Text {
-                            id: reloadIcon
-                            anchors.centerIn: parent
-                            text: "\uf021" // Refresh
-                            font.family: root.iconFontFamily
-                            font.pixelSize: 12
-                            color: reloadMouse.containsMouse ? root.effectiveAccent : root.textSecondary
-
-                            RotationAnimation on rotation {
-                                id: reloadAnim
-                                running: false
-                                from: 0
-                                to: 360
-                                duration: 400
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
-                        MouseArea {
-                            id: reloadMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                reloadAnim.restart();
-                                UserConfig.reload();
-                                root.loadConfigFromDisk();
-                            }
-                        }
-                    }
-                }
-            }
-
-            // ==========================================
-            // RIGHT CONTENT AREA (Width: 620px) - Seamlessly Unified
-            // ==========================================
-            Item {
-                id: contentArea
-                width: parent.width - sidebar.width
-                height: parent.height
-
-                // Top Header Bar
-                Rectangle {
-                    id: headerBar
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    height: 52
-                    color: StyleTokens.transparent
-
-                    // Bottom subtle separator line
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        height: 1
-                        color: Qt.rgba(255, 255, 255, 0.04)
-                    }
-
-                    // Left: Back/Forward Navigation & Active Category Title
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 20
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
-
-                        // Back button
-                        Rectangle {
-                            width: 28
-                            height: 28
-                            radius: 14
-                            color: prevMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : StyleTokens.transparent
-                            border.width: 1
-                            border.color: prevMouse.containsMouse ? root.borderCard : StyleTokens.transparent
-                            opacity: root.selectedCategoryIndex > 0 ? 1.0 : 0.35
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\uf060" // Arrow left
-                                font.family: root.iconFontFamily
-                                font.pixelSize: 11
-                                color: root.textPrimary
-                            }
-
-                            MouseArea {
-                                id: prevMouse
-                                anchors.fill: parent
-                                enabled: root.selectedCategoryIndex > 0
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.selectedCategoryIndex = Math.max(0, root.selectedCategoryIndex - 1)
-                            }
-                        }
-
-                        // Next button
-                        Rectangle {
-                            width: 28
-                            height: 28
-                            radius: 14
-                            color: nextMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : StyleTokens.transparent
-                            border.width: 1
-                            border.color: nextMouse.containsMouse ? root.borderCard : StyleTokens.transparent
-                            opacity: root.selectedCategoryIndex < root.categories.length - 1 ? 1.0 : 0.35
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\uf061" // Arrow right
-                                font.family: root.iconFontFamily
-                                font.pixelSize: 11
-                                color: root.textPrimary
-                            }
-
-                            MouseArea {
-                                id: nextMouse
-                                anchors.fill: parent
-                                enabled: root.selectedCategoryIndex < root.categories.length - 1
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.selectedCategoryIndex = Math.min(root.categories.length - 1, root.selectedCategoryIndex + 1)
-                            }
-                        }
-
-                        Item { width: 6; height: 1 }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: root.categories[root.selectedCategoryIndex].title
-                            font.family: root.heroFontFamily
-                            font.pixelSize: 18
-                            font.weight: Font.Bold
-                            color: root.textPrimary
-                        }
-                    }
-
-                    // Reload Quickshell button
-                    Rectangle {
-                        id: reloadQsBtn
-                        anchors.right: closeBtn.left
-                        anchors.rightMargin: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: reloadQsRow.width + 16
-                        height: 28
-                        radius: 14
-                        color: reloadQsMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.06)
-                        border.width: 1
-                        border.color: reloadQsMouse.containsMouse ? root.accentBorder : Qt.rgba(255, 255, 255, 0.08)
-
-                        Row {
-                            id: reloadQsRow
-                            anchors.centerIn: parent
-                            spacing: 6
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: ""
-                                font.family: root.iconFontFamily
-                                font.pixelSize: 11
-                                color: root.effectiveAccent
-                            }
-                            Text {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "Ricarica"
-                                font.family: root.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Medium
-                                color: root.textPrimary
-                            }
-                        }
-
-                        MouseArea {
-                            id: reloadQsMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.reloadQuickshell()
-                        }
-                    }
-
-                    // Right: Close Button ('✕')
-                    Rectangle {
-                        id: closeBtn
-                        anchors.right: parent.right
-                        anchors.rightMargin: 20
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 28
-                        height: 28
-                        radius: 14
-                        color: closeMouse.pressed ? "#551c22" : (closeMouse.containsMouse ? "#3a191d" : Qt.rgba(255, 255, 255, 0.06))
-                        border.width: 1
-                        border.color: closeMouse.containsMouse ? "#7d2c34" : Qt.rgba(255, 255, 255, 0.08)
-
-                        Behavior on color { ColorAnimation { duration: 120 } }
-                        Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\u2715" // ✕
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
-                            color: closeMouse.containsMouse ? "#ff453a" : root.textSecondary
-                        }
-
-                        MouseArea {
-                            id: closeMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.closeRequested()
-                        }
-                    }
-                }
-
-                // Scrollable Content
-                Flickable {
-                    id: flickable
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: headerBar.bottom
-                    anchors.bottom: parent.bottom
-                    anchors.margins: 20
-                    contentWidth: width
-                    contentHeight: contentColumn.height + 40
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    interactive: (typeof studioCanvasItem !== "undefined" && studioCanvasItem) ? (!studioCanvasItem.isInteracting) : true
-
-                    Column {
-                        id: contentColumn
-                        width: parent.width
-                        spacing: 18
-
-                        // ==========================================
-                        // CATEGORY 0: BAR & ISLAND
-                        // ==========================================
-                        Column {
-                            width: parent.width
-                            spacing: 14
-                            visible: root.currentCategoryKey === "bar" || (root.searchQuery !== "" && (
-                                "bar island geometry height width radius margin auto-hide hover".indexOf(root.searchQuery) >= 0
-                            ))
-
-                            SettingsSectionHeader { title: "ISLAND GEOMETRY" }
-
-                            // Group Card: Dimensions & Radius
-                            Rectangle {
-                                width: parent.width
-                                height: geomCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: geomCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    // Corner Radius Slider
-                                    SettingsSliderRow {
-                                        title: "Corner Radius"
-                                        desc: "Roundness of the dynamic island capsule"
-                                        fromVal: 16
-                                        toVal: 44
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgCornerRadius
-                                        onValMoved: function(nextVal) {
-                                            root.cfgCornerRadius = Math.round(nextVal);
-                                            root.updateSetting("islandCornerRadius", root.cfgCornerRadius);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Island Height Slider
-                                    SettingsSliderRow {
-                                        title: "Island Height"
-                                        desc: "Resting height of the main capsule"
-                                        fromVal: 32
-                                        toVal: 54
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgIslandHeight
-                                        onValMoved: function(nextVal) {
-                                            root.cfgIslandHeight = Math.round(nextVal);
-                                            root.updateSetting("islandHeight", root.cfgIslandHeight);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Island Width Slider
-                                    SettingsSliderRow {
-                                        title: "Island Width"
-                                        desc: "Compact resting width before expansion"
-                                        fromVal: 120
-                                        toVal: 260
-                                        step: 2
-                                        unitStr: "px"
-                                        currentVal: root.cfgIslandWidth
-                                        onValMoved: function(nextVal) {
-                                            root.cfgIslandWidth = Math.round(nextVal);
-                                            root.updateSetting("islandWidth", root.cfgIslandWidth);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Top Margin Slider
-                                    SettingsSliderRow {
-                                        title: "Top Margin"
-                                        desc: "Offset from top edge of screen bezel"
-                                        fromVal: 0
-                                        toVal: 60
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgTopMargin
-                                        onValMoved: function(nextVal) {
-                                            root.cfgTopMargin = Math.round(nextVal);
-                                            root.updateSetting("islandTopMargin", root.cfgTopMargin);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Exclusive Zone / Stage Lift Slider
-                                    SettingsSliderRow {
-                                        title: "Stage Lift / Exclusive Zone"
-                                        desc: "Reserved space pushing application windows down"
-                                        fromVal: 0
-                                        toVal: 64
-                                        step: 2
-                                        unitStr: "px"
-                                        currentVal: root.cfgExclusiveZone
-                                        onValMoved: function(nextVal) {
-                                            root.cfgExclusiveZone = Math.round(nextVal);
-                                            root.updateSetting("islandExclusiveZone", root.cfgExclusiveZone);
-                                        }
-                                    }
-                                }
-                            }
-
-                            SettingsSectionHeader { title: "MOUSE HOVER INTERACTION" }
-
-                            // Group Card: Hover Settings
-                            Rectangle {
-                                width: parent.width
-                                height: hoverCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: hoverCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    // Hover Expand Toggle
-                                    SettingsSwitchRow {
-                                        title: "Hover to Open Island"
-                                        desc: "Instantly open the island by moving mouse cursor over it"
-                                        iconGlyph: "\uf245" // mouse pointer
-                                        checked: root.cfgHoverExpandEnabled
-                                        onToggled: function(val) {
-                                            root.cfgHoverExpandEnabled = val;
-                                            root.updateSetting("hoverExpandEnabled", val);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Hover Target Action
-                                    Row {
-                                        width: parent.width
-                                        height: 48
-
-                                        Column {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - 230
-                                            spacing: 2
-
-                                            Text {
-                                                text: "Hover Open Target"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 13
-                                                font.weight: Font.DemiBold
-                                                color: root.textPrimary
-                                            }
-
-                                            Text {
-                                                text: "Choose what opens when hovering cursor"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 11
-                                                color: root.textSecondary
-                                            }
-                                        }
-
-                                        // Segmented Target Picker
-                                        Rectangle {
-                                            width: 220
-                                            height: 30
-                                            radius: 15
-                                            color: Qt.rgba(255, 255, 255, 0.05)
-                                            border.width: 1
-                                            border.color: root.borderCard
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Row {
-                                                anchors.fill: parent
-
-                                                Rectangle {
-                                                    width: parent.width / 2
-                                                    height: parent.height
-                                                    radius: 15
-                                                    color: root.cfgHoverExpandAction === 2 ? root.effectiveAccent : StyleTokens.transparent
-
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        text: "Control Center"
-                                                        font.family: root.textFontFamily
-                                                        font.pixelSize: 11
-                                                        font.weight: root.cfgHoverExpandAction === 2 ? Font.Bold : Font.Normal
-                                                        color: root.cfgHoverExpandAction === 2 ? "#ffffff" : root.textSecondary
-                                                    }
-
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: {
-                                                            root.cfgHoverExpandAction = 2;
-                                                            root.updateSetting("hoverExpandAction", 2);
-                                                        }
-                                                    }
-                                                }
-
-                                                Rectangle {
-                                                    width: parent.width / 2
-                                                    height: parent.height
-                                                    radius: 15
-                                                    color: root.cfgHoverExpandAction === 1 ? root.effectiveAccent : StyleTokens.transparent
-
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        text: "Music Player"
-                                                        font.family: root.textFontFamily
-                                                        font.pixelSize: 11
-                                                        font.weight: root.cfgHoverExpandAction === 1 ? Font.Bold : Font.Normal
-                                                        color: root.cfgHoverExpandAction === 1 ? "#ffffff" : root.textSecondary
-                                                    }
-
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: {
-                                                            root.cfgHoverExpandAction = 1;
-                                                            root.updateSetting("hoverExpandAction", 1);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Hover Expand Delay Slider
-                                    SettingsSliderRow {
-                                        title: "Hover Open Delay"
-                                        desc: "Cursor dwell time before triggering island expansion"
-                                        fromVal: 100
-                                        toVal: 500
-                                        step: 25
-                                        unitStr: "ms"
-                                        currentVal: root.cfgHoverExpandDelay
-                                        onValMoved: function(nextVal) {
-                                            root.cfgHoverExpandDelay = Math.round(nextVal);
-                                            root.updateSetting("hoverExpandDelayMs", root.cfgHoverExpandDelay);
-                                        }
-                                    }
-                                }
-                            }
-
-                            SettingsSectionHeader { title: "ISLAND AUTO-HIDE & BEHAVIOR" }
-
-                            // Group Card: Auto-hide & Media
-                            Rectangle {
-                                width: parent.width
-                                height: behavCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: behavCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    // Auto-hide toggle
-                                    SettingsSwitchRow {
-                                        title: "Auto-hide Dynamic Island"
-                                        desc: "Collapse island when no active track or alert is present"
-                                        iconGlyph: "\uf070" // eye slash
-                                        checked: root.cfgAutoHideEnabled
-                                        onToggled: function(val) {
-                                            root.cfgAutoHideEnabled = val;
-                                            root.updateSetting("islandAutoHideEnabled", val);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Auto-hide delay slider
-                                    SettingsSliderRow {
-                                        title: "Auto-hide Inactivity Delay"
-                                        desc: "Delay before automatically tucking the island away"
-                                        fromVal: 500
-                                        toVal: 5000
-                                        step: 250
-                                        unitStr: "ms"
-                                        currentVal: root.cfgAutoHideDelay
-                                        onValMoved: function(nextVal) {
-                                            root.cfgAutoHideDelay = Math.round(nextVal);
-                                            root.updateSetting("islandAutoHideDelayMs", root.cfgAutoHideDelay);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Show Workspace on Auto-hide
-                                    SettingsSwitchRow {
-                                        title: "Show Workspace on Auto-hide"
-                                        desc: "Display active workspace number indicator when tucked"
-                                        iconGlyph: "\uf108"
-                                        checked: root.cfgShowWorkspaceOnAutoHide
-                                        onToggled: function(val) {
-                                            root.cfgShowWorkspaceOnAutoHide = val;
-                                            root.updateSetting("islandShowWorkspaceOnAutoHide", val);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Disable Media Auto-expand
-                                    SettingsSwitchRow {
-                                        title: "Disable Media Track Auto-Expand"
-                                        desc: "Prevent island from popping open whenever songs change"
-                                        iconGlyph: "\uf001"
-                                        checked: root.cfgDisableAutoExpand
-                                        onToggled: function(val) {
-                                            root.cfgDisableAutoExpand = val;
-                                            root.updateSetting("disableAutoExpandOnTrackChange", val);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ==========================================
-                        // CATEGORY 1: CONTROL CENTER (With Integrated Studio Canvas)
-                        // ==========================================
-                        Column {
-                            width: parent.width
-                            spacing: 14
-                            visible: root.currentCategoryKey === "controlcenter" || (root.searchQuery !== "" && (
-                                "control center module card wifi bluetooth barra battery sound sliders night focus clipboard notifications layout orientation width canvas studio griglia ridimensiona".indexOf(root.searchQuery) >= 0
-                            ))
-
-                            // Sub-navigation Switcher inside Control Center
-                            Rectangle {
-                                width: parent.width
-                                height: 46
-                                radius: 16
-                                color: Qt.rgba(255, 255, 255, 0.035)
-                                border.width: 1
-                                border.color: root.borderCard
-                                visible: root.searchQuery === ""
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 8
-
-                                    // Tab 1: Studio Canvas (Griglia Live)
-                                    Rectangle {
-                                        id: subTabCanvasBtn
-                                        width: 230
-                                        height: 34
-                                        radius: 12
-                                        color: root.controlCenterSubView === "studio" ? root.effectiveAccent : (canvasBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.06) : StyleTokens.transparent)
-
-                                        Behavior on color { ColorAnimation { duration: 140 } }
-
-                                        Row {
-                                            anchors.centerIn: parent
-                                            spacing: 8
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "\uf009" // grid icon
-                                                font.family: root.iconFontFamily
-                                                font.pixelSize: 12
-                                                color: root.controlCenterSubView === "studio" ? "#10141b" : root.textSecondary
-                                            }
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "Studio Canvas & Griglia"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 12
-                                                font.weight: root.controlCenterSubView === "studio" ? Font.DemiBold : Font.Normal
-                                                color: root.controlCenterSubView === "studio" ? "#10141b" : root.textPrimary
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: canvasBtnMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.controlCenterSubView = "studio"
-                                        }
-                                    }
-
-                                    // Tab 2: Moduli & Interruttori
-                                    Rectangle {
-                                        id: subTabOptionsBtn
-                                        width: 230
-                                        height: 34
-                                        radius: 12
-                                        color: root.controlCenterSubView === "modules" ? root.effectiveAccent : (optionsBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.06) : StyleTokens.transparent)
-
-                                        Behavior on color { ColorAnimation { duration: 140 } }
-
-                                        Row {
-                                            anchors.centerIn: parent
-                                            spacing: 8
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "\uf462" // sliders icon
-                                                font.family: root.iconFontFamily
-                                                font.pixelSize: 12
-                                                color: root.controlCenterSubView === "modules" ? "#10141b" : root.textSecondary
-                                            }
-
-                                            Text {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                text: "Moduli & Interruttori"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 12
-                                                font.weight: root.controlCenterSubView === "modules" ? Font.DemiBold : Font.Normal
-                                                color: root.controlCenterSubView === "modules" ? "#10141b" : root.textPrimary
-                                            }
-                                        }
-
-                                        MouseArea {
-                                            id: optionsBtnMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: root.controlCenterSubView = "modules"
-                                        }
-                                    }
-                                }
-                            }
-
-                            // View A: Studio Canvas & Live Interactive Grid
-                            Column {
-                                width: parent.width
-                                spacing: 14
-                                visible: root.controlCenterSubView === "studio" || (root.searchQuery !== "" && (
-                                    "canvas studio griglia ridimensiona moduli layout drag drop resize pallini".indexOf(root.searchQuery) >= 0
-                                ))
-
-                                StudioLayoutCanvas {
-                                    id: studioCanvasItem
-                                    width: parent.width
-                                    accentColor: root.effectiveAccent
-                                    accentSoft: root.accentSoft
-                                    accentBorder: root.accentBorder
-                                    accentGlow: root.accentGlow
-                                    textPrimary: root.textPrimary
-                                    textSecondary: root.textSecondary
-                                    textMuted: root.textMuted
-                                    bgCard: root.bgCard
-                                    borderCard: root.borderCard
-                                    iconFontFamily: root.iconFontFamily
-                                    textFontFamily: root.textFontFamily
-                                    heroFontFamily: root.heroFontFamily
-                                    controlCenterOrientation: root.cfgControlCenterOrientation
-                                    controlCenterWidth: root.cfgControlCenterWidth
-                                    rawConfig: root.configData
-                                    onRequestReloadQuickshell: root.reloadQuickshell()
-
-                                     onLayoutChanged: function(layoutArray) {
-                                         root.updateSetting("controlCenterCanvasLayout", layoutArray);
-                                         let anySliderActive = false;
-                                         for (let i = 0; i < layoutArray.length; i++) {
-                                             let item = layoutArray[i];
-                                             if (item.id === "wifi") {
-                                                 root.cfgShowWifiCard = item.active;
-                                                 root.updateSetting("showWifiCard", item.active);
-                                             } else if (item.id === "bluetooth") {
-                                                 root.cfgShowBluetoothCard = item.active;
-                                                 root.updateSetting("showBluetoothCard", item.active);
-                                             } else if (item.id === "brightness" || item.id === "volume") {
-                                                 if (item.active) anySliderActive = true;
-                                             } else if (item.id === "notifications") {
-                                                 root.cfgShowNotifications = item.active;
-                                                 root.updateSetting("controlCenterShowNotifications", item.active);
-                                             } else if (item.id === "battery") {
-                                                 root.cfgShowTlpBatteryMode = item.active;
-                                                 root.updateSetting("showTlpBatteryMode", item.active);
-                                             } else if (item.id === "toggles") {
-                                                 root.cfgShowNightFocusToggles = item.active;
-                                                 root.updateSetting("showNightFocusToggles", item.active);
-                                             } else if (item.id === "quickactions") {
-                                                 root.cfgShowBarraDesktopCard = item.active;
-                                                 root.updateSetting("showBarraDesktopCard", item.active);
-                                                 root.cfgShowClipboardQuickAccess = item.active;
-                                                 root.updateSetting("showClipboardQuickAccess", item.active);
-                                             }
-                                         }
-                                         root.cfgShowDisplaySoundSliders = anySliderActive;
-                                         root.updateSetting("showDisplaySoundSliders", anySliderActive);
-                                         root.dispatchSave();
-                                     }
-
-                                    onRequestOrientationChange: function(ori) {
-                                        root.cfgControlCenterOrientation = ori;
-                                        root.updateSetting("controlCenterOrientation", ori);
-                                    }
-
-                                    onRequestWidthChange: function(w) {
-                                        root.cfgControlCenterWidth = w;
-                                        root.updateSetting("controlCenterWidth", w);
-                                    }
-                                }
-                            }
-
-                            // View B: Detailed Switches & Geometry Sliders
-                            Column {
-                                width: parent.width
-                                spacing: 14
-                                visible: root.controlCenterSubView === "modules" || (root.searchQuery !== "" && (
-                                    "control center module card wifi bluetooth barra battery sound sliders night focus clipboard notifications layout orientation width".indexOf(root.searchQuery) >= 0
-                                ))
-
-                                SettingsSectionHeader { title: "LAYOUT & ORIENTATION" }
-
-                                // Group Card: Layout & Dimensions
-                                Rectangle {
-                                    width: parent.width
-                                    height: ccLayoutCol.height + 24
-                                    radius: 18
-                                    color: root.bgCard
-                                    border.width: 1
-                                    border.color: root.borderCard
-
-                                    Column {
-                                        id: ccLayoutCol
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.top: parent.top
-                                        anchors.margins: 12
-                                        spacing: 8
-
-                                        // Orientation Row (Vertical vs Horizontal)
-                                        Item {
-                                            width: parent.width
-                                            height: 52
-
-                                            Column {
-                                                anchors.left: parent.left
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                width: parent.width - 200
-                                                spacing: 2
-
-                                                Text {
-                                                    text: "Orientamento Moduli"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 13
-                                                    font.weight: Font.DemiBold
-                                                    color: root.textPrimary
-                                                }
-
-                                                Text {
-                                                    text: "Profilo larghezza: Compatto (420px) o Ampio (540px). La disposizione dei singoli moduli è dinamica dallo Studio Canvas."
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 10
-                                                    color: root.textMuted
-                                                    elide: Text.ElideRight
-                                                    width: parent.width
-                                                }
-                                            }
-
-                                            // Segmented Button
-                                            Rectangle {
-                                                anchors.right: parent.right
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                width: 184
-                                                height: 34
-                                                radius: 17
-                                                color: root.bgInput
-                                                border.width: 1
-                                                border.color: root.borderCard
-
-                                                Row {
-                                                    anchors.fill: parent
-
-                                                    Rectangle {
-                                                        width: parent.width / 2
-                                                        height: parent.height
-                                                        radius: 17
-                                                        color: root.cfgControlCenterOrientation === "vertical" ? root.effectiveAccent : StyleTokens.transparent
-
-                                                        Text {
-                                                            anchors.centerIn: parent
-                                                            text: "Verticale"
-                                                            font.family: root.textFontFamily
-                                                            font.pixelSize: 11
-                                                            font.weight: root.cfgControlCenterOrientation === "vertical" ? Font.Bold : Font.Normal
-                                                            color: root.cfgControlCenterOrientation === "vertical" ? "#ffffff" : root.textSecondary
-                                                        }
-
-                                                        MouseArea {
-                                                            anchors.fill: parent
-                                                            cursorShape: Qt.PointingHandCursor
-                                                            onClicked: {
-                                                                root.cfgControlCenterOrientation = "vertical";
-                                                                root.updateSetting("controlCenterOrientation", "vertical");
-                                                                if (root.cfgControlCenterWidth > 450) {
-                                                                    root.cfgControlCenterWidth = 390;
-                                                                    root.updateSetting("controlCenterWidth", 390);
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    Rectangle {
-                                                        width: parent.width / 2
-                                                        height: parent.height
-                                                        radius: 17
-                                                        color: root.cfgControlCenterOrientation === "horizontal" ? root.effectiveAccent : StyleTokens.transparent
-
-                                                        Text {
-                                                            anchors.centerIn: parent
-                                                            text: "Orizzontale"
-                                                            font.family: root.textFontFamily
-                                                            font.pixelSize: 11
-                                                            font.weight: root.cfgControlCenterOrientation === "horizontal" ? Font.Bold : Font.Normal
-                                                            color: root.cfgControlCenterOrientation === "horizontal" ? "#ffffff" : root.textSecondary
-                                                        }
-
-                                                        MouseArea {
-                                                            anchors.fill: parent
-                                                            cursorShape: Qt.PointingHandCursor
-                                                            onClicked: {
-                                                                root.cfgControlCenterOrientation = "horizontal";
-                                                                root.updateSetting("controlCenterOrientation", "horizontal");
-                                                                if (root.cfgControlCenterWidth < 500) {
-                                                                    root.cfgControlCenterWidth = 540;
-                                                                    root.updateSetting("controlCenterWidth", 540);
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Control Center Width Slider
-                                        SettingsSliderRow {
-                                            title: "Larghezza Centro di Controllo"
-                                            desc: "Larghezza orizzontale dell'isola aperta"
-                                            fromVal: 380
-                                            toVal: 620
-                                            step: 10
-                                            unitStr: "px"
-                                            currentVal: root.cfgControlCenterWidth
-                                            onValMoved: function(nextVal) {
-                                                root.cfgControlCenterWidth = Math.round(nextVal);
-                                                root.updateSetting("controlCenterWidth", root.cfgControlCenterWidth);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                SettingsSectionHeader { title: "MODULI DEL CENTRO DI CONTROLLO" }
-
-                                // Group Card: Module Switches
-                                Rectangle {
-                                    width: parent.width
-                                    height: ccModulesCol.height + 24
-                                    radius: 18
-                                    color: root.bgCard
-                                    border.width: 1
-                                    border.color: root.borderCard
-
-                                    Column {
-                                        id: ccModulesCol
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.top: parent.top
-                                        anchors.margins: 12
-                                        spacing: 8
-
-                                        // Show Notifications Toggle (Option 2/3)
-                                        SettingsSwitchRow {
-                                            title: "Mostra Notifiche nell'Isola"
-                                            desc: "Integra la cronologia delle notifiche, contatore e cancellazione rapida (Option 2/3)"
-                                            iconGlyph: "\uf0f3" // bell
-                                            checked: root.cfgShowNotifications
-                                            onToggled: function(val) {
-                                                root.cfgShowNotifications = val;
-                                                root.updateSetting("controlCenterShowNotifications", val);
-                                                root.syncModuleActiveInCanvas("notifications", val);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show Wi-Fi Card
-                                        SettingsSwitchRow {
-                                            title: "Scheda Wi-Fi"
-                                            desc: "Icona stato, nome connessione attiva e discovery drawer reti"
-                                            iconGlyph: "\uf1eb"
-                                            checked: root.cfgShowWifiCard
-                                            onToggled: function(val) {
-                                                root.cfgShowWifiCard = val;
-                                                root.updateSetting("showWifiCard", val);
-                                                root.syncModuleActiveInCanvas("wifi", val);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show Bluetooth Card
-                                        SettingsSwitchRow {
-                                            title: "Scheda Bluetooth"
-                                            desc: "Stato adapter bluetooth e lista periferiche associate"
-                                            iconGlyph: "\uf294"
-                                            checked: root.cfgShowBluetoothCard
-                                            onToggled: function(val) {
-                                                root.cfgShowBluetoothCard = val;
-                                                root.updateSetting("showBluetoothCard", val);
-                                                root.syncModuleActiveInCanvas("bluetooth", val);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show Barra Desktop Card
-                                        SettingsSwitchRow {
-                                            title: "Scheda Barra Desktop"
-                                            desc: "Pulsante per cambiare stile e opzioni barra Cealestia"
-                                            iconGlyph: "\uf108"
-                                            checked: root.cfgShowBarraDesktopCard
-                                            onToggled: function(val) {
-                                                root.cfgShowBarraDesktopCard = val;
-                                                root.updateSetting("showBarraDesktopCard", val);
-                                                root.syncModuleActiveInCanvas("quickactions", val || root.cfgShowClipboardQuickAccess);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show TLP Battery Profile
-                                        SettingsSwitchRow {
-                                            title: "Profilo Batteria TLP"
-                                            desc: "Selettore modalità Risparmio, Bilanciato o Prestazioni"
-                                            iconGlyph: "\uf0e7"
-                                            checked: root.cfgShowTlpBatteryMode
-                                            onToggled: function(val) {
-                                                root.cfgShowTlpBatteryMode = val;
-                                                root.updateSetting("showTlpBatteryMode", val);
-                                                root.syncModuleActiveInCanvas("battery", val);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show Display & Sound Sliders
-                                        SettingsSwitchRow {
-                                            title: "Cursori Luminosità & Volume"
-                                            desc: "Slider fluidi con icone e percentuale a video"
-                                            iconGlyph: "\uf028"
-                                            checked: root.cfgShowDisplaySoundSliders
-                                            onToggled: function(val) {
-                                                root.cfgShowDisplaySoundSliders = val;
-                                                root.updateSetting("showDisplaySoundSliders", val);
-                                                root.syncModuleActiveInCanvas("brightness", val);
-                                                root.syncModuleActiveInCanvas("volume", val);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show Night Mode & Focus Toggles
-                                        SettingsSwitchRow {
-                                            title: "Pulsanti Luce Notturna & Focus"
-                                            desc: "Scorciatoie per Hyprsunset (luce blu) e non disturbare"
-                                            iconGlyph: "\uf186"
-                                            checked: root.cfgShowNightFocusToggles
-                                            onToggled: function(val) {
-                                                root.cfgShowNightFocusToggles = val;
-                                                root.updateSetting("showNightFocusToggles", val);
-                                                root.syncModuleActiveInCanvas("toggles", val);
-                                            }
-                                        }
-
-                                        Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                        // Show Clipboard Quick Access
-                                        SettingsSwitchRow {
-                                            title: "Accesso Rapido Appunti (Siri Cards)"
-                                            desc: "Scheda per aprire la cronologia cliphist masonry 2 colonne"
-                                            iconGlyph: "\uf0ea"
-                                            checked: root.cfgShowClipboardQuickAccess
-                                            onToggled: function(val) {
-                                                root.cfgShowClipboardQuickAccess = val;
-                                                root.updateSetting("showClipboardQuickAccess", val);
-                                                root.syncModuleActiveInCanvas("quickactions", val || root.cfgShowBarraDesktopCard);
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // Interactive Studio Canvas Banner Link
-                                Rectangle {
-                                    width: parent.width
-                                    height: 56
-                                    radius: 16
-                                    color: Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.08)
-                                    border.width: 1
-                                    border.color: root.accentBorder
-
-                                    Row {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 16
-                                        anchors.rightMargin: 16
-                                        spacing: 12
-
-                                        Rectangle {
-                                            width: 32
-                                            height: 32
-                                            radius: 16
-                                            color: root.effectiveAccent
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "\uf009"
-                                                font.family: root.iconFontFamily
-                                                font.pixelSize: 13
-                                                color: "#10141b"
-                                            }
-                                        }
-
-                                        Column {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            spacing: 2
-                                            Text {
-                                                text: "Personalizzazione Visiva con Studio Canvas"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 12
-                                                font.weight: Font.DemiBold
-                                                color: root.textPrimary
-                                            }
-                                            Text {
-                                                text: "Trascina i moduli, cambia dimensioni con i pallini sui 4 lati e posizionali su griglia."
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 10
-                                                color: root.textSecondary
-                                            }
-                                        }
-
-                                        Item { width: 1; height: 1 } // flex
-
-                                        Rectangle {
-                                            id: ctaBtn
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: ctaRow.width + 18
-                                            height: 32
-                                            radius: 16
-                                            color: ctaMouse.containsMouse ? root.effectiveAccent : root.accentSoft
-                                            border.width: 1
-                                            border.color: root.accentBorder
-
-                                            Row {
-                                                id: ctaRow
-                                                anchors.centerIn: parent
-                                                spacing: 6
-                                                Text {
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    text: "Apri Canvas"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 11
-                                                    font.weight: Font.DemiBold
-                                                    color: ctaMouse.containsMouse ? "#10141b" : root.effectiveAccent
-                                                }
-                                                Text {
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    text: "➔"
-                                                    font.pixelSize: 10
-                                                    color: ctaMouse.containsMouse ? "#10141b" : root.effectiveAccent
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                id: ctaMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.controlCenterSubView = "studio"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ==========================================
-                        // CATEGORY: FONTS & TYPOGRAPHY
-                        // ==========================================
-                        Column {
-                            width: parent.width
-                            spacing: 14
-                            visible: root.currentCategoryKey === "fonts" || (root.searchQuery !== "" && (
-                                "font typography caratteri globale testo titoli orologio icone jetbrains inter roboto ubuntu cantarell".indexOf(root.searchQuery) >= 0
-                            ))
-
-                            SettingsSectionHeader { title: "FONT GLOBALE & TIPOGRAFIA" }
-
-                            // 1. Hero Card: Global Font (Applica a tutto)
-                            Rectangle {
-                                width: parent.width
-                                height: globalFontCol.height + 28
-                                radius: 20
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: globalFontCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 14
-                                    spacing: 12
-
-                                    // Header with Badge
-                                    Row {
-                                        width: parent.width
-                                        spacing: 10
-
-                                        Rectangle {
-                                            width: 32
-                                            height: 32
-                                            radius: 10
-                                            color: root.accentSoft
-                                            border.width: 1
-                                            border.color: root.accentBorder
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "\uf031"
-                                                font.family: root.iconFontFamily
-                                                font.pixelSize: 15
-                                                color: root.effectiveAccent
-                                            }
-                                        }
-
-                                        Column {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - 150
-                                            spacing: 2
-
-                                            Text {
-                                                text: "Font di Tutto (Globale)"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 14
-                                                font.weight: Font.Bold
-                                                color: root.textPrimary
-                                            }
-
-                                            Text {
-                                                text: "Imposta un unico carattere per tutti i testi, titoli, orologio ed elementi con 1 clic"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 11
-                                                color: root.textSecondary
-                                                wrapMode: Text.WordWrap
-                                                width: parent.width
-                                            }
-                                        }
-
-                                        // Badge
-                                        Rectangle {
-                                            anchors.right: parent.right
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            height: 24
-                                            width: 86
-                                            radius: 12
-                                            color: root.accentSoft
-                                            border.width: 1
-                                            border.color: root.accentBorder
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "1-Click Apply"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 10
-                                                font.weight: Font.Bold
-                                                color: root.effectiveAccent
-                                            }
-                                        }
-                                    }
-
-                                    // Input + Browse All + Global Apply Button
-                                    Row {
-                                        width: parent.width
-                                        height: 38
-                                        spacing: 8
-
-                                        Rectangle {
-                                            width: parent.width - 292
-                                            height: 38
-                                            radius: 12
-                                            color: root.bgInput
-                                            border.width: 1
-                                            border.color: globalFontInput.activeFocus ? root.effectiveAccent : root.borderCard
-
-                                            Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                                            Row {
-                                                anchors.fill: parent
-                                                anchors.leftMargin: 12
-                                                anchors.rightMargin: 12
-                                                spacing: 8
-
-                                                Text {
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    text: "\uf031"
-                                                    font.family: root.iconFontFamily
-                                                    font.pixelSize: 13
-                                                    color: root.effectiveAccent
-                                                }
-
-                                                TextInput {
-                                                    id: globalFontInput
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                    width: parent.width - 30
-                                                    font.family: text !== "" ? text : root.textFontFamily
-                                                    font.pixelSize: 13
-                                                    color: root.textPrimary
-                                                    clip: true
-                                                    selectByMouse: true
-                                                    text: root.cfgTextFontFamily
-
-                                                    onAccepted: {
-                                                        if (text.trim() !== "") {
-                                                            root.applyGlobalFont(text.trim(), includeIconsInGlobalSwitch.checked);
-                                                        }
-                                                    }
-
-                                                    Text {
-                                                        anchors.fill: parent
-                                                        text: "Inserisci o sfoglia font per tutto..."
-                                                        font.family: root.textFontFamily
-                                                        font.pixelSize: 13
-                                                        color: root.textMuted
-                                                        visible: globalFontInput.text === "" && !globalFontInput.activeFocus
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        // Browse All System Fonts Button
-                                        Rectangle {
-                                            width: 146
-                                            height: 38
-                                            radius: 12
-                                            color: browseAllGlobalMouse.pressed ? root.accentPressed : (browseAllGlobalMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.06))
-                                            border.width: 1
-                                            border.color: root.accentBorder
-
-                                            Behavior on color { ColorAnimation { duration: 120 } }
-
-                                            Row {
-                                                anchors.centerIn: parent
-                                                spacing: 6
-
-                                                Text {
-                                                    text: "\uf07c"
-                                                    font.family: root.iconFontFamily
-                                                    font.pixelSize: 12
-                                                    color: root.effectiveAccent
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-
-                                                Text {
-                                                    text: "Sfoglia Tutti (" + (root.systemFontsList.length > 0 ? root.systemFontsList.length : "4.800+") + ")"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 11
-                                                    font.weight: Font.DemiBold
-                                                    color: root.textPrimary
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                id: browseAllGlobalMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.openFontBrowser("global")
-                                            }
-                                        }
-
-                                        // Big Gradient Apply Button
-                                        Rectangle {
-                                            width: 130
-                                            height: 38
-                                            radius: 12
-                                            color: globalApplyMouse.pressed ? root.accentPressed : (globalApplyMouse.containsMouse ? Qt.lighter(root.effectiveAccent, 1.12) : root.effectiveAccent)
-
-                                            Behavior on color { ColorAnimation { duration: 120 } }
-
-                                            Row {
-                                                anchors.centerIn: parent
-                                                spacing: 6
-
-                                                Text {
-                                                    text: "\uf00c"
-                                                    font.family: root.iconFontFamily
-                                                    font.pixelSize: 12
-                                                    color: "#ffffff"
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-
-                                                Text {
-                                                    text: "Applica"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 12
-                                                    font.weight: Font.Bold
-                                                    color: "#ffffff"
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                id: globalApplyMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    if (globalFontInput.text.trim() !== "") {
-                                                        root.applyGlobalFont(globalFontInput.text.trim(), includeIconsInGlobalSwitch.checked);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Switch: Include icons font
-                                    Row {
-                                        width: parent.width
-                                        height: 28
-                                        spacing: 8
-
-                                        Rectangle {
-                                            id: includeIconsInGlobalSwitch
-                                            property bool checked: false
-                                            width: 18
-                                            height: 18
-                                            radius: 5
-                                            color: checked ? root.effectiveAccent : Qt.rgba(255, 255, 255, 0.08)
-                                            border.width: 1
-                                            border.color: checked ? root.effectiveAccent : root.borderCard
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "\uf00c"
-                                                font.family: root.iconFontFamily
-                                                font.pixelSize: 10
-                                                color: "#ffffff"
-                                                visible: includeIconsInGlobalSwitch.checked
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: includeIconsInGlobalSwitch.checked = !includeIconsInGlobalSwitch.checked
-                                            }
-                                        }
-
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "Includi anche il font icone (richiede un font con glifi Nerd Font)"
-                                            font.family: root.textFontFamily
-                                            font.pixelSize: 11
-                                            color: root.textSecondary
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: includeIconsInGlobalSwitch.checked = !includeIconsInGlobalSwitch.checked
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Quick Presets
-                                    Text {
-                                        text: "PRESET RAPIDI GLOBALI (1 CLIC PER APPLICARE A TUTTO)"
-                                        font.family: root.textFontFamily
-                                        font.pixelSize: 10
-                                        font.weight: Font.Bold
-                                        color: root.effectiveAccent
-                                        font.letterSpacing: 0.6
-                                    }
-
-                                    Flow {
-                                        width: parent.width
-                                        spacing: 8
-
-                                        Repeater {
-                                            model: [
-                                                "Google Sans Flex",
-                                                "Inter",
-                                                "JetBrains Mono",
-                                                "Roboto",
-                                                "Ubuntu",
-                                                "Cantarell",
-                                                "Adwaita Sans",
-                                                "Iosevka Nerd Font"
-                                            ]
-
-                                            delegate: Rectangle {
-                                                id: globalChip
-                                                required property string modelData
-                                                readonly property bool isCurrent: root.cfgTextFontFamily.toLowerCase() === modelData.toLowerCase() && root.cfgHeroFontFamily.toLowerCase() === modelData.toLowerCase()
-                                                readonly property bool isHovered: globalChipMouse.containsMouse
-
-                                                height: 28
-                                                width: globalChipText.implicitWidth + 24
-                                                radius: 14
-                                                color: isCurrent ? root.effectiveAccent : (isHovered ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05))
-                                                border.width: 1
-                                                border.color: isCurrent ? root.effectiveAccent : root.borderCard
-
-                                                Behavior on color { ColorAnimation { duration: 120 } }
-
-                                                Row {
-                                                    anchors.centerIn: parent
-                                                    spacing: 6
-
-                                                    Text {
-                                                        id: globalChipText
-                                                        text: globalChip.modelData
-                                                        font.family: globalChip.modelData
-                                                        font.pixelSize: 11
-                                                        font.weight: globalChip.isCurrent ? Font.Bold : Font.Normal
-                                                        color: globalChip.isCurrent ? "#ffffff" : (globalChip.isHovered ? root.textPrimary : root.textSecondary)
-                                                        anchors.verticalCenter: parent.verticalCenter
-                                                    }
-
-                                                    Text {
-                                                        text: "★"
-                                                        font.pixelSize: 9
-                                                        color: "#ffffff"
-                                                        visible: globalChip.isCurrent
-                                                        anchors.verticalCenter: parent.verticalCenter
-                                                    }
-                                                }
-
-                                                MouseArea {
-                                                    id: globalChipMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    cursorShape: Qt.PointingHandCursor
-                                                    onClicked: {
-                                                        globalFontInput.text = globalChip.modelData;
-                                                        root.applyGlobalFont(globalChip.modelData, includeIconsInGlobalSwitch.checked);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            SettingsSectionHeader { title: "PERSONALIZZAZIONE DETTAGLIATA PER ELEMENTO" }
-
-                            // 2. Granular Card: Per-Element Font Configuration
-                            Rectangle {
-                                width: parent.width
-                                height: granularCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: granularCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 14
-
-                                    // Text Font
-                                    SettingsFontPickerRow {
-                                        title: "Testo & Interfaccia"
-                                        desc: "Usato per controlli, etichette, menu, descrizioni e notifiche"
-                                        currentFont: root.cfgTextFontFamily
-                                        iconGlyph: "\uf036"
-                                        presets: ["Google Sans Flex", "Inter", "Roboto", "Ubuntu", "Cantarell", "Adwaita Sans", "JetBrains Mono"]
-                                        onFontApplied: function(name) {
-                                            root.setFontSetting("text", name);
-                                        }
-                                        onBrowseRequested: root.openFontBrowser("text")
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Hero Font
-                                    SettingsFontPickerRow {
-                                        title: "Titoli & Intestazioni"
-                                        desc: "Usato per titolo brano musicale, dialoghi e scritte principali"
-                                        currentFont: root.cfgHeroFontFamily
-                                        iconGlyph: "\uf1dc"
-                                        presets: ["Google Sans Flex", "Inter", "Roboto", "Ubuntu", "JetBrains Mono", "Cantarell"]
-                                        onFontApplied: function(name) {
-                                            root.setFontSetting("hero", name);
-                                        }
-                                        onBrowseRequested: root.openFontBrowser("hero")
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Time Font
-                                    SettingsFontPickerRow {
-                                        title: "Orologio Digitale & Data"
-                                        desc: "Usato per l'orologio dell'isola dinamica e il calendario nel Centro di Controllo"
-                                        currentFont: root.cfgTimeFontFamily
-                                        iconGlyph: "\uf017"
-                                        presets: ["Google Sans Flex", "Inter", "JetBrains Mono", "Roboto", "Ubuntu", "Iosevka Nerd Font"]
-                                        onFontApplied: function(name) {
-                                            root.setFontSetting("time", name);
-                                        }
-                                        onBrowseRequested: root.openFontBrowser("time")
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Icon Font
-                                    SettingsFontPickerRow {
-                                        title: "Icone & Glifi Nerd Font"
-                                        desc: "Usato per tutti i simboli di sistema (Wi-Fi, Bluetooth, Batteria, Audio)"
-                                        currentFont: root.cfgIconFontFamily
-                                        iconGlyph: "\uf121"
-                                        presets: ["JetBrainsMono Nerd Font", "Symbols Nerd Font", "CaskaydiaCove Nerd Font", "Hack Nerd Font", "Iosevka Nerd Font"]
-                                        onFontApplied: function(name) {
-                                            root.setFontSetting("icon", name);
-                                        }
-                                        onBrowseRequested: root.openFontBrowser("icon")
-                                    }
-                                }
-                            }
-
-                            SettingsSectionHeader { title: "DIMENSIONI TIPOGRAFIA" }
-
-                            // 3. Font Sizes Card
-                            Rectangle {
-                                width: parent.width
-                                height: fontSizesCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: fontSizesCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    SettingsSliderRow {
-                                        title: "Dimensione Testo Base (Body)"
-                                        desc: "Scala tipografica per testi normali ed etichette"
-                                        fromVal: 10
-                                        toVal: 28
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgBodyFontSize
-                                        onValMoved: function(nextVal) {
-                                            root.cfgBodyFontSize = Math.round(nextVal);
-                                            root.updateSetting("bodyFontSize", root.cfgBodyFontSize);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    SettingsSliderRow {
-                                        title: "Dimensione Titoli (Title)"
-                                        desc: "Scala per intestazioni, card header e scritte in evidenza"
-                                        fromVal: 14
-                                        toVal: 36
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgTitleFontSize
-                                        onValMoved: function(nextVal) {
-                                            root.cfgTitleFontSize = Math.round(nextVal);
-                                            root.updateSetting("titleFontSize", root.cfgTitleFontSize);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    SettingsSliderRow {
-                                        title: "Dimensione Icone (Glyphs)"
-                                        desc: "Scala per glifi di stato, pill e controlli"
-                                        fromVal: 12
-                                        toVal: 32
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgIconFontSize
-                                        onValMoved: function(nextVal) {
-                                            root.cfgIconFontSize = Math.round(nextVal);
-                                            root.updateSetting("iconFontSize", root.cfgIconFontSize);
-                                        }
-                                    }
-                                }
-                            }
-
-                            SettingsSectionHeader { title: "ANTEPRIMA DAL VIVO" }
-
-                            // 4. Live Typography Sandbox Card
-                            Rectangle {
-                                width: parent.width
-                                height: previewCol.height + 28
-                                radius: 20
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: previewCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 14
-                                    spacing: 12
-
-                                    // Clock Preview
-                                    Row {
-                                        width: parent.width
-                                        spacing: 12
-
-                                        Rectangle {
-                                            height: 52
-                                            width: parent.width
-                                            radius: 14
-                                            color: Qt.rgba(0, 0, 0, 0.35)
-                                            border.width: 1
-                                            border.color: root.borderCard
-
-                                            Row {
-                                                anchors.centerIn: parent
-                                                spacing: 14
-
-                                                Text {
-                                                    text: "\uf017"
-                                                    font.family: root.iconFontFamily
-                                                    font.pixelSize: 18
-                                                    color: root.effectiveAccent
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-
-                                                Text {
-                                                    text: "14:35:22"
-                                                    font.family: root.timeFontFamily
-                                                    font.pixelSize: 22
-                                                    font.weight: Font.Bold
-                                                    color: "#ffffff"
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-
-                                                Rectangle {
-                                                    width: 1
-                                                    height: 24
-                                                    color: root.dividerColor
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-
-                                                Text {
-                                                    text: "Lunedì 19 Settembre"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 13
-                                                    color: root.textSecondary
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Hero & Body Preview
-                                    Rectangle {
-                                        width: parent.width
-                                        height: 86
-                                        radius: 14
-                                        color: Qt.rgba(0, 0, 0, 0.25)
-                                        border.width: 1
-                                        border.color: root.borderCard
-
-                                        Column {
-                                            anchors.fill: parent
-                                            anchors.margins: 12
-                                            spacing: 6
-
-                                            Text {
-                                                text: "Dynamic Island & Control Center"
-                                                font.family: root.heroFontFamily
-                                                font.pixelSize: root.cfgTitleFontSize > 0 ? root.cfgTitleFontSize : 18
-                                                font.weight: Font.Bold
-                                                color: root.textPrimary
-                                                elide: Text.ElideRight
-                                                width: parent.width
-                                            }
-
-                                            Text {
-                                                text: "I caratteri configurati sono applicati in tempo reale in tutte le superfici dell'isola e del centro di controllo con antialiasing fluido."
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: root.cfgBodyFontSize > 0 ? root.cfgBodyFontSize : 12
-                                                color: root.textSecondary
-                                                wrapMode: Text.WordWrap
-                                                width: parent.width
-                                            }
-                                        }
-                                    }
-
-                                    // Icon Badges Preview
-                                    Row {
-                                        spacing: 8
-                                        width: parent.width
-
-                                        Repeater {
-                                            model: [
-                                                { icon: "\uf1eb", label: "Wi-Fi 6" },
-                                                { icon: "\uf293", label: "Bluetooth" },
-                                                { icon: "\uf028", label: "Volume 75%" },
-                                                { icon: "\uf240", label: "Batteria 98%" }
-                                            ]
-
-                                            delegate: Rectangle {
-                                                required property var modelData
-                                                height: 30
-                                                width: badgeRow.implicitWidth + 20
-                                                radius: 15
-                                                color: root.accentSoft
-                                                border.width: 1
-                                                border.color: root.accentBorder
-
-                                                Row {
-                                                    id: badgeRow
-                                                    anchors.centerIn: parent
-                                                    spacing: 6
-
-                                                    Text {
-                                                        text: modelData.icon
-                                                        font.family: root.iconFontFamily
-                                                        font.pixelSize: 13
-                                                        color: root.effectiveAccent
-                                                        anchors.verticalCenter: parent.verticalCenter
-                                                    }
-
-                                                    Text {
-                                                        text: modelData.label
-                                                        font.family: root.textFontFamily
-                                                        font.pixelSize: 11
-                                                        font.weight: Font.Medium
-                                                        color: root.textPrimary
-                                                        anchors.verticalCenter: parent.verticalCenter
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Bottom Action Row: Reset to Default Button
-                                    Row {
-                                        width: parent.width
-                                        height: 36
-
-                                        Rectangle {
-                                            anchors.right: parent.right
-                                            height: 34
-                                            width: resetRow.implicitWidth + 24
-                                            radius: 10
-                                            color: resetMouse.pressed ? Qt.rgba(255, 59, 48, 0.3) : (resetMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.1) : Qt.rgba(255, 255, 255, 0.05))
-                                            border.width: 1
-                                            border.color: resetMouse.containsMouse ? Qt.rgba(255, 59, 48, 0.5) : root.borderCard
-
-                                            Behavior on color { ColorAnimation { duration: 120 } }
-
-                                            Row {
-                                                id: resetRow
-                                                anchors.centerIn: parent
-                                                spacing: 6
-
-                                                Text {
-                                                    text: "\uf0e2"
-                                                    font.family: root.iconFontFamily
-                                                    font.pixelSize: 12
-                                                    color: resetMouse.containsMouse ? "#ff453a" : root.textSecondary
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-
-                                                Text {
-                                                    text: "Ripristina Font Predefiniti"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 11
-                                                    font.weight: Font.DemiBold
-                                                    color: resetMouse.containsMouse ? "#ff453a" : root.textSecondary
-                                                    anchors.verticalCenter: parent.verticalCenter
-                                                }
-                                            }
-
-                                            MouseArea {
-                                                id: resetMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.resetFontsToDefault()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ==========================================
-                        // CATEGORY 3: APPEARANCE
-                        // ==========================================
-                        Column {
-                            width: parent.width
-                            spacing: 14
-                            visible: root.currentCategoryKey === "appearance" || (root.searchQuery !== "" && (
-                                "appearance opacity font typography clock format pywal palette iris".indexOf(root.searchQuery) >= 0
-                            ))
-
-                            SettingsSectionHeader { title: "APPEARANCE & THEME HARMONY" }
-
-                            // Group Card: Styling & Fonts
-                            Rectangle {
-                                width: parent.width
-                                height: appCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: appCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    // Background Opacity
-                                    SettingsSliderRow {
-                                        title: "Island Background Opacity"
-                                        desc: "Dark matte glass transparency percentage"
-                                        fromVal: 20
-                                        toVal: 100
-                                        step: 5
-                                        unitStr: "%"
-                                        currentVal: root.cfgBackgroundOpacity
-                                        onValMoved: function(nextVal) {
-                                            root.cfgBackgroundOpacity = Math.round(nextVal);
-                                            root.updateSetting("islandBackgroundOpacity", root.cfgBackgroundOpacity);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Clock Format (24h vs 12h)
-                                    Row {
-                                        width: parent.width
-                                        height: 48
-
-                                        Column {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - 150
-                                            spacing: 2
-
-                                            Text {
-                                                text: "Clock Format"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 13
-                                                font.weight: Font.DemiBold
-                                                color: root.textPrimary
-                                            }
-
-                                            Text {
-                                                text: "Choose between 24-hour and 12-hour AM/PM time"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 11
-                                                color: root.textSecondary
-                                            }
-                                        }
-
-                                        // Segmented 24h / 12h toggle
-                                        Rectangle {
-                                            width: 120
-                                            height: 30
-                                            radius: 15
-                                            color: Qt.rgba(255, 255, 255, 0.05)
-                                            border.width: 1
-                                            border.color: root.borderCard
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Row {
-                                                anchors.fill: parent
-
-                                                Rectangle {
-                                                    width: parent.width / 2
-                                                    height: parent.height
-                                                    radius: 15
-                                                    color: root.cfgClockFormat === "24" ? root.effectiveAccent : StyleTokens.transparent
-
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        text: "24h"
-                                                        font.family: root.textFontFamily
-                                                        font.pixelSize: 11
-                                                        font.weight: root.cfgClockFormat === "24" ? Font.Bold : Font.Normal
-                                                        color: root.cfgClockFormat === "24" ? "#ffffff" : root.textSecondary
-                                                    }
-
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: {
-                                                            root.cfgClockFormat = "24";
-                                                            root.updateSetting("clockFormat", "24");
-                                                        }
-                                                    }
-                                                }
-
-                                                Rectangle {
-                                                    width: parent.width / 2
-                                                    height: parent.height
-                                                    radius: 15
-                                                    color: root.cfgClockFormat === "12" ? root.effectiveAccent : StyleTokens.transparent
-
-                                                    Text {
-                                                        anchors.centerIn: parent
-                                                        text: "12h"
-                                                        font.family: root.textFontFamily
-                                                        font.pixelSize: 11
-                                                        font.weight: root.cfgClockFormat === "12" ? Font.Bold : Font.Normal
-                                                        color: root.cfgClockFormat === "12" ? "#ffffff" : root.textSecondary
-                                                    }
-
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        cursorShape: Qt.PointingHandCursor
-                                                        onClicked: {
-                                                            root.cfgClockFormat = "12";
-                                                            root.updateSetting("clockFormat", "12");
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Pywal / Iris Dynamic Theming Toggle
-                                    SettingsSwitchRow {
-                                        title: "Pywal & Iris Dynamic Palette"
-                                        desc: "Harmonize island accent colors automatically with wallpaper and theme"
-                                        iconGlyph: "\uf1fc"
-                                        checked: root.cfgPywalEnabled
-                                        onToggled: function(val) {
-                                            root.cfgPywalEnabled = val;
-                                            root.updateSetting("wallpaperPywalEnabled", val);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Body Font Size
-                                    SettingsSliderRow {
-                                        title: "Body Font Size"
-                                        desc: "Standard typography scale across modules"
-                                        fromVal: 12
-                                        toVal: 28
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgBodyFontSize
-                                        onValMoved: function(nextVal) {
-                                            root.cfgBodyFontSize = Math.round(nextVal);
-                                            root.updateSetting("bodyFontSize", root.cfgBodyFontSize);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Title Font Size
-                                    SettingsSliderRow {
-                                        title: "Title Font Size"
-                                        desc: "Headers and prominent dialog text scale"
-                                        fromVal: 16
-                                        toVal: 36
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgTitleFontSize
-                                        onValMoved: function(nextVal) {
-                                            root.cfgTitleFontSize = Math.round(nextVal);
-                                            root.updateSetting("titleFontSize", root.cfgTitleFontSize);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Icon Font Size
-                                    SettingsSliderRow {
-                                        title: "Icon Font Size"
-                                        desc: "Glyph indicators and system status icon scale"
-                                        fromVal: 14
-                                        toVal: 32
-                                        step: 1
-                                        unitStr: "px"
-                                        currentVal: root.cfgIconFontSize
-                                        onValMoved: function(nextVal) {
-                                            root.cfgIconFontSize = Math.round(nextVal);
-                                            root.updateSetting("iconFontSize", root.cfgIconFontSize);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ==========================================
-                        // CATEGORY 3: MOTION & ANIMATION
-                        // ==========================================
-                        Column {
-                            width: parent.width
-                            spacing: 14
-                            visible: root.currentCategoryKey === "motion" || (root.searchQuery !== "" && (
-                                "motion animation fps transition duration curve".indexOf(root.searchQuery) >= 0
-                            ))
-
-                            SettingsSectionHeader { title: "MOTION & ANIMATION" }
-
-                            // Group Card: Motion
-                            Rectangle {
-                                width: parent.width
-                                height: motionCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: motionCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    // Wallpaper Transition Duration
-                                    SettingsSliderRow {
-                                        title: "Transition Duration"
-                                        desc: "Crossfade and morphing duration for wallpaper updates"
-                                        fromVal: 0.2
-                                        toVal: 3.0
-                                        step: 0.1
-                                        unitStr: "s"
-                                        currentVal: root.cfgTransitionDuration
-                                        onValMoved: function(nextVal) {
-                                            root.cfgTransitionDuration = Math.round(nextVal * 10) / 10;
-                                            root.updateSetting("wallpaperTransitionDuration", root.cfgTransitionDuration);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Animation Refresh Rate (FPS)
-                                    SettingsSliderRow {
-                                        title: "Animation Framerate (FPS)"
-                                        desc: "Target refresh rate for fluid swiping and animations"
-                                        fromVal: 30
-                                        toVal: 165
-                                        step: 5
-                                        unitStr: "fps"
-                                        currentVal: root.cfgTransitionFps
-                                        onValMoved: function(nextVal) {
-                                            root.cfgTransitionFps = Math.round(nextVal);
-                                            root.updateSetting("wallpaperTransitionFps", root.cfgTransitionFps);
-                                        }
-                                    }
-
-                                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                                    // Animation Curves Preset
-                                    Row {
-                                        width: parent.width
-                                        height: 48
-
-                                        Column {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width - 240
-                                            spacing: 2
-
-                                            Text {
-                                                text: "Motion Curve Profile"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 13
-                                                font.weight: Font.DemiBold
-                                                color: root.textPrimary
-                                            }
-
-                                            Text {
-                                                text: "Spring and easing characteristics of the island"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 11
-                                                color: root.textSecondary
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            width: 220
-                                            height: 30
-                                            radius: 15
-                                            color: Qt.rgba(255, 255, 255, 0.05)
-                                            border.width: 1
-                                            border.color: root.borderCard
-                                            anchors.verticalCenter: parent.verticalCenter
-
-                                            Row {
-                                                anchors.fill: parent
-
-                                                Repeater {
-                                                    model: ["Snappy (iOS)", "Smooth", "Bouncy"]
-
-                                                    delegate: Rectangle {
-                                                        required property int index
-                                                        required property string modelData
-                                                        width: 220 / 3
-                                                        height: parent.height
-                                                        radius: 15
-                                                        color: root.cfgAnimationSpeedMode === index ? root.effectiveAccent : StyleTokens.transparent
-
-                                                        Text {
-                                                            anchors.centerIn: parent
-                                                            text: modelData
-                                                            font.family: root.textFontFamily
-                                                            font.pixelSize: 10
-                                                            font.weight: root.cfgAnimationSpeedMode === index ? Font.Bold : Font.Normal
-                                                            color: root.cfgAnimationSpeedMode === index ? "#ffffff" : root.textSecondary
-                                                        }
-
-                                                        MouseArea {
-                                                            anchors.fill: parent
-                                                            cursorShape: Qt.PointingHandCursor
-                                                            onClicked: {
-                                                                root.cfgAnimationSpeedMode = index;
-                                                                root.updateSetting("animationProfile", index);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // ==========================================
-                        // CATEGORY 4: MODULES
-                        // ==========================================
-                        Column {
-                            width: parent.width
-                            spacing: 14
-                            visible: root.currentCategoryKey === "modules" || (root.searchQuery !== "" && (
-                                "modules swipe pills triggers actions".indexOf(root.searchQuery) >= 0
-                            ))
-
-                            SettingsSectionHeader { title: "DYNAMIC ISLAND SWIPE MODULES" }
-
-                            // Group Card: Swipe Modules
-                            Rectangle {
-                                width: parent.width
-                                height: swipeCol.height + 24
-                                radius: 18
-                                color: root.bgCard
-                                border.width: 1
-                                border.color: root.borderCard
-
-                                Column {
-                                    id: swipeCol
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.top: parent.top
-                                    anchors.margins: 12
-                                    spacing: 8
-
-                                    Repeater {
-                                        model: [
-                                            { id: "albumcover", name: "Album Artwork Pill", desc: "Swipe to view currently playing album cover art", icon: "\uf001" },
-                                            { id: "trackname", name: "Track Title & Artist", desc: "Swipe to view current song title and artist ticker", icon: "\uf028" },
-                                            { id: "date", name: "Date & Calendar Preview", desc: "Swipe to view full date, day of week and month", icon: "\uf073" },
-                                            { id: "time", name: "Clock Time Pill", desc: "Swipe to reveal large digital clock format", icon: "\uf017" },
-                                            { id: "workspace", name: "Active Workspace Pill", desc: "Swipe to display current Hyprland workspace", icon: "\uf108" },
-                                            { id: "battery", name: "Battery & Power Pill", desc: "Swipe to inspect battery percentage and charging state", icon: "\uf240" }
-                                        ]
-
-                                        delegate: Column {
-                                            required property int index
-                                            required property var modelData
-                                            width: swipeCol.width
-                                            spacing: 8
-
-                                            SettingsSwitchRow {
-                                                title: modelData.name
-                                                desc: modelData.desc
-                                                iconGlyph: modelData.icon
-                                                checked: root.cfgSwipeItems.indexOf(modelData.id) >= 0
-                                                onToggled: function(val) {
-                                                    let nextItems = root.cfgSwipeItems.slice();
-                                                    const idx = nextItems.indexOf(modelData.id);
-                                                    if (val && idx < 0) {
-                                                        nextItems.push(modelData.id);
-                                                    } else if (!val && idx >= 0) {
-                                                        nextItems.splice(idx, 1);
-                                                    }
-                                                    root.cfgSwipeItems = nextItems;
-                                                    root.updateSetting("dynamicIslandLeftSwipeItems", nextItems);
-                                                }
-                                            }
-
-                                            Rectangle {
-                                                width: parent.width
-                                                height: 1
-                                                color: root.dividerColor
-                                                visible: index < 5
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Bottom spacing
-                        Item { width: parent.width; height: 20 }
-                    }
-                }
-
-                // Floating scrollbar indicator
-                Rectangle {
-                    anchors.right: flickable.right
-                    anchors.rightMargin: 4
-                    y: flickable.y + (flickable.visibleArea.yPosition * flickable.height)
-                    width: 4
-                    height: Math.max(28, flickable.visibleArea.heightRatio * flickable.height)
-                    radius: 2
-                    color: Qt.rgba(255, 255, 255, 0.35)
-                    visible: flickable.visibleArea.heightRatio < 1.0
-                    opacity: (flickable.moving || flickable.flicking) ? 1.0 : 0.0
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
-                }
-            }
-        }
-
-        // ==========================================
-        // SYSTEM FONT BROWSER MODAL SHEET
-        // ==========================================
-        Rectangle {
-            id: fontBrowserModal
-            anchors.fill: parent
-            radius: windowFrame.radius
-            color: Qt.rgba(8/255, 10/255, 15/255, 0.78)
-            z: 100
-            visible: opacity > 0
-            opacity: root.fontBrowserVisible ? 1.0 : 0.0
-
-            Behavior on opacity {
-                NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
-            }
-
-            // Click backdrop to dismiss
-            MouseArea {
-                anchors.fill: parent
-                onClicked: root.fontBrowserVisible = false
-            }
-
-            // Dialog Card
+            // ── Colonna Sinistra: Sidebar ──────────────────────────────
             Rectangle {
-                id: fontBrowserCard
-                width: Math.min(840, parent.width - 48)
-                height: Math.min(600, parent.height - 48)
-                anchors.centerIn: parent
-                radius: 22
-                color: root.bgGlass
+                width: 250
+                height: parent.height
+                color: root.bgSidebar
                 border.width: 1
-                border.color: root.borderCard
-                clip: true
-
-                // Prevent click pass-through
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {}
-                }
-
-                // Accent glow top accent line
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 2
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: StyleTokens.transparent }
-                        GradientStop { position: 0.5; color: root.effectiveAccent }
-                        GradientStop { position: 1.0; color: StyleTokens.transparent }
-                    }
-                }
+                border.color: Qt.rgba(255, 255, 255, 0.05)
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 12
+                    anchors.margins: 18
+                    spacing: 16
 
-                    // Header Bar
+                    // App Header
                     Row {
-                        width: parent.width
-                        height: 38
+                        spacing: 12
+                        anchors.horizontalCenter: parent.horizontalCenter
 
-                        Row {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 10
-
-                            Rectangle {
-                                width: 34
-                                height: 34
-                                radius: 11
-                                color: root.accentSoft
-                                border.width: 1
-                                border.color: root.accentBorder
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "\uf031"
-                                    font.family: root.iconFontFamily
-                                    font.pixelSize: 15
-                                    color: root.effectiveAccent
-                                }
-                            }
-
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 2
-
-                                Row {
-                                    spacing: 8
-
-                                    Text {
-                                        text: {
-                                            if (root.fontBrowserTarget === "global") return "Sfoglia Font per Tutto il Sistema";
-                                            if (root.fontBrowserTarget === "text") return "Sfoglia Font per Testo & Interfaccia";
-                                            if (root.fontBrowserTarget === "hero") return "Sfoglia Font per Titoli & Header";
-                                            if (root.fontBrowserTarget === "time") return "Sfoglia Font per Orologio Digitale";
-                                            if (root.fontBrowserTarget === "icon") return "Sfoglia Font per Icone & Glifi";
-                                            return "Sfoglia Font di Sistema";
-                                        }
-                                        font.family: root.textFontFamily
-                                        font.pixelSize: 15
-                                        font.weight: Font.Bold
-                                        color: root.textPrimary
-                                    }
-
-                                    Rectangle {
-                                        height: 18
-                                        width: fontCountLabel.implicitWidth + 12
-                                        radius: 9
-                                        color: root.accentSoft
-                                        border.width: 1
-                                        border.color: root.accentBorder
-                                        anchors.verticalCenter: parent.verticalCenter
-
-                                        Text {
-                                            id: fontCountLabel
-                                            anchors.centerIn: parent
-                                            text: root.fontBrowserFilteredList.length + " font"
-                                            font.family: root.textFontFamily
-                                            font.pixelSize: 10
-                                            font.weight: Font.Bold
-                                            color: root.effectiveAccent
-                                        }
-                                    }
-                                }
-
-                                Text {
-                                    text: "Tutti i font disponibili sul portatile (" + root.systemFontsList.length + " famiglie totali rilevate)"
-                                    font.family: root.textFontFamily
-                                    font.pixelSize: 11
-                                    color: root.textSecondary
-                                }
-                            }
-                        }
-
-                        // Close Button (X)
                         Rectangle {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 32
-                            height: 32
-                            radius: 16
-                            color: closeBrowserMouse.pressed ? Qt.rgba(255, 255, 255, 0.15) : (closeBrowserMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(255, 255, 255, 0.04))
+                            width: 36
+                            height: 36
+                            radius: 12
+                            color: Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.22)
                             border.width: 1
-                            border.color: root.borderCard
+                            border.color: root.effectiveAccent
 
                             Text {
                                 anchors.centerIn: parent
-                                text: "\uf00d"
-                                font.family: root.iconFontFamily
-                                font.pixelSize: 13
-                                color: closeBrowserMouse.containsMouse ? "#ffffff" : root.textSecondary
-                            }
-
-                            MouseArea {
-                                id: closeBrowserMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.fontBrowserVisible = false
-                            }
-                        }
-                    }
-
-                    // Search Bar + Filter Tabs Row
-                    Row {
-                        width: parent.width
-                        height: 38
-                        spacing: 10
-
-                        // Search input
-                        Rectangle {
-                            width: parent.width - 340
-                            height: 38
-                            radius: 12
-                            color: root.bgInput
-                            border.width: 1
-                            border.color: modalSearchInput.activeFocus ? root.effectiveAccent : root.borderCard
-
-                            Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                            Row {
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-                                spacing: 8
-
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "\uf002"
-                                    font.family: root.iconFontFamily
-                                    font.pixelSize: 12
-                                    color: root.textMuted
-                                }
-
-                                TextInput {
-                                    id: modalSearchInput
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: parent.width - 48
-                                    font.family: root.textFontFamily
-                                    font.pixelSize: 12
-                                    color: root.textPrimary
-                                    clip: true
-                                    selectByMouse: true
-                                    text: root.fontBrowserSearchQuery
-
-                                    onTextChanged: {
-                                        root.fontBrowserSearchQuery = text;
-                                        root.updateFontBrowserList();
-                                    }
-
-                                    Text {
-                                        anchors.fill: parent
-                                        text: "Cerca font per nome (es. Inter, JetBrains, Roboto, Nerd)..."
-                                        font.family: root.textFontFamily
-                                        font.pixelSize: 12
-                                        color: root.textMuted
-                                        visible: modalSearchInput.text === "" && !modalSearchInput.activeFocus
-                                    }
-                                }
-
-                                Text {
-                                    text: "\uf00d"
-                                    font.family: root.iconFontFamily
-                                    font.pixelSize: 11
-                                    color: root.textMuted
-                                    visible: modalSearchInput.text !== ""
-                                    anchors.verticalCenter: parent.verticalCenter
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: modalSearchInput.text = ""
-                                    }
-                                }
+                                text: "🏝️"
+                                font.pixelSize: 18
                             }
                         }
 
-                        // Category Filter Tabs
-                        Row {
-                            height: 38
-                            spacing: 6
+                        Column {
                             anchors.verticalCenter: parent.verticalCenter
+                            spacing: 1
 
-                            Repeater {
-                                model: [
-                                    { id: "all", label: "Tutti" },
-                                    { id: "popular", label: "Popolari" },
-                                    { id: "nerd", label: "Nerd / Icone" },
-                                    { id: "mono", label: "Monospace" }
-                                ]
+                            Text {
+                                text: "Dynamic Island"
+                                color: "#f2f4f8"
+                                font.pixelSize: 14
+                                font.weight: Font.Bold
+                                font.family: root.textFontFamily
+                            }
 
-                                delegate: Rectangle {
-                                    id: filterTab
-                                    required property var modelData
-                                    readonly property bool isSelected: root.fontBrowserCategoryFilter === filterTab.modelData.id
-                                    readonly property bool isHovered: filterTabMouse.containsMouse
-
-                                    height: 32
-                                    width: tabLabel.implicitWidth + 20
-                                    radius: 16
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: isSelected ? root.effectiveAccent : (isHovered ? Qt.rgba(255, 255, 255, 0.1) : Qt.rgba(255, 255, 255, 0.04))
-                                    border.width: 1
-                                    border.color: isSelected ? root.effectiveAccent : root.borderCard
-
-                                    Text {
-                                        id: tabLabel
-                                        anchors.centerIn: parent
-                                        text: filterTab.modelData.label
-                                        font.family: root.textFontFamily
-                                        font.pixelSize: 11
-                                        font.weight: filterTab.isSelected ? Font.Bold : Font.Normal
-                                        color: filterTab.isSelected ? "#ffffff" : (filterTab.isHovered ? root.textPrimary : root.textSecondary)
-                                    }
-
-                                    MouseArea {
-                                        id: filterTabMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            root.fontBrowserCategoryFilter = filterTab.modelData.id;
-                                            root.updateFontBrowserList();
-                                        }
-                                    }
-                                }
+                            Text {
+                                text: "Impostazioni Sistema"
+                                color: "#7e889b"
+                                font.pixelSize: 11
+                                font.family: root.textFontFamily
                             }
                         }
                     }
 
-                    Rectangle { width: parent.width; height: 1; color: root.dividerColor }
-
-                    // Virtualized Font List
-                    Item {
+                    Rectangle {
                         width: parent.width
-                        height: parent.height - 120
-                        clip: true
+                        height: 1
+                        color: Qt.rgba(255, 255, 255, 0.06)
+                    }
 
-                        ListView {
-                            id: fontListView
-                            anchors.fill: parent
-                            model: root.fontBrowserFilteredList
-                            spacing: 4
-                            boundsBehavior: Flickable.StopAtBounds
+                    // Navigation List
+                    Column {
+                        width: parent.width
+                        spacing: 6
 
-                            delegate: Rectangle {
-                                id: fontDelegate
-                                required property string modelData
-                                readonly property bool isSelected: {
-                                    if (root.fontBrowserTarget === "global") return root.cfgTextFontFamily.toLowerCase() === modelData.toLowerCase();
-                                    if (root.fontBrowserTarget === "text") return root.cfgTextFontFamily.toLowerCase() === modelData.toLowerCase();
-                                    if (root.fontBrowserTarget === "hero") return root.cfgHeroFontFamily.toLowerCase() === modelData.toLowerCase();
-                                    if (root.fontBrowserTarget === "time") return root.cfgTimeFontFamily.toLowerCase() === modelData.toLowerCase();
-                                    if (root.fontBrowserTarget === "icon") return root.cfgIconFontFamily.toLowerCase() === modelData.toLowerCase();
-                                    return false;
-                                }
-                                readonly property bool isHovered: fontRowMouse.containsMouse
-                                readonly property bool isNerdFont: modelData.toLowerCase().indexOf("nerd") >= 0 || modelData.toLowerCase().indexOf("nf") >= 0 || modelData.toLowerCase().indexOf("symbols") >= 0
+                        Repeater {
+                            model: root.navigationPages
 
-                                width: fontListView.width - 12
-                                height: 52
+                            Rectangle {
+                                readonly property bool isSelected: root.selectedCategoryIndex === index
+                                width: parent.width
+                                height: 50
                                 radius: 12
-                                color: isSelected ? root.accentSoft : (isHovered ? Qt.rgba(255, 255, 255, 0.06) : Qt.rgba(255, 255, 255, 0.025))
-                                border.width: 1
-                                border.color: isSelected ? root.accentBorder : (isHovered ? Qt.rgba(255, 255, 255, 0.1) : root.borderCard)
+                                color: isSelected
+                                    ? Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.22)
+                                    : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.05) : "transparent")
+                                border.width: isSelected ? 1 : 0
+                                border.color: root.effectiveAccent
 
-                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
 
                                 Row {
                                     anchors.fill: parent
-                                    anchors.leftMargin: 14
-                                    anchors.rightMargin: 14
-                                    spacing: 14
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    spacing: 12
 
-                                    // Left: Font Family Name + Tag
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.icon
+                                        font.family: root.iconFontFamily
+                                        font.pixelSize: 15
+                                        color: isSelected ? root.effectiveAccent : "#8c94a6"
+                                    }
+
                                     Column {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: 230
                                         spacing: 2
 
-                                        Row {
-                                            spacing: 6
-                                            width: parent.width
-
-                                            Text {
-                                                text: fontDelegate.modelData
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 12
-                                                font.weight: fontDelegate.isSelected ? Font.Bold : Font.DemiBold
-                                                color: fontDelegate.isSelected ? root.effectiveAccent : root.textPrimary
-                                                elide: Text.ElideRight
-                                                width: Math.min(implicitWidth, parent.width - (fontDelegate.isNerdFont ? 44 : 0))
-                                            }
-
-                                            Rectangle {
-                                                visible: fontDelegate.isNerdFont
-                                                height: 16
-                                                width: 38
-                                                radius: 8
-                                                color: Qt.rgba(255, 255, 255, 0.08)
-                                                anchors.verticalCenter: parent.verticalCenter
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: "NERD"
-                                                    font.family: root.textFontFamily
-                                                    font.pixelSize: 8
-                                                    font.weight: Font.Bold
-                                                    color: root.textSecondary
-                                                }
-                                            }
-                                        }
-
                                         Text {
-                                            text: fontDelegate.isSelected ? "Attualmente in uso" : "Clicca per applicare"
+                                            text: modelData.title
+                                            color: isSelected ? "#ffffff" : "#c2c7d4"
+                                            font.pixelSize: 12
+                                            font.weight: isSelected ? Font.DemiBold : Font.Normal
                                             font.family: root.textFontFamily
-                                            font.pixelSize: 10
-                                            color: fontDelegate.isSelected ? root.effectiveAccent : root.textMuted
                                         }
-                                    }
-
-                                    // Center: Live Typography Sample rendered in THAT font!
-                                    Rectangle {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        width: parent.width - 340
-                                        height: 36
-                                        radius: 8
-                                        color: Qt.rgba(0, 0, 0, 0.22)
-                                        clip: true
 
                                         Text {
-                                            anchors.centerIn: parent
-                                            text: {
-                                                if (root.fontBrowserTarget === "icon") {
-                                                    return "          󰍹    Dynamic Glyphs";
-                                                }
-                                                if (root.fontBrowserTarget === "time") {
-                                                    return "14:35:22 - 09:41 AM (24h/12h)";
-                                                }
-                                                return "Aa Bb Gg 123 - Dynamic Island Hyprland";
-                                            }
-                                            font.family: fontDelegate.modelData
-                                            font.pixelSize: 13
-                                            color: fontDelegate.isSelected ? "#ffffff" : "#c4cce0"
-                                            elide: Text.ElideRight
-                                            width: parent.width - 16
-                                            horizontalAlignment: Text.AlignHCenter
-                                        }
-                                    }
-
-                                    // Right: Selection button
-                                    Rectangle {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        height: 28
-                                        width: 82
-                                        radius: 14
-                                        color: fontDelegate.isSelected ? root.effectiveAccent : (fontDelegate.isHovered ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05))
-                                        border.width: 1
-                                        border.color: fontDelegate.isSelected ? root.effectiveAccent : (fontDelegate.isHovered ? root.accentBorder : root.borderCard)
-
-                                        Row {
-                                            anchors.centerIn: parent
-                                            spacing: 4
-
-                                            Text {
-                                                text: fontDelegate.isSelected ? "\uf00c" : "\uf054"
-                                                font.family: root.iconFontFamily
-                                                font.pixelSize: 10
-                                                color: fontDelegate.isSelected ? "#ffffff" : (fontDelegate.isHovered ? root.effectiveAccent : root.textSecondary)
-                                                anchors.verticalCenter: parent.verticalCenter
-                                            }
-
-                                            Text {
-                                                text: fontDelegate.isSelected ? "Attivo" : "Applica"
-                                                font.family: root.textFontFamily
-                                                font.pixelSize: 10
-                                                font.weight: Font.Bold
-                                                color: fontDelegate.isSelected ? "#ffffff" : (fontDelegate.isHovered ? root.effectiveAccent : root.textSecondary)
-                                                anchors.verticalCenter: parent.verticalCenter
-                                            }
+                                            text: modelData.subtitle
+                                            color: isSelected ? Qt.rgba(255, 255, 255, 0.70) : "#656d80"
+                                            font.pixelSize: 10
+                                            font.family: root.textFontFamily
                                         }
                                     }
                                 }
 
                                 MouseArea {
-                                    id: fontRowMouse
+                                    id: itemMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        const fontName = fontDelegate.modelData;
-                                        if (root.fontBrowserTarget === "global") {
-                                            root.applyGlobalFont(fontName, includeIconsInGlobalSwitch.checked);
-                                        } else if (root.fontBrowserTarget === "text") {
-                                            root.setFontSetting("text", fontName);
-                                        } else if (root.fontBrowserTarget === "hero") {
-                                            root.setFontSetting("hero", fontName);
-                                        } else if (root.fontBrowserTarget === "time") {
-                                            root.setFontSetting("time", fontName);
-                                        } else if (root.fontBrowserTarget === "icon") {
-                                            root.setFontSetting("icon", fontName);
-                                        }
-                                        root.fontBrowserVisible = false;
-                                    }
+                                    onClicked: root.selectedCategoryIndex = index
                                 }
                             }
                         }
+                    }
 
-                        // Floating scrollbar for font list
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.rightMargin: 2
-                            y: fontListView.visibleArea.yPosition * fontListView.height
-                            width: 4
-                            height: Math.max(30, fontListView.visibleArea.heightRatio * fontListView.height)
-                            radius: 2
-                            color: Qt.rgba(255, 255, 255, 0.4)
-                            visible: fontListView.visibleArea.heightRatio < 1.0
-                            opacity: (fontListView.moving || fontListView.flicking) ? 1.0 : 0.4
+                    Item { Layout.fillHeight: true; width: 1; height: 40 }
+
+                    // Bottom Sync Pill & Reload
+                    Rectangle {
+                        width: parent.width
+                        height: 38
+                        radius: 10
+                        color: Qt.rgba(255, 255, 255, 0.04)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.06)
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            Rectangle {
+                                width: 7; height: 7; radius: 3.5
+                                color: (root.dynamicConfig && root.dynamicConfig.isSaving) ? "#fbbf24" : "#34c759"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: root.dynamicConfig ? root.dynamicConfig.saveStatus : "Live Synced"
+                                color: "#9aa3b5"
+                                font.pixelSize: 11
+                                font.family: root.textFontFamily
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
                         }
                     }
                 }
             }
-        }
-    }
 
-    // ==========================================
-    // REUSABLE SUB-COMPONENTS
-    // ==========================================
-
-    // Component: Section Header with Accent Dot
-    component SettingsSectionHeader: Row {
-        property string title: ""
-        spacing: 8
-
-        Rectangle {
-            width: 6
-            height: 6
-            radius: 3
-            color: root.effectiveAccent
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        Text {
-            text: title
-            font.family: root.textFontFamily
-            font.pixelSize: 11
-            font.weight: Font.Bold
-            color: root.effectiveAccent
-            font.letterSpacing: 0.8
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }
-
-    // Component: Switch Row with Vibrant Accent Toggle
-    component SettingsSwitchRow: Item {
-        id: switchRowItem
-        property string title: ""
-        property string desc: ""
-        property string iconGlyph: ""
-        property bool checked: false
-        signal toggled(bool nextVal)
-
-        width: parent.width
-        height: 52
-
-        Row {
-            anchors.left: parent.left
-            anchors.right: toggleSwitch.left
-            anchors.rightMargin: 16
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 12
-
-            // Leading Icon if provided
+            // ── Colonna Destra: Contenuto Pagina ───────────────────────
             Rectangle {
-                width: 32
-                height: 32
-                radius: 10
-                color: switchRowItem.checked ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05)
-                border.width: 1
-                border.color: switchRowItem.checked ? root.accentBorder : root.borderCard
-                visible: switchRowItem.iconGlyph !== ""
-                anchors.verticalCenter: parent.verticalCenter
-
-                Behavior on color { ColorAnimation { duration: 160 } }
-                Behavior on border.color { ColorAnimation { duration: 160 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: switchRowItem.iconGlyph
-                    font.family: root.iconFontFamily
-                    font.pixelSize: 14
-                    color: switchRowItem.checked ? root.effectiveAccent : root.textSecondary
-                }
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - (switchRowItem.iconGlyph !== "" ? 44 : 0)
-                spacing: 2
-
-                Text {
-                    text: switchRowItem.title
-                    font.family: root.textFontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.DemiBold
-                    color: root.textPrimary
-                }
-
-                Text {
-                    text: switchRowItem.desc
-                    font.family: root.textFontFamily
-                    font.pixelSize: 11
-                    color: root.textSecondary
-                    elide: Text.ElideRight
-                    width: parent.width
-                }
-            }
-        }
-
-        // Animated iOS Switch Capsule
-        Rectangle {
-            id: toggleSwitch
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: 48
-            height: 26
-            radius: 13
-            color: switchRowItem.checked ? root.effectiveAccent : root.switchOffColor
-
-            Behavior on color {
-                ColorAnimation { duration: 180 }
-            }
-
-            // Sliding Knob with Spring Easing
-            Rectangle {
-                id: switchKnob
-                width: 20
-                height: 20
-                radius: 10
-                color: "#ffffff"
-                y: 3
-                x: switchRowItem.checked ? (toggleSwitch.width - width - 3) : 3
-
-                Behavior on x {
-                    NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
-                }
-
-                // Subtle inner shadow for 3D feel
-                Rectangle {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    color: StyleTokens.transparent
-                    border.width: 1
-                    border.color: "#18000000"
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: switchRowItem.toggled(!switchRowItem.checked)
-            }
-        }
-    }
-
-    // Component: Slider Row with Value Badge
-    component SettingsSliderRow: Item {
-        id: sliderRowItem
-        property string title: ""
-        property string desc: ""
-        property real fromVal: 0
-        property real toVal: 100
-        property real step: 1
-        property real currentVal: 0
-        property string unitStr: "px"
-        signal valMoved(real nextVal)
-
-        width: parent.width
-        height: 52
-
-        Column {
-            anchors.left: parent.left
-            anchors.right: sliderControls.left
-            anchors.rightMargin: 16
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 2
-
-            Text {
-                text: sliderRowItem.title
-                font.family: root.textFontFamily
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
-                color: root.textPrimary
-            }
-
-            Text {
-                text: sliderRowItem.desc
-                font.family: root.textFontFamily
-                font.pixelSize: 11
-                color: root.textSecondary
-                elide: Text.ElideRight
-                width: parent.width
-            }
-        }
-
-        // Slider Track + Value Badge
-        Row {
-            id: sliderControls
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 12
-
-            // Draggable Track
-            Rectangle {
-                id: trackArea
-                width: 140
-                height: 7
-                radius: 3.5
-                color: Qt.rgba(255, 255, 255, 0.1)
-                border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.05)
-                anchors.verticalCenter: parent.verticalCenter
-
-                readonly property real normVal: Math.max(0, Math.min(1, (sliderRowItem.currentVal - sliderRowItem.fromVal) / Math.max(0.001, (sliderRowItem.toVal - sliderRowItem.fromVal))))
-
-                // Active Fill
-                Rectangle {
-                    height: parent.height
-                    width: Math.max(4, trackArea.normVal * parent.width)
-                    radius: parent.radius
-                    gradient: Gradient {
-                        orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: root.effectiveAccent }
-                        GradientStop { position: 1.0; color: Qt.lighter(root.effectiveAccent, 1.2) }
-                    }
-                }
-
-                // Knob
-                Rectangle {
-                    width: 18
-                    height: 18
-                    radius: 9
-                    color: "#ffffff"
-                    border.width: 1
-                    border.color: Qt.rgba(0, 0, 0, 0.2)
-                    anchors.verticalCenter: parent.verticalCenter
-                    x: Math.max(0, Math.min(trackArea.width - width, trackArea.normVal * trackArea.width - width / 2))
-
-                    scale: sliderMouse.pressed ? 1.18 : (sliderMouse.containsMouse ? 1.08 : 1.0)
-                    Behavior on scale {
-                        NumberAnimation { duration: 120 }
-                    }
-                }
-
-                MouseArea {
-                    id: sliderMouse
-                    anchors.fill: parent
-                    anchors.margins: -8
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-
-                    function updateFromPos(mousePos) {
-                        const clampedX = Math.max(0, Math.min(trackArea.width, mousePos.x + 8));
-                        const progress = clampedX / trackArea.width;
-                        let target = sliderRowItem.fromVal + progress * (sliderRowItem.toVal - sliderRowItem.fromVal);
-                        if (sliderRowItem.step > 0) {
-                            target = Math.round(target / sliderRowItem.step) * sliderRowItem.step;
-                        }
-                        sliderRowItem.valMoved(target);
-                    }
-
-                    onPositionChanged: function(mouse) {
-                        if (pressed) updateFromPos(mouse);
-                    }
-                    onPressed: function(mouse) {
-                        updateFromPos(mouse);
-                    }
-                }
-            }
-
-            // Value Badge
-            Rectangle {
-                width: 60
-                height: 26
-                radius: 13
-                color: sliderMouse.pressed ? root.accentSoft : Qt.rgba(255, 255, 255, 0.05)
-                border.width: 1
-                border.color: sliderMouse.pressed ? root.accentBorder : root.borderCard
-                anchors.verticalCenter: parent.verticalCenter
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on border.color { ColorAnimation { duration: 120 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: (sliderRowItem.step < 1 ? sliderRowItem.currentVal.toFixed(1) : Math.round(sliderRowItem.currentVal)) + " " + sliderRowItem.unitStr
-                    font.family: root.textFontFamily
-                    font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    color: sliderMouse.pressed ? root.effectiveAccent : "#e2e6f0"
-                }
-            }
-        }
-    }
-
-    // Component: Font Picker Row with Custom Input and Preset Chips
-    component SettingsFontPickerRow: Column {
-        id: fontPickerCol
-        property string title: ""
-        property string desc: ""
-        property string currentFont: ""
-        property var presets: []
-        property string iconGlyph: "\uf031"
-        signal fontApplied(string fontName)
-        signal browseRequested()
-
-        width: parent ? parent.width : 500
-        spacing: 8
-
-        Row {
-            width: parent.width
-            height: 38
-
-            Row {
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
-
-                Rectangle {
-                    width: 24
-                    height: 24
-                    radius: 8
-                    color: root.accentSoft
-                    border.width: 1
-                    border.color: root.accentBorder
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: fontPickerCol.iconGlyph
-                        font.family: root.iconFontFamily
-                        font.pixelSize: 11
-                        color: root.effectiveAccent
-                    }
-                }
+                width: parent.width - 250
+                height: parent.height
+                color: "transparent"
 
                 Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2
-
-                    Text {
-                        text: fontPickerCol.title
-                        font.family: root.textFontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        color: root.textPrimary
-                    }
-
-                    Text {
-                        text: fontPickerCol.desc
-                        font.family: root.textFontFamily
-                        font.pixelSize: 11
-                        color: root.textSecondary
-                    }
-                }
-            }
-
-            // Current font badge (clickable to browse)
-            Rectangle {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                height: 26
-                width: currentFontBadgeRow.implicitWidth + 20
-                radius: 13
-                color: currentBadgeMouse.containsMouse ? Qt.lighter(root.accentSoft, 1.25) : root.accentSoft
-                border.width: 1
-                border.color: root.accentBorder
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-
-                Row {
-                    id: currentFontBadgeRow
-                    anchors.centerIn: parent
-                    spacing: 5
-
-                    Text {
-                        id: currentFontLabel
-                        text: fontPickerCol.currentFont
-                        font.family: fontPickerCol.currentFont
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        color: root.effectiveAccent
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: "\uf0d7"
-                        font.family: root.iconFontFamily
-                        font.pixelSize: 9
-                        color: root.effectiveAccent
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                MouseArea {
-                    id: currentBadgeMouse
                     anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: fontPickerCol.browseRequested()
-                }
-            }
-        }
 
-        // Custom Font Input Bar + Browse + Apply Buttons
-        Row {
-            width: parent.width
-            height: 34
-            spacing: 8
+                    // Header Pagina con Titolo e Tasto Chiusura [ ✕ ]
+                    Rectangle {
+                        width: parent.width
+                        height: 60
+                        color: "transparent"
+                        border.width: 0
 
-            Rectangle {
-                width: parent.width - 176
-                height: 34
-                radius: 10
-                color: root.bgInput
-                border.width: 1
-                border.color: fontInput.activeFocus ? root.effectiveAccent : root.borderCard
+                        Row {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 24
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 10
 
-                Behavior on border.color { ColorAnimation { duration: 140 } }
-
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 10
-                    spacing: 6
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "\uf002"
-                        font.family: root.iconFontFamily
-                        font.pixelSize: 11
-                        color: root.textMuted
-                    }
-
-                    TextInput {
-                        id: fontInput
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width - 24
-                        font.family: text !== "" ? text : root.textFontFamily
-                        font.pixelSize: 12
-                        color: root.textPrimary
-                        clip: true
-                        selectByMouse: true
-                        text: fontPickerCol.currentFont
-
-                        onAccepted: {
-                            if (text.trim() !== "") {
-                                fontPickerCol.fontApplied(text.trim());
+                            Text {
+                                text: root.navigationPages[root.selectedCategoryIndex].title
+                                color: "#f2f4f8"
+                                font.pixelSize: 17
+                                font.weight: Font.Bold
+                                font.family: root.textFontFamily
+                                anchors.verticalCenter: parent.verticalCenter
                             }
                         }
 
-                        Text {
-                            anchors.fill: parent
-                            text: "Digita nome o clicca Sfoglia..."
-                            font.family: root.textFontFamily
-                            font.pixelSize: 12
-                            color: root.textMuted
-                            visible: fontInput.text === "" && !fontInput.activeFocus
+                        // Pulsante Chiudi [ ✕ ]
+                        Rectangle {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 24
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 32
+                            height: 32
+                            radius: 16
+                            color: closeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "✕"
+                                color: "#d8dce6"
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                            }
+
+                            MouseArea {
+                                id: closeMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.closeRequested()
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            width: parent.width
+                            height: 1
+                            color: Qt.rgba(255, 255, 255, 0.05)
                         }
                     }
-                }
-            }
 
-            // Sfoglia Button
-            Rectangle {
-                width: 80
-                height: 34
-                radius: 10
-                color: browseRowBtnMouse.pressed ? root.accentPressed : (browseRowBtnMouse.containsMouse ? root.accentSoft : Qt.rgba(255, 255, 255, 0.06))
-                border.width: 1
-                border.color: root.accentBorder
+                    // Stack View delle 5 Pagine
+                    StackLayout {
+                        id: pagesStack
+                        width: parent.width
+                        height: parent.height - 60
+                        currentIndex: root.selectedCategoryIndex
 
-                Behavior on color { ColorAnimation { duration: 120 } }
+                        // Pagina 1: Isola & Geometria
+                        IslandGeometryPage {
+                            config: root.dynamicConfig
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            iconFontFamily: root.iconFontFamily
+                        }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 4
+                        // Pagina 2: Interazioni & Mouse
+                        InteractionsPage {
+                            config: root.dynamicConfig
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            iconFontFamily: root.iconFontFamily
+                        }
 
-                    Text {
-                        text: "\uf07c"
-                        font.family: root.iconFontFamily
-                        font.pixelSize: 11
-                        color: root.effectiveAccent
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        // Pagina 3: Control Center & Studio Canvas (Visual 2D Editor!)
+                        ControlCenterStudioPage {
+                            config: root.dynamicConfig
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            heroFontFamily: root.heroFontFamily
+                            iconFontFamily: root.iconFontFamily
+                        }
 
-                    Text {
-                        text: "Sfoglia"
-                        font.family: root.textFontFamily
-                        font.pixelSize: 11
-                        font.weight: Font.Medium
-                        color: root.textPrimary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                }
+                        // Pagina 4: Aspetto, Sfondi & Font
+                        AppearanceFontPage {
+                            config: root.dynamicConfig
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            heroFontFamily: root.heroFontFamily
+                            iconFontFamily: root.iconFontFamily
+                            onOpenFontBrowser: function(target) { root.openFontBrowser(target); }
+                        }
 
-                MouseArea {
-                    id: browseRowBtnMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: fontPickerCol.browseRequested()
-                }
-            }
-
-            // Apply Button
-            Rectangle {
-                width: 80
-                height: 34
-                radius: 10
-                color: applyMouse.pressed ? root.accentPressed : (applyMouse.containsMouse ? Qt.lighter(root.effectiveAccent, 1.1) : root.effectiveAccent)
-
-                Behavior on color { ColorAnimation { duration: 120 } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "Imposta"
-                    font.family: root.textFontFamily
-                    font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    color: "#ffffff"
-                }
-
-                MouseArea {
-                    id: applyMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (fontInput.text.trim() !== "") {
-                            fontPickerCol.fontApplied(fontInput.text.trim());
+                        // Pagina 5: Scorciatoie Hyprland
+                        ShortcutsPage {
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            iconFontFamily: root.iconFontFamily
                         }
                     }
                 }
             }
         }
+    }
 
-        // Preset Chips Flow
-        Flow {
-            width: parent.width
-            spacing: 6
+    // ── Modal Font Browser (Sfoglia tutti i font di sistema) ───────────
+    property bool fontBrowserVisible: false
+    property string fontBrowserTarget: "text"
+    property string fontBrowserQuery: ""
+    property var systemFontsList: []
+    property bool systemFontsLoaded: false
+    property var filteredFonts: []
 
-            Repeater {
-                model: fontPickerCol.presets
+    function loadSystemFonts() {
+        if (systemFontsLoaded) return;
+        try {
+            let list = Qt.fontFamilies();
+            if (Array.isArray(list)) {
+                list.sort(function(a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
+                systemFontsList = list;
+                systemFontsLoaded = true;
+            }
+        } catch(e) {}
+    }
 
-                delegate: Rectangle {
-                    id: chipRect
-                    required property string modelData
-                    readonly property bool isSelected: fontPickerCol.currentFont.toLowerCase() === modelData.toLowerCase()
-                    readonly property bool isHovered: chipMouse.containsMouse
+    function updateFilteredFonts() {
+        let q = fontBrowserQuery.toLowerCase().trim();
+        let list = systemFontsList;
+        let res = [];
+        for (let i = 0; i < list.length; i++) {
+            let font = list[i];
+            if (q !== "" && font.toLowerCase().indexOf(q) === -1) continue;
+            res.push(font);
+            if (res.length >= 300) break;
+        }
+        filteredFonts = res;
+    }
 
-                    height: 24
-                    width: chipText.implicitWidth + 16
-                    radius: 12
-                    color: isSelected ? root.effectiveAccent : (isHovered ? Qt.rgba(255, 255, 255, 0.1) : Qt.rgba(255, 255, 255, 0.05))
-                    border.width: 1
-                    border.color: isSelected ? root.effectiveAccent : root.borderCard
+    function openFontBrowser(target) {
+        loadSystemFonts();
+        fontBrowserTarget = target;
+        fontBrowserQuery = "";
+        updateFilteredFonts();
+        fontBrowserVisible = true;
+    }
 
-                    Behavior on color { ColorAnimation { duration: 120 } }
+    Rectangle {
+        id: fontBrowserModal
+        visible: root.fontBrowserVisible
+        anchors.fill: parent
+        radius: 32
+        color: Qt.rgba(10/255, 12/255, 17/255, 0.96)
+        z: 999
+
+        MouseArea { anchors.fill: parent } // block clicks through
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 28
+            spacing: 16
+
+            Item {
+                width: parent.width
+                height: 32
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Sfoglia Font di Sistema (" + root.systemFontsList.length + " installati)"
+                    color: "#f2f4f8"
+                    font.pixelSize: 16
+                    font.weight: Font.Bold
+                    font.family: root.textFontFamily
+                }
+
+                Rectangle {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 32
+                    height: 32
+                    radius: 16
+                    color: Qt.rgba(255, 255, 255, 0.08)
 
                     Text {
-                        id: chipText
                         anchors.centerIn: parent
-                        text: chipRect.modelData
-                        font.family: chipRect.modelData
-                        font.pixelSize: 11
-                        font.weight: chipRect.isSelected ? Font.Bold : Font.Normal
-                        color: chipRect.isSelected ? "#ffffff" : (chipRect.isHovered ? root.textPrimary : root.textSecondary)
+                        text: "✕"
+                        color: "#ffffff"
+                        font.pixelSize: 12
                     }
 
                     MouseArea {
-                        id: chipMouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.fontBrowserVisible = false
+                    }
+                }
+            }
+
+            // Barra di Ricerca Font
+            Rectangle {
+                width: parent.width
+                height: 42
+                radius: 10
+                color: Qt.rgba(255, 255, 255, 0.06)
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.10)
+
+                TextInput {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    text: root.fontBrowserQuery
+                    color: "#ffffff"
+                    font.pixelSize: 13
+                    font.family: root.textFontFamily
+                    clip: true
+                    onTextChanged: {
+                        root.fontBrowserQuery = text;
+                        root.updateFilteredFonts();
+                    }
+                }
+            }
+
+            // Lista Font con Preview
+            ListView {
+                width: parent.width
+                height: parent.height - 120
+                clip: true
+                model: root.filteredFonts
+
+                delegate: Rectangle {
+                    width: parent.width
+                    height: 46
+                    radius: 8
+                    color: fontRowMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent"
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        spacing: 16
+
+                        Text {
+                            text: modelData
+                            color: "#ffffff"
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            font.family: root.textFontFamily
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 240
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            text: "Pack my box with five dozen liquor jugs 1234567890"
+                            color: "#8c94a6"
+                            font.pixelSize: 13
+                            font.family: modelData
+                            anchors.verticalCenter: parent.verticalCenter
+                            elide: Text.ElideRight
+                            width: parent.width - 270
+                        }
+                    }
+
+                    MouseArea {
+                        id: fontRowMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            fontInput.text = chipRect.modelData;
-                            fontPickerCol.fontApplied(chipRect.modelData);
+                            if (root.dynamicConfig) {
+                                if (root.fontBrowserTarget === "icon") {
+                                    root.dynamicConfig.set("iconFontFamily", modelData);
+                                } else {
+                                    root.dynamicConfig.set("textFontFamily", modelData);
+                                    root.dynamicConfig.set("heroFontFamily", modelData);
+                                    root.dynamicConfig.set("timeFontFamily", modelData);
+                                }
+                            }
+                            root.fontBrowserVisible = false;
                         }
                     }
                 }
@@ -4135,4 +570,3 @@ FocusScope {
         }
     }
 }
-

@@ -1,12 +1,18 @@
-//@ pragma Env QS_NO_RELOAD_POPUP=1
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Polkit
 import IslandBackend
+import "qml/config"
 
 Scope {
     id: shellRoot
+
+    DynamicConfig {
+        id: dynamicConfig
+    }
+
+    readonly property alias dynamicConfig: dynamicConfig
 
     readonly property bool screenRecordingActive: SystemServices.screenRecordingActive
     property bool focusEnabled: false
@@ -739,6 +745,7 @@ Scope {
 
             screen: modelData
             shellRootController: shellRoot
+            dynamicConfig: shellRoot.dynamicConfig
         }
     }
 }

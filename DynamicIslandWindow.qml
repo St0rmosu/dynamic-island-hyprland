@@ -14,6 +14,7 @@ import "qml/workspace"
 PanelWindow {
     id: root
     property var shellRootController: null
+    property var dynamicConfig: null
     readonly property var polkitAgent: shellRootController ? shellRootController.polkitAgent : null
     property string overviewPhase: "closed"
     property bool overviewPreloading: false
@@ -21,12 +22,11 @@ PanelWindow {
     readonly property bool overviewVisible: overviewPhase === "preparing" || overviewPhase === "opening" || overviewPhase === "open"
     readonly property bool overviewMounted: overviewPhase !== "closed" || overviewPreloading
     readonly property bool overviewLoaderActive: !compositorIsNiri
-        && (overviewMounted || overviewUnloadGraceTimer.running)
     readonly property bool overviewDataReady: overviewLoader.item
         ? !!overviewLoader.item.overviewDataReady
-        : false
-    readonly property bool overviewWallpaperReady: overviewWallpaperCache.ready
-    readonly property bool overviewVisualReady: overviewDataReady && overviewWallpaperReady
+        : true
+    readonly property bool overviewWallpaperReady: true
+    readonly property bool overviewVisualReady: overviewLoader.status === Loader.Ready
     readonly property bool overviewContentVisible: (overviewPhase === "opening" || overviewPhase === "open")
         && overviewVisualReady
     readonly property bool compositorIsNiri: CompositorBackend.compositor === "niri"
@@ -434,38 +434,45 @@ PanelWindow {
     }
 
     readonly property real effectiveIslandWidth: {
+        if (dynamicConfig && dynamicConfig.islandWidth > 0) return dynamicConfig.islandWidth;
         let v = cfgVal("islandWidth", userConfig ? userConfig.islandWidth : 140);
         return (v !== undefined && !isNaN(Number(v)) && Number(v) > 0) ? Number(v) : 140;
     }
     readonly property real effectiveIslandHeight: {
+        if (dynamicConfig && dynamicConfig.islandHeight > 0) return dynamicConfig.islandHeight;
         let v = cfgVal("islandHeight", userConfig ? userConfig.islandHeight : 40);
         return (v !== undefined && !isNaN(Number(v)) && Number(v) > 0) ? Number(v) : 40;
     }
     readonly property real effectiveIslandTopMargin: {
+        if (dynamicConfig && dynamicConfig.islandTopMargin >= 0) return dynamicConfig.islandTopMargin;
         let v = cfgVal("islandTopMargin", userConfig ? userConfig.islandTopMargin : 8);
         return (v !== undefined && !isNaN(Number(v)) && Number(v) >= 0) ? Number(v) : 8;
     }
     readonly property real effectiveIslandBackgroundOpacity: {
-        let v = cfgVal("islandBackgroundOpacity", userConfig ? userConfig.islandBackgroundOpacity : 100);
-        return (v !== undefined && !isNaN(Number(v))) ? Math.max(0, Math.min(100, Number(v))) : 100;
+        if (dynamicConfig && dynamicConfig.islandBackgroundOpacity !== undefined) return dynamicConfig.islandBackgroundOpacity;
+        let v = cfgVal("islandBackgroundOpacity", userConfig ? userConfig.islandBackgroundOpacity : 92);
+        return (v !== undefined && !isNaN(Number(v))) ? Math.max(0, Math.min(100, Number(v))) : 92;
     }
     readonly property real effectiveIslandPositionX: {
+        if (dynamicConfig && dynamicConfig.islandPositionX !== undefined) return dynamicConfig.islandPositionX;
         let v = cfgVal("islandPositionX", userConfig ? userConfig.islandPositionX : 50);
         return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 50;
     }
     readonly property real effectiveIslandExclusiveZone: {
+        if (dynamicConfig && dynamicConfig.islandExclusiveZone !== undefined) return dynamicConfig.islandExclusiveZone;
         let v = cfgVal("islandExclusiveZone", userConfig ? userConfig.islandExclusiveZone : 0);
         return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 0;
     }
     readonly property real effectiveIslandCornerRadius: {
+        if (dynamicConfig && dynamicConfig.islandCornerRadius > 0) return dynamicConfig.islandCornerRadius;
         let v = cfgVal("islandCornerRadius", 0);
         return (v !== undefined && !isNaN(Number(v)) && Number(v) > 0) ? Number(v) : (effectiveIslandHeight / 2);
     }
 
-    readonly property string iconFontFamily: cfgVal("iconFontFamily", userConfig ? userConfig.iconFontFamily : "JetBrainsMono Nerd Font")
-    readonly property string textFontFamily: cfgVal("textFontFamily", userConfig ? userConfig.textFontFamily : "Google Sans Flex")
-    readonly property string heroFontFamily: cfgVal("heroFontFamily", userConfig ? userConfig.heroFontFamily : "Google Sans Flex")
-    readonly property string timeFontFamily: cfgVal("timeFontFamily", userConfig ? userConfig.timeFontFamily : "Google Sans Flex")
+    readonly property string iconFontFamily: (dynamicConfig && dynamicConfig.iconFontFamily !== "") ? dynamicConfig.iconFontFamily : cfgVal("iconFontFamily", userConfig ? userConfig.iconFontFamily : "JetBrainsMono Nerd Font")
+    readonly property string textFontFamily: (dynamicConfig && dynamicConfig.textFontFamily !== "") ? dynamicConfig.textFontFamily : cfgVal("textFontFamily", userConfig ? userConfig.textFontFamily : "Google Sans Flex")
+    readonly property string heroFontFamily: (dynamicConfig && dynamicConfig.heroFontFamily !== "") ? dynamicConfig.heroFontFamily : cfgVal("heroFontFamily", userConfig ? userConfig.heroFontFamily : "Google Sans Flex")
+    readonly property string timeFontFamily: (dynamicConfig && dynamicConfig.timeFontFamily !== "") ? dynamicConfig.timeFontFamily : cfgVal("timeFontFamily", userConfig ? userConfig.timeFontFamily : "Google Sans Flex")
     readonly property int bodyFontSize: Number(cfgVal("bodyFontSize", userConfig ? userConfig.bodyFontSize : 14)) || 14
     readonly property int titleFontSize: Number(cfgVal("titleFontSize", userConfig ? userConfig.titleFontSize : 16)) || 16
     readonly property int iconFontSize: Number(cfgVal("iconFontSize", userConfig ? userConfig.iconFontSize : 16)) || 16
@@ -2834,7 +2841,7 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "power_menu":
-                    return 460;
+                    return 400;
                 case "control_center":
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 420;
                 case "notification_center":
@@ -2877,7 +2884,7 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "power_menu":
-                    return 108;
+                    return 92;
                 case "control_center":
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
                         return 470;
@@ -3638,7 +3645,9 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ControlCenterLayer {
-                        userConfigData: localUserConfigFile.parsedData
+                        userConfigData: (root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout)
+                            ? { controlCenterCanvasLayout: root.dynamicConfig.controlCenterCanvasLayout }
+                            : localUserConfigFile.parsedData
                         accentColor: pywalColors.accent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
@@ -3798,13 +3807,8 @@ PanelWindow {
 
                 sourceComponent: Component {
                     SettingsAppLayer {
-                        systemTextFont: root.textFontFamily
-                        systemHeroFont: root.heroFontFamily
-                        systemTimeFont: root.timeFontFamily
-                        systemIconFont: root.iconFontFamily
+                        dynamicConfig: root.dynamicConfig
                         accentColor: pywalColors.accent
-                        pywalBackground: pywalColors.background
-                        pywalForeground: pywalColors.foreground
                         showCondition: islandContainer.settingsAppLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }
