@@ -2834,7 +2834,7 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "power_menu":
-                    return 380;
+                    return 460;
                 case "control_center":
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 420;
                 case "notification_center":
@@ -2877,7 +2877,7 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "power_menu":
-                    return 92;
+                    return 108;
                 case "control_center":
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
                         return 470;

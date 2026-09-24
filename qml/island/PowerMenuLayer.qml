@@ -15,10 +15,12 @@ FocusScope {
     property string textFontFamily: ""
     property color accentColor: "#60a5fa"
 
+    property int activeIndex: 0
+
     anchors.fill: parent
     focus: showCondition
     opacity: showCondition ? 1 : 0
-    scale: showCondition ? 1.0 : 0.88
+    scale: showCondition ? 1.0 : 0.90
     transformOrigin: Item.Center
 
     Behavior on opacity {
@@ -34,6 +36,59 @@ FocusScope {
             easing.type: Easing.OutBack
         }
     }
+
+    onShowConditionChanged: {
+        if (showCondition) {
+            root.activeIndex = 0;
+            root.forceActiveFocus();
+            autoCloseTimer.restart();
+        } else {
+            autoCloseTimer.stop();
+        }
+    }
+
+    readonly property var powerActions: [
+        {
+            id: "lock",
+            glyph: "\uf023",
+            name: "Blocca",
+            keyHint: "L",
+            accentColor: "#c084fc",
+            command: "/home/lollo/.scripts/qslock-wrapper.sh"
+        },
+        {
+            id: "logout",
+            glyph: "\uf2f5",
+            name: "Esci",
+            keyHint: "E",
+            accentColor: "#34d399",
+            command: "hyprctl dispatch exit"
+        },
+        {
+            id: "sleep",
+            glyph: "\uf186",
+            name: "Sospendi",
+            keyHint: "U",
+            accentColor: "#60a5fa",
+            command: "systemctl suspend"
+        },
+        {
+            id: "restart",
+            glyph: "\uf021",
+            name: "Riavvia",
+            keyHint: "R",
+            accentColor: "#fbbf24",
+            command: "systemctl reboot"
+        },
+        {
+            id: "shutdown",
+            glyph: "\uf011",
+            name: "Spegni",
+            keyHint: "S",
+            accentColor: "#f87171",
+            command: "systemctl poweroff"
+        }
+    ]
 
     function runCealestiaCommand(cmd) {
         var finalCmd = cmd.trim();
@@ -56,8 +111,24 @@ FocusScope {
     }
 
     Keys.onPressed: (event) => {
+        autoCloseTimer.restart();
+
         if (event.key === Qt.Key_Escape) {
             root.closeRequested();
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up) {
+            root.activeIndex = (root.activeIndex - 1 + powerActions.length) % powerActions.length;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || event.key === Qt.Key_Tab) {
+            root.activeIndex = (root.activeIndex + 1) % powerActions.length;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Backtab) {
+            root.activeIndex = (root.activeIndex - 1 + powerActions.length) % powerActions.length;
+            event.accepted = true;
+        } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
+            if (root.activeIndex >= 0 && root.activeIndex < powerActions.length) {
+                triggerAction(powerActions[root.activeIndex].command);
+            }
             event.accepted = true;
         } else if (event.key === Qt.Key_L) {
             triggerAction("/home/lollo/.scripts/qslock-wrapper.sh");
@@ -76,6 +147,7 @@ FocusScope {
             event.accepted = true;
         }
     }
+
     Keys.onEscapePressed: (event) => {
         root.closeRequested();
         event.accepted = true;
@@ -94,7 +166,7 @@ FocusScope {
 
     Timer {
         id: autoCloseTimer
-        interval: 4000
+        interval: 6000
         repeat: false
         onTriggered: {
             if (!layerHoverHandler.hovered && root.showCondition)
@@ -113,96 +185,125 @@ FocusScope {
         }
     }
 
+    // Centered Row of Action Cards
     Row {
         anchors.centerIn: parent
-        spacing: 16
+        spacing: 12
 
         Repeater {
-            model: [
-                {
-                    id: "lock",
-                    glyph: "\uf023",
-                    name: "Blocca",
-                    accentColor: "#c084fc",
-                    command: "/home/lollo/.scripts/qslock-wrapper.sh"
-                },
-                {
-                    id: "logout",
-                    glyph: "\uf2f5",
-                    name: "Esci",
-                    accentColor: "#34d399",
-                    command: "hyprctl dispatch exit"
-                },
-                {
-                    id: "sleep",
-                    glyph: "\uf186",
-                    name: "Sospendi",
-                    accentColor: "#60a5fa",
-                    command: "systemctl suspend"
-                },
-                {
-                    id: "restart",
-                    glyph: "\uf021",
-                    name: "Riavvia",
-                    accentColor: "#fbbf24",
-                    command: "systemctl reboot"
-                },
-                {
-                    id: "shutdown",
-                    glyph: "\uf011",
-                    name: "Spegni",
-                    accentColor: "#f87171",
-                    command: "systemctl poweroff"
-                }
-            ]
+            model: root.powerActions
 
             delegate: Item {
-                id: btnItem
-                width: 50
-                height: 50
+                id: cardItem
+                required property int index
+                required property var modelData
+
+                readonly property bool isSelected: root.activeIndex === index
+                readonly property bool isHovered: cardMouse.containsMouse
+
+                width: 74
+                height: 80
 
                 Rectangle {
-                    id: btnBg
+                    id: cardBg
                     anchors.fill: parent
-                    radius: width / 2
-                    color: btnMouse.containsMouse
-                        ? Qt.rgba(1, 1, 1, 0.16)
-                        : Qt.rgba(1, 1, 1, 0.08)
-                    border.width: 1
-                    border.color: btnMouse.containsMouse
-                        ? Qt.rgba(1, 1, 1, 0.28)
-                        : Qt.rgba(1, 1, 1, 0.12)
-                    scale: btnMouse.pressed ? 0.92 : (btnMouse.containsMouse ? 1.08 : 1.0)
+                    radius: 18
+
+                    color: {
+                        if (cardItem.isSelected || cardItem.isHovered) {
+                            return Qt.rgba(modelData.accentColor.r, modelData.accentColor.g, modelData.accentColor.b, 0.22);
+                        }
+                        return Qt.rgba(1, 1, 1, 0.05);
+                    }
+
+                    border.width: (cardItem.isSelected || cardItem.isHovered) ? 1.5 : 1
+                    border.color: {
+                        if (cardItem.isSelected || cardItem.isHovered) {
+                            return modelData.accentColor;
+                        }
+                        return Qt.rgba(1, 1, 1, 0.10);
+                    }
+
+                    scale: cardMouse.pressed ? 0.94 : ((cardItem.isSelected || cardItem.isHovered) ? 1.05 : 1.0)
 
                     Behavior on scale {
                         NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
                     }
                     Behavior on color {
-                        ColorAnimation { duration: 150 }
+                        ColorAnimation { duration: 140 }
                     }
                     Behavior on border.color {
-                        ColorAnimation { duration: 150 }
+                        ColorAnimation { duration: 140 }
                     }
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: modelData.glyph
-                        font.pixelSize: 22
-                        font.family: root.iconFontFamily
-                        color: btnMouse.containsMouse ? modelData.accentColor : StyleTokens.textPrimary
+                    // Key Hint Badge (Subtle top right letter badge)
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.topMargin: 6
+                        anchors.rightMargin: 6
+                        width: 14
+                        height: 14
+                        radius: 4
+                        color: (cardItem.isSelected || cardItem.isHovered)
+                            ? Qt.rgba(modelData.accentColor.r, modelData.accentColor.g, modelData.accentColor.b, 0.35)
+                            : Qt.rgba(1, 1, 1, 0.07)
 
-                        Behavior on color {
-                            ColorAnimation { duration: 150 }
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData.keyHint
+                            font.pixelSize: 8
+                            font.weight: Font.Bold
+                            font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
+                            color: (cardItem.isSelected || cardItem.isHovered) ? "#ffffff" : "#7c7f93"
+                        }
+                    }
+
+                    // Card Content: Glyphs + Label
+                    Column {
+                        anchors.centerIn: parent
+                        anchors.verticalCenterOffset: 1
+                        spacing: 6
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: modelData.glyph
+                            font.pixelSize: 22
+                            font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
+                            color: (cardItem.isSelected || cardItem.isHovered) ? modelData.accentColor : "#e2e4ea"
+
+                            Behavior on color {
+                                ColorAnimation { duration: 140 }
+                            }
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: modelData.name
+                            font.pixelSize: 11
+                            font.weight: (cardItem.isSelected || cardItem.isHovered) ? Font.DemiBold : Font.Normal
+                            font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
+                            color: (cardItem.isSelected || cardItem.isHovered) ? "#ffffff" : "#9ca0b0"
+
+                            Behavior on color {
+                                ColorAnimation { duration: 140 }
+                            }
                         }
                     }
                 }
 
                 MouseArea {
-                    id: btnMouse
+                    id: cardMouse
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.triggerAction(modelData.command)
+                    onEntered: {
+                        root.activeIndex = cardItem.index;
+                        autoCloseTimer.restart();
+                    }
+                    onClicked: {
+                        root.triggerAction(modelData.command);
+                    }
                 }
             }
         }
