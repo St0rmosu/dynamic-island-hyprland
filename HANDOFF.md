@@ -1,6 +1,6 @@
 # Dynamic Island Hyprland — Project Handoff Document
 
-> **Last Updated**: 2026-09-23  
+> **Last Updated**: 2026-09-24  
 > **Repository**: `/home/lollo/Progetti/dynamic-island-hyprland` (Branch: `main`)  
 > **Active Runtime Config**: `/home/lollo/.config/quickshell/dynamic-island`  
 > **OS & Environment**: Arch Linux, Hyprland (All-AMD), Waybar ('Cealestia' theme) & Quickshell ('dynamic-island'), Pywal16 + Iris color scheme generation.
@@ -23,7 +23,41 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 
 ## 2. Recent Accomplishments & Bug Fixes
 
-### A. Dedicated Power Menu / Wlogout Layer & Animation Fix ("Coso del wlogout")
+### A. Total Detachment from Tide Island & Reactive DynamicConfig (`~/.config/dynamic-island/config.json`)
+- **Problem**: Tide Island's C++ plugin (`libIslandBackendplugin.so`) hardcoded its file watcher to `~/.config/tide-island/userconfig.json`. Changes saved to `~/.config/dynamic-island/userconfig.json` did not update C++ properties, and QML was relying on a static JavaScript reader without reactive notification bindings.
+- **Solution**:
+  1. Built [`qml/config/DynamicConfig.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/config/DynamicConfig.qml) as a native Quickshell singleton in `shell.qml` with first-class QML properties for all island, control center, font, wallpaper, and interaction settings.
+  2. Implemented immediate in-memory reactivity: changes update properties instantly (0ms), triggering live layout morphs while debouncing atomic writes via [`scripts/save_dynamic_config.py`](file:///home/lollo/Progetti/dynamic-island-hyprland/scripts/save_dynamic_config.py) to `~/.config/dynamic-island/config.json` and `userconfig.json`.
+  3. Dynamic island dimensions, margins, opacity, and fonts in [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml) are bound directly to `dynamicConfig`.
+
+### B. Complete Rebuild of the Settings App (`SettingsAppLayer.qml`) with Studio Canvas
+- **Requirement**: Rebuild the settings application from scratch, eliminating legacy bloat, and structuring into 5 focused pages with the interactive Studio Canvas on Page 3.
+- **Implementation**:
+  1. Created modular settings subcomponents in `qml/settings/`:
+     - [`IslandGeometryPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/IslandGeometryPage.qml): Island resting width, height, corner radius, top margin, exclusive zone, auto-hide, and hover dwell controls.
+     - [`InteractionsPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/InteractionsPage.qml): Primary, secondary, middle, and double-click actions; vertical and horizontal mouse wheel scrolling (volume, brightness, tracks).
+     - [`ControlCenterStudioPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/ControlCenterStudioPage.qml): Embeds `StudioLayoutCanvas` for 2D iPadOS-style grid customization, card resizing (1-4 cols, 1-3 rows), and complete card removal with the trash can button (``).
+     - [`AppearanceFontPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/AppearanceFontPage.qml): Dark matte glass opacity, blur radius, Pywal/Iris dynamic palette toggle, `/home/lollo/Sfondi` wallpaper integration, and rapid 1-click typography presets.
+     - [`ShortcutsPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/ShortcutsPage.qml): Displays the user's exact 7 Hyprland keybindings (`SUPER+Tab`, `SUPER+P`, `SUPER+N`, `SUPER+ALT+Space`, `ALT+Space`, `SUPER+O`, `SUPER+C`), test trigger buttons (`▶`), and copyable Lua bindings.
+     - Reusable UI elements: [`SettingsCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/SettingsCard.qml), [`SettingsSlider.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/SettingsSlider.qml), [`SettingsSwitch.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/SettingsSwitch.qml), [`SettingsSegmented.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/SettingsSegmented.qml), [`SettingsHeader.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/SettingsHeader.qml).
+  2. Integrated an in-app searchable modal browsing all 4,850 system fonts.
+  3. Rebuilt [`qml/controlcenter/SettingsAppLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SettingsAppLayer.qml) using a clean two-column layout with status pill (`● Live Synced`).
+
+### C. Workspace Overview (`SUPER + Tab`) Multi-Second Latency Elimination
+- **Issue**: Pressing `SUPER + Tab` took several seconds to open the workspace overview.
+- **Root Causes**:
+  1. `overviewLoaderActive` was destroyed 260ms after closing (`overviewUnloadGraceTimer`), forcing the full QML tree to be parsed and recompiled on every invocation.
+  2. Opening was blocked by `overviewVisualReady`, waiting for `SystemServices.generateWallpaperThumbnail` to downscale high-resolution wallpapers and 4 asynchronous snapshot IPC calls.
+- **Fix**:
+  1. Set `overviewLoaderActive: !compositorIsNiri` so the overview component remains prewarmed in memory.
+  2. Set `overviewWallpaperReady: true` and simplified `beginOverviewOpening()` so the overview opens immediately (in ~70ms) without waiting for asynchronous disk writes or thumbnail generators.
+
+### D. Minimalist Squircle Power Menu & Cealestia Detached Execution
+- Refreshed [`PowerMenuLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/PowerMenuLayer.qml) with 5 minimal 56x56 glass action cards (Lock, Logout, Suspend, Reboot, Shutdown).
+- Removed text labels and top-right key hint badges as requested.
+- Implemented full keyboard arrow navigation (`Left`/`Right`/`Up`/`Down`/`Tab`) and `Enter` execution.
+- Added non-blocking detached process execution via Cealestia wrapper (`Quickshell.execDetached(["bash", "-c", "nohup setsid " + cmd + " >/dev/null 2>&1 &"])`).
+
 - **Issue**: Triggering the island power menu (`shell-dispatcher.sh power` / `togglePowerMenu`) resulted in a glitchy, jarring animation: the capsule would jump to full Control Center height (~420px), flash Control Center sliders and tiles for a brief moment, snap down to 150px, and abruptly vanish on close without smooth fading.
 - **Root Causes Identified**:
   1. The power view was previously embedded as a boolean sub-view (`powerViewActive`) within the heavy `ControlCenterLayer.qml`.
