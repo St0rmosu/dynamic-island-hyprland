@@ -9,6 +9,7 @@ import IslandBackend
 Rectangle {
     id: root
 
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     property var targetCapsule: null
     property var rootWindow: null
     property var userConfig: UserConfig
@@ -123,7 +124,7 @@ Rectangle {
     // Processi per comunicazione con script Python
     Process {
         id: statusProc
-        command: ["/home/lollo/.scripts/nothing-ear-ctl.py", "cached"]
+        command: [root.homeDir + "/.scripts/nothing-ear-ctl.py", "cached"]
         running: false
         stdout: SplitParser {
             onRead: function(data) {
@@ -147,12 +148,12 @@ Rectangle {
     function fetchStatus(forceRefresh) {
         if (statusProc.running) return;
         root.headphonesBuffer = "";
-        statusProc.command = ["/home/lollo/.scripts/nothing-ear-ctl.py", forceRefresh ? "status" : "cached"];
+        statusProc.command = [root.homeDir + "/.scripts/nothing-ear-ctl.py", forceRefresh ? "status" : "cached"];
         statusProc.running = true;
     }
 
     function runCtl(args) {
-        actionProc.command = ["/home/lollo/.scripts/nothing-ear-ctl.py"].concat(args);
+        actionProc.command = [root.homeDir + "/.scripts/nothing-ear-ctl.py"].concat(args);
         actionProc.running = false;
         actionProc.running = true;
     }

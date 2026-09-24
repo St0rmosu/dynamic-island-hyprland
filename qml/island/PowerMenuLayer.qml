@@ -47,12 +47,13 @@ FocusScope {
         }
     }
 
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     readonly property var powerActions: [
         {
             id: "lock",
             glyph: "\uf023",
             accentColor: "#c084fc",
-            command: "/home/lollo/.scripts/qslock-wrapper.sh"
+            command: root.homeDir + "/.scripts/qslock-wrapper.sh"
         },
         {
             id: "logout",
@@ -121,7 +122,7 @@ FocusScope {
             }
             event.accepted = true;
         } else if (event.key === Qt.Key_L) {
-            triggerAction("/home/lollo/.scripts/qslock-wrapper.sh");
+            triggerAction(root.homeDir + "/.scripts/qslock-wrapper.sh");
             event.accepted = true;
         } else if (event.key === Qt.Key_E) {
             triggerAction("hyprctl dispatch exit");

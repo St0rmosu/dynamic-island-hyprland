@@ -12,14 +12,16 @@ FocusScope {
     signal wallpaperApplySucceeded(string filePath)
 
     property bool showCondition: false
+    property var dynamicConfig: null
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     property string iconFontFamily: ""
     property string textFontFamily: ""
     readonly property var userConfig: UserConfig
 
     property color accentColor: "#60a5fa"
-    property bool pywalEnabled: userConfig.wallpaperPywalEnabled
-    property bool customCommandEnabled: userConfig.wallpaperCustomCommandEnabled === true
-    property string customCommand: userConfig.wallpaperCustomCommand === undefined || userConfig.wallpaperCustomCommand === null ? "" : String(userConfig.wallpaperCustomCommand)
+    property bool pywalEnabled: (dynamicConfig && dynamicConfig.pywalEnabled !== undefined) ? dynamicConfig.pywalEnabled : userConfig.wallpaperPywalEnabled
+    property bool customCommandEnabled: true
+    property string customCommand: (dynamicConfig && dynamicConfig.wallpaperCustomCommand) ? dynamicConfig.wallpaperCustomCommand : (userConfig.wallpaperCustomCommand || "")
     property int transitionFps: boundedInt(userConfig.wallpaperTransitionFps, 60, 1, 240)
     property int transitionStep: boundedInt(userConfig.wallpaperTransitionStep, 5, 1, 255)
     property real transitionDuration: boundedReal(userConfig.wallpaperTransitionDuration, 3.0, 0, 120)
@@ -28,8 +30,8 @@ FocusScope {
     property string transitionBezier: nonEmptyString(userConfig.wallpaperTransitionBezier, ".54,0,.34,.99")
     property string transitionWave: nonEmptyString(userConfig.wallpaperTransitionWave, "20,20")
     property bool transitionInvertY: userConfig.wallpaperTransitionInvertY
-    property string wallpaperDir: userConfig.wallpaperLibraryPath
-    property string targetWallpaperPath: userConfig.wallpaperPath
+    property string wallpaperDir: (dynamicConfig && dynamicConfig.wallpaperLibrary && dynamicConfig.wallpaperLibrary !== "") ? dynamicConfig.wallpaperLibrary : (userConfig.wallpaperLibraryPath || (root.homeDir + "/Sfondi"))
+    property string targetWallpaperPath: (dynamicConfig && dynamicConfig.wallpaperPath) ? dynamicConfig.wallpaperPath : userConfig.wallpaperPath
     property int thumbnailWidth: 640
     property int thumbnailHeight: 360
     property int thumbnailQuality: 80
@@ -426,9 +428,17 @@ FocusScope {
         wallpaperApplied(filePath);
         closeAfterApply = true;
 
+        var cmdPattern = (dynamicConfig && dynamicConfig.wallpaperCustomCommand && dynamicConfig.wallpaperCustomCommand !== "")
+            ? dynamicConfig.wallpaperCustomCommand
+            : (root.homeDir + '/.scripts/apply-wallpaper.sh "$1"');
+
+        var cmdStr = cmdPattern.indexOf("$1") !== -1
+            ? cmdPattern.replace('"$1"', '"' + filePath + '"').replace("$1", '"' + filePath + '"')
+            : (cmdPattern + ' "' + filePath + '"');
+
         var detachedStarted = false;
         try {
-            Quickshell.execDetached(["/home/lollo/.scripts/apply-wallpaper.sh", filePath]);
+            Quickshell.execDetached(["bash", "-c", cmdStr]);
             detachedStarted = true;
             root.wallpaperApplySucceeded(filePath);
         } catch (e) {
@@ -439,7 +449,7 @@ FocusScope {
             if (customApplyProcess.running)
                 customApplyProcess.running = false;
             customApplyProcess.wallpaperPath = filePath;
-            customApplyProcess.command = ["/home/lollo/.scripts/apply-wallpaper.sh", filePath];
+            customApplyProcess.command = ["bash", "-c", cmdStr];
             customApplyProcess.targetPath = root.targetWallpaperPath;
             customApplyProcess.running = true;
         }
@@ -541,8 +551,9 @@ FocusScope {
         property string wallpaperPath: ""
         property string targetPath: ""
         command: [
-            "/home/lollo/.scripts/apply-wallpaper.sh",
-            wallpaperPath
+            "bash",
+            "-c",
+            root.homeDir + "/.scripts/apply-wallpaper.sh \"" + wallpaperPath + "\""
         ]
         stdout: SplitParser {
             onRead: data => console.log("[wallpaper stdout]", data)

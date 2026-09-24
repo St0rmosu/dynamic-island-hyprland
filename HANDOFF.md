@@ -58,6 +58,33 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 - Implemented full keyboard arrow navigation (`Left`/`Right`/`Up`/`Down`/`Tab`) and `Enter` execution.
 - Added non-blocking detached process execution via Cealestia wrapper (`Quickshell.execDetached(["bash", "-c", "nohup setsid " + cmd + " >/dev/null 2>&1 &"])`).
 
+### E. 11-Point Polish & Portability Overhaul (User Screenshots & Directives)
+1. **Dynamic Island Layer Exclusive Zone**:
+   - In [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml), set `exclusiveZone: dynamicConfig.islandExclusiveZone` (default 48px), reserving space at the top so tiled windows never slide underneath the bar, functioning identically to Waybar.
+2. **Settings App Window Geometry**:
+   - Added `topLeftRadius: 32` and `bottomLeftRadius: 32` to the sidebar background in [`SettingsAppLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SettingsAppLayer.qml) to perfectly match the right content panel's 32px squircle radius.
+3. **100% Portability (No Hardcoded Paths)**:
+   - Eliminated all `/home/lollo` strings across the repository and replaced them with dynamic expressions: `Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")`.
+   - The shell now runs cleanly on any Linux installation under any username.
+4. **Studio Canvas Vertical Scrolling**:
+   - Wrapped `StudioLayoutCanvas` in a `Flickable` with `boundsBehavior: Flickable.StopAtBounds` and `ScrollBar.AsNeeded` in [`ControlCenterStudioPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/ControlCenterStudioPage.qml), allowing full vertical scrolling.
+5. **Removed Redundant Interactions Tab**:
+   - Removed the mouse clicks/scrolling page from SettingsApp navigation and stack layout, matching the user's workflow where hovering/clicking the island directly opens the Control Center.
+6. **Sidebar Header & Pill Cleanup**:
+   - Stripped away top header text (`Dynamic Island / Impostazioni Sistema`), tab subtitles, and bottom `● Live Synced` status badge in [`SettingsAppLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SettingsAppLayer.qml) for an ultra-clean, minimalist sidebar.
+7. **Vertical Sliders UI Polish**:
+   - In [`ControlSliderCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlSliderCard.qml), added a dedicated circular glass icon badge (`width: 36, height: 36, radius: 18`) at the bottom anchor. At 0% volume, the icon remains grounded with high contrast (`#ffffff`) without looking broken or collapsing.
+8. **Notification Capsule Redesign**:
+   - Completely rebuilt [`NotificationLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/NotificationLayer.qml) matching user mockup: sender name + multi-line body on the left, circular icon badge (`42x42`, `radius: 21`) with app glyph on the right, dynamically scaling width (290-480px) and height (56-82px) based on content length.
+9. **Wallpaper Switcher & Dynamic Color Engine Compatibility**:
+   - In [`AppearanceFontPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/AppearanceFontPage.qml) and [`DynamicConfig.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/config/DynamicConfig.qml), made wallpaper directory and apply command freely customizable text fields with reset defaults.
+   - Added support for 4 dynamic palette engines: **Pywal**, **Wallust**, **Iris**, and **Matugen** (with `auto` fall-through detection).
+10. **Interactive Shortcuts Customizer & Dynamic Lua Export**:
+    - In [`ShortcutsPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/ShortcutsPage.qml), users can edit key combinations for all 7 shell shortcuts. A dynamic snippet generator updates the exact Lua `hl.bind(...)` configuration in real time with a 1-click clipboard copy button (`wl-copy`).
+11. **Instant Response & Error-Free QML Loading**:
+    - Fixed QML attached property constraints in `ShortcutsPage.qml`.
+    - Verified zero runtime QML syntax or type errors via `quickshell log --pid <pid>` and live test triggers.
+
 - **Issue**: Triggering the island power menu (`shell-dispatcher.sh power` / `togglePowerMenu`) resulted in a glitchy, jarring animation: the capsule would jump to full Control Center height (~420px), flash Control Center sliders and tiles for a brief moment, snap down to 150px, and abruptly vanish on close without smooth fading.
 - **Root Causes Identified**:
   1. The power view was previously embedded as a boolean sub-view (`powerViewActive`) within the heavy `ControlCenterLayer.qml`.

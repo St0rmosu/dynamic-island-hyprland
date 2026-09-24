@@ -96,7 +96,7 @@ Flickable {
 
         SettingsCard {
             SettingsSwitch {
-                title: "Palette Dinamica Pywal & Iris"
+                title: "Palette Dinamica"
                 description: "Estrae e sfuma i colori dell'accento in tempo reale dallo sfondo del desktop"
                 icon: "\uf1fc" // paint-brush
                 checked: root.config ? root.config.pywalEnabled : true
@@ -104,6 +104,24 @@ Flickable {
                 textFontFamily: root.textFontFamily
                 iconFontFamily: root.iconFontFamily
                 onToggled: function(st) { if (root.config) root.config.set("pywalEnabled", st); }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            SettingsSegmented {
+                title: "Motore Palette Compatibile"
+                description: "Scegli o rileva automaticamente il generatore di colori del tuo sistema"
+                model: [
+                    { text: "Auto", value: "auto" },
+                    { text: "Pywal", value: "pywal" },
+                    { text: "Wallust", value: "wallust" },
+                    { text: "Iris", value: "iris" },
+                    { text: "Matugen", value: "matugen" }
+                ]
+                currentValue: root.config ? (root.config.paletteEngine || "auto") : "auto"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onSelected: function(val) { if (root.config) root.config.set("paletteEngine", val); }
             }
         }
 
@@ -115,13 +133,13 @@ Flickable {
         }
 
         SettingsCard {
-            Item {
+            // Cartella Raccolta Sfondi
+            Column {
                 width: parent.width
-                height: 48
+                spacing: 8
 
                 Row {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
                     spacing: 12
 
                     Rectangle {
@@ -148,7 +166,7 @@ Flickable {
                             font.family: root.textFontFamily
                         }
                         Text {
-                            text: root.config ? root.config.wallpaperLibrary : "/home/lollo/Sfondi"
+                            text: "Percorso directory da cui il carosello carica le anteprime"
                             color: "#7e889b"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -156,33 +174,83 @@ Flickable {
                     }
                 }
 
-                Rectangle {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 74
-                    height: 28
-                    radius: 6
-                    color: Qt.rgba(255, 255, 255, 0.08)
+                Row {
+                    width: parent.width
+                    spacing: 8
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Predefinito"
-                        color: "#c2c7d4"
-                        font.pixelSize: 11
-                        font.family: root.textFontFamily
+                    Rectangle {
+                        width: parent.width - 90
+                        height: 36
+                        radius: 8
+                        color: "#080a0f"
+                        border.width: 1
+                        border.color: wallDirInput.activeFocus ? root.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                        TextInput {
+                            id: wallDirInput
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            verticalAlignment: TextInput.AlignVCenter
+                            text: root.config ? (root.config.wallpaperLibrary || "") : ""
+                            color: "#e2e6ee"
+                            font.pixelSize: 12
+                            font.family: root.iconFontFamily
+                            clip: true
+                            onEditingFinished: {
+                                if (root.config && text.trim() !== "") {
+                                    root.config.set("wallpaperLibrary", text.trim());
+                                    root.config.set("wallpaperLibraryPath", text.trim());
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 82
+                        height: 36
+                        radius: 8
+                        color: resetDirMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.08)
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Predefinito"
+                            color: "#c2c7d4"
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            font.family: root.textFontFamily
+                        }
+
+                        MouseArea {
+                            id: resetDirMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: {
+                                const home = Quickshell.env("HOME") || "";
+                                const defaultPath = home + "/Sfondi";
+                                wallDirInput.text = defaultPath;
+                                if (root.config) {
+                                    root.config.set("wallpaperLibrary", defaultPath);
+                                    root.config.set("wallpaperLibraryPath", defaultPath);
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
-            Item {
+            // Comando Applicazione Sfondo
+            Column {
                 width: parent.width
-                height: 48
+                spacing: 8
 
                 Row {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
                     spacing: 12
 
                     Rectangle {
@@ -209,10 +277,75 @@ Flickable {
                             font.family: root.textFontFamily
                         }
                         Text {
-                            text: root.config ? root.config.wallpaperCustomCommand : "/home/lollo/.scripts/apply-wallpaper.sh \"$1\""
+                            text: "Script o comando eseguito passando il file come parametro $1"
                             color: "#7e889b"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
+                        }
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 8
+
+                    Rectangle {
+                        width: parent.width - 90
+                        height: 36
+                        radius: 8
+                        color: "#080a0f"
+                        border.width: 1
+                        border.color: cmdInput.activeFocus ? root.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                        TextInput {
+                            id: cmdInput
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            verticalAlignment: TextInput.AlignVCenter
+                            text: root.config ? (root.config.wallpaperCustomCommand || "") : ""
+                            color: "#e2e6ee"
+                            font.pixelSize: 12
+                            font.family: root.iconFontFamily
+                            clip: true
+                            onEditingFinished: {
+                                if (root.config && text.trim() !== "") {
+                                    root.config.set("wallpaperCustomCommand", text.trim());
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 82
+                        height: 36
+                        radius: 8
+                        color: resetCmdMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.08)
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Predefinito"
+                            color: "#c2c7d4"
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            font.family: root.textFontFamily
+                        }
+
+                        MouseArea {
+                            id: resetCmdMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: {
+                                const home = Quickshell.env("HOME") || "";
+                                const defaultCmd = home + "/.scripts/apply-wallpaper.sh \"$1\"";
+                                cmdInput.text = defaultCmd;
+                                if (root.config) {
+                                    root.config.set("wallpaperCustomCommand", defaultCmd);
+                                }
+                            }
                         }
                     }
                 }

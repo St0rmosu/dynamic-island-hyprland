@@ -50,19 +50,24 @@ Rectangle {
             id: verticalTrack
             anchors.fill: parent
             radius: root.radius
-            color: "#1d1f24"
+            color: "#16181f"
             border.width: 1
-            border.color: verticalMouse.containsMouse ? "#3d4149" : "#2b2e35"
+            border.color: verticalMouse.containsMouse ? "#3d4149" : Qt.rgba(255, 255, 255, 0.08)
             clip: true
 
-            // Riempimento dal basso verso l'alto
+            // Riempimento dal basso verso l'alto con angoli proporzionati
             Rectangle {
+                id: fillRect
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                height: Math.max(0, Math.min(parent.height, parent.height * root.value))
-                radius: parent.radius
+                height: root.value <= 0.001 ? 0 : Math.max(0, Math.min(parent.height, parent.height * root.value))
+                bottomLeftRadius: root.radius
+                bottomRightRadius: root.radius
+                topLeftRadius: root.value >= 0.95 ? root.radius : 8
+                topRightRadius: root.value >= 0.95 ? root.radius : 8
                 color: "#eceef2"
+                visible: root.value > 0.001
             }
 
             // Percentuale in alto
@@ -74,20 +79,31 @@ Rectangle {
                 font.pixelSize: 11
                 font.family: root.textFontFamily
                 font.weight: Font.Bold
-                color: (root.value > 0.88) ? "#111214" : root.textSecondary
+                color: (root.value > 0.85) ? "#111214" : (root.value > 0.01 ? "#e2e6ee" : "#7e889b")
                 z: 4
             }
 
-            // Icona in basso
-            Text {
+            // Badge / Icona in basso
+            Rectangle {
+                id: iconBadge
+                width: 36
+                height: 36
+                radius: 18
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 14
-                text: root.iconText
-                font.pixelSize: 18
-                font.family: root.iconFontFamily
-                color: (root.value > 0.18) ? "#111214" : root.textSecondary
+                anchors.bottomMargin: 10
+                color: root.value > 0.20 ? "transparent" : Qt.rgba(255, 255, 255, 0.07)
+                border.width: root.value > 0.20 ? 0 : 1
+                border.color: Qt.rgba(255, 255, 255, 0.08)
                 z: 4
+
+                Text {
+                    anchors.centerIn: parent
+                    text: root.iconText
+                    font.pixelSize: 17
+                    font.family: root.iconFontFamily
+                    color: (root.value > 0.20) ? "#111214" : "#ffffff"
+                }
             }
 
             MouseArea {
@@ -97,7 +113,10 @@ Rectangle {
                 cursorShape: Qt.PointingHandCursor
 
                 function update(mouseY) {
-                    let ratio = 1.0 - (mouseY / height);
+                    let padding = 12;
+                    let effectiveH = height - (padding * 2);
+                    let relY = mouseY - padding;
+                    let ratio = 1.0 - (relY / effectiveH);
                     root.valueMoved(root.clamp01(ratio));
                 }
 

@@ -5,6 +5,7 @@ import Quickshell
 Flickable {
     id: root
 
+    property var config: null
     property color accentColor: "#0a84ff"
     property string textFontFamily: "Google Sans Flex"
     property string iconFontFamily: "JetBrainsMono Nerd Font"
@@ -14,57 +15,109 @@ Flickable {
     clip: true
     boundsBehavior: Flickable.StopAtBounds
 
-    readonly property var shortcutsList: [
-        {
-            title: "Workspace Overview",
-            desc: "Visualizzatore interattivo di tutti i workspace e finestre aperte",
-            icon: "\uf108",
-            keys: ["SUPER", "Tab"],
-            action: "overview"
-        },
-        {
-            title: "Power Menu (Wlogout)",
-            desc: "Menu rapido per Blocca, Esci, Sospendi, Riavvia, Spegni",
-            icon: "\uf011",
-            keys: ["SUPER", "P"],
-            action: "power"
-        },
-        {
-            title: "Notification Center",
-            desc: "Pannello con cronologia notifiche e cancellazione",
-            icon: "\uf0f3",
-            keys: ["SUPER", "N"],
-            action: "notifications"
-        },
-        {
-            title: "Wallpaper Switcher",
-            desc: "Selettore a schede per cambiare sfondo con animazione",
-            icon: "\uf03e",
-            keys: ["SUPER", "ALT", "Spazio"],
-            action: "master-or-wallpaper"
-        },
-        {
-            title: "Application Launcher",
-            desc: "Ricerca rapida e avvio delle applicazioni installate",
-            icon: "\uf135", // rocket
-            keys: ["ALT", "Spazio"],
-            action: "apps"
-        },
-        {
-            title: "File Shelf",
-            desc: "Cassetto rapido per trascinare e incollare file al volo",
-            icon: "\uf07b",
-            keys: ["SUPER", "O"],
-            action: "files"
-        },
-        {
-            title: "Clipboard History",
-            desc: "Cronologia degli appunti con testi, codici e immagini",
-            icon: "\uf0ea",
-            keys: ["SUPER", "C"],
-            action: "clipboard"
-        }
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
+
+    readonly property var defaultShortcuts: [
+        { id: "overview", title: "Workspace Overview", desc: "Visualizzatore interattivo di tutti i workspace e finestre", icon: "\uf108", keys: ["SUPER", "Tab"], action: "overview" },
+        { id: "power", title: "Power Menu (Wlogout)", desc: "Menu rapido per Blocca, Esci, Sospendi, Riavvia, Spegni", icon: "\uf011", keys: ["SUPER", "P"], action: "power" },
+        { id: "notifications", title: "Notification Center", desc: "Pannello con cronologia notifiche e cancellazione", icon: "\uf0f3", keys: ["SUPER", "N"], action: "notifications" },
+        { id: "wallpaper", title: "Wallpaper Switcher", desc: "Selettore a schede per cambiare sfondo con animazione", icon: "\uf03e", keys: ["SUPER", "ALT", "Spazio"], action: "master-or-wallpaper" },
+        { id: "apps", title: "Application Launcher", desc: "Ricerca rapida e avvio delle applicazioni installate", icon: "\uf135", keys: ["ALT", "Spazio"], action: "apps" },
+        { id: "files", title: "File Shelf", desc: "Cassetto rapido per trascinare e incollare file al volo", icon: "\uf07b", keys: ["SUPER", "O"], action: "files" },
+        { id: "clipboard", title: "Clipboard History", desc: "Cronologia degli appunti con testi, codici e immagini", icon: "\uf0ea", keys: ["SUPER", "C"], action: "clipboard" }
     ]
+
+    readonly property var currentShortcuts: {
+        if (root.config && Array.isArray(root.config.customShortcuts) && root.config.customShortcuts.length > 0)
+            return root.config.customShortcuts;
+        return defaultShortcuts;
+    }
+
+    // State for editing a shortcut
+    property int editingIndex: -1
+    property var editKeys: []
+
+    function startEdit(idx) {
+        if (idx >= 0 && idx < currentShortcuts.length) {
+            editingIndex = idx;
+            editKeys = currentShortcuts[idx].keys.slice();
+        }
+    }
+
+    function toggleEditModifier(mod) {
+        let keys = editKeys.slice();
+        let idx = keys.indexOf(mod);
+        if (idx !== -1) {
+            keys.splice(idx, 1);
+        } else {
+            // Keep SUPER/ALT/CTRL/SHIFT at the beginning
+            let modOrder = ["SUPER", "CTRL", "ALT", "SHIFT"];
+            let newKeys = [];
+            for (let m of modOrder) {
+                if (keys.indexOf(m) !== -1 || m === mod) {
+                    newKeys.push(m);
+                }
+            }
+            for (let k of keys) {
+                if (modOrder.indexOf(k) === -1) {
+                    newKeys.push(k);
+                }
+            }
+            keys = newKeys;
+        }
+        editKeys = keys;
+    }
+
+    function setEditKey(k) {
+        let modOrder = ["SUPER", "CTRL", "ALT", "SHIFT"];
+        let newKeys = [];
+        for (let item of editKeys) {
+            if (modOrder.indexOf(item) !== -1) {
+                newKeys.push(item);
+            }
+        }
+        newKeys.push(k);
+        editKeys = newKeys;
+    }
+
+    function saveEdit() {
+        if (editingIndex >= 0 && editingIndex < currentShortcuts.length && editKeys.length > 0) {
+            let updated = JSON.parse(JSON.stringify(currentShortcuts));
+            updated[editingIndex].keys = editKeys;
+            if (root.config) {
+                root.config.set("customShortcuts", updated);
+            }
+        }
+        editingIndex = -1;
+    }
+
+    function cancelEdit() {
+        editingIndex = -1;
+    }
+
+    function generateLuaSnippet() {
+        let lines = [];
+        lines.push('-- Incolla queste righe nel tuo ~/.config/hypr/moduli/binds.lua :');
+        for (let item of currentShortcuts) {
+            let keyParts = item.keys || [];
+            let hasSuper = keyParts.indexOf("SUPER") !== -1;
+            let otherKeys = keyParts.filter(k => k !== "SUPER").map(k => k === "Spazio" ? "space" : k);
+
+            let keyStr = "";
+            if (hasSuper) {
+                if (otherKeys.length > 0) {
+                    keyStr = 'mainMod .. " + ' + otherKeys.join(" + ") + '"';
+                } else {
+                    keyStr = 'mainMod';
+                }
+            } else {
+                keyStr = '"' + keyParts.map(k => k === "Spazio" ? "space" : k).join(" + ") + '"';
+            }
+
+            lines.push('hl.bind(' + keyStr + ', hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh ' + item.action + '"))');
+        }
+        return lines.join("\n");
+    }
 
     ScrollBar.vertical: ScrollBar {
         width: 4
@@ -81,15 +134,20 @@ Flickable {
         spacing: 20
 
         // ── Sezione 1: Scorciatoie Attive ──────────────────────────────
-        SettingsHeader {
-            text: "Scorciatoie Configurate in Hyprland"
-            accentColor: root.accentColor
-            textFontFamily: root.textFontFamily
+        Row {
+            width: parent.width
+            spacing: 12
+
+            SettingsHeader {
+                text: "Scorciatoie Configurate (Clicca sui tasti per modificare)"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+            }
         }
 
         SettingsCard {
             Repeater {
-                model: root.shortcutsList
+                model: root.currentShortcuts
 
                 Column {
                     width: parent.width
@@ -149,46 +207,67 @@ Flickable {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 10
 
-                            // Key Badge Chips
-                            Row {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 4
+                            // Key Badge Chips (Clickable to edit!)
+                            Rectangle {
+                                height: 30
+                                width: keysRow.width + 12
+                                radius: 8
+                                color: (root.editingIndex === index)
+                                    ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22)
+                                    : (badgeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.05))
+                                border.width: 1
+                                border.color: (root.editingIndex === index) ? root.accentColor : Qt.rgba(255, 255, 255, 0.10)
 
-                                Repeater {
-                                    id: keysRepeater
-                                    model: modelData.keys
+                                Row {
+                                    id: keysRow
+                                    anchors.centerIn: parent
+                                    spacing: 4
 
-                                    Row {
-                                        spacing: 4
-                                        anchors.verticalCenter: parent.verticalCenter
+                                    Repeater {
+                                        id: keysRepeater
+                                        model: modelData.keys
 
-                                        Rectangle {
-                                            width: keyText.contentWidth + 16
-                                            height: 24
-                                            radius: 6
-                                            color: Qt.rgba(255, 255, 255, 0.07)
-                                            border.width: 1
-                                            border.color: Qt.rgba(255, 255, 255, 0.12)
+                                        Row {
+                                            spacing: 4
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Rectangle {
+                                                width: keyText.contentWidth + 14
+                                                height: 22
+                                                radius: 5
+                                                color: Qt.rgba(255, 255, 255, 0.08)
+
+                                                Text {
+                                                    id: keyText
+                                                    anchors.centerIn: parent
+                                                    text: modelData
+                                                    color: "#ffffff"
+                                                    font.pixelSize: 10
+                                                    font.weight: Font.DemiBold
+                                                    font.family: root.textFontFamily
+                                                }
+                                            }
 
                                             Text {
-                                                id: keyText
-                                                anchors.centerIn: parent
-                                                text: modelData
-                                                color: "#d8dce6"
-                                                font.pixelSize: 11
-                                                font.weight: Font.DemiBold
-                                                font.family: root.textFontFamily
+                                                visible: index < keysRepeater.count - 1
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: "+"
+                                                color: "#7e889b"
+                                                font.pixelSize: 10
+                                                font.weight: Font.Bold
                                             }
                                         }
+                                    }
+                                }
 
-                                        Text {
-                                            visible: index < keysRepeater.count - 1
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: "+"
-                                            color: "#6c7280"
-                                            font.pixelSize: 11
-                                            font.weight: Font.Bold
-                                        }
+                                MouseArea {
+                                    id: badgeMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (root.editingIndex === index) root.cancelEdit();
+                                        else root.startEdit(index);
                                     }
                                 }
                             }
@@ -196,8 +275,8 @@ Flickable {
                             // Pulsante Prova Rapida [ ▶ ]
                             Rectangle {
                                 width: 30
-                                height: 26
-                                radius: 6
+                                height: 30
+                                radius: 8
                                 color: testMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.30) : Qt.rgba(255, 255, 255, 0.06)
                                 border.width: 1
                                 border.color: testMouse.containsMouse ? root.accentColor : Qt.rgba(255, 255, 255, 0.10)
@@ -216,7 +295,146 @@ Flickable {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
-                                        Quickshell.execDetached(["bash", "-c", "/home/lollo/.scripts/shell-dispatcher.sh " + modelData.action]);
+                                        Quickshell.execDetached(["bash", "-c", "$HOME/.scripts/shell-dispatcher.sh " + modelData.action]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Inline Editor Box (When editing this specific shortcut)
+                    Rectangle {
+                        visible: root.editingIndex === index
+                        width: parent.width
+                        height: 96
+                        radius: 12
+                        color: "#0c0f16"
+                        border.width: 1
+                        border.color: root.accentColor
+
+                        Column {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Row {
+                                spacing: 8
+                                anchors.horizontalCenter: parent.horizontalCenter
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Modificatori:"
+                                    color: "#9aa3b5"
+                                    font.pixelSize: 11
+                                    font.family: root.textFontFamily
+                                }
+
+                                Repeater {
+                                    model: ["SUPER", "ALT", "CTRL", "SHIFT"]
+                                    Rectangle {
+                                        readonly property bool isSelected: root.editKeys.indexOf(modelData) !== -1
+                                        width: modText.contentWidth + 16
+                                        height: 26
+                                        radius: 6
+                                        color: isSelected ? root.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                                        Text {
+                                            id: modText
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            color: isSelected ? "#ffffff" : "#c2c7d4"
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            font.family: root.textFontFamily
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.toggleEditModifier(modelData)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row {
+                                spacing: 6
+                                anchors.horizontalCenter: parent.horizontalCenter
+
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "Tasto:"
+                                    color: "#9aa3b5"
+                                    font.pixelSize: 11
+                                    font.family: root.textFontFamily
+                                }
+
+                                Repeater {
+                                    model: ["Tab", "Spazio", "P", "N", "O", "C", "Return", "D", "M", "Esc"]
+                                    Rectangle {
+                                        readonly property bool isSelected: root.editKeys.indexOf(modelData) !== -1
+                                        width: kText.contentWidth + 14
+                                        height: 26
+                                        radius: 6
+                                        color: isSelected ? root.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                                        Text {
+                                            id: kText
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            color: isSelected ? "#ffffff" : "#c2c7d4"
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            font.family: root.textFontFamily
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.setEditKey(modelData)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row {
+                                spacing: 10
+                                anchors.horizontalCenter: parent.horizontalCenter
+
+                                Rectangle {
+                                    width: 70
+                                    height: 24
+                                    radius: 6
+                                    color: root.accentColor
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Salva"
+                                        color: "#ffffff"
+                                        font.pixelSize: 10
+                                        font.weight: Font.Bold
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.saveEdit()
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: 70
+                                    height: 24
+                                    radius: 6
+                                    color: Qt.rgba(255, 255, 255, 0.08)
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Annulla"
+                                        color: "#c2c7d4"
+                                        font.pixelSize: 10
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.cancelEdit()
                                     }
                                 }
                             }
@@ -224,7 +442,7 @@ Flickable {
                     }
 
                     Rectangle {
-                        visible: index < root.shortcutsList.length - 1
+                        visible: index < root.currentShortcuts.length - 1
                         width: parent.width
                         height: 1
                         color: Qt.rgba(255, 255, 255, 0.05)
@@ -234,41 +452,83 @@ Flickable {
         }
 
         // ── Sezione 2: Snippet di Configurazione Lua ────────────────────
-        SettingsHeader {
-            text: "Configurazione Hyprland (Lua)"
-            accentColor: root.accentColor
-            textFontFamily: root.textFontFamily
+        Row {
+            width: parent.width
+            spacing: 12
+
+            SettingsHeader {
+                text: "Configurazione Hyprland (Lua) - Aggiornata in Tempo Reale"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+            }
         }
 
         SettingsCard {
-            Text {
-                text: "I tasti sopra sono collegati a ~/.config/hypr/moduli/binds.lua tramite lo script shell-dispatcher.sh:"
-                color: "#7e889b"
-                font.pixelSize: 11
-                font.family: root.textFontFamily
+            Item {
+                width: parent.width
+                height: 28
+
+                Rectangle {
+                    anchors.right: parent.right
+                    width: 140
+                    height: 28
+                    radius: 6
+                    color: copyMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.35) : Qt.rgba(255, 255, 255, 0.08)
+                    border.width: 1
+                    border.color: root.accentColor
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 6
+                        Text {
+                            text: "\uf0c5"
+                            font.family: root.iconFontFamily
+                            color: root.accentColor
+                            font.pixelSize: 11
+                        }
+                        Text {
+                            text: copyTimer.running ? "Copiato!" : "Copia Codice"
+                            color: "#ffffff"
+                            font.pixelSize: 11
+                            font.weight: Font.Medium
+                            font.family: root.textFontFamily
+                        }
+                    }
+
+                    Timer {
+                        id: copyTimer
+                        interval: 2000
+                    }
+
+                    MouseArea {
+                        id: copyMouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            Quickshell.execDetached(["bash", "-c", "wl-copy << 'EOF'\n" + root.generateLuaSnippet() + "\nEOF"]);
+                            copyTimer.restart();
+                        }
+                    }
+                }
             }
 
             Rectangle {
                 width: parent.width
-                height: 120
+                implicitHeight: luaText.contentHeight + 24
                 radius: 10
                 color: "#080a0f"
                 border.width: 1
                 border.color: Qt.rgba(255, 255, 255, 0.06)
 
                 Text {
+                    id: luaText
                     anchors.fill: parent
-                    anchors.margins: 10
-                    text: 'hl.bind(mainMod .. " + Tab", hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh overview"))\n' +
-                          'hl.bind(mainMod .. " + P",   hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh power"))\n' +
-                          'hl.bind(mainMod .. " + N",   hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh notifications"))\n' +
-                          'hl.bind(mainMod .. " + ALT + space", hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh master-or-wallpaper"))\n' +
-                          'hl.bind("ALT + space",       hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh apps"))\n' +
-                          'hl.bind(mainMod .. " + O",   hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh files"))\n' +
-                          'hl.bind(mainMod .. " + C",   hl.dsp.exec_cmd("$HOME/.scripts/shell-dispatcher.sh clipboard"))'
+                    anchors.margins: 12
+                    text: root.generateLuaSnippet()
                     color: "#a4b1cd"
                     font.family: root.iconFontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     wrapMode: Text.WrapAnywhere
                 }
             }

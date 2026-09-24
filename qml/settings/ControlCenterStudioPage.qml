@@ -17,47 +17,64 @@ Item {
 
     signal requestReloadQuickshell()
 
-    StudioLayoutCanvas {
-        id: canvasItem
+    Flickable {
+        id: flickable
         anchors.fill: parent
         anchors.margins: 16
+        contentWidth: width
+        contentHeight: canvasItem.implicitHeight + 40
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
 
-        accentColor: root.accentColor
-        accentSoft: root.accentSoft
-        accentBorder: root.accentBorder
-        accentGlow: root.accentGlow
-
-        textPrimary: "#f2f4f8"
-        textSecondary: "#9aa3b5"
-        textMuted: "#656f82"
-        bgCard: Qt.rgba(255, 255, 255, 0.045)
-        borderCard: Qt.rgba(255, 255, 255, 0.08)
-
-        iconFontFamily: root.iconFontFamily
-        textFontFamily: root.textFontFamily
-        heroFontFamily: root.heroFontFamily
-
-        controlCenterOrientation: root.config ? root.config.controlCenterOrientation : "vertical"
-        controlCenterWidth: root.config ? root.config.controlCenterWidth : 420
-        rawConfig: root.config ? { controlCenterCanvasLayout: root.config.controlCenterCanvasLayout } : ({})
-
-        onRequestReloadQuickshell: root.requestReloadQuickshell()
-
-        onLayoutChanged: function(layoutArray) {
-            if (root.config) {
-                root.config.set("controlCenterCanvasLayout", layoutArray);
-            }
+        ScrollBar.vertical: ScrollBar {
+            id: vbar
+            anchors.right: flickable.right
+            anchors.rightMargin: 0
+            policy: ScrollBar.AsNeeded
+            width: 6
         }
 
-        onRequestOrientationChange: function(ori) {
-            if (root.config) {
-                root.config.set("controlCenterOrientation", ori);
-            }
-        }
+        StudioLayoutCanvas {
+            id: canvasItem
+            width: flickable.width - (vbar.visible ? 12 : 0)
 
-        onRequestWidthChange: function(w) {
-            if (root.config) {
-                root.config.set("controlCenterWidth", w);
+            accentColor: root.accentColor
+            accentSoft: root.accentSoft
+            accentBorder: root.accentBorder
+            accentGlow: root.accentGlow
+
+            textPrimary: "#f2f4f8"
+            textSecondary: "#9aa3b5"
+            textMuted: "#656f82"
+            bgCard: Qt.rgba(255, 255, 255, 0.045)
+            borderCard: Qt.rgba(255, 255, 255, 0.08)
+
+            iconFontFamily: root.iconFontFamily
+            textFontFamily: root.textFontFamily
+            heroFontFamily: root.heroFontFamily
+
+            controlCenterOrientation: root.config ? root.config.controlCenterOrientation : "vertical"
+            controlCenterWidth: root.config ? root.config.controlCenterWidth : 420
+            rawConfig: root.config ? { controlCenterCanvasLayout: root.config.controlCenterCanvasLayout } : ({})
+
+            onRequestReloadQuickshell: root.requestReloadQuickshell()
+
+            onLayoutChanged: function(layoutArray) {
+                if (root.config) {
+                    root.config.set("controlCenterCanvasLayout", layoutArray);
+                }
+            }
+
+            onRequestOrientationChange: function(ori) {
+                if (root.config) {
+                    root.config.set("controlCenterOrientation", ori);
+                }
+            }
+
+            onRequestWidthChange: function(w) {
+                if (root.config) {
+                    root.config.set("controlCenterWidth", w);
+                }
             }
         }
     }

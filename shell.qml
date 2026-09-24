@@ -8,6 +8,8 @@ import "qml/config"
 Scope {
     id: shellRoot
 
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
+
     DynamicConfig {
         id: dynamicConfig
     }
@@ -332,7 +334,7 @@ Scope {
             shellRoot.showDiscordCallAll(n, "Chiamata in arrivo...", "");
             avatarResolverProc.pendingCaller = n;
             avatarResolverProc.pendingSubtitle = "Chiamata in arrivo...";
-            avatarResolverProc.command = ["/home/lollo/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", n];
+            avatarResolverProc.command = [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", n];
             avatarResolverProc.running = false;
             avatarResolverProc.running = true;
         }
@@ -684,7 +686,7 @@ Scope {
 
     Process {
         id: discordCallMonitorProc
-        command: ["/home/lollo/.config/quickshell/dynamic-island/scripts/discord_call_monitor.py"]
+        command: [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/discord_call_monitor.py"]
         running: !shellRoot.shuttingDown
     }
 
@@ -716,7 +718,7 @@ Scope {
                     shellRoot.showDiscordCallAll(caller, sub, "");
                     avatarResolverProc.pendingCaller = caller;
                     avatarResolverProc.pendingSubtitle = sub;
-                    avatarResolverProc.command = ["/home/lollo/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", caller];
+                    avatarResolverProc.command = [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", caller];
                     avatarResolverProc.running = false;
                     avatarResolverProc.running = true;
                     return;

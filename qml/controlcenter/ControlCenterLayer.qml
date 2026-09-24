@@ -17,13 +17,14 @@ Item {
     signal clipboardRequested()
     signal closeRequested()
 
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     readonly property var userConfig: UserConfig
     property var notificationModel: null
     property var userConfigData: null
 
     FileView {
         id: localConfigFile
-        path: "/home/lollo/.config/dynamic-island/userconfig.json"
+        path: controlCenter.homeDir + "/.config/dynamic-island/userconfig.json"
         watchChanges: true
         property var parsedData: ({})
         Component.onCompleted: reload()
@@ -1459,7 +1460,7 @@ Item {
     }
     Process {
         id: lockProcess
-        command: ["/home/lollo/.scripts/qslock-wrapper.sh"]
+        command: [controlCenter.homeDir + "/.scripts/qslock-wrapper.sh"]
         running: false
         onExited: function(exitCode) {
             if (exitCode !== 0)
@@ -1472,14 +1473,14 @@ Item {
         id: applyBarProcess
         running: false
         function run(bar) {
-            command = ["/home/lollo/.scripts/apply-qs-bar.sh", bar];
+            command = [controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar];
             running = true;
         }
     }
 
     Process {
         id: openSwitcherProcess
-        command: ["/home/lollo/.scripts/qs-theme-switcher.sh"]
+        command: [controlCenter.homeDir + "/.scripts/qs-theme-switcher.sh"]
         running: false
         function run() {
             running = true;

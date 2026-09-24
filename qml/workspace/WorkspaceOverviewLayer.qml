@@ -24,7 +24,8 @@ Item {
     property string heroFontFamily: userConfig.heroFontFamily
     property string wallpaperPath: userConfig.wallpaperPath
     readonly property string effectiveWallpaperSource: {
-        const wp = root.wallpaperPath !== "" ? root.wallpaperPath : (userConfig.wallpaperPath !== "" ? userConfig.wallpaperPath : "/home/lollo/Sfondi/B & W Window.png");
+        const home = Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user");
+        const wp = root.wallpaperPath !== "" ? root.wallpaperPath : (userConfig.wallpaperPath !== "" ? userConfig.wallpaperPath : (home + "/Sfondi/B & W Window.png"));
         if (wp === "") return "";
         return wp.startsWith("file://") ? wp : ("file://" + encodeURI(wp));
     }

@@ -9,6 +9,7 @@ import Quickshell.Widgets
 FocusScope {
     id: root
 
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     signal closeRequested
 
     property bool showCondition: false
@@ -270,7 +271,7 @@ FocusScope {
 
     FileView {
         id: cealestiaAppsFile
-        path: "/home/lollo/.cache/cealestia_apps.json"
+        path: root.homeDir + "/.cache/cealestia_apps.json"
         preload: true
         watchChanges: true
         printErrors: false
@@ -295,7 +296,7 @@ FocusScope {
 
     Process {
         id: appsFetcher
-        command: ["python3", "/home/lollo/.scripts/get-apps.py"]
+        command: ["python3", root.homeDir + "/.scripts/get-apps.py"]
         running: false
         stdout: SplitParser {
             onRead: function(data) {

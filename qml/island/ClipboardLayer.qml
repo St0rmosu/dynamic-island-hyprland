@@ -25,8 +25,8 @@ FocusScope {
     property var leftColumnItems: []
     property var rightColumnItems: []
     property string copiedItemId: ""
-
-    readonly property string helperScriptPath: "/home/lollo/Progetti/dynamic-island-hyprland/scripts/cliphist_helper.py"
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
+    readonly property string helperScriptPath: homeDir + "/.config/quickshell/dynamic-island/scripts/cliphist_helper.py"
 
     focus: showCondition
     activeFocusOnTab: true

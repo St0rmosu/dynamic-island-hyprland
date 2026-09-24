@@ -6,7 +6,8 @@ import Quickshell.Io
 Item {
     id: root
 
-    readonly property string configDir: "/home/lollo/.config/dynamic-island"
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
+    readonly property string configDir: homeDir + "/.config/dynamic-island"
     readonly property string configPath: configDir + "/config.json"
     readonly property string fallbackPath: configDir + "/userconfig.json"
 
@@ -15,7 +16,7 @@ Item {
     property int islandHeight: 40
     property int islandCornerRadius: 32
     property int islandTopMargin: 8
-    property int islandExclusiveZone: 0
+    property int islandExclusiveZone: 48
     property int islandPositionX: 50
     property int islandBackgroundOpacity: 92
 
@@ -57,12 +58,24 @@ Item {
     property real blurRadius: 24
     property real borderWidth: 1.0
     property bool pywalEnabled: true
+    property string paletteEngine: "auto" // auto, pywal, wallust, iris, matugen
     property string customAccentColor: ""
     property string wallpaperPath: ""
-    property string wallpaperLibrary: "/home/lollo/Sfondi"
-    property string wallpaperCustomCommand: "/home/lollo/.scripts/apply-wallpaper.sh \"$1\""
+    property string wallpaperLibrary: homeDir + "/Sfondi"
+    property string wallpaperCustomCommand: homeDir + "/.scripts/apply-wallpaper.sh \"$1\""
     property string wallpaperTransition: "random"
     property string clockFormat: "24h"
+
+    // ── 5. Scorciatoie Personalizzate ──────────────────────────────────
+    property var customShortcuts: [
+        { id: "overview", title: "Workspace Overview", desc: "Visualizzatore interattivo di tutti i workspace e finestre", icon: "\uf108", keys: ["SUPER", "Tab"], action: "overview" },
+        { id: "power", title: "Power Menu (Wlogout)", desc: "Menu rapido per Blocca, Esci, Sospendi, Riavvia, Spegni", icon: "\uf011", keys: ["SUPER", "P"], action: "power" },
+        { id: "notifications", title: "Notification Center", desc: "Pannello con cronologia notifiche e cancellazione", icon: "\uf0f3", keys: ["SUPER", "N"], action: "notifications" },
+        { id: "wallpaper", title: "Wallpaper Switcher", desc: "Selettore a schede per cambiare sfondo con animazione", icon: "\uf03e", keys: ["SUPER", "ALT", "Spazio"], action: "master-or-wallpaper" },
+        { id: "apps", title: "Application Launcher", desc: "Ricerca rapida e avvio delle applicazioni installate", icon: "\uf135", keys: ["ALT", "Spazio"], action: "apps" },
+        { id: "files", title: "File Shelf", desc: "Cassetto rapido per trascinare e incollare file al volo", icon: "\uf07b", keys: ["SUPER", "O"], action: "files" },
+        { id: "clipboard", title: "Clipboard History", desc: "Cronologia degli appunti con testi, codici e immagini", icon: "\uf0ea", keys: ["SUPER", "C"], action: "clipboard" }
+    ]
 
     property string textFontFamily: "Google Sans Flex"
     property string heroFontFamily: "Google Sans Flex"
@@ -95,6 +108,101 @@ Item {
 
         Component.onCompleted: root.loadFromDisk()
         onFileChanged: root.loadFromDisk()
+    }
+
+    // ── Palette Engine Watchers (Pywal, Wallust, Iris, Matugen) ────────
+    FileView {
+        id: pywalColorsFile
+        path: root.homeDir + "/.cache/wal/colors.json"
+        watchChanges: true
+        preload: true
+        printErrors: false
+        property string accent: ""
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && d.colors) accent = d.colors.color4 || d.colors.color2 || "";
+            } catch(e) {}
+        }
+    }
+
+    FileView {
+        id: wallustColorsFile
+        path: root.homeDir + "/.cache/wallust/colors.json"
+        watchChanges: true
+        preload: true
+        printErrors: false
+        property string accent: ""
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && d.colors) accent = d.colors.color4 || d.colors.color2 || "";
+            } catch(e) {}
+        }
+    }
+
+    FileView {
+        id: irisColorsFile
+        path: root.homeDir + "/.cache/iris/colors.json"
+        watchChanges: true
+        preload: true
+        printErrors: false
+        property string accent: ""
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && d.accent) accent = d.accent;
+            } catch(e) {}
+        }
+    }
+
+    FileView {
+        id: matugenColorsFile
+        path: root.homeDir + "/.config/matugen/colors.json"
+        watchChanges: true
+        preload: true
+        printErrors: false
+        property string accent: ""
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && d.colors && d.colors.primary) {
+                    accent = (typeof d.colors.primary === "object" && d.colors.primary.default)
+                        ? d.colors.primary.default.hex
+                        : String(d.colors.primary);
+                }
+            } catch(e) {}
+        }
+    }
+
+    readonly property color effectiveAccentColor: {
+        if (root.customAccentColor !== "" && !root.pywalEnabled)
+            return root.customAccentColor;
+
+        if (root.paletteEngine === "iris" && irisColorsFile.accent !== "")
+            return irisColorsFile.accent;
+        if (root.paletteEngine === "wallust" && wallustColorsFile.accent !== "")
+            return wallustColorsFile.accent;
+        if (root.paletteEngine === "matugen" && matugenColorsFile.accent !== "")
+            return matugenColorsFile.accent;
+        if (root.paletteEngine === "pywal" && pywalColorsFile.accent !== "")
+            return pywalColorsFile.accent;
+
+        // Auto mode: check Iris, Pywal, Wallust, Matugen in order
+        if (irisColorsFile.accent !== "") return irisColorsFile.accent;
+        if (pywalColorsFile.accent !== "") return pywalColorsFile.accent;
+        if (wallustColorsFile.accent !== "") return wallustColorsFile.accent;
+        if (matugenColorsFile.accent !== "") return matugenColorsFile.accent;
+
+        return "#0a84ff";
     }
 
     FileView {
@@ -132,7 +240,7 @@ Item {
             if (data.islandHeight !== undefined) root.islandHeight = Number(data.islandHeight) || 40;
             if (data.islandCornerRadius !== undefined) root.islandCornerRadius = Number(data.islandCornerRadius) || 32;
             if (data.islandTopMargin !== undefined) root.islandTopMargin = Number(data.islandTopMargin) >= 0 ? Number(data.islandTopMargin) : 8;
-            if (data.islandExclusiveZone !== undefined) root.islandExclusiveZone = Number(data.islandExclusiveZone) || 0;
+            if (data.islandExclusiveZone !== undefined) root.islandExclusiveZone = Number(data.islandExclusiveZone) >= 0 ? Number(data.islandExclusiveZone) : 48;
             if (data.islandPositionX !== undefined) root.islandPositionX = Number(data.islandPositionX) || 50;
             if (data.islandBackgroundOpacity !== undefined) root.islandBackgroundOpacity = Number(data.islandBackgroundOpacity) || 92;
 
@@ -165,11 +273,17 @@ Item {
             // Appearance & Fonts
             if (data.pywalEnabled !== undefined) root.pywalEnabled = Boolean(data.pywalEnabled);
             if (data.wallpaperPywalEnabled !== undefined) root.pywalEnabled = Boolean(data.wallpaperPywalEnabled);
+            if (data.paletteEngine !== undefined) root.paletteEngine = String(data.paletteEngine);
             if (data.customAccentColor !== undefined) root.customAccentColor = String(data.customAccentColor);
             if (data.wallpaperPath !== undefined) root.wallpaperPath = String(data.wallpaperPath);
             if (data.wallpaperLibraryPath !== undefined) root.wallpaperLibrary = String(data.wallpaperLibraryPath);
             if (data.wallpaperCustomCommand !== undefined) root.wallpaperCustomCommand = String(data.wallpaperCustomCommand);
             if (data.clockFormat !== undefined) root.clockFormat = String(data.clockFormat);
+
+            // Shortcuts
+            if (Array.isArray(data.customShortcuts) && data.customShortcuts.length > 0) {
+                root.customShortcuts = data.customShortcuts;
+            }
 
             if (data.textFontFamily !== undefined) root.textFontFamily = String(data.textFontFamily);
             if (data.heroFontFamily !== undefined) root.heroFontFamily = String(data.heroFontFamily);
@@ -249,11 +363,13 @@ Item {
 
                 pywalEnabled: root.pywalEnabled,
                 wallpaperPywalEnabled: root.pywalEnabled,
+                paletteEngine: root.paletteEngine,
                 customAccentColor: root.customAccentColor,
                 wallpaperPath: root.wallpaperPath,
                 wallpaperLibraryPath: root.wallpaperLibrary,
                 wallpaperCustomCommand: root.wallpaperCustomCommand,
                 clockFormat: root.clockFormat,
+                customShortcuts: root.customShortcuts,
 
                 textFontFamily: root.textFontFamily,
                 heroFontFamily: root.heroFontFamily,
@@ -269,7 +385,7 @@ Item {
             };
 
             const jsonStr = JSON.stringify(payload);
-            const scriptPath = "/home/lollo/.config/quickshell/dynamic-island/scripts/save_dynamic_config.py";
+            const scriptPath = root.homeDir + "/.config/quickshell/dynamic-island/scripts/save_dynamic_config.py";
             Quickshell.execDetached(["python3", scriptPath, jsonStr]);
             root.saveStatus = "Live Synced";
             root.isSaving = false;

@@ -16,48 +16,88 @@ Item {
     property int toggleButton: Qt.LeftButton
     property var configSource: null
     readonly property var activeConfig: configSource || userConfig
-    property string iconFontFamily: activeConfig.iconFontFamily
-    property string textFontFamily: activeConfig.textFontFamily
-    property string heroFontFamily: activeConfig.heroFontFamily
+    property string iconFontFamily: activeConfig.iconFontFamily || "JetBrainsMono Nerd Font"
+    property string textFontFamily: activeConfig.textFontFamily || "Google Sans Flex"
+    property string heroFontFamily: activeConfig.heroFontFamily || "Google Sans Flex"
 
     signal expansionToggleRequested()
 
-    readonly property string contentText: {
-        if (summary !== "" && body !== "" && body !== summary) return summary + "  " + body;
+    // Title / Sender name
+    readonly property string senderName: {
+        if (summary !== "" && body !== "") return summary;
+        if (appName !== "") return appName;
         if (summary !== "") return summary;
-        if (body !== "") return body;
-        return "New notification";
+        return "Nuova Notifica";
     }
-    readonly property real minimumWidth: 272
-    readonly property real compactMaximumWidth: 400
-    readonly property real expandedMaximumWidth: 520
-    readonly property real maximumWidth: expanded && hasOverflowContent ? expandedMaximumWidth : compactMaximumWidth
-    readonly property real iconSlotWidth: 18
-    readonly property real contentSpacing: 13
-    readonly property real horizontalPadding: 16
-    readonly property real compactVerticalPadding: 7
-    readonly property real expandedVerticalPadding: 13
-    readonly property real verticalPadding: expanded && hasOverflowContent ? expandedVerticalPadding : compactVerticalPadding
-    readonly property real compactMaximumContentHeight: 68 - compactVerticalPadding * 2
-    readonly property real expandedMaximumContentHeight: 240 - expandedVerticalPadding * 2
-    readonly property real textBlockWidthAtMaximum: compactMaximumWidth - horizontalPadding * 2 - iconSlotWidth - contentSpacing
-    readonly property real expandedTextBlockWidthAtMaximum: expandedMaximumWidth - horizontalPadding * 2 - iconSlotWidth - contentSpacing
-    readonly property real availableWidth: Math.max(0, width - horizontalPadding * 2 - iconSlotWidth - contentSpacing)
-    readonly property bool prefersWrappedContent: contentMetrics.advanceWidth > textBlockWidthAtMaximum
-    readonly property bool hasOverflowContent: compactContentProbe.lineCount > 2
-        || contentMetrics.advanceWidth > textBlockWidthAtMaximum * 2
-        || (contentMetrics.advanceWidth > textBlockWidthAtMaximum && compactContentProbe.lineCount <= 1)
-    readonly property real compactPreferredWidth: prefersWrappedContent
-        ? maximumWidth
-        : Math.max(minimumWidth, Math.min(maximumWidth, contentMetrics.advanceWidth + iconSlotWidth + contentSpacing + horizontalPadding * 2))
-    readonly property real compactPreferredHeight: prefersWrappedContent ? compactMaximumContentHeight + compactVerticalPadding * 2 : 56
-    readonly property real expandedPreferredWidth: expandedMaximumWidth
-    readonly property real expandedPreferredHeight: Math.max(
-        84,
-        Math.min(240, Math.min(expandedMaximumContentHeight, expandedContentProbe.implicitHeight) + expandedVerticalPadding * 2)
-    )
-    readonly property real preferredWidth: expanded && hasOverflowContent ? expandedPreferredWidth : compactPreferredWidth
-    readonly property real preferredHeight: expanded && hasOverflowContent ? expandedPreferredHeight : compactPreferredHeight
+
+    // Body content
+    readonly property string messageContent: {
+        if (body !== "" && summary !== "" && body !== summary) return body;
+        if (body !== "") return body;
+        if (summary !== "") return summary;
+        return "";
+    }
+
+    // App detection for icon and color tint
+    readonly property var appMeta: {
+        const s = (appName + " " + summary).toLowerCase();
+        if (s.indexOf("whatsapp") !== -1)
+            return { icon: "\uf232", color: "#25D366", bg: Qt.rgba(37/255, 211/255, 102/255, 0.22) };
+        if (s.indexOf("discord") !== -1)
+            return { icon: "\uf392", color: "#5865F2", bg: Qt.rgba(88/255, 101/255, 242/255, 0.22) };
+        if (s.indexOf("telegram") !== -1)
+            return { icon: "\uf2c6", color: "#229ED9", bg: Qt.rgba(34/255, 158/255, 217/255, 0.22) };
+        if (s.indexOf("spotify") !== -1)
+            return { icon: "\uf1bc", color: "#1DB954", bg: Qt.rgba(29/255, 185/255, 84/255, 0.22) };
+        if (s.indexOf("satty") !== -1 || s.indexOf("screenshot") !== -1)
+            return { icon: "\uf030", color: "#ff9f0a", bg: Qt.rgba(255/255, 159/255, 10/255, 0.22) };
+        if (s.indexOf("wifi") !== -1 || s.indexOf("rete") !== -1)
+            return { icon: "\uf1eb", color: "#30d158", bg: Qt.rgba(48/255, 209/255, 88/255, 0.22) };
+        if (s.indexOf("bluetooth") !== -1)
+            return { icon: "\uf294", color: "#0a84ff", bg: Qt.rgba(10/255, 132/255, 255/255, 0.22) };
+        return {
+            icon: (root.iconText !== "" && root.iconText !== "") ? root.iconText : "\uf0f3",
+            color: "#64d2ff",
+            bg: Qt.rgba(100/255, 210/255, 255/255, 0.18)
+        };
+    }
+
+    // Measurements for dynamic sizing
+    TextMetrics {
+        id: senderMetrics
+        font.family: root.textFontFamily
+        font.pixelSize: 13
+        font.weight: Font.DemiBold
+        text: root.senderName
+    }
+
+    TextMetrics {
+        id: bodyMetrics
+        font.family: root.textFontFamily
+        font.pixelSize: 11
+        text: root.messageContent
+    }
+
+    readonly property real minimumWidth: 290
+    readonly property real maximumWidth: 480
+    readonly property bool isLongMessage: bodyMetrics.advanceWidth > 260
+    readonly property bool isVeryLongMessage: bodyMetrics.advanceWidth > 520
+
+    // Dynamic width based on sender + body length
+    readonly property real preferredWidth: {
+        let maxTextW = Math.max(senderMetrics.advanceWidth, Math.min(340, bodyMetrics.advanceWidth));
+        // Add margins (18 + 18) + spacing (14) + circular icon (42)
+        let calcW = maxTextW + 36 + 14 + 42;
+        return Math.max(minimumWidth, Math.min(maximumWidth, calcW));
+    }
+
+    // Dynamic height: adapts between 56px (single line), 66px (2 lines), 82px (3 lines)
+    readonly property real preferredHeight: {
+        if (messageContent === "") return 56;
+        if (isVeryLongMessage) return 82;
+        if (isLongMessage) return 68;
+        return 58;
+    }
 
     anchors.fill: parent
     anchors.margins: 0
@@ -70,116 +110,75 @@ Item {
         }
     }
 
-    TextMetrics {
-        id: contentMetrics
-        font.family: textFontFamily
-        font.pixelSize: userConfig.bodyFontSize
-        font.weight: Font.DemiBold
-        font.letterSpacing: -0.15
-        text: contentText
-    }
-
-    Text {
-        id: compactContentProbe
-        x: -10000
-        y: -10000
-        height: 0
-        opacity: 0
-        width: textBlockWidthAtMaximum
-        text: contentText
-        font.pixelSize: userConfig.bodyFontSize
-        font.family: textFontFamily
-        font.weight: Font.DemiBold
-        font.letterSpacing: -0.15
-        wrapMode: Text.WordWrap
-        lineHeight: 0.95
-    }
-
-    Text {
-        id: expandedContentProbe
-        x: -10000
-        y: -10000
-        height: 0
-        opacity: 0
-        width: expandedTextBlockWidthAtMaximum
-        text: contentText
-        font.pixelSize: userConfig.bodyFontSize
-        font.family: textFontFamily
-        font.weight: Font.DemiBold
-        font.letterSpacing: -0.15
-        wrapMode: Text.WordWrap
-        lineHeight: 1.05
-    }
-
+    // ── Notification Layout (Mockup: Text Left, Circular Badge Right) ──
     Row {
         anchors.fill: parent
-        anchors.leftMargin: horizontalPadding
-        anchors.rightMargin: horizontalPadding
-        anchors.topMargin: verticalPadding
-        anchors.bottomMargin: verticalPadding
-        spacing: contentSpacing
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.leftMargin: 18
+        anchors.rightMargin: 16
+        anchors.topMargin: 8
+        anchors.bottomMargin: 8
+        spacing: 14
 
-        Text {
-            width: iconSlotWidth
-            anchors.verticalCenter: parent.verticalCenter
-            text: iconText
-            color: root.iconColor
-            font.pixelSize: userConfig.iconFontSize
-            font.family: iconFontFamily
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-
+        // ── Left: Sender & Message Body ────────────────────────────
         Item {
-            width: parent.width - iconSlotWidth - contentSpacing
+            width: parent.width - 44 - 14 // minus circle width and spacing
             height: parent.height
 
-            Text {
-                visible: !(root.expanded && root.hasOverflowContent)
+            Column {
+                anchors.left: parent.left
+                anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: contentText
-                color: "white"
-                font.pixelSize: userConfig.bodyFontSize
-                font.family: textFontFamily
-                font.weight: Font.DemiBold
-                font.letterSpacing: -0.15
-                width: parent.width
-                wrapMode: prefersWrappedContent ? Text.WordWrap : Text.NoWrap
-                maximumLineCount: prefersWrappedContent ? 2 : 1
-                elide: Text.ElideRight
-                lineHeight: 0.95
-            }
+                spacing: 2
 
-            Flickable {
-                id: expandedFlickable
-                visible: root.expanded && root.hasOverflowContent
-                anchors.fill: parent
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                contentWidth: width
-                contentHeight: expandedContentText.implicitHeight
-                interactive: contentHeight > height
-
+                // Sender / Title (e.g. WhatsApp, Discord, Satty)
                 Text {
-                    id: expandedContentText
-                    width: expandedFlickable.width
-                    text: contentText
-                    color: "white"
-                    font.pixelSize: userConfig.bodyFontSize
-                    font.family: textFontFamily
+                    width: parent.width
+                    text: root.senderName
+                    color: "#ffffff"
+                    font.pixelSize: 13
                     font.weight: Font.DemiBold
-                    font.letterSpacing: -0.15
+                    font.family: root.textFontFamily
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+
+                // Message Body (multi-line, wrapping cleanly based on content)
+                Text {
+                    width: parent.width
+                    visible: root.messageContent !== ""
+                    text: root.messageContent
+                    color: "#a6b0c3"
+                    font.pixelSize: 11
+                    font.family: root.textFontFamily
                     wrapMode: Text.WordWrap
-                    elide: Text.ElideNone
+                    maximumLineCount: root.isVeryLongMessage ? 3 : (root.isLongMessage ? 2 : 1)
+                    elide: Text.ElideRight
                     lineHeight: 1.05
                 }
+            }
+        }
+
+        // ── Right: Circular Squircle Icon Container ────────────────
+        Rectangle {
+            width: 42
+            height: 42
+            radius: 21
+            anchors.verticalCenter: parent.verticalCenter
+            color: root.appMeta.bg
+            border.width: 1
+            border.color: Qt.rgba(root.appMeta.color.r, root.appMeta.color.g, root.appMeta.color.b, 0.45)
+
+            Text {
+                anchors.centerIn: parent
+                text: root.appMeta.icon
+                color: root.appMeta.color
+                font.family: root.iconFontFamily
+                font.pixelSize: 19
             }
         }
     }
 
     TapHandler {
-        enabled: root.hasOverflowContent
         acceptedButtons: root.toggleButton
         onTapped: root.expansionToggleRequested()
     }

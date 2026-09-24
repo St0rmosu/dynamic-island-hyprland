@@ -13,6 +13,7 @@ import "qml/workspace"
 
 PanelWindow {
     id: root
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     property var shellRootController: null
     property var dynamicConfig: null
     readonly property var polkitAgent: shellRootController ? shellRootController.polkitAgent : null
@@ -65,7 +66,7 @@ PanelWindow {
 
     FileView {
         id: localUserConfigFile
-        path: "/home/lollo/.config/dynamic-island/userconfig.json"
+        path: root.homeDir + "/.config/dynamic-island/userconfig.json"
         watchChanges: true
         property var parsedData: ({})
 
@@ -86,7 +87,7 @@ PanelWindow {
 
     FileView {
         id: irisColors
-        path: "/home/lollo/.cache/iris/colors.json"
+        path: root.homeDir + "/.cache/iris/colors.json"
         watchChanges: true
         property string accentHex: ""
 
@@ -107,7 +108,7 @@ PanelWindow {
 
     FileView {
         id: walWallpaperFile
-        path: "/home/lollo/.cache/wal/wal"
+        path: root.homeDir + "/.cache/wal/wal"
         watchChanges: true
         property string wallpaperPath: ""
 
@@ -133,7 +134,7 @@ PanelWindow {
 
     FileView {
         id: currentWallpaperFile
-        path: "/home/lollo/.local/state/caelestia/wallpaper/path.txt"
+        path: root.homeDir + "/.local/state/caelestia/wallpaper/path.txt"
         watchChanges: true
         property string wallpaperPath: ""
 
@@ -154,7 +155,7 @@ PanelWindow {
 
     FileView {
         id: pywalColors
-        path: "/home/lollo/.cache/wal/colors.json"
+        path: root.homeDir + "/.cache/wal/colors.json"
         watchChanges: true
         property color background: "#0f141c"
         property color foreground: "#ffffff"
@@ -459,9 +460,11 @@ PanelWindow {
         return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 50;
     }
     readonly property real effectiveIslandExclusiveZone: {
-        if (dynamicConfig && dynamicConfig.islandExclusiveZone !== undefined) return dynamicConfig.islandExclusiveZone;
-        let v = cfgVal("islandExclusiveZone", userConfig ? userConfig.islandExclusiveZone : 0);
-        return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 0;
+        if (dynamicConfig && dynamicConfig.islandExclusiveZone !== undefined && dynamicConfig.islandExclusiveZone > 0)
+            return dynamicConfig.islandExclusiveZone;
+        let v = cfgVal("islandExclusiveZone", userConfig ? userConfig.islandExclusiveZone : 48);
+        let num = Number(v);
+        return (!isNaN(num) && num > 0) ? num : (root.effectiveIslandHeight + root.effectiveIslandTopMargin);
     }
     readonly property real effectiveIslandCornerRadius: {
         if (dynamicConfig && dynamicConfig.islandCornerRadius > 0) return dynamicConfig.islandCornerRadius;
@@ -588,7 +591,7 @@ PanelWindow {
             return currentWallpaperFile.wallpaperPath;
         if (userConfig.wallpaperPath !== "")
             return userConfig.wallpaperPath;
-        return "/home/lollo/Sfondi/B & W Window.png";
+        return root.homeDir + "/Sfondi/B & W Window.png";
     }
 
     onEffectiveWallpaperPathChanged: {
@@ -887,7 +890,7 @@ PanelWindow {
     Process {
         id: discordCallActionProc
         property string action: "accept"
-        command: ["python3", "/home/lollo/.config/quickshell/dynamic-island/scripts/discord_call_action.py", action]
+        command: ["python3", root.homeDir + "/.config/quickshell/dynamic-island/scripts/discord_call_action.py", action]
         running: false
     }
 
@@ -3742,6 +3745,7 @@ PanelWindow {
 
                 sourceComponent: Component {
                     WallpaperPickerLayer {
+                        dynamicConfig: root.dynamicConfig
                         accentColor: pywalColors.accent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
