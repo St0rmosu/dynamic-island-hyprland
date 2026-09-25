@@ -503,7 +503,7 @@ FocusScope {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "\uf2ed"
+                        text: "\uf1f8"
                         font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
                         font.pixelSize: 12
                         color: deleteArea.containsMouse ? "#ffffff" : "#242424"

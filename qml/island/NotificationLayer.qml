@@ -24,8 +24,10 @@ Item {
 
     // Title / Sender name
     readonly property string senderName: {
+        const isWhatsapp = (appName + " " + summary + " " + body).toLowerCase().indexOf("whatsapp") !== -1;
+        if (isWhatsapp && summary !== "" && summary.toLowerCase() !== "whatsapp") return summary;
         if (summary !== "" && body !== "") return summary;
-        if (appName !== "") return appName;
+        if (appName !== "" && appName !== "Notification") return appName;
         if (summary !== "") return summary;
         return "Nuova Notifica";
     }
@@ -40,15 +42,21 @@ Item {
 
     // App detection for icon and color tint
     readonly property var appMeta: {
-        const s = (appName + " " + summary).toLowerCase();
+        const s = (appName + " " + summary + " " + body).toLowerCase();
         if (s.indexOf("whatsapp") !== -1)
             return { icon: "\uf232", color: "#25D366", bg: Qt.rgba(37/255, 211/255, 102/255, 0.22) };
-        if (s.indexOf("discord") !== -1)
+        if (s.indexOf("discord") !== -1 || s.indexOf("vesktop") !== -1 || s.indexOf("armcord") !== -1)
             return { icon: "\uf392", color: "#5865F2", bg: Qt.rgba(88/255, 101/255, 242/255, 0.22) };
         if (s.indexOf("telegram") !== -1)
             return { icon: "\uf2c6", color: "#229ED9", bg: Qt.rgba(34/255, 158/255, 217/255, 0.22) };
         if (s.indexOf("spotify") !== -1)
             return { icon: "\uf1bc", color: "#1DB954", bg: Qt.rgba(29/255, 185/255, 84/255, 0.22) };
+        if (s.indexOf("slack") !== -1)
+            return { icon: "\uf198", color: "#4A154B", bg: Qt.rgba(74/255, 21/255, 75/255, 0.25) };
+        if (s.indexOf("signal") !== -1)
+            return { icon: "\uf075", color: "#3A76F0", bg: Qt.rgba(58/255, 118/255, 240/255, 0.25) };
+        if (s.indexOf("thunderbird") !== -1 || s.indexOf("mail") !== -1)
+            return { icon: "\uf0e0", color: "#0060df", bg: Qt.rgba(0/255, 96/255, 223/255, 0.22) };
         if (s.indexOf("satty") !== -1 || s.indexOf("screenshot") !== -1)
             return { icon: "\uf030", color: "#ff9f0a", bg: Qt.rgba(255/255, 159/255, 10/255, 0.22) };
         if (s.indexOf("wifi") !== -1 || s.indexOf("rete") !== -1)
@@ -56,7 +64,7 @@ Item {
         if (s.indexOf("bluetooth") !== -1)
             return { icon: "\uf294", color: "#0a84ff", bg: Qt.rgba(10/255, 132/255, 255/255, 0.22) };
         return {
-            icon: (root.iconText !== "" && root.iconText !== "") ? root.iconText : "\uf0f3",
+            icon: (root.iconText !== "" && root.iconText !== "" && root.iconText !== "\uf0f3") ? root.iconText : "\uf0f3",
             color: "#64d2ff",
             bg: Qt.rgba(100/255, 210/255, 255/255, 0.18)
         };

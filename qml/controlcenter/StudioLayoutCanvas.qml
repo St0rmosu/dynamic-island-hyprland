@@ -878,7 +878,7 @@ Item {
                             border.width: 1
                             border.color: barDelMouse.containsMouse ? Qt.rgba(255, 69, 58, 0.45) : Qt.rgba(255, 255, 255, 0.10)
                             anchors.verticalCenter: parent.verticalCenter
-                            Text { anchors.centerIn: parent; text: ""; font.family: studioRoot.iconFontFamily; font.pixelSize: 11; font.weight: Font.Bold; color: barDelMouse.containsMouse ? "#ff453a" : studioRoot.textSecondary }
+                            Text { anchors.centerIn: parent; text: "\uf1f8"; font.family: studioRoot.iconFontFamily; font.pixelSize: 11; font.weight: Font.Bold; color: barDelMouse.containsMouse ? "#ff453a" : studioRoot.textSecondary }
                             MouseArea {
                                 id: barDelMouse
                                 anchors.fill: parent
@@ -1770,7 +1770,7 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: libraryCard.isHeader ? "" : (isInCanvas ? (btnMouse.containsMouse ? "" : "✓") : "+")
+                                            text: libraryCard.isHeader ? "" : (isInCanvas ? (btnMouse.containsMouse ? "\uf1f8" : "✓") : "+")
                                             font.family: studioRoot.iconFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.Bold

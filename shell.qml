@@ -78,9 +78,20 @@ Scope {
         });
     }
 
+    property string lastNotificationKey: ""
+    property real lastNotificationTime: 0
+
     function showNotificationAll(appName, summary, body, icon, customColor) {
         if (focusEnabled)
             return;
+
+        const now = Date.now();
+        const key = (appName || "") + "|" + (summary || "") + "|" + (body || "");
+        if (key === lastNotificationKey && (now - lastNotificationTime) < 1800) {
+            return;
+        }
+        lastNotificationKey = key;
+        lastNotificationTime = now;
 
         shellRoot.forEachWindow((window) => {
             if (window && window.showNotification)
@@ -423,12 +434,16 @@ Scope {
 
         function testNotification(app: string, summary: string, body: string) {
             shellRoot.showNotificationAll(
-                app || "Telegram",
+                app || "WhatsApp",
                 summary || "Nuovo messaggio da Marco",
-                body || "Ciao, ci vediamo stasera per la pizza?",
-                "",
-                "#0088cc"
+                body || "Ciao, ci vediamo dopo?",
+                "",
+                ""
             );
+        }
+
+        function postNotification(appName: string, summary: string, body: string, icon: string, customColor: string) {
+            shellRoot.showNotificationAll(appName, summary, body, icon, customColor);
         }
 
         function testDetailPanel(kind: string, open: bool) {
@@ -690,13 +705,32 @@ Scope {
         running: !shellRoot.shuttingDown
     }
 
+    Process {
+        id: notificationMonitorProc
+        command: [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/notification_monitor.py"]
+        running: !shellRoot.shuttingDown
+    }
+
     Connections {
         target: SystemServices
 
         function onNotificationReceived(appName, summary, body) {
-            const lowerApp = String(appName || "").toLowerCase();
+            let app = String(appName || "");
+            const lowerApp = app.toLowerCase();
             const lowerSummary = String(summary || "").toLowerCase();
             const lowerBody = String(body || "").toLowerCase();
+
+            // Detect app from summary/body if appName is empty or generic
+            if (app === "" || lowerApp === "notification" || lowerApp === "notify-send") {
+                if (lowerSummary.indexOf("whatsapp") !== -1 || lowerBody.indexOf("whatsapp") !== -1)
+                    app = "WhatsApp";
+                else if (lowerSummary.indexOf("discord") !== -1 || lowerBody.indexOf("discord") !== -1)
+                    app = "Discord";
+                else if (lowerSummary.indexOf("telegram") !== -1 || lowerBody.indexOf("telegram") !== -1)
+                    app = "Telegram";
+                else if (lowerSummary.indexOf("spotify") !== -1 || lowerBody.indexOf("spotify") !== -1)
+                    app = "Spotify";
+            }
 
             if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
                 if (lowerSummary.indexOf("persa") !== -1 || lowerBody.indexOf("persa") !== -1
@@ -724,7 +758,7 @@ Scope {
                     return;
                 }
             }
-            shellRoot.showNotificationAll(appName, summary, body);
+            shellRoot.showNotificationAll(app, summary, body);
         }
     }
 

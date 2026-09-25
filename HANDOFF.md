@@ -129,11 +129,28 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 ### G. Clipboard Empty State, Liquid Glass Image Scrim & Trash Can Icons
 - **Clipboard Empty State**: Removed the circular tag icon and the lengthy "Siri Cards" subtitle from [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml), replacing it with clean, minimal text ("Nessun elemento copiato" / "Nessun risultato trovato").
 - **Liquid Glass Gradient for Images**: Image cards in [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml) now fill the card surface smoothly with a dedicated dark `#0f1117` liquid glass multi-stop gradient rising from the bottom up to several pixels above the file title, ensuring high contrast and seamless Apple Intelligence styling.
-- **Trash Can Icon Standardization**: Replaced legacy `✕` and rotated plus delete markers across the system with the clean FontAwesome / Nerd Font trash can glyph (`\uf2ed` / ``):
-  - In [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml) card hover delete button.
-  - In [`FileShelfLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/FileShelfLayer.qml) staged file delete button.
-  - In [`NotificationCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/NotificationCard.qml) quick dismiss action.
-### H. Dedicated Power Menu Cealestia Execution Fix & 5-Action Parity
+- **Trash Can Icon Standardization (`\uf1f8` / ``)**: Replaced all thin, outline, or faint custom SVG shapes with the bold, solid Font Awesome / Nerd Font trash can glyph (`\uf1f8`):
+  - In [`NotificationCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/NotificationCenterLayer.qml): Replaced custom thin SVG line shape with a 26x26 circular glass button (`radius: 13`) displaying `\uf1f8` in red on hover.
+  - In [`NotificationCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/NotificationCard.qml): Header "Clear All" button and individual item dismiss action.
+  - In [`StudioLayoutCanvas.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/StudioLayoutCanvas.qml): Selected module toolbar delete button and library card removal toggle.
+  - In [`ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml): "Clear History" header action and individual clip deletion badge.
+  - In [`FileShelfLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/FileShelfLayer.qml): Staged file removal button.
+
+### H. Dynamic Island WhatsApp & Portal Notification Capture Overhaul
+- **Problem**: Incoming notifications from WhatsApp (WhatsApp Desktop, Chromium/Electron apps, Flatpaks) were displayed by SwayNC but failed to appear on the Dynamic Island capsule.
+- **Root Causes**:
+  1. Electron and Chromium use the XDG Desktop Portal (`org.freedesktop.portal.Notification.AddNotification`), which forwards to DBus with an empty `app_name: ""`.
+  2. The C++ backend `libIslandBackend.so` only listened to `member='Notify'` and dropped empty app name notifications.
+  3. `DynamicIslandWindow.qml` was placed on `WlrLayer.Top`, which got occluded by fullscreen windows or overlay panels.
+  4. Spurious "Wi-Fi disconnesso" notifications immediately overwrote incoming notifications due to a short 1000ms debounce.
+- **Solution & Fixes**:
+  1. Built [`scripts/notification_monitor.py`](file:///home/lollo/Progetti/dynamic-island-hyprland/scripts/notification_monitor.py): A lightweight daemon listening to both `Notify` and `AddNotification`. It dynamically resolves the sender PID from `/proc/<pid>/cmdline` (identifying `whatsapp-linux-desktop` even when DBus `app_name` is empty) and dispatches clean notifications via Quickshell IPC `island postNotification`.
+  2. Added `notificationMonitorProc` as a managed `Process` in [`shell.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/shell.qml) and added `postNotification` to `IpcHandler`.
+  3. Elevated `WlrLayershell.layer` in [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml) to `WlrLayer.Overlay` when `notificationLayerVisible` is active, guaranteeing the notification capsule stays on top.
+  4. Expanded app detection in [`qml/island/NotificationLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/NotificationLayer.qml) with WhatsApp (`\uf232`, `#25D366`), Discord, Telegram, Spotify, Slack, Signal, and Thunderbird styling, cleanly extracting contact name and message text.
+  5. In [`qml/island/WifiConnectionTracker.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/WifiConnectionTracker.qml), increased `disconnectDebounceTimer` from 1000ms to 3500ms to eliminate false disconnection alerts.
+
+### I. Dedicated Power Menu Cealestia Execution Fix & 5-Action Parity
 - **Root Cause Identified**: `PowerMenuLayer.qml` previously used short-lived QML `Process` elements. When clicking a button, `root.closeRequested()` immediately unloaded the layer, terminating the child processes before the OS kernel or systemd received the commands.
 - **Cealestia Detached Execution**: Ported the exact execution paradigm from Cealestia's `shell.qml` using `Quickshell.execDetached(["bash", "-c", "nohup setsid " + cmd + " >/dev/null 2>&1 &"])`, ensuring commands run detached in the background without being affected by QML component lifecycle.
 - **5 Cealestia Actions**:

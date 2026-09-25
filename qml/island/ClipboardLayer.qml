@@ -445,7 +445,7 @@ FocusScope {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "\uf2ed"
+                            text: "\uf1f8"
                             font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
                             font.pixelSize: 12
                             color: clearHistMouse.containsMouse ? "#ff453a" : "#98989d"
@@ -999,7 +999,7 @@ FocusScope {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "\uf2ed"
+                    text: "\uf1f8"
                     font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "Sans Serif"
                     font.pixelSize: 11
                     color: "#ffffff"

@@ -151,7 +151,7 @@ Rectangle {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "" // Trash can
+                    text: "\uf1f8" // Solid trash can
                     font.pixelSize: 12
                     font.family: cardRoot.iconFontFamily
                     color: clearMouse.containsMouse ? "#ff453a" : StyleTokens.textDim
@@ -416,7 +416,7 @@ Rectangle {
 
                 Text {
                     anchors.centerIn: parent
-                    text: ""
+                    text: "\uf1f8"
                     font.pixelSize: 11
                     font.family: cardRoot.iconFontFamily
                     color: dismissMouse.containsMouse ? "#ff453a" : "#727582"

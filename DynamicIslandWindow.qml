@@ -401,6 +401,7 @@ PanelWindow {
         || islandContainer.fileShelfLayerVisible
         || islandContainer.polkitLayerVisible
         || islandContainer.powerMenuLayerVisible
+        || islandContainer.notificationLayerVisible
         ? WlrLayer.Overlay
         : WlrLayer.Top
     WlrLayershell.keyboardFocus: {
@@ -856,6 +857,7 @@ PanelWindow {
     }
 
     function showNotification(appName, summary, body, icon, customColor) {
+        console.log("[DynamicIsland] window.showNotification called! appName:", appName, "summary:", summary, "body:", body);
         islandContainer.showNotificationCapsule(appName, summary, body, icon, customColor);
     }
 
@@ -2141,9 +2143,7 @@ PanelWindow {
         }
 
         function showNotificationCapsule(appName, summary, body, icon, customColor) {
-            if (root.overviewVisible || islandState === "control_center"
-                    || islandState === "expanded" || islandState === "file_shelf"
-                    || islandState === "polkit") return;
+            console.log("[DynamicIsland] showNotificationCapsule called! appName:", appName, "summary:", summary, "body:", body, "islandState:", islandState, "overviewVisible:", root.overviewVisible);
 
             const cleanedAppName = cleanNotificationText(appName);
             const cleanedSummary = cleanNotificationText(summary);
@@ -2151,6 +2151,22 @@ PanelWindow {
             const resolvedSummary = cleanedSummary !== ""
                 ? cleanedSummary
                 : (cleanedBody !== "" ? cleanedBody : "New notification");
+
+            if (root.overviewVisible || islandState === "control_center"
+                    || islandState === "expanded" || islandState === "file_shelf"
+                    || islandState === "polkit") {
+                if (notificationHistoryModel) {
+                    notificationHistoryModel.insert(0, {
+                        appName: cleanedAppName !== "" ? cleanedAppName : "Notification",
+                        summary: resolvedSummary,
+                        body: cleanedSummary !== "" ? cleanedBody : "",
+                        timestamp: new Date()
+                    });
+                    if (notificationHistoryModel.count > 50)
+                        notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+                }
+                return;
+            }
 
             if (islandState === "settings_app") {
                 const floatingExpanded = (musicFloatingIsland && musicFloatingIsland.isExpanded)

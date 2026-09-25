@@ -43,8 +43,8 @@ Item {
         anchors.right: parent.right
         anchors.topMargin: notificationCenter.verticalPadding + 3
         anchors.rightMargin: notificationCenter.horizontalPadding + 2
-        width: 24
-        height: 24
+        width: 26
+        height: 26
 
         Behavior on opacity {
             NumberAnimation {
@@ -53,88 +53,45 @@ Item {
             }
         }
 
-        Item {
-            id: trashIcon
+        Rectangle {
+            id: trashBg
 
-            anchors.centerIn: parent
-            width: 24
-            height: 24
-            scale: clearMouse.pressed ? 0.70 : 0.75
+            anchors.fill: parent
+            radius: width / 2
+            color: clearMouse.pressed ? "#55ff453a" : (clearMouse.containsMouse ? "#26ff453a" : StyleTokens.transparent)
+            border.width: 1
+            border.color: clearMouse.containsMouse ? "#55ff453a" : "#14ffffff"
+            scale: clearMouse.pressed ? 0.90 : (clearMouse.containsMouse ? 1.05 : 1.0)
 
             Behavior on scale {
                 NumberAnimation {
-                    duration: 280
+                    duration: 180
                     easing.type: Easing.OutCubic
                 }
             }
 
-            Shape {
-                id: trashBody
-
-                x: 0
-                y: clearMouse.containsMouse ? 1 : 0
-                width: parent.width
-                height: parent.height
-                preferredRendererType: Shape.CurveRenderer
-
-                Behavior on y {
-                    NumberAnimation {
-                        duration: 360
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
-                ShapePath {
-                    fillColor: StyleTokens.transparent
-                    strokeColor: StyleTokens.textDim
-                    strokeWidth: 1.8
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
-
-                    PathSvg {
-                        path: "M5 6v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6 M10 11v6 M14 11v6"
-                    }
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
                 }
             }
 
-            Item {
-                id: trashLid
-
-                x: 0
-                transformOrigin: Item.Right
-                y: clearMouse.containsMouse ? -1.5 : 0
-                width: parent.width
-                height: parent.height
-                rotation: clearMouse.containsMouse ? 12 : 0
-
-                Behavior on y {
-                    NumberAnimation {
-                        duration: 360
-                        easing.type: Easing.OutCubic
-                    }
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 150
                 }
+            }
 
-                Behavior on rotation {
-                    NumberAnimation {
-                        duration: 360
-                        easing.type: Easing.OutCubic
-                    }
-                }
+            Text {
+                anchors.centerIn: parent
+                text: "\uf1f8"
+                font.pixelSize: 12
+                font.family: notificationCenter.iconFontFamily
+                color: clearMouse.containsMouse ? "#ff453a" : StyleTokens.textDim
 
-                Shape {
-                    anchors.fill: parent
-                    preferredRendererType: Shape.CurveRenderer
-
-                    ShapePath {
-                        fillColor: StyleTokens.transparent
-                        strokeColor: StyleTokens.textDim
-                        strokeWidth: 1.8
-                        capStyle: ShapePath.RoundCap
-                        joinStyle: ShapePath.RoundJoin
-
-                        PathSvg {
-                            path: "M3 6h18 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
                     }
                 }
             }

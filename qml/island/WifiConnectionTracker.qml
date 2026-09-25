@@ -33,11 +33,11 @@ Item {
         }
     }
 
-    // Debounce timer: wait 1000ms after disconnection before alerting.
-    // If the network re-establishes or switches within 1000ms, cancel the alert.
+    // Debounce timer: wait 3500ms after disconnection before alerting.
+    // If the network re-establishes or switches within 3500ms, cancel the alert.
     Timer {
         id: disconnectDebounceTimer
-        interval: 1000
+        interval: 3500
         repeat: false
         onTriggered: {
             const isConnected = root.currentSsid !== "" && root.wifiEnabled && root.wifiAvailable;
