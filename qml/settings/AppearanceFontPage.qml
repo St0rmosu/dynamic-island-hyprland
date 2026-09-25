@@ -360,63 +360,6 @@ Flickable {
         }
 
         SettingsCard {
-            // Preset Rapidi 1-Click
-            Column {
-                width: parent.width
-                spacing: 8
-
-                Text {
-                    text: "Preset Font Rapidi Globali (1 Click)"
-                    color: "#9aa3b5"
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                    font.family: root.textFontFamily
-                }
-
-                Flow {
-                    width: parent.width
-                    spacing: 8
-
-                    Repeater {
-                        model: ["Google Sans Flex", "Inter", "JetBrains Mono", "Roboto", "Ubuntu", "Cantarell"]
-
-                        Rectangle {
-                            readonly property bool isCurrent: root.config && root.config.textFontFamily === modelData
-                            width: chipText.contentWidth + 24
-                            height: 28
-                            radius: 14
-                            color: isCurrent ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.25) : Qt.rgba(255, 255, 255, 0.06)
-                            border.width: 1
-                            border.color: isCurrent ? root.accentColor : Qt.rgba(255, 255, 255, 0.10)
-
-                            Text {
-                                id: chipText
-                                anchors.centerIn: parent
-                                text: modelData
-                                color: isCurrent ? "#ffffff" : "#c2c7d4"
-                                font.pixelSize: 11
-                                font.weight: isCurrent ? Font.DemiBold : Font.Normal
-                                font.family: modelData
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (root.config) {
-                                        root.config.set("textFontFamily", modelData);
-                                        root.config.set("heroFontFamily", modelData);
-                                        root.config.set("timeFontFamily", modelData);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
-
             // Font Testo
             Item {
                 width: parent.width

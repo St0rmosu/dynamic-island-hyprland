@@ -73,6 +73,35 @@ FocusScope {
         }
     }
 
+    FileView {
+        id: systemFontsCacheView
+        path: root.homeDir + "/.cache/dynamic-island/fonts_cache.json"
+        watchChanges: true
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                const d = JSON.parse(text());
+                if (d && Array.isArray(d.all) && d.all.length > 0) {
+                    root.systemFontsList = d.all;
+                    if (Array.isArray(d.icons))
+                        root.systemIconFontsList = d.icons;
+                    root.systemFontsLoaded = true;
+                    root.updateFilteredFonts();
+                }
+            } catch(e) {}
+        }
+    }
+
+    Process {
+        id: fontScannerProc
+        command: [root.homeDir + "/.config/quickshell/dynamic-island/scripts/scan_system_fonts.py"]
+        running: false
+        onExited: {
+            systemFontsCacheView.reload();
+        }
+    }
+
     readonly property color effectiveAccent: {
         if (dynamicConfig && dynamicConfig.customAccentColor !== "" && !dynamicConfig.pywalEnabled)
             return dynamicConfig.customAccentColor;
@@ -306,43 +335,56 @@ FocusScope {
         }
     }
 
-    // ── Modal Font Browser (Sfoglia tutti i font di sistema) ───────────
+    // ── Modal Font Browser (Sfoglia font di sistema e font per icone) ──
     property bool fontBrowserVisible: false
     property string fontBrowserTarget: "text"
     property string fontBrowserQuery: ""
     property var systemFontsList: []
+    property var systemIconFontsList: []
     property bool systemFontsLoaded: false
     property var filteredFonts: []
 
+    function isIconFont(name) {
+        if (!name) return false;
+        const low = name.toLowerCase();
+        const p = ["nerd font", "nerdfont", "fontawesome", "font awesome", "font-awesome",
+                   "material symbol", "material icon", "material design", "symbols nerd font",
+                   "feather", "phosphor", "remix", "tabler", "devicon", "octicon",
+                   "weather icon", "ionicons", "symbols"];
+        return p.some(function(pat) { return low.indexOf(pat) !== -1; });
+    }
+
     function loadSystemFonts() {
-        if (systemFontsLoaded) return;
-        try {
-            let list = Qt.fontFamilies();
-            if (Array.isArray(list)) {
-                list.sort(function(a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
-                systemFontsList = list;
-                systemFontsLoaded = true;
-            }
-        } catch(e) {}
+        if (systemFontsList.length === 0) {
+            try {
+                let list = Qt.fontFamilies();
+                if (Array.isArray(list)) {
+                    list.sort(function(a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
+                    systemFontsList = list;
+                    systemIconFontsList = list.filter(function(name) { return root.isIconFont(name); });
+                }
+            } catch(e) {}
+            fontScannerProc.running = true;
+        }
     }
 
     function updateFilteredFonts() {
         let q = fontBrowserQuery.toLowerCase().trim();
-        let list = systemFontsList;
+        let list = (fontBrowserTarget === "icon") ? systemIconFontsList : systemFontsList;
         let res = [];
         for (let i = 0; i < list.length; i++) {
             let font = list[i];
             if (q !== "" && font.toLowerCase().indexOf(q) === -1) continue;
             res.push(font);
-            if (res.length >= 300) break;
+            if (res.length >= 400) break;
         }
         filteredFonts = res;
     }
 
     function openFontBrowser(target) {
-        loadSystemFonts();
-        fontBrowserTarget = target;
+        fontBrowserTarget = (target === "icon") ? "icon" : "text";
         fontBrowserQuery = "";
+        loadSystemFonts();
         updateFilteredFonts();
         fontBrowserVisible = true;
     }
@@ -369,7 +411,9 @@ FocusScope {
                 Text {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Sfoglia Font di Sistema (" + root.systemFontsList.length + " installati)"
+                    text: (root.fontBrowserTarget === "icon")
+                        ? ("Sfoglia Font per Icone & Glifi (" + root.filteredFonts.length + " disponibili)")
+                        : ("Sfoglia Font di Sistema (" + root.systemFontsList.length + " installati)")
                     color: "#f2f4f8"
                     font.pixelSize: 16
                     font.weight: Font.Bold
@@ -408,7 +452,20 @@ FocusScope {
                 border.width: 1
                 border.color: Qt.rgba(255, 255, 255, 0.10)
 
+                Text {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    visible: fontInput.text === ""
+                    text: (root.fontBrowserTarget === "icon")
+                        ? "Cerca font per icone (es. Nerd Font, Material, Symbols)..."
+                        : "Cerca font di sistema (es. Google Sans, Inter, JetBrains)..."
+                    color: Qt.rgba(255, 255, 255, 0.35)
+                    font.pixelSize: 13
+                    font.family: root.textFontFamily
+                }
+
                 TextInput {
+                    id: fontInput
                     anchors.fill: parent
                     anchors.margins: 10
                     text: root.fontBrowserQuery
@@ -449,18 +506,20 @@ FocusScope {
                             font.weight: Font.Medium
                             font.family: root.textFontFamily
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 240
+                            width: 250
                             elide: Text.ElideRight
                         }
 
                         Text {
-                            text: "Pack my box with five dozen liquor jugs 1234567890"
+                            text: (root.fontBrowserTarget === "icon")
+                                ? "                "
+                                : "Pack my box with five dozen liquor jugs 1234567890"
                             color: "#8c94a6"
-                            font.pixelSize: 13
+                            font.pixelSize: (root.fontBrowserTarget === "icon") ? 15 : 13
                             font.family: modelData
                             anchors.verticalCenter: parent.verticalCenter
                             elide: Text.ElideRight
-                            width: parent.width - 270
+                            width: parent.width - 280
                         }
                     }
 

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
+import Quickshell
 import Quickshell.Bluetooth
 import Quickshell.Io
 import IslandBackend

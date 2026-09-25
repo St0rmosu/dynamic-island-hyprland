@@ -161,6 +161,21 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
   5. `Spegni`: `systemctl poweroff` (Key: `S`)
 - **Geometry**: Adjusted pill width from `340px` to `380px` in [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml) to perfectly accommodate all 5 glass buttons with balanced padding and micro-interactions.
 
+### J. Font Browser PC File Scanner, Icon Font Filtering & Vertical Slider Masking Fix
+1. **Removed Preset Font Chips Section**:
+   - Completely removed "Preset Font Rapidi Globali (1 Click)" and its divider line from [`AppearanceFontPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/AppearanceFontPage.qml) as requested.
+2. **PC Font Files Scanner & Icon-Specific Filtering**:
+   - Built [`scripts/scan_system_fonts.py`](file:///home/lollo/Progetti/dynamic-island-hyprland/scripts/scan_system_fonts.py): Scans all 6,935 font files installed on the machine across `/usr/share/fonts`, `~/.local/share/fonts`, and user directories using fontconfig (`fc-list : family file`).
+   - Categorizes fonts into all 5,030 system families and 112 icon-suitable font families (Nerd Fonts, Font Awesome, Material Symbols, Symbols Nerd Font, Feather, Remix, Phosphor, Tabler, etc.).
+   - Integrated with [`SettingsAppLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SettingsAppLayer.qml) using `FileView` (`~/.cache/dynamic-island/fonts_cache.json`) and background `Process` execution with immediate Qt fallback.
+   - When browsing for icons (`target === "icon"`): Displays only icon-compatible fonts, shows icon glyph previews (`                `), and updates header and placeholder text.
+3. **Vertical Slider Masking & Corner Radius Fix**:
+   - **Bug**: Lowering brightness/volume sliders almost all the way caused a white rectangle to poke out of the bottom of the slider container and flatten out.
+   - **Root Cause**: In Qt Quick, `clip: true` only clips to bounding boxes, not rounded corners. When the fill rectangle's height shrank below 20px (e.g. 15px at 10%), its corner radius clamped down to 7.5px while the container had a 20px radius, causing sharp corners to poke out past the container's curve and overdraw the border.
+   - **Fix**: Rebuilt [`ControlSliderCard.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlSliderCard.qml) using `OpacityMask` from `Qt5Compat.GraphicalEffects` with an inner `trackMask` inset by 1px. The fill is now mathematically masked to the exact inner curve of the pill at any height (0% to 100%). Centered the bottom icon in a clean 44px area with smooth color transitions (`#111214` when covered, `#ffffff` when uncovered).
+4. **Resolved Quickshell Reference Error**:
+   - Added missing `import Quickshell` to [`ControlCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlCenterLayer.qml).
+
 ---
 
 ## 3. Architecture & File Structure

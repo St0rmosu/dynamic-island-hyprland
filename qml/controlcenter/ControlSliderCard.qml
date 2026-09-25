@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import IslandBackend
 
 Rectangle {
@@ -53,21 +54,34 @@ Rectangle {
             color: "#16181f"
             border.width: 1
             border.color: verticalMouse.containsMouse ? "#3d4149" : Qt.rgba(255, 255, 255, 0.08)
-            clip: true
 
-            // Riempimento dal basso verso l'alto con angoli proporzionati
+            Item {
+                id: trackContent
+                anchors.fill: parent
+                anchors.margins: 1
+                layer.enabled: true
+                layer.effect: OpacityMask {
+                    maskSource: trackMask
+                }
+
+                // Riempimento dal basso verso l'alto perfettamente mascherato nella curva
+                Rectangle {
+                    id: fillRect
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: root.value <= 0.001 ? 0 : Math.max(0, Math.min(parent.height, parent.height * root.value))
+                    color: "#eceef2"
+                    visible: root.value > 0.001
+                }
+            }
+
             Rectangle {
-                id: fillRect
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                height: root.value <= 0.001 ? 0 : Math.max(0, Math.min(parent.height, parent.height * root.value))
-                bottomLeftRadius: root.radius
-                bottomRightRadius: root.radius
-                topLeftRadius: root.value >= 0.95 ? root.radius : 8
-                topRightRadius: root.value >= 0.95 ? root.radius : 8
-                color: "#eceef2"
-                visible: root.value > 0.001
+                id: trackMask
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: Math.max(0, root.radius - 1)
+                visible: false
             }
 
             // Percentuale in alto
@@ -83,26 +97,24 @@ Rectangle {
                 z: 4
             }
 
-            // Badge / Icona in basso
-            Rectangle {
-                id: iconBadge
-                width: 36
-                height: 36
-                radius: 18
-                anchors.horizontalCenter: parent.horizontalCenter
+            // Icona in basso
+            Item {
+                id: iconArea
+                width: parent.width
+                height: 44
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: 10
-                color: root.value > 0.20 ? "transparent" : Qt.rgba(255, 255, 255, 0.07)
-                border.width: root.value > 0.20 ? 0 : 1
-                border.color: Qt.rgba(255, 255, 255, 0.08)
                 z: 4
 
                 Text {
                     anchors.centerIn: parent
                     text: root.iconText
-                    font.pixelSize: 17
+                    font.pixelSize: 18
                     font.family: root.iconFontFamily
-                    color: (root.value > 0.20) ? "#111214" : "#ffffff"
+                    color: (root.value > 0.22) ? "#111214" : "#ffffff"
+
+                    Behavior on color {
+                        ColorAnimation { duration: 120 }
+                    }
                 }
             }
 
