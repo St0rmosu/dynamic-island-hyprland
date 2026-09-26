@@ -35,9 +35,6 @@ Rectangle {
     x: targetCapsule ? Math.round(targetCapsule.x + (targetCapsule.width - width) / 2) : 0
     y: targetCapsule ? Math.round(targetCapsule.y + targetCapsule.height + 8) : 0
 
-    Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-    Behavior on y { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-
     // Bridge di collegamento puntatore con il Centro di Controllo:
     // Evita che spostando il mouse tra il centro di controllo e la tray si esca dal focus
     readonly property bool hovered: (trayHoverHandler && trayHoverHandler.hovered) || (bridgeHoverHandler && bridgeHoverHandler.hovered)

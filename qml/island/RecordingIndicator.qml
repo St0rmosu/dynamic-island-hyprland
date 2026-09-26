@@ -5,19 +5,24 @@ Item {
 
     property bool active: false
     property real contentOpacity: 1
-    property int dotSize: 4
+    property color accentColor: "#af52de"
     property color dotColor: "#ff453a"
+    property string iconText: "\u{F0379}"
+    property string iconFontFamily: "Font Awesome 6 Free, JetBrainsMono Nerd Font, sans-serif"
 
-    implicitWidth: dotSize
-    implicitHeight: dotSize
-    width: dotSize
-    height: dotSize
+    implicitWidth: pillContainer.implicitWidth
+    implicitHeight: 18
+    width: active ? implicitWidth : 0
+    height: 18
     opacity: active ? contentOpacity : 0
     visible: active || opacity > 0.01
+    clip: true
 
-    onActiveChanged: {
-        if (!active)
-            core.opacity = 1.0;
+    Behavior on width {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
     }
 
     Behavior on opacity {
@@ -28,41 +33,54 @@ Item {
     }
 
     Rectangle {
-        id: core
-        width: root.dotSize
-        height: root.dotSize
+        id: pillContainer
         anchors.centerIn: parent
-        radius: width / 2
-        color: root.dotColor
-        opacity: 1.0
-    }
+        implicitWidth: contentRow.implicitWidth + 10
+        height: 18
+        radius: 9
+        color: Qt.rgba(0.68, 0.32, 0.87, 0.22)
+        border.width: 1
+        border.color: Qt.rgba(0.68, 0.32, 0.87, 0.5)
 
-    SequentialAnimation {
-        running: root.active
-        loops: Animation.Infinite
+        Row {
+            id: contentRow
+            anchors.centerIn: parent
+            spacing: 5
 
-        PauseAnimation {
-            duration: 110
-        }
+            Text {
+                text: root.iconText
+                color: root.accentColor
+                font.pixelSize: 11
+                font.family: root.iconFontFamily
+                anchors.verticalCenter: parent.verticalCenter
+            }
 
-        NumberAnimation {
-            target: core
-            property: "opacity"
-            to: 0.35
-            duration: 980
-            easing.type: Easing.InOutSine
-        }
+            Rectangle {
+                id: core
+                width: 4
+                height: 4
+                radius: 2
+                color: root.dotColor
+                anchors.verticalCenter: parent.verticalCenter
 
-        PauseAnimation {
-            duration: 120
-        }
+                SequentialAnimation on opacity {
+                    running: root.active
+                    loops: Animation.Infinite
 
-        NumberAnimation {
-            target: core
-            property: "opacity"
-            to: 1.0
-            duration: 1040
-            easing.type: Easing.InOutSine
+                    PauseAnimation { duration: 110 }
+                    NumberAnimation {
+                        to: 0.35
+                        duration: 800
+                        easing.type: Easing.InOutSine
+                    }
+                    PauseAnimation { duration: 120 }
+                    NumberAnimation {
+                        to: 1.0
+                        duration: 800
+                        easing.type: Easing.InOutSine
+                    }
+                }
+            }
         }
     }
 }

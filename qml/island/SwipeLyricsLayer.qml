@@ -1,12 +1,11 @@
-import QtQuick
-import Qt5Compat.GraphicalEffects
 import IslandBackend
+import Qt5Compat.GraphicalEffects
+import QtQuick
 
 Item {
     id: root
 
     readonly property var userConfig: UserConfig
-
     property string lyricText: ""
     property string currentArtUrl: ""
     property var cavaLevels: []
@@ -33,14 +32,10 @@ Item {
     property string previousLyricText: ""
     property real lyricChangeProgress: 1
     property int recordingDotSpacing: 12
-
     readonly property real clampedProgress: Math.max(0, Math.min(1, transitionProgress))
     readonly property bool lyricMostlyVisible: clampedProgress > 0.92
     readonly property real textWidth: Math.max(0, width - horizontalPadding * 2)
-    readonly property real lyricTextWidth: Math.max(
-        0,
-        textWidth - coverSize - cavaBars.implicitWidth - visualSpacing * 2
-    )
+    readonly property real lyricTextWidth: Math.max(0, textWidth - coverSize - cavaBars.implicitWidth - visualSpacing * 2)
     readonly property real centeredX: horizontalPadding
     readonly property real lyricHiddenLeftX: -textWidth - hiddenLeftPadding
     readonly property real timeHiddenRightX: width + hiddenRightPadding
@@ -53,68 +48,50 @@ Item {
     readonly property real timeBaselineY: timeBaselineGuide.y + timeBaselineGuide.baselineOffset
     readonly property real visibleLyricWidth: Math.min(lyricTextWidth, Math.max(0, lyricMetrics.advanceWidth))
     readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
-    readonly property real timeRecordingDotX: Math.max(
-        4,
-        timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width
-    )
-    readonly property real preferredWidth: Math.max(
-        minimumWidth,
-        Math.min(
-            Math.max(minimumWidth, maximumWidth),
-            lyricMetrics.advanceWidth
-                + horizontalPadding * 2
-                + coverSize
-                + cavaBars.implicitWidth
-                + visualSpacing * 2
-        )
-    )
+    readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
+    readonly property real preferredWidth: Math.max(minimumWidth, Math.min(Math.max(minimumWidth, maximumWidth), lyricMetrics.advanceWidth + horizontalPadding * 2 + coverSize + cavaBars.implicitWidth + visualSpacing * 2))
 
     onLyricTextChanged: {
-        if (lyricText === activeLyricText) return;
+        if (lyricText === activeLyricText)
+            return ;
 
         if (activeLyricText === "" || !lyricMostlyVisible) {
             lyricChangeAnimation.stop();
             previousLyricText = "";
             activeLyricText = lyricText;
             lyricChangeProgress = 1;
-            return;
+            return ;
         }
-
         previousLyricText = activeLyricText;
         activeLyricText = lyricText;
         lyricChangeProgress = 0;
         lyricChangeAnimation.restart();
     }
-
     onShowConditionChanged: {
-        if (showCondition) return;
+        if (showCondition)
+            return ;
+
         lyricChangeAnimation.stop();
         previousLyricText = "";
         activeLyricText = lyricText;
         lyricChangeProgress = 1;
     }
-
     onTransitionProgressChanged: {
-        if (lyricMostlyVisible) return;
+        if (lyricMostlyVisible)
+            return ;
+
         lyricChangeAnimation.stop();
         previousLyricText = "";
         activeLyricText = lyricText;
         lyricChangeProgress = 1;
     }
-
     anchors.fill: parent
     clip: true
     opacity: showCondition ? 1 : 0
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: showCondition ? 220 : 140
-            easing.type: Easing.InOutQuad
-        }
-    }
-
     TextMetrics {
         id: lyricMetrics
+
         font.family: textFontFamily
         font.pixelSize: textPixelSize
         font.weight: Font.DemiBold
@@ -123,6 +100,7 @@ Item {
 
     TextMetrics {
         id: timeMetrics
+
         font.family: timeFontFamily
         font.pixelSize: textPixelSize + 1
         font.weight: Font.Bold
@@ -131,6 +109,7 @@ Item {
 
     Text {
         id: lyricBaselineGuide
+
         anchors.verticalCenter: parent.verticalCenter
         text: "Ag国"
         opacity: 0
@@ -143,6 +122,7 @@ Item {
 
     Text {
         id: timeBaselineGuide
+
         anchors.verticalCenter: parent.verticalCenter
         text: "00:00"
         opacity: 0
@@ -168,6 +148,7 @@ Item {
         ScriptAction {
             script: root.previousLyricText = ""
         }
+
     }
 
     Item {
@@ -206,10 +187,13 @@ Item {
                 visible: source.toString() !== ""
                 sourceSize: Qt.size(root.coverSize * 2, root.coverSize * 2)
                 layer.enabled: true
+
                 layer.effect: OpacityMask {
                     maskSource: coverMask
                 }
+
             }
+
         }
 
         Item {
@@ -240,8 +224,7 @@ Item {
 
             Text {
                 visible: root.activeLyricText !== ""
-                y: root.lyricBaselineY - baselineOffset
-                    + (root.previousLyricText !== "" ? 12 * (1 - root.lyricChangeProgress) : 0)
+                y: root.lyricBaselineY - baselineOffset + (root.previousLyricText !== "" ? 12 * (1 - root.lyricChangeProgress) : 0)
                 width: parent.width
                 text: root.activeLyricText
                 color: "white"
@@ -254,6 +237,7 @@ Item {
                 elide: Text.ElideRight
                 wrapMode: Text.NoWrap
             }
+
         }
 
         SwipeCavaBars {
@@ -268,37 +252,39 @@ Item {
             minimumBarHeight: 4
             barColor: "white"
         }
+
     }
 
-    Text {
+    FlipClockText {
         visible: timeText !== "" && showSecondaryText
         x: timeX
-        y: timeBaselineY - baselineOffset
         width: textWidth
-        text: timeText
+        height: parent.height
+        anchors.verticalCenter: parent.verticalCenter
+        timeText: root.timeText
         color: root.accentColor
         opacity: 1 - clampedProgress
-        font.pixelSize: textPixelSize + 1
-        font.family: timeFontFamily
-        font.weight: Font.Bold
-        font.letterSpacing: -0.25
-        horizontalAlignment: Text.AlignHCenter
-        elide: Text.ElideRight
-        wrapMode: Text.NoWrap
-
-        Behavior on color {
-            ColorAnimation { duration: 300 }
-        }
+        fontPixelSize: textPixelSize + 1
+        fontFamily: timeFontFamily
+        fontWeight: Font.Bold
+        fontLetterSpacing: -0.25
     }
 
     RecordingIndicator {
         id: timeRecordingIndicator
-        active: root.recordingActive
-            && root.showSecondaryText
-            && root.timeText !== ""
-            && root.clampedProgress < 0.001
+
+        active: root.recordingActive && root.showSecondaryText && root.timeText !== "" && root.clampedProgress < 0.001
         contentOpacity: 1 - root.clampedProgress
         x: root.timeRecordingDotX
         anchors.verticalCenter: parent.verticalCenter
     }
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: showCondition ? 220 : 140
+            easing.type: Easing.InOutQuad
+        }
+
+    }
+
 }

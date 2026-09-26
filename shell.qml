@@ -1,48 +1,30 @@
+import IslandBackend
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Polkit
-import IslandBackend
 import "qml/config"
 
 Scope {
     id: shellRoot
 
     readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
-
-    DynamicConfig {
-        id: dynamicConfig
-    }
-
     readonly property alias dynamicConfig: dynamicConfig
-
     readonly property bool screenRecordingActive: SystemServices.screenRecordingActive
     property bool focusEnabled: false
     property bool nightLightEnabled: false
     property bool shuttingDown: false
     property bool islandAutoHideRuntimeEnabled: true
-
     readonly property var userConfig: UserConfig
-
-    PolkitAgent {
-        id: polkitAgent
-
-        onIsActiveChanged: {
-            console.log("[DynamicIsland] PolkitAgent isActive:", isActive);
-            if (isActive) {
-                shellRoot.showPolkitPromptAll();
-            } else {
-                shellRoot.handlePolkitFinishedAll();
-            }
-        }
-    }
-
     readonly property alias polkitAgent: polkitAgent
+    property string lastNotificationKey: ""
+    property real lastNotificationTime: 0
 
     function showPolkitPromptAll() {
         shellRoot.forEachWindow((window) => {
             if (window && window.showPolkitPrompt)
                 window.showPolkitPrompt();
+
         });
     }
 
@@ -59,6 +41,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.closePolkitPrompt)
                 window.closePolkitPrompt();
+
         });
     }
 
@@ -68,6 +51,7 @@ Scope {
             const window = windows[index];
             if (window)
                 callback(window);
+
         }
     }
 
@@ -75,27 +59,25 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.showReload)
                 window.showReload(failed, errorString);
+
         });
     }
 
-    property string lastNotificationKey: ""
-    property real lastNotificationTime: 0
-
     function showNotificationAll(appName, summary, body, icon, customColor) {
         if (focusEnabled)
-            return;
+            return ;
 
         const now = Date.now();
         const key = (appName || "") + "|" + (summary || "") + "|" + (body || "");
-        if (key === lastNotificationKey && (now - lastNotificationTime) < 1800) {
-            return;
-        }
+        if (key === lastNotificationKey && (now - lastNotificationTime) < 1800)
+            return ;
+
         lastNotificationKey = key;
         lastNotificationTime = now;
-
         shellRoot.forEachWindow((window) => {
             if (window && window.showNotification)
                 window.showNotification(appName, summary, body, icon, customColor);
+
         });
     }
 
@@ -103,6 +85,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.showCharging)
                 window.showCharging(capacity, isCharging);
+
         });
     }
 
@@ -110,6 +93,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.showLowBattery)
                 window.showLowBattery(capacity);
+
         });
     }
 
@@ -117,6 +101,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.showSilentRing)
                 window.showSilentRing(isMuted);
+
         });
     }
 
@@ -124,6 +109,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.showDiscordCall)
                 window.showDiscordCall(callerName, subtitle, avatarUrl);
+
         });
     }
 
@@ -131,6 +117,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.closeDiscordCall)
                 window.closeDiscordCall();
+
         });
     }
 
@@ -143,42 +130,50 @@ Scope {
             const window = windows[index];
             if (window && window.overviewPhase !== "closed")
                 return true;
-        }
 
+        }
         return false;
     }
 
     function prepareOverviewAll() {
         if (CompositorBackend.compositor === "niri")
-            return;
+            return ;
 
-        shellRoot.forEachWindow((window) => window.prepareOverview());
+        shellRoot.forEachWindow((window) => {
+            return window.prepareOverview();
+        });
     }
 
     function cancelPreparedOverviewAll() {
         if (CompositorBackend.compositor === "niri")
-            return;
+            return ;
 
-        shellRoot.forEachWindow((window) => window.cancelPreparedOverview());
+        shellRoot.forEachWindow((window) => {
+            return window.cancelPreparedOverview();
+        });
     }
 
     function openOverviewAll() {
         if (CompositorBackend.compositor === "niri")
-            return;
+            return ;
 
-        shellRoot.forEachWindow((window) => window.openOverview());
+        shellRoot.forEachWindow((window) => {
+            return window.openOverview();
+        });
     }
 
     function closeOverviewAll() {
         if (CompositorBackend.compositor === "niri")
-            return;
+            return ;
 
-        shellRoot.forEachWindow((window) => window.closeOverview());
+        shellRoot.forEachWindow((window) => {
+            return window.closeOverview();
+        });
     }
 
     function toggleOverviewAll() {
         if (CompositorBackend.compositor === "niri")
-            return;
+            return ;
 
         if (shellRoot.anyOverviewOpen())
             shellRoot.closeOverviewAll();
@@ -192,8 +187,8 @@ Scope {
             const window = windows[index];
             if (window && window.autoHideTargetVisible)
                 return true;
-        }
 
+        }
         return false;
     }
 
@@ -201,6 +196,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.showIslandWindow)
                 window.showIslandWindow();
+
         });
     }
 
@@ -208,6 +204,7 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.hideIslandWindow)
                 window.hideIslandWindow();
+
         });
     }
 
@@ -222,21 +219,21 @@ Scope {
         shellRoot.forEachWindow((window) => {
             if (window && window.refreshAutoHideWindow)
                 window.refreshAutoHideWindow();
+
         });
     }
 
     function refreshOverviewWallpaperCaches(wallpaperPath) {
         shellRoot.forEachWindow((window) => {
-            if (window
-                    && wallpaperPath !== undefined
-                    && wallpaperPath !== null
-                    && String(wallpaperPath) !== "") {
+            if (window && wallpaperPath !== undefined && wallpaperPath !== null && String(wallpaperPath) !== "")
                 window.wallpaperPickerActiveWallpaper = String(wallpaperPath);
-            }
+
             if (window && window.refreshWallpaperSources)
                 window.refreshWallpaperSources();
+
             if (window && window.prewarmWallpaperCache)
                 window.prewarmWallpaperCache();
+
         });
     }
 
@@ -247,19 +244,42 @@ Scope {
             const window = windows[index];
             if (window && !fallbackWindow)
                 fallbackWindow = window;
+
             if (window && window.monitorFocused) {
                 callback(window);
-                return;
+                return ;
             }
         }
-
         if (fallbackWindow)
             callback(fallbackWindow);
+
+    }
+
+    Component.onDestruction: {
+        shuttingDown = true;
+    }
+    Component.onCompleted: {
+        SystemServices.ensureUserConfigAvailable();
+        SystemServices.requestScreenRecordingSnapshot();
+    }
+
+    DynamicConfig {
+        id: dynamicConfig
+    }
+
+    PolkitAgent {
+        id: polkitAgent
+
+        onIsActiveChanged: {
+            console.log("[DynamicIsland] PolkitAgent isActive:", isActive);
+            if (isActive)
+                shellRoot.showPolkitPromptAll();
+            else
+                shellRoot.handlePolkitFinishedAll();
+        }
     }
 
     IpcHandler {
-        target: "overview"
-
         function toggle() {
             shellRoot.toggleOverviewAll();
         }
@@ -275,10 +295,18 @@ Scope {
         function refreshWallpaperCache() {
             shellRoot.refreshOverviewWallpaperCaches();
         }
+
+        target: "overview"
     }
 
     IpcHandler {
-        target: "island"
+        function promptScreenShareSelection(fifoPath: string) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.promptScreenShareSelection)
+                    window.promptScreenShareSelection(fifoPath);
+
+            });
+        }
 
         function show() {
             shellRoot.showIslandAll();
@@ -314,15 +342,8 @@ Scope {
             shellRoot.showReloadAll(failed, error);
         }
 
-
         function testWifiDisconnect() {
-            shellRoot.showNotificationAll(
-                "Wi-Fi",
-                "Wi-Fi disconnesso",
-                "da TIM-94674062",
-                "",
-                "#ff9f0a"
-            );
+            shellRoot.showNotificationAll("Wi-Fi", "Wi-Fi disconnesso", "da TIM-94674062", "", "#ff9f0a");
         }
 
         function testCharging(capacity: int) {
@@ -364,6 +385,7 @@ Scope {
             shellRoot.forEachWindow((window) => {
                 if (window && window.showDiscordOngoingCall)
                     window.showDiscordOngoingCall(n, "00:42", "");
+
             });
         }
 
@@ -371,6 +393,7 @@ Scope {
             shellRoot.forEachWindow((window) => {
                 if (window && window.acceptDiscordCall)
                     window.acceptDiscordCall();
+
             });
         }
 
@@ -378,6 +401,7 @@ Scope {
             shellRoot.forEachWindow((window) => {
                 if (window && window.declineDiscordCall)
                     window.declineDiscordCall();
+
             });
         }
 
@@ -385,6 +409,7 @@ Scope {
             shellRoot.forEachWindow((window) => {
                 if (window && window.setDiscordCallOngoing)
                     window.setDiscordCallOngoing();
+
             });
         }
 
@@ -404,7 +429,8 @@ Scope {
             const lvl = (level !== undefined && level >= 0) ? level : 65;
             shellRoot.forEachWindow((window) => {
                 if (window && window.showOsdWindow)
-                    window.showOsdWindow("", lvl / 100.0, "");
+                    window.showOsdWindow("", lvl / 100, "");
+
             });
         }
 
@@ -412,7 +438,8 @@ Scope {
             const lvl = (level !== undefined && level >= 0) ? level : 80;
             shellRoot.forEachWindow((window) => {
                 if (window && window.showOsdWindow)
-                    window.showOsdWindow("", lvl / 100.0, "");
+                    window.showOsdWindow("", lvl / 100, "");
+
             });
         }
 
@@ -421,6 +448,7 @@ Scope {
             shellRoot.forEachWindow((window) => {
                 if (window && window.showWorkspaceWindow)
                     window.showWorkspaceWindow(w);
+
             });
         }
 
@@ -433,13 +461,7 @@ Scope {
         }
 
         function testNotification(app: string, summary: string, body: string) {
-            shellRoot.showNotificationAll(
-                app || "WhatsApp",
-                summary || "Nuovo messaggio da Marco",
-                body || "Ciao, ci vediamo dopo?",
-                "",
-                ""
-            );
+            shellRoot.showNotificationAll(app || "WhatsApp", summary || "Nuovo messaggio da Marco", body || "Ciao, ci vediamo dopo?", "", "");
         }
 
         function postNotification(appName: string, summary: string, body: string, icon: string, customColor: string) {
@@ -452,6 +474,7 @@ Scope {
             shellRoot.forEachWindow((window) => {
                 if (window && window.setConnectivityDetailWindow)
                     window.setConnectivityDetailWindow(k, o);
+
             });
         }
 
@@ -459,6 +482,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.toggleClipboardWindow)
                     window.toggleClipboardWindow();
+
             });
         }
 
@@ -466,6 +490,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.showClipboardWindow)
                     window.showClipboardWindow();
+
             });
         }
 
@@ -473,6 +498,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.toggleSettingsAppWindow)
                     window.toggleSettingsAppWindow();
+
             });
         }
 
@@ -480,6 +506,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.showSettingsAppWindow)
                     window.showSettingsAppWindow();
+
             });
         }
 
@@ -487,6 +514,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.setSettingsCategory)
                     window.setSettingsCategory(catIndex);
+
             });
         }
 
@@ -494,6 +522,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.setSettingsSubView)
                     window.setSettingsSubView(sub);
+
             });
         }
 
@@ -501,59 +530,86 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.openSettingsFontBrowser)
                     window.openSettingsFontBrowser(target);
+
             });
         }
 
         function showClock() {
-            shellRoot.forFocusedWindow((window) => window.showClockWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showClockWindow();
+            });
         }
 
         function showTimer() {
-            shellRoot.forFocusedWindow((window) => window.showTimerWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showTimerWindow();
+            });
         }
 
         function showCustom() {
-            shellRoot.forFocusedWindow((window) => window.showCustomInfoWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showCustomInfoWindow();
+            });
         }
 
         function showLyrics() {
-            shellRoot.forFocusedWindow((window) => window.showLyricsWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showLyricsWindow();
+            });
         }
 
         function swipeRight() {
-            shellRoot.forFocusedWindow((window) => window.swipeRightWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.swipeRightWindow();
+            });
         }
 
         function swipeLeft() {
-            shellRoot.forFocusedWindow((window) => window.swipeLeftWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.swipeLeftWindow();
+            });
         }
 
         function togglePlayer() {
-            shellRoot.forFocusedWindow((window) => window.togglePlayerWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.togglePlayerWindow();
+            });
         }
 
         function toggleControlCenter() {
-            shellRoot.forFocusedWindow((window) => window.toggleControlCenterWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleControlCenterWindow();
+            });
         }
 
         function togglePowerMenu() {
-            shellRoot.forFocusedWindow((window) => window.togglePowerMenuWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.togglePowerMenuWindow();
+            });
         }
 
         function toggleNotificationCenter() {
-            shellRoot.forFocusedWindow((window) => window.toggleNotificationCenterWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleNotificationCenterWindow();
+            });
         }
 
         function toggleWallpaperPicker() {
-            shellRoot.forFocusedWindow((window) => window.toggleWallpaperPickerWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleWallpaperPickerWindow();
+            });
         }
 
         function toggleApplicationLauncher() {
-            shellRoot.forFocusedWindow((window) => window.toggleApplicationLauncherWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleApplicationLauncherWindow();
+            });
         }
 
         function toggleFileShelf() {
-            shellRoot.forFocusedWindow((window) => window.toggleFileShelfWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleFileShelfWindow();
+            });
         }
 
         function reload() {
@@ -563,63 +619,88 @@ Scope {
                 console.log("Error calling Quickshell.reload():", e);
             }
         }
+
+        target: "island"
     }
 
     IpcHandler {
-        target: "tide"
-
         function showClock() {
-            shellRoot.forFocusedWindow((window) => window.showClockWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showClockWindow();
+            });
         }
 
         function showTimer() {
-            shellRoot.forFocusedWindow((window) => window.showTimerWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showTimerWindow();
+            });
         }
 
         function showCustom() {
-            shellRoot.forFocusedWindow((window) => window.showCustomInfoWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showCustomInfoWindow();
+            });
         }
 
         function showLyrics() {
-            shellRoot.forFocusedWindow((window) => window.showLyricsWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.showLyricsWindow();
+            });
         }
 
         function swipeRight() {
-            shellRoot.forFocusedWindow((window) => window.swipeRightWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.swipeRightWindow();
+            });
         }
 
         function swipeLeft() {
-            shellRoot.forFocusedWindow((window) => window.swipeLeftWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.swipeLeftWindow();
+            });
         }
 
         function togglePlayer() {
-            shellRoot.forFocusedWindow((window) => window.togglePlayerWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.togglePlayerWindow();
+            });
         }
 
         function toggleControlCenter() {
-            shellRoot.forFocusedWindow((window) => window.toggleControlCenterWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleControlCenterWindow();
+            });
         }
 
         function togglePowerMenu() {
-            shellRoot.forFocusedWindow((window) => window.togglePowerMenuWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.togglePowerMenuWindow();
+            });
         }
 
         function toggleNotificationCenter() {
-            shellRoot.forFocusedWindow((window) => window.toggleNotificationCenterWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleNotificationCenterWindow();
+            });
         }
 
         function toggleWallpaperPicker() {
-            shellRoot.forFocusedWindow((window) => window.toggleWallpaperPickerWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleWallpaperPickerWindow();
+            });
         }
 
         function toggleApplicationLauncher() {
-            shellRoot.forFocusedWindow((window) => window.toggleApplicationLauncherWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleApplicationLauncherWindow();
+            });
         }
 
         function toggleClipboard() {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.toggleClipboardWindow)
                     window.toggleClipboardWindow();
+
             });
         }
 
@@ -627,17 +708,21 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.showClipboardWindow)
                     window.showClipboardWindow();
+
             });
         }
 
         function toggleFileShelf() {
-            shellRoot.forFocusedWindow((window) => window.toggleFileShelfWindow());
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleFileShelfWindow();
+            });
         }
 
         function toggleSettingsApp() {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.toggleSettingsAppWindow)
                     window.toggleSettingsAppWindow();
+
             });
         }
 
@@ -645,6 +730,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.showSettingsAppWindow)
                     window.showSettingsAppWindow();
+
             });
         }
 
@@ -652,6 +738,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.setSettingsCategory)
                     window.setSettingsCategory(catIndex);
+
             });
         }
 
@@ -659,6 +746,7 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.setSettingsSubView)
                     window.setSettingsSubView(sub);
+
             });
         }
 
@@ -666,60 +754,74 @@ Scope {
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.openSettingsFontBrowser)
                     window.openSettingsFontBrowser(target);
+
             });
         }
+
+        target: "tide"
     }
 
     Connections {
-        target: Quickshell
-
         function onReloadCompleted() {
-            try { Quickshell.inhibitReloadPopup(); } catch(e) { console.log("inhibit error:", e); }
+            try {
+                Quickshell.inhibitReloadPopup();
+            } catch (e) {
+                console.log("inhibit error:", e);
+            }
             shellRoot.showReloadAll(false, "");
         }
 
         function onReloadFailed(error: string) {
-            try { Quickshell.inhibitReloadPopup(); } catch(e) { console.log("inhibit error:", e); }
+            try {
+                Quickshell.inhibitReloadPopup();
+            } catch (e) {
+                console.log("inhibit error:", e);
+            }
             shellRoot.showReloadAll(true, error);
         }
+
+        target: Quickshell
     }
 
     Process {
         id: avatarResolverProc
+
         property string pendingCaller: ""
         property string pendingSubtitle: ""
+
         running: false
+
         stdout: SplitParser {
             onRead: function(data) {
                 const avatar = String(data || "").trim();
-                if (avatar !== "") {
+                if (avatar !== "")
                     shellRoot.showDiscordCallAll(avatarResolverProc.pendingCaller, avatarResolverProc.pendingSubtitle, avatar);
-                }
+
             }
         }
+
     }
 
     Process {
         id: discordCallMonitorProc
+
         command: [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/discord_call_monitor.py"]
         running: !shellRoot.shuttingDown
     }
 
     Process {
         id: notificationMonitorProc
+
         command: [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/notification_monitor.py"]
         running: !shellRoot.shuttingDown
     }
 
     Connections {
-        target: SystemServices
-
         function onNotificationReceived(appName, summary, body) {
             let app = String(appName || "");
             const lowerApp = app.toLowerCase();
             const lowerSummary = String(summary || "").toLowerCase();
             const lowerBody = String(body || "").toLowerCase();
-
             // Detect app from summary/body if appName is empty or generic
             if (app === "" || lowerApp === "notification" || lowerApp === "notify-send") {
                 if (lowerSummary.indexOf("whatsapp") !== -1 || lowerBody.indexOf("whatsapp") !== -1)
@@ -731,22 +833,12 @@ Scope {
                 else if (lowerSummary.indexOf("spotify") !== -1 || lowerBody.indexOf("spotify") !== -1)
                     app = "Spotify";
             }
-
             if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
-                if (lowerSummary.indexOf("persa") !== -1 || lowerBody.indexOf("persa") !== -1
-                        || lowerSummary.indexOf("missed") !== -1 || lowerBody.indexOf("missed") !== -1
-                        || lowerSummary.indexOf("terminat") !== -1 || lowerBody.indexOf("terminat") !== -1
-                        || lowerSummary.indexOf("ended") !== -1 || lowerBody.indexOf("ended") !== -1
-                        || lowerSummary.indexOf("annullat") !== -1 || lowerBody.indexOf("annullat") !== -1
-                        || lowerSummary.indexOf("rifiutat") !== -1 || lowerBody.indexOf("rifiutat") !== -1
-                        || lowerSummary.indexOf("chiusa") !== -1 || lowerBody.indexOf("chiusa") !== -1) {
+                if (lowerSummary.indexOf("persa") !== -1 || lowerBody.indexOf("persa") !== -1 || lowerSummary.indexOf("missed") !== -1 || lowerBody.indexOf("missed") !== -1 || lowerSummary.indexOf("terminat") !== -1 || lowerBody.indexOf("terminat") !== -1 || lowerSummary.indexOf("ended") !== -1 || lowerBody.indexOf("ended") !== -1 || lowerSummary.indexOf("annullat") !== -1 || lowerBody.indexOf("annullat") !== -1 || lowerSummary.indexOf("rifiutat") !== -1 || lowerBody.indexOf("rifiutat") !== -1 || lowerSummary.indexOf("chiusa") !== -1 || lowerBody.indexOf("chiusa") !== -1) {
                     shellRoot.closeDiscordCallAll();
-                    return;
+                    return ;
                 }
-
-                if (lowerSummary.indexOf("call") !== -1 || lowerSummary.indexOf("chiamat") !== -1
-                        || lowerBody.indexOf("call") !== -1 || lowerBody.indexOf("chiamat") !== -1
-                        || lowerSummary.indexOf("incoming") !== -1 || lowerBody.indexOf("incoming") !== -1) {
+                if (lowerSummary.indexOf("call") !== -1 || lowerSummary.indexOf("chiamat") !== -1 || lowerBody.indexOf("call") !== -1 || lowerBody.indexOf("chiamat") !== -1 || lowerSummary.indexOf("incoming") !== -1 || lowerBody.indexOf("incoming") !== -1) {
                     const caller = summary || "Discord";
                     const sub = body || "Chiamata in arrivo...";
                     shellRoot.showDiscordCallAll(caller, sub, "");
@@ -755,20 +847,13 @@ Scope {
                     avatarResolverProc.command = [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", caller];
                     avatarResolverProc.running = false;
                     avatarResolverProc.running = true;
-                    return;
+                    return ;
                 }
             }
             shellRoot.showNotificationAll(app, summary, body);
         }
-    }
 
-    Component.onDestruction: {
-        shuttingDown = true;
-    }
-
-    Component.onCompleted: {
-        SystemServices.ensureUserConfigAvailable();
-        SystemServices.requestScreenRecordingSnapshot();
+        target: SystemServices
     }
 
     Variants {
@@ -783,5 +868,7 @@ Scope {
             shellRootController: shellRoot
             dynamicConfig: shellRoot.dynamicConfig
         }
+
     }
+
 }

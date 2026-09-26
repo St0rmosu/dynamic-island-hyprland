@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Launcher for Dynamic Island Quickshell component
+
+QML_PATH="${DYNAMIC_ISLAND_PATH:-$HOME/.config/quickshell/dynamic-island}"
+export QML_IMPORT_PATH="$HOME/.local/lib/qt6/qml:/usr/lib/qt6/qml:${QML_IMPORT_PATH}"
+export LD_LIBRARY_PATH="$HOME/.local/lib:/usr/lib:${LD_LIBRARY_PATH}"
+export PATH="$HOME/.local/bin:/usr/local/bin:${PATH}"
+export QUICKSHELL_LYRICS_BACKEND="${QUICKSHELL_LYRICS_BACKEND:-$HOME/.local/bin/lyricsmpris}"
+export MALLOC_CONF="${MALLOC_CONF:-narenas:2,background_thread:true,dirty_decay_ms:2000,muzzy_decay_ms:2000}"
+
+if [[ "${SYSTEMD_EXEC_PID:-}" != "$$" ]]; then
+  if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
+    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island show >/dev/null 2>&1 || true
+    exit 0
+  fi
+fi
+
+exec /usr/bin/quickshell -p "$QML_PATH" "$@"

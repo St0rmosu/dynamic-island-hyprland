@@ -1,12 +1,11 @@
-import QtQuick
 import IslandBackend
+import QtQuick
 import Quickshell.Widgets
 
 Item {
     id: root
 
     readonly property var userConfig: UserConfig
-
     property var items: []
     property var cavaLevels: []
     property string timeText: ""
@@ -47,7 +46,6 @@ Item {
     property real batteryChargingXOffset: 0
     property real batteryChargingYOffset: 0
     readonly property string chargingIconGlyph: "\uf0e7"
-
     readonly property real clampedProgress: Math.max(0, Math.min(1, -transitionProgress))
     readonly property real textWidth: Math.max(0, width - horizontalPadding * 2)
     readonly property real centeredTimeX: horizontalPadding
@@ -60,28 +58,16 @@ Item {
     readonly property real itemsX: centeredItemsX + (1 - clampedProgress) * dragDistance
     readonly property real timeX: centeredTimeX - clampedProgress * dragDistance
     readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
-    readonly property real timeRecordingDotX: Math.max(
-        4,
-        timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width
-    )
-    readonly property real preferredWidth: Math.max(
-        minimumWidth,
-        Math.min(Math.max(minimumWidth, maximumWidth), contentRow.implicitWidth + horizontalPadding * 2 + 28)
-    )
+    readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
+    readonly property real preferredWidth: Math.max(minimumWidth, Math.min(Math.max(minimumWidth, maximumWidth), contentRow.implicitWidth + horizontalPadding * 2 + 28))
 
     anchors.fill: parent
     clip: true
     opacity: showCondition ? 1 : 0
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: showCondition ? 220 : 140
-            easing.type: Easing.InOutQuad
-        }
-    }
-
     TextMetrics {
         id: timeMetrics
+
         font.family: timeFontFamily
         font.pixelSize: root.textPixelSize + 1
         font.weight: Font.Bold
@@ -90,6 +76,7 @@ Item {
 
     Row {
         id: contentRow
+
         x: itemsX
         height: parent.height
         anchors.verticalCenter: parent.verticalCenter
@@ -106,22 +93,16 @@ Item {
                 readonly property bool isAlbumArt: modelData.kind === "albumArt"
                 readonly property bool isMediaText: modelData.kind === "trackName"
                 readonly property bool hasLeadingVisual: hasIcon || isBattery
-                readonly property real boundedTextWidth: isMediaText
-                    ? Math.min(valueText.implicitWidth, root.maximumMediaTextWidth)
-                    : valueText.implicitWidth
-                implicitWidth: isCava
-                    ? cavaBars.implicitWidth
-                    : isAlbumArt
-                      ? root.albumCoverSize
-                    : isBattery
-                      ? root.batteryIconWidth
-                      : leadingVisual.width + (hasLeadingVisual ? root.iconSpacing : 0) + boundedTextWidth
+                readonly property real boundedTextWidth: isMediaText ? Math.min(valueText.implicitWidth, root.maximumMediaTextWidth) : valueText.implicitWidth
+
+                implicitWidth: isCava ? cavaBars.implicitWidth : isAlbumArt ? root.albumCoverSize : isBattery ? root.batteryIconWidth : leadingVisual.width + (hasLeadingVisual ? root.iconSpacing : 0) + boundedTextWidth
                 implicitHeight: root.height
                 width: implicitWidth
                 height: implicitHeight
 
                 SwipeCavaBars {
                     id: cavaBars
+
                     visible: parent.isCava
                     anchors.centerIn: parent
                     levels: root.cavaLevels
@@ -141,10 +122,20 @@ Item {
 
                         Rectangle {
                             anchors.fill: parent
+
                             gradient: Gradient {
-                                GradientStop { position: 0; color: "#a56e5a" }
-                                GradientStop { position: 1; color: "#493b43" }
+                                GradientStop {
+                                    position: 0
+                                    color: "#a56e5a"
+                                }
+
+                                GradientStop {
+                                    position: 1
+                                    color: "#493b43"
+                                }
+
                             }
+
                         }
 
                         Image {
@@ -175,11 +166,14 @@ Item {
                             border.width: 1
                             border.color: "#2effffff"
                         }
+
                     }
+
                 }
 
                 Item {
                     id: leadingVisual
+
                     visible: !parent.isCava && !parent.isAlbumArt && parent.hasLeadingVisual
                     width: parent.isBattery ? root.batteryIconWidth : (parent.hasIcon ? root.iconBoxSize : 0)
                     height: parent.isBattery ? Math.max(root.batteryIconHeight, valueText.implicitHeight) : root.iconBoxSize
@@ -198,10 +192,6 @@ Item {
 
                     Item {
                         id: batteryShape
-                        visible: parent.parent.isBattery
-                        width: root.batteryIconWidth
-                        height: root.batteryIconHeight
-                        anchors.verticalCenter: parent.verticalCenter
 
                         readonly property real level: Math.max(0, Math.min(100, Number(modelData.level || 0)))
                         readonly property bool charging: modelData.isCharging || false
@@ -209,14 +199,22 @@ Item {
                         readonly property color bodyColor: {
                             if (charging)
                                 return "white";
+
                             if (level <= 20)
                                 return "#ff3b30";
+
                             return "white";
                         }
                         readonly property color emptyColor: Qt.rgba(1, 1, 1, 0.56)
 
+                        visible: parent.parent.isBattery
+                        width: root.batteryIconWidth
+                        height: root.batteryIconHeight
+                        anchors.verticalCenter: parent.verticalCenter
+
                         Rectangle {
                             id: batteryBody
+
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width - root.batteryTipWidth - 1
@@ -228,6 +226,7 @@ Item {
 
                             Rectangle {
                                 id: batteryFill
+
                                 anchors.left: parent.left
                                 anchors.top: parent.top
                                 anchors.bottom: parent.bottom
@@ -236,7 +235,7 @@ Item {
                                 bottomLeftRadius: root.batteryOuterRadius
                                 topRightRadius: batteryShape.roundedEnd ? root.batteryOuterRadius : 0
                                 bottomRightRadius: batteryShape.roundedEnd ? root.batteryOuterRadius : 0
-                                width: Math.max(root.batteryOuterRadius * 2, parent.width * (batteryShape.level / 100.0))
+                                width: Math.max(root.batteryOuterRadius * 2, parent.width * (batteryShape.level / 100))
                                 color: batteryShape.bodyColor
 
                                 Behavior on width {
@@ -244,10 +243,16 @@ Item {
                                         duration: 300
                                         easing.type: Easing.OutCubic
                                     }
+
                                 }
+
                                 Behavior on color {
-                                    ColorAnimation { duration: 300 }
+                                    ColorAnimation {
+                                        duration: 300
+                                    }
+
                                 }
+
                             }
 
                             Row {
@@ -276,6 +281,7 @@ Item {
                                     verticalAlignment: Text.AlignVCenter
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
+
                             }
 
                             Text {
@@ -290,6 +296,7 @@ Item {
                                 horizontalAlignment: Text.AlignHCenter
                                 z: 2
                             }
+
                         }
 
                         Rectangle {
@@ -302,14 +309,21 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
 
                             Behavior on color {
-                                ColorAnimation { duration: 300 }
+                                ColorAnimation {
+                                    duration: 300
+                                }
+
                             }
+
                         }
+
                     }
+
                 }
 
                 Text {
                     id: valueText
+
                     visible: !parent.isCava && !parent.isBattery && !parent.isAlbumArt
                     anchors.left: leadingVisual.right
                     anchors.leftMargin: parent.hasLeadingVisual && !parent.isBattery ? root.iconSpacing : 0
@@ -325,42 +339,50 @@ Item {
                     wrapMode: Text.NoWrap
 
                     Behavior on color {
-                        ColorAnimation { duration: 300 }
+                        ColorAnimation {
+                            duration: 300
+                        }
+
                     }
+
                 }
+
             }
+
         }
+
     }
 
     RecordingIndicator {
         id: timeRecordingIndicator
-        active: root.recordingActive
-            && root.showSecondaryText
-            && root.timeText !== ""
-            && root.clampedProgress < 0.001
+
+        active: root.recordingActive && root.showSecondaryText && root.timeText !== "" && root.clampedProgress < 0.001
         contentOpacity: 1 - root.clampedProgress
         x: root.timeRecordingDotX
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    Text {
+    FlipClockText {
         visible: timeText !== "" && showSecondaryText
         x: timeX
         width: textWidth
+        height: parent.height
         anchors.verticalCenter: parent.verticalCenter
-        text: timeText
+        timeText: root.timeText
         color: root.accentColor
         opacity: 1 - clampedProgress
-        font.pixelSize: root.textPixelSize + 1
-        font.family: timeFontFamily
-        font.weight: Font.Bold
-        font.letterSpacing: -0.25
-        horizontalAlignment: Text.AlignHCenter
-        elide: Text.ElideRight
-        wrapMode: Text.NoWrap
-
-        Behavior on color {
-            ColorAnimation { duration: 300 }
-        }
+        fontPixelSize: root.textPixelSize + 1
+        fontFamily: timeFontFamily
+        fontWeight: Font.Bold
+        fontLetterSpacing: -0.25
     }
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: showCondition ? 220 : 140
+            easing.type: Easing.InOutQuad
+        }
+
+    }
+
 }
