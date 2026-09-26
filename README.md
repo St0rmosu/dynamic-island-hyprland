@@ -6,6 +6,19 @@ An authentic, fluid **Apple-style Dynamic Island** and modern Control Center imp
 
 ---
 
+## Status: work in progress
+
+This is a personal project, under active development. Some features are not finished yet and parts of the config are tied to my own machine.
+
+Before you follow the setup steps, know two things:
+
+- The shell depends on an `IslandBackend` C++ plugin for Quickshell that is **not yet public**. Without it the QML files do not load. The backend is unpublished while I finish the build.
+- Several paths in the code (icons, wallpapers, helper scripts) are hardcoded to `/home/lollo/...`. The setup below installs the config, but the running shell still expects my paths until those are made portable.
+
+Treat this as documentation of my current setup, not as install instructions and not yet, for anyone else.
+
+---
+
 ## ✨ Features & Visual Demonstrations
 
 ### 🔋 1. Battery & Power Alerts
@@ -274,17 +287,16 @@ Ensure you have the following packages installed on your system:
 
 1. Clone this repository into your Quickshell configuration directory:
 ```bash
-git clone https://github.com/St0rmosu/dynamic-island-hyprland.git ~/.config/quickshell/tide-island
+git clone https://github.com/St0rmosu/dynamic-island-hyprland.git ~/.config/quickshell/dynamic-island
 ```
 
 2. Launch or reload the bar:
 ```bash
 # If using quickshell directly:
-quickshell -p ~/.config/quickshell/tide-island -d
-
-# Or using your apply script:
-~/.scripts/apply-qs-bar.sh tide-island
+quickshell -p ~/.config/quickshell/dynamic-island -d
 ```
+
+The runtime config lives at `~/.config/quickshell/dynamic-island`; the shell writes its user settings to `~/.config/dynamic-island/userconfig.json`.
 
 ---
 
@@ -294,48 +306,48 @@ You can trigger and interact with any feature via `quickshell ipc`:
 
 ```bash
 # Battery & Power
-quickshell ipc -p ~/.config/quickshell/tide-island call island testCharging 85
-quickshell ipc -p ~/.config/quickshell/tide-island call island testLowBattery 15
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testCharging 85
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testLowBattery 15
 
 # Silent / Ring Switch
-quickshell ipc -p ~/.config/quickshell/tide-island call island testSilentRing true   # Silenzioso
-quickshell ipc -p ~/.config/quickshell/tide-island call island testSilentRing false  # Suoneria
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testSilentRing true   # Silenzioso
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testSilentRing false  # Suoneria
 
 # Hardware OSD
-quickshell ipc -p ~/.config/quickshell/tide-island call island testVolume 65
-quickshell ipc -p ~/.config/quickshell/tide-island call island testBrightness 80
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testVolume 65
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testBrightness 80
 
 # Discord Calls
-quickshell ipc -p ~/.config/quickshell/tide-island call island testDiscordCall "St0rm"
-quickshell ipc -p ~/.config/quickshell/tide-island call island testDiscordCallOngoing "St0rm"
-quickshell ipc -p ~/.config/quickshell/tide-island call island acceptCall
-quickshell ipc -p ~/.config/quickshell/tide-island call island declineCall
-quickshell ipc -p ~/.config/quickshell/tide-island call island closeCall
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDiscordCall "St0rm"
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDiscordCallOngoing "St0rm"
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island acceptCall
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island declineCall
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island closeCall
 
 # Media Player & Utilities
-quickshell ipc -p ~/.config/quickshell/tide-island call tide togglePlayer
-quickshell ipc -p ~/.config/quickshell/tide-island call tide showTimer
-quickshell ipc -p ~/.config/quickshell/tide-island call tide showLyrics
-quickshell ipc -p ~/.config/quickshell/tide-island call tide showCustom
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide togglePlayer
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide showTimer
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide showLyrics
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide showCustom
 
 # Control Center & Drawers
-quickshell ipc -p ~/.config/quickshell/tide-island call tide toggleControlCenter
-quickshell ipc -p ~/.config/quickshell/tide-island call island testDetailPanel wifi true
-quickshell ipc -p ~/.config/quickshell/tide-island call island testDetailPanel bluetooth true
-quickshell ipc -p ~/.config/quickshell/tide-island call tide togglePowerMenu
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleControlCenter
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDetailPanel wifi true
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDetailPanel bluetooth true
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide togglePowerMenu
 
 # System Panels & Security
-quickshell ipc -p ~/.config/quickshell/tide-island call tide toggleNotificationCenter
-quickshell ipc -p ~/.config/quickshell/tide-island call island testPolkit
-quickshell ipc -p ~/.config/quickshell/tide-island call island closePolkit
-quickshell ipc -p ~/.config/quickshell/tide-island call tide toggleWallpaperPicker
-quickshell ipc -p ~/.config/quickshell/tide-island call tide toggleApplicationLauncher
-quickshell ipc -p ~/.config/quickshell/tide-island call tide toggleFileShelf
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleNotificationCenter
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testPolkit
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island closePolkit
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleWallpaperPicker
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleApplicationLauncher
+quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleFileShelf
 
 # Overview & Workspaces
-quickshell ipc -p ~/.config/quickshell/tide-island call island testWorkspace 3
-quickshell ipc -p ~/.config/quickshell/tide-island call overview open
-quickshell ipc -p ~/.config/quickshell/tide-island call overview close
+quickshell ipc -p ~/.config/quickshell/dynamic-island call island testWorkspace 3
+quickshell ipc -p ~/.config/quickshell/dynamic-island call overview open
+quickshell ipc -p ~/.config/quickshell/dynamic-island call overview close
 ```
 
 ---
