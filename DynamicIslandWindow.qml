@@ -1501,9 +1501,37 @@ PanelWindow {
         readonly property bool canShowSideSwipe: false
         readonly property real rightSwipeProgress: Math.max(0, swipeTransitionProgress)
         readonly property var customLeftItems: systemState.customLeftItems
-        readonly property bool hasCustomLeftItems: systemState.hasCustomLeftItems
-        readonly property bool customSwipeVisible: !root.overviewVisible && islandState !== "long_capsule" && hasCustomLeftItems && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0) || (islandState === "split" && splitOriginSide === "left")))
-        readonly property bool lyricsSwipeVisible: !root.overviewVisible && islandState !== "long_capsule" && !expandedLayerVisible && !controlCenterLayerVisible && !powerMenuLayerVisible && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible && !applicationLauncherLayerVisible && !clipboardLayerVisible && !settingsAppLayerVisible && !fileShelfLayerVisible && !polkitLayerVisible && !screenSharePickerLayerVisible && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0) || (islandState === "split" && splitOriginSide === "right")))
+        readonly property bool customSwipeVisible: !root.overviewVisible
+            && islandState !== "long_capsule"
+            && islandState !== "split"
+            && islandState !== "charging"
+            && islandState !== "silent_ring"
+            && islandState !== "notification"
+            && islandState !== "reload"
+            && islandState !== "discord_call"
+            && !expandedLayerVisible && !bluetoothExpandedLayerVisible
+            && !controlCenterLayerVisible && !powerMenuLayerVisible
+            && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible
+            && !applicationLauncherLayerVisible && !clipboardLayerVisible
+            && !settingsAppLayerVisible && !fileShelfLayerVisible
+            && !polkitLayerVisible && !screenSharePickerLayerVisible
+            && hasCustomLeftItems
+            && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0)))
+        readonly property bool lyricsSwipeVisible: !root.overviewVisible
+            && islandState !== "long_capsule"
+            && islandState !== "split"
+            && islandState !== "charging"
+            && islandState !== "silent_ring"
+            && islandState !== "notification"
+            && islandState !== "reload"
+            && islandState !== "discord_call"
+            && !expandedLayerVisible && !bluetoothExpandedLayerVisible
+            && !controlCenterLayerVisible && !powerMenuLayerVisible
+            && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible
+            && !applicationLauncherLayerVisible && !clipboardLayerVisible
+            && !settingsAppLayerVisible && !fileShelfLayerVisible
+            && !polkitLayerVisible && !screenSharePickerLayerVisible
+            && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0)))
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
         readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
@@ -1973,14 +2001,14 @@ PanelWindow {
 
             const nextProgress = progress >= 0 ? progress : -1;
             const animateProgress = islandState === "split" && osdProgress >= 0 && nextProgress >= 0;
-            const animateFromSide = currentTransientOriginSide();
             abortSideTransientMode();
             splitIcon = icon;
             osdCustomText = customText;
             setOsdProgress(nextProgress, animateProgress);
-            splitOriginSide = animateFromSide;
+            splitOriginSide = "none";
             islandState = "split";
             swipeTransitionProgress = 0;
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             restartAutoHideTimer();
         }
 
@@ -2065,11 +2093,14 @@ PanelWindow {
         }
 
         function showReloadCapsule(failed, errorString) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf")
+            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
             abortSideTransientMode();
             clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
             reloadFailed = failed;
             reloadErrorString = errorString || "";
             islandState = "reload";
@@ -2078,11 +2109,14 @@ PanelWindow {
         }
 
         function showChargingCapsule(capacity, isCharging) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit")
+            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
             abortSideTransientMode();
             clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
             batteryAlertMode = "charging";
             batteryAlertCapacity = (capacity !== undefined && capacity > 0) ? capacity : batteryCapacity;
             islandState = "charging";
@@ -2092,11 +2126,14 @@ PanelWindow {
         }
 
         function showLowBatteryCapsule(capacity) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit")
+            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
             abortSideTransientMode();
             clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
             batteryAlertMode = "low_battery";
             batteryAlertCapacity = (capacity !== undefined && capacity > 0) ? capacity : batteryCapacity;
             islandState = "charging";
@@ -2106,11 +2143,14 @@ PanelWindow {
         }
 
         function showSilentRingCapsule(isMuted) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit")
+            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
             abortSideTransientMode();
             clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
             silentRingIsMuted = isMuted;
             islandState = "silent_ring";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
@@ -3451,9 +3491,9 @@ PanelWindow {
                         textPixelSize: root.bodyFontSize
                         minimumWidth: 220
                         maximumWidth: Math.max(220, root.width - 48)
-                        transitionProgress: (islandContainer.islandState === "lyrics" || (islandContainer.restingState === "lyrics" && islandContainer.islandState !== "long_capsule")) ? 1 : islandContainer.rightSwipeProgress
+                        transitionProgress: (islandContainer.islandState === "lyrics" || (islandContainer.restingState === "lyrics" && islandContainer.islandState === "lyrics")) ? 1 : (islandContainer.islandState === "normal" ? islandContainer.rightSwipeProgress : 0)
                         recordingActive: islandContainer.screenRecordingActive
-                        showSecondaryText: islandContainer.workspaceOriginSide !== "right" && islandContainer.splitOriginSide !== "right"
+                        showSecondaryText: true
                         showCondition: true
                         onPreferredWidthChanged: islandContainer.syncLyricsCapsuleWidth()
                     }
@@ -3469,13 +3509,14 @@ PanelWindow {
                 active: !root.overviewVisible && islandContainer.splitShowsIconOnly
                 asynchronous: false
                 visible: active
+                z: 4
 
                 sourceComponent: Component {
                     SplitIconLayer {
                         iconText: islandContainer.splitIcon
                         iconFontFamily: root.iconFontFamily
-                        transitionProgress: islandContainer.swipeTransitionProgress
-                        slideDirection: islandContainer.splitOriginSide
+                        transitionProgress: 0
+                        slideDirection: "none"
                         showCondition: true
                     }
 
@@ -3490,6 +3531,7 @@ PanelWindow {
                 active: !root.overviewVisible && islandContainer.splitUsesExtendedLayout
                 asynchronous: false
                 visible: active
+                z: 4
 
                 sourceComponent: Component {
                     OsdLayer {
@@ -3499,8 +3541,8 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
-                        transitionProgress: islandContainer.swipeTransitionProgress
-                        slideDirection: islandContainer.splitOriginSide
+                        transitionProgress: 0
+                        slideDirection: "none"
                         showCondition: true
                     }
 
@@ -3658,6 +3700,7 @@ PanelWindow {
                 active: islandContainer.reloadLayerVisible
                 asynchronous: false
                 visible: active
+                z: 4
 
                 sourceComponent: Component {
                     ReloadLayer {
@@ -3682,6 +3725,7 @@ PanelWindow {
                 active: !root.overviewVisible && islandContainer.islandState === "charging"
                 asynchronous: false
                 visible: active
+                z: 4
 
                 sourceComponent: Component {
                     BatteryAlertLayer {
@@ -3704,6 +3748,7 @@ PanelWindow {
                 active: !root.overviewVisible && islandContainer.islandState === "silent_ring"
                 asynchronous: false
                 visible: active
+                z: 4
 
                 sourceComponent: Component {
                     SilentRingLayer {
@@ -3725,6 +3770,7 @@ PanelWindow {
                 active: !root.overviewVisible && islandContainer.islandState === "discord_call"
                 asynchronous: false
                 visible: active
+                z: 4
 
                 sourceComponent: Component {
                     DiscordCallLayer {

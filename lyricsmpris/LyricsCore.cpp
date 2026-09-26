@@ -433,6 +433,18 @@ QString cleanLyricText(QString text) {
     text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
     text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
     text.replace(QRegularExpression(QStringLiteral(R"(\s+)")), QStringLiteral(" "));
+
+    // Strip inline translations (e.g. "Original // Translation", "Original / Translation", "Original | Translation")
+    if (text.contains(QStringLiteral(" // "))) {
+        text = text.section(QStringLiteral(" // "), 0, 0);
+    } else if (text.contains(QStringLiteral(" / "))) {
+        text = text.section(QStringLiteral(" / "), 0, 0);
+    } else if (text.contains(QStringLiteral(" | "))) {
+        text = text.section(QStringLiteral(" | "), 0, 0);
+    } else if (text.contains(QStringLiteral(" ｜ "))) {
+        text = text.section(QStringLiteral(" ｜ "), 0, 0);
+    }
+
     return text.trimmed();
 }
 
@@ -531,6 +543,18 @@ LyricDocument parseLyrics(const QString &lyrics, const QString &provider) {
     std::stable_sort(document.syncedLines.begin(), document.syncedLines.end(), [](const LyricLine &left, const LyricLine &right) {
         return left.timeMs < right.timeMs;
     });
+
+    // Deduplicate lines with identical or near-identical timestamps (which represent translations in bilingual LRCs)
+    QVector<LyricLine> deduped;
+    deduped.reserve(document.syncedLines.size());
+    for (const LyricLine &line : document.syncedLines) {
+        if (!deduped.isEmpty() && std::abs(line.timeMs - deduped.last().timeMs) <= 60) {
+            // Discard subsequent duplicate timestamp line (translation)
+            continue;
+        }
+        deduped.append(line);
+    }
+    document.syncedLines = std::move(deduped);
     return document;
 }
 
@@ -552,12 +576,22 @@ QString selectLineAt(const LyricDocument &document, qint64 positionMs) {
 
         int low = 0;
         int high = document.syncedLines.size() - 1;
+        int bestIndex = -1;
         while (low <= high) {
             const int mid = low + (high - low) / 2;
-            if (document.syncedLines.at(mid).timeMs <= positionMs) low = mid + 1;
-            else high = mid - 1;
+            if (document.syncedLines.at(mid).timeMs <= positionMs) {
+                bestIndex = mid;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
         }
-        return high >= 0 ? document.syncedLines.at(high).text : QString();
+        if (bestIndex < 0) return QString();
+        const qint64 matchedTime = document.syncedLines.at(bestIndex).timeMs;
+        while (bestIndex > 0 && document.syncedLines.at(bestIndex - 1).timeMs == matchedTime) {
+            --bestIndex;
+        }
+        return document.syncedLines.at(bestIndex).text;
     }
 
     return document.plainLines.isEmpty() ? QString() : document.plainLines.first();
@@ -758,9 +792,6 @@ ProviderCandidate parseNeteaseLyricJson(const QByteArray &payload) {
 
     const QJsonObject object = document.object();
     candidate.syncedLyrics = stringValue(object.value(QStringLiteral("lrc")).toObject(), QStringLiteral("lyric"));
-    if (candidate.syncedLyrics.isEmpty()) {
-        candidate.plainLyrics = stringValue(object.value(QStringLiteral("tlyric")).toObject(), QStringLiteral("lyric"));
-    }
     return candidate;
 }
 

@@ -780,7 +780,7 @@ void LyricsMprisApp::handleNetworkFinished() {
                 query.addQueryItem(QStringLiteral("os"), QStringLiteral("pc"));
                 query.addQueryItem(QStringLiteral("id"), candidate.syncedLyrics);
                 query.addQueryItem(QStringLiteral("lv"), QStringLiteral("-1"));
-                query.addQueryItem(QStringLiteral("tv"), QStringLiteral("-1"));
+                query.addQueryItem(QStringLiteral("tv"), QStringLiteral("0"));
                 QNetworkReply *next = get(withQuery(QStringLiteral("https://music.163.com/api/song/lyric"), query), provider, QStringLiteral("netease-lyric"));
                 copyCandidateMetadata(next, candidate);
                 requested++;
