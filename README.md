@@ -44,7 +44,7 @@ Anchored cleanly at the top center of your screen, the island provides an authen
   - [3. Modern Control Center & System Drawers](#3-modern-control-center--system-drawers)
   - [4. Settings App & Studio Layout Canvas](#4-settings-app--studio-layout-canvas)
   - [5. Discord Calling Suite & Communications](#5-discord-calling-suite--communications)
-  - [6. Media Player & Synced Karaoke Lyrics](#6-media-player--synced-karaoke-lyrics)
+  - [6. Media Player & Synced Lyrics](#6-media-player--synced-lyrics)
   - [7. Privacy, Streaming & Screen Sharing](#7-privacy-streaming--screen-sharing)
   - [8. System Utilities & Productivity](#8-system-utilities--productivity)
 - [🏗️ Architecture & Backend](#-architecture--backend)
@@ -224,11 +224,11 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 
 ---
 
-### 6. Media Player & Synced Karaoke Lyrics
+### 6. Media Player & Synced Lyrics
 
 - **Satellite Music Pill**: Appears automatically alongside the clock when media is playing, showing album artwork in a compact satellite capsule.
 - **Expanded Player**: Fluidly expands into a full player with album artwork, title, artist, live playback progress bar, and animated audio equalizer bars.
-- **Synced Karaoke Lyrics**: Powered by MPRIS and the native `lyricsmpris` C++ helper for syllable-by-syllable synchronized lyrics.
+- **Live Synced Lyrics**: Powered by MPRIS and the native `lyricsmpris` C++ daemon, displaying the current song lyric line synchronized in real time inside the compact island capsule when swiping left.
 - **Interactive Timer**: Integrated countdown timer with circular progress gauge and quick presets.
 
 <table>
@@ -248,7 +248,7 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
     <td align="center" width="50%">
       <img src="assets/gifs/synced_lyrics.gif" alt="Live Synced Lyrics" />
       <br/>
-      <sub><b>Synced Karaoke Lyrics</b> — Live real-time lyric progression via lyricsmpris</sub>
+      <sub><b>Live Synced Lyrics</b> — Real-time line progression via MPRIS & lyricsmpris</sub>
     </td>
     <td align="center" width="50%">
       <img src="assets/gifs/countdown_timer.gif" alt="Countdown Timer" />
