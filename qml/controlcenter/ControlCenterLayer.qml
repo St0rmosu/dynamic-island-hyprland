@@ -1352,7 +1352,7 @@ Item {
                 : "temp=\"$1\"\n"
                     + "if ! command -v gammastep >/dev/null 2>&1; then exit 127; fi\n"
                     + "gammastep -m wayland -P -O \"$temp\" >/dev/null 2>&1",
-            "tide-night-light",
+            "dynamic-island-night-light",
             controlCenter.nightLightTemperature.toString()
         ]
         running: false

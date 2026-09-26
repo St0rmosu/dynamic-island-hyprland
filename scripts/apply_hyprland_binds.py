@@ -14,7 +14,7 @@ import subprocess
 HOME = os.path.expanduser("~")
 BINDS_LUA = os.path.join(HOME, ".config/hypr/moduli/binds.lua")
 SHORTCUTS_CONF_DYNAMIC = os.path.join(HOME, ".config/dynamic-island/hyprland-shortcuts.conf")
-SHORTCUTS_CONF_TIDE = os.path.join(HOME, ".config/tide-island/hyprland-shortcuts.conf")
+# LEGACY_SHORTCUTS_CONF = os.path.join(HOME, ".config/dynamic-island/hyprland-shortcuts.conf")
 CONFIG_JSON = os.path.join(HOME, ".config/dynamic-island/config.json")
 
 # Map of action to human-readable names and defaults

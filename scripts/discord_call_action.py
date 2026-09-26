@@ -6,7 +6,7 @@ import os
 import time
 
 STATE_FILE = "/tmp/island_discord_call_ongoing"
-LEGACY_STATE_FILE = "/tmp/tide_discord_call_ongoing"
+LEGACY_STATE_FILE = "/tmp/dynamic_discord_call_ongoing"
 
 def run_hypr_lua(code):
     cmd = ["hyprctl", "repl", code]

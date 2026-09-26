@@ -542,7 +542,6 @@ QString SysBackend::findLyricsBackendExecutable() const {
         QStringLiteral("/usr/share/dynamic-island/bin/lyricsmpris"),
         QStringLiteral("/usr/local/bin/lyricsmpris"),
         homeDir + "/.local/bin/lyricsmpris",
-        QStringLiteral("/usr/share/tide-island/bin/lyricsmpris"),
         quickshellConfigDir + "/bin/lyricsmpris",
         pathExecutable
     };

@@ -51,7 +51,7 @@ private:
     void setFocusedOutputName(const QString &outputName);
     void bumpRevision();
 
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
     void startNiriEventStream();
     void connectNiriEventStream();
     void stopNiriEventStream();
@@ -69,7 +69,7 @@ private:
     QHash<quint64, NiriWorkspaceState> m_niriWorkspaces;
     QHash<QString, int> m_niriActiveWorkspaceByOutput;
 
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
     QString m_niriSocketPath;
     QLocalSocket *m_niriEventSocket = nullptr;
     QByteArray m_niriEventBuffer;

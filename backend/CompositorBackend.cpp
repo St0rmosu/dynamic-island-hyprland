@@ -46,7 +46,7 @@ quint64 jsonU64(const QJsonValue &value)
 CompositorBackend::CompositorBackend(QObject *parent)
     : QObject(parent)
 {
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
     m_niriReconnectTimer.setSingleShot(true);
     m_niriReconnectTimer.setInterval(2000);
     connect(&m_niriReconnectTimer, &QTimer::timeout, this, &CompositorBackend::connectNiriEventStream);
@@ -57,7 +57,7 @@ CompositorBackend::CompositorBackend(QObject *parent)
 
 CompositorBackend::~CompositorBackend()
 {
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
     stopNiriEventStream();
 #endif
 }
@@ -112,7 +112,7 @@ bool CompositorBackend::isOutputFocused(const QString &outputName) const
 
 bool CompositorBackend::applyNiriEventJson(const QByteArray &line)
 {
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(line.trimmed(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !document.isObject())
@@ -140,11 +140,9 @@ bool CompositorBackend::applyNiriEventJson(const QByteArray &line)
 void CompositorBackend::detectCompositor()
 {
     QByteArray compEnv = qgetenv("DYNAMIC_ISLAND_COMPOSITOR");
-    if (compEnv.isEmpty())
-        compEnv = qgetenv("TIDE_ISLAND_COMPOSITOR");
     const QString requested = normalizedCompositorName(QString::fromLocal8Bit(compEnv));
     if (!requested.isEmpty()) {
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
         if (requested == QLatin1String("niri")) {
             setCompositor(QStringLiteral("niri"));
             startNiriEventStream();
@@ -155,7 +153,7 @@ void CompositorBackend::detectCompositor()
         return;
     }
 
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
     if (desktopEnvironmentContains(
             QString::fromLocal8Bit(qgetenv("XDG_CURRENT_DESKTOP")),
             QStringLiteral("niri"))) {
@@ -208,7 +206,7 @@ void CompositorBackend::bumpRevision()
     emit revisionChanged();
 }
 
-#if TIDE_ISLAND_WITH_NIRI
+#if DYNAMIC_ISLAND_WITH_NIRI
 bool CompositorBackend::hasNiriSocket() const
 {
     return !qEnvironmentVariableIsEmpty("NIRI_SOCKET");

@@ -185,6 +185,21 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 - **Standalone Settings App**: 980x680 floating GUI window with 5 categories (`Bar & Island`, `Control Center`, `Appearance`, `Motion & Animation`, `Modules`).
 - **Studio Layout Canvas**: Visual drag-and-drop grid customizer embedded in the Control Center settings tab, supporting 4-corner card resizing, single-click height adjustments, and live JSON persistence to `~/.config/dynamic-island/userconfig.json`.
 
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/settings_app.png" alt="Settings App - Bar & Geometry" />
+      <br/>
+      <sub><b>Settings App</b> — 980x680 floating GUI window with 5 categories & live JSON persistence</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/settings_studio_canvas.png" alt="Studio Layout Canvas" />
+      <br/>
+      <sub><b>Studio Layout Canvas</b> — Visual drag-and-drop grid customizer for Control Center cards</sub>
+    </td>
+  </tr>
+</table>
+
 ---
 
 ### 5. Discord Calling Suite & Communications
@@ -250,6 +265,16 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 - **Native Screen Share Picker**: Apple-style modal dialog with large preview cards for entire screen, specific windows, or region selection with slurp. Includes a persistent **Restore Token** toggle to prevent repeated browser prompts.
 - **Zero Stream Leakage (`no_screen_share`)**: Automatic layer-shell exclusion rules ensure the Dynamic Island, incoming notifications, and control centers are completely omitted from screencopy and video buffers (OBS, Discord, Zoom, Meet), while remaining fully visible on your monitor.
 - **Recording Indicator**: Prominent live transmission pill and glowing broadcast indicator active whenever screen sharing or recording is detected.
+
+<table>
+  <tr>
+    <td align="center" width="100%">
+      <img src="assets/screenshots/screen_share_picker.png" alt="Native Screen Share Picker" />
+      <br/>
+      <sub><b>Native Screen Share Picker</b> — Apple-style source selection (Screen, Window, Region) with Iris palette & persistent Restore Token checkbox</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 

@@ -10,7 +10,7 @@ import os
 CONFIG_DIR = os.path.expanduser("~/.config/dynamic-island")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 USERCONFIG_PATH = os.path.join(CONFIG_DIR, "userconfig.json")
-LEGACY_TIDE_PATH = os.path.expanduser("~/.config/tide-island/userconfig.json")
+LEGACY_DYNAMIC_PATH = os.path.expanduser("~/.config/dynamic-island/userconfig.json")
 
 def atomic_write(filepath, content):
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -41,7 +41,7 @@ def main():
     existing = {}
     
     # Read existing config if present
-    for candidate in [CONFIG_PATH, USERCONFIG_PATH, LEGACY_TIDE_PATH]:
+    for candidate in [CONFIG_PATH, USERCONFIG_PATH, LEGACY_DYNAMIC_PATH]:
         if os.path.exists(candidate):
             try:
                 with open(candidate, "r", encoding="utf-8") as f:
@@ -57,10 +57,10 @@ def main():
     try:
         atomic_write(CONFIG_PATH, content)
         atomic_write(USERCONFIG_PATH, content)
-        # Also sync legacy tide path if directory exists so external tools don't fail
-        if os.path.isdir(os.path.dirname(LEGACY_TIDE_PATH)):
+        # Also sync legacy config path if directory exists so external tools don't fail
+        if os.path.isdir(os.path.dirname(LEGACY_DYNAMIC_PATH)):
             try:
-                atomic_write(LEGACY_TIDE_PATH, content)
+                atomic_write(LEGACY_DYNAMIC_PATH, content)
             except Exception:
                 pass
         print("OK")

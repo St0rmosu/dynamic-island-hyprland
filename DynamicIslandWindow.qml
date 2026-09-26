@@ -823,6 +823,32 @@ PanelWindow {
         islandContainer.closePolkitPrompt();
     }
 
+    function testPolkitSuccess() {
+        showPolkitPrompt();
+        demoPolkitTimer.restart();
+    }
+
+    Timer {
+        id: demoPolkitTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (polkitLoader.item) {
+                polkitLoader.item.simulateDemoSuccess();
+                demoMorphTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: demoMorphTimer
+        interval: 650
+        repeat: false
+        onTriggered: {
+            islandContainer.polkitSuccessMorph = true;
+        }
+    }
+
     function promptScreenShareSelection(fifoPath) {
         islandContainer.showScreenSharePicker(fifoPath);
     }

@@ -123,6 +123,21 @@ FocusScope {
         }
     }
 
+    Timer {
+        id: demoVerifyTimer
+        interval: 650
+        repeat: false
+        onTriggered: {
+            root.markSuccess();
+        }
+    }
+
+    function simulateDemoSuccess() {
+        passInput.text = "password123";
+        authState = "verifying";
+        demoVerifyTimer.restart();
+    }
+
     // Top Right Cancel / Close Button
     Rectangle {
         id: closeBtn

@@ -456,6 +456,13 @@ Scope {
             shellRoot.showPolkitPromptAll();
         }
 
+        function testPolkitSuccess() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.testPolkitSuccess)
+                    window.testPolkitSuccess();
+            });
+        }
+
         function closePolkit() {
             shellRoot.closePolkitPromptAll();
         }
@@ -621,144 +628,6 @@ Scope {
         }
 
         target: "island"
-    }
-
-    IpcHandler {
-        function showClock() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.showClockWindow();
-            });
-        }
-
-        function showTimer() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.showTimerWindow();
-            });
-        }
-
-        function showCustom() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.showCustomInfoWindow();
-            });
-        }
-
-        function showLyrics() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.showLyricsWindow();
-            });
-        }
-
-        function swipeRight() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.swipeRightWindow();
-            });
-        }
-
-        function swipeLeft() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.swipeLeftWindow();
-            });
-        }
-
-        function togglePlayer() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.togglePlayerWindow();
-            });
-        }
-
-        function toggleControlCenter() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.toggleControlCenterWindow();
-            });
-        }
-
-        function togglePowerMenu() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.togglePowerMenuWindow();
-            });
-        }
-
-        function toggleNotificationCenter() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.toggleNotificationCenterWindow();
-            });
-        }
-
-        function toggleWallpaperPicker() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.toggleWallpaperPickerWindow();
-            });
-        }
-
-        function toggleApplicationLauncher() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.toggleApplicationLauncherWindow();
-            });
-        }
-
-        function toggleClipboard() {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.toggleClipboardWindow)
-                    window.toggleClipboardWindow();
-
-            });
-        }
-
-        function showClipboard() {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.showClipboardWindow)
-                    window.showClipboardWindow();
-
-            });
-        }
-
-        function toggleFileShelf() {
-            shellRoot.forFocusedWindow((window) => {
-                return window.toggleFileShelfWindow();
-            });
-        }
-
-        function toggleSettingsApp() {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.toggleSettingsAppWindow)
-                    window.toggleSettingsAppWindow();
-
-            });
-        }
-
-        function showSettingsApp() {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.showSettingsAppWindow)
-                    window.showSettingsAppWindow();
-
-            });
-        }
-
-        function setSettingsCategory(catIndex: int) {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.setSettingsCategory)
-                    window.setSettingsCategory(catIndex);
-
-            });
-        }
-
-        function setSettingsSubView(sub: string) {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.setSettingsSubView)
-                    window.setSettingsSubView(sub);
-
-            });
-        }
-
-        function openFontBrowser(target: string) {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.openSettingsFontBrowser)
-                    window.openSettingsFontBrowser(target);
-
-            });
-        }
-
-        target: "tide"
     }
 
     Connections {

@@ -8,7 +8,7 @@ import json
 import os
 
 CONFIG_PATH = os.path.expanduser("~/.config/dynamic-island/userconfig.json")
-LEGACY_CONFIG_PATH = os.path.expanduser("~/.config/tide-island/userconfig.json")
+LEGACY_CONFIG_PATH = os.path.expanduser("~/.config/dynamic-island/userconfig.json")
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1].strip():

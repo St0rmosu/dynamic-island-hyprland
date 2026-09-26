@@ -26,7 +26,7 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 ## 2. Recent Major Accomplishments & Milestone Fixes (2026-09-26)
 
 ### A. 100% Standalone C++ Backend (`IslandBackend`) & Lyrics Helper (`lyricsmpris`)
-- **Problem**: The shell previously depended on the external Arch Linux / AUR package `tide-island` to provide `/usr/lib/libIslandBackend.so` and the Qt6 QML module `/usr/lib/qt6/qml/IslandBackend/`. Without that package, Quickshell crashed with `module "IslandBackend" is not installed`. Furthermore, the upstream C++ code had hardcoded paths pointing to `~/.config/tide-island/userconfig.json`.
+- **Problem**: The shell previously depended on the external Arch Linux / AUR package `dynamic-island` to provide `/usr/lib/libIslandBackend.so` and the Qt6 QML module `/usr/lib/qt6/qml/IslandBackend/`. Without that package, Quickshell crashed with `module "IslandBackend" is not installed`. Furthermore, the upstream C++ code had hardcoded paths pointing to `~/.config/dynamic-island/userconfig.json`.
 - **Solution & Implementation**:
   1. Extracted and integrated the full C++ backend source code directly into the repository under [`backend/`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/) and [`lyricsmpris/`](file:///home/lollo/Progetti/dynamic-island-hyprland/lyricsmpris/).
   2. Built a clean, standard [`CMakeLists.txt`](file:///home/lollo/Progetti/dynamic-island-hyprland/CMakeLists.txt) compiling both `IslandBackend` (Qt6 QML module) and `lyricsmpris` (MPRIS synced lyrics executable).
@@ -34,13 +34,13 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
      - **Rootless user install (default)**: Installs directly to `~/.local/lib/`, `~/.local/lib/qt6/qml/IslandBackend/`, and `~/.local/bin/lyricsmpris` with zero sudo or root requirements.
      - **System install (`--system`)**: Installs to `/usr/lib/` and `/usr/bin/` with `sudo`.
   4. Patched all hardcoded paths in C++:
-     - [`backend/UserConfigBackend.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/UserConfigBackend.cpp): Dynamically resolves `~/.config/dynamic-island/userconfig.json` first, keeping legacy `tide-island` as a fallback.
+     - [`backend/UserConfigBackend.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/UserConfigBackend.cpp): Dynamically resolves `~/.config/dynamic-island/userconfig.json` first, keeping legacy `dynamic-island` as a fallback.
      - [`backend/BluetoothPairingAgent.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/BluetoothPairingAgent.cpp) & [`backend/WifiController.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/WifiController.cpp): Updated D-Bus object paths to `/com/dynamicisland/IslandBackend/...`.
      - [`backend/CompositorBackend.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/CompositorBackend.cpp): Checks `DYNAMIC_ISLAND_COMPOSITOR` environment variable first.
      - [`backend/SysBackend.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/SysBackend.cpp): Updated candidates to look for `lyricsmpris` in dynamic-island config and `~/.local/bin` first.
      - [`backend/SystemServices.cpp`](file:///home/lollo/Progetti/dynamic-island-hyprland/backend/SystemServices.cpp): Renamed dialog title to "Dynamic Island" and looks for `dynamic-island-config-app`.
   5. Updated launcher [`~/.local/bin/dynamic-island`](file:///home/lollo/.local/bin/dynamic-island) to export `QML_IMPORT_PATH` and `LD_LIBRARY_PATH` pointing to `~/.local/lib/qt6/qml` and `~/.local/lib`.
-  6. **Live Verification**: Verified via `/proc/<pid>/maps` that the running Quickshell process actively loads our newly compiled local backend (`~/.local/lib/libIslandBackend.so`), making the package `tide-island` 100% safe to remove via `sudo pacman -R tide-island`.
+  6. **Live Verification**: Verified via `/proc/<pid>/maps` that the running Quickshell process actively loads our newly compiled local backend (`~/.local/lib/libIslandBackend.so`), making the package `dynamic-island` 100% safe to remove via `sudo pacman -R dynamic-island`.
   7. Committed clean backend code and build configuration to GitHub (`0917d1c`).
 
 ### B. Frame-by-Frame System Tray Pill Synchronization (`TrayFloatingIsland.qml`)
@@ -49,7 +49,7 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 - **Solution**: Removed `Behavior on x` and `Behavior on y`. `y` is now directly bound to `Math.round(targetCapsule.y + targetCapsule.height + 8)`. The tray pill now moves in 100% lockstep frame-by-frame with the bottom lip of the Control Center, expanding and collapsing synchronously.
 
 ### C. Decoupling Hyprland Shortcuts & System Configuration
-- Switched `~/.config/hypr/hyprland.conf` from sourcing `/home/lollo/.config/tide-island/hyprland-shortcuts.conf` to `source = /home/lollo/.config/dynamic-island/hyprland-shortcuts.conf`.
+- Switched `~/.config/hypr/hyprland.conf` from sourcing `/home/lollo/.config/dynamic-island/hyprland-shortcuts.conf` to `source = /home/lollo/.config/dynamic-island/hyprland-shortcuts.conf`.
 - Synced launcher scripts (`apply-qs-bar.sh dynamic-island`, `shell-dispatcher.sh`).
 
 ### E. Wallpaper Picker Runtime Bug Fix
@@ -162,7 +162,7 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
 | [`qml/island/ClipboardLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ClipboardLayer.qml) | Apple Intelligence-style masonry cards previewing `cliphist` text and image clips. |
 | [`qml/island/ApplicationLauncherLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/ApplicationLauncherLayer.qml) | Fast desktop application search and launcher. |
 | [`qml/island/FileShelfLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/FileShelfLayer.qml) | Drag-and-drop file staging area. |
-| [`shell.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/shell.qml) | Root shell definitions, IPC handlers (`overview`, `island`, `tide`), and reload watchers. |
+| [`shell.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/shell.qml) | Root shell definitions, IPC handlers (`overview`, `island`, `dynamic-island`), and reload watchers. |
 | [`~/.local/bin/dynamic-island`](file:///home/lollo/.local/bin/dynamic-island) | Primary shell launcher setting up `QML_IMPORT_PATH` and running Quickshell. |
 | [`~/.scripts/apply-qs-bar.sh`](file:///home/lollo/.scripts/apply-qs-bar.sh) | Hot switcher and clean reloader for `dynamic-island` and `cealestia`. |
 | [`~/.scripts/shell-dispatcher.sh`](file:///home/lollo/.scripts/shell-dispatcher.sh) | Bash dispatcher translating global Hyprland keybinds into Quickshell IPC calls. |
@@ -176,10 +176,10 @@ All actions are mapped in `~/.config/hypr/moduli/binds.lua` and dispatched via `
 | Action | Hyprland Keybind / Trigger | Dispatcher / IPC Call |
 | :--- | :--- | :--- |
 | **Power Menu (Wlogout)** | `shell-dispatcher.sh power` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island togglePowerMenu` |
-| **Control Center** | `SUPER + SHIFT + C` | `shell-dispatcher.sh control-center` (`call tide toggleControlCenter`) |
+| **Control Center** | `SUPER + SHIFT + C` | `shell-dispatcher.sh control-center` (`call island toggleControlCenter`) |
 | **Settings App** | `shell-dispatcher.sh settings` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island toggleSettingsApp` |
-| **Wallpaper Carousel** | `SUPER + ALT + space` | `shell-dispatcher.sh master-or-wallpaper` (`call tide toggleWallpaperPicker`) |
-| **Clipboard History** | `SUPER + C` | `shell-dispatcher.sh clipboard` (`call tide toggleClipboard`) |
+| **Wallpaper Carousel** | `SUPER + ALT + space` | `shell-dispatcher.sh master-or-wallpaper` (`call island toggleWallpaperPicker`) |
+| **Clipboard History** | `SUPER + C` | `shell-dispatcher.sh clipboard` (`call island toggleClipboard`) |
 | **Toggle Island Bar** | `SUPER + W` or `SUPER + F` | `shell-dispatcher.sh toggle-bar` |
 | **Reload Island Bar** | Terminal command | `~/.scripts/apply-qs-bar.sh dynamic-island` |
 

@@ -16,7 +16,7 @@ if [ -f "${QS_DIR}/current_bar" ]; then
 fi
 
 # 1. If Cealestia (or any other non-Dynamic Island shell) is active, preserve default hyprland-share-picker
-if [ "$CURRENT_BAR" != "dynamic-island" ] && [ "$CURRENT_BAR" != "tide-island" ]; then
+if [ "$CURRENT_BAR" != "dynamic-island" ]; then
     if [ -x /usr/bin/hyprland-share-picker ]; then
         exec /usr/bin/hyprland-share-picker "$@"
     fi

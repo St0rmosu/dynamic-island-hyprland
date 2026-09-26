@@ -735,8 +735,6 @@ void SystemServices::ensureUserConfigAvailable() {
         return;
 
     QString configAppPath = findExecutable(QStringLiteral("dynamic-island-config-app"));
-    if (configAppPath.isEmpty())
-        configAppPath = findExecutable(QStringLiteral("tide-island-config-app"));
     if (configAppPath.isEmpty()) {
         qWarning() << "[SystemServices] Could not find config app for missing or invalid user config:"
                    << config.userConfigPath()

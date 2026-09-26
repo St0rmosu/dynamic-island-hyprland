@@ -28,8 +28,8 @@ def resolve_avatar(caller_name):
     if os.path.isfile(cached_file) and os.path.getsize(cached_file) > 100:
         return f"file://{cached_file}"
 
-    # 3. Check /tmp/tide_discord_call_avatar.png if recent (< 30s)
-    tmp_avatar = "/tmp/tide_discord_call_avatar.png"
+    # 3. Check /tmp/dynamic_discord_call_avatar.png if recent (< 30s)
+    tmp_avatar = "/tmp/dynamic_discord_call_avatar.png"
     if os.path.isfile(tmp_avatar) and (time.time() - os.path.getmtime(tmp_avatar) < 30):
         return f"file://{tmp_avatar}"
 

@@ -126,15 +126,7 @@ QString determineConfigHome()
 QString determineUserConfigPath()
 {
     const QString base = determineConfigHome();
-    const QString dynamicPath = base + QStringLiteral("/dynamic-island/userconfig.json");
-    if (QFile::exists(dynamicPath))
-        return dynamicPath;
-
-    const QString legacyPath = base + QStringLiteral("/tide-island/userconfig.json");
-    if (QFile::exists(legacyPath))
-        return legacyPath;
-
-    return dynamicPath;
+    return base + QStringLiteral("/dynamic-island/userconfig.json");
 }
 }
 

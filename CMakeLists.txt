@@ -54,7 +54,6 @@ target_include_directories(IslandBackend PRIVATE
 
 target_compile_definitions(IslandBackend PRIVATE
     DYNAMIC_ISLAND_WITH_NIRI=$<BOOL:${DYNAMIC_ISLAND_WITH_NIRI}>
-    TIDE_ISLAND_WITH_NIRI=$<BOOL:${DYNAMIC_ISLAND_WITH_NIRI}>
 )
 
 target_link_libraries(IslandBackend PRIVATE
