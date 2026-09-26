@@ -1,357 +1,389 @@
+<div align="center">
+
 # 🏝️ Dynamic Island Hyprland
 
-An authentic, fluid **Apple-style Dynamic Island** and modern Control Center implementation for **Hyprland** (Wayland) built with **Quickshell** (Qt 6 / QML) and Python.
+**An authentic, fluid Apple-style Dynamic Island & modern Control Center for Hyprland (Wayland)**
 
-![Desktop Preview](assets/screenshots/full_desktop.png)
+[![Platform: Wayland](https://img.shields.io/badge/Platform-Wayland%20%7C%20Hyprland-blue.svg?style=for-the-badge&logo=wayland&logoColor=white)]()
+[![Built with: Quickshell](https://img.shields.io/badge/Built%20with-Quickshell%20(Qt%206)-7F60F6.svg?style=for-the-badge&logo=qt&logoColor=white)](https://github.com/outfoxxed/quickshell)
+[![Backend: C++20](https://img.shields.io/badge/Backend-Native%20C%2B%2B20-00599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)]()
+[![Animations: 60 FPS](https://img.shields.io/badge/Animations-60%20FPS%20Springs-success.svg?style=for-the-badge)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
----
+<br/>
 
-## Status: work in progress
+<img src="assets/screenshots/full_desktop.png" alt="Dynamic Island Hyprland Desktop Preview" width="100%" />
 
-This is a personal project, under active development. Some features are not finished yet and parts of the config are tied to my own machine.
+*Silky-smooth, spring-driven 60 FPS animations on a clean, distraction-free desktop.*
 
-Before you follow the setup steps, know two things:
-
-- The C++ backend (`IslandBackend`) and lyrics helper (`lyricsmpris`) are included directly in this repository and can be compiled and installed with `./install.sh`.
-- Several paths in the code (icons, wallpapers, helper scripts) are hardcoded to `/home/lollo/...`. The setup below installs the config, but the running shell still expects my paths until those are made portable.
-
-Treat this as documentation of my current setup, not as install instructions and not yet, for anyone else.
-
----
-
-## ✨ Features & Visual Demonstrations
-
-### 🔋 1. Battery & Power Alerts
-
-#### Charging Capsule Animation
-Replaces generic transient icons with the authentic Apple battery capsule. Features *"Charging"*, dynamic green battery percentage, and an Apple-style battery icon with battery level fill and yellow lightning bolt (`⚡`).
-
-| Animated Demonstration (Slow Paced) | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Charging Animation](assets/gifs/charging_demo.gif) | ![Charging Still](assets/screenshots/charging.png) |
-
-> 🎥 Video: [charging_demo.mp4](assets/videos/charging_demo.mp4)
+</div>
 
 ---
 
-#### Low Battery Warning
-Automatic warning capsule rendered at critical battery levels ($\le 20\%$ and $\le 10\%$). Features Apple-red warning text (*"Batteria scarica"*), red percentage, and a low battery container with an exclamation mark (`!`).
+## 📖 Overview
 
-| Animated Demonstration (Slow Paced) | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Low Battery Animation](assets/gifs/low_battery.gif) | ![Low Battery Still](assets/screenshots/low_battery.png) |
+**Dynamic Island Hyprland** is a complete, native desktop shell for Wayland built with **Quickshell (Qt 6 / QML)** and backed by a high-performance **native C++20 plugin (`IslandBackend`)** and MPRIS synchronized lyrics daemon (`lyricsmpris`).
 
-> 🎥 Video: [low_battery.mp4](assets/videos/low_battery.mp4)
+Anchored cleanly at the top center of your screen, the island provides an authentic iOS-style interactive pill that fluidly morphs across hardware alerts, media sessions, system status, and calls at a silky-smooth **60 FPS**. When triggered, it gracefully expands into a feature-packed macOS/iOS-inspired **Control Center**, connectivity drawers, or a standalone **Settings App** with an interactive visual **Studio Layout Canvas**.
 
----
-
-### 🔔 2. Audio Profiles & Hardware OSD
-
-#### Silent & Ring Switch
-Physical-switch simulation for volume mute and unmute toggles with animated swinging bell physics:
-- **Silenzioso**: Red slashing line with vibrating bell and *"Silenzioso"* label.
-- **Suoneria**: Pure white swinging bell chime with *"Suoneria"* label.
-
-| Silenzioso (Muted) | Suoneria (Unmuted) |
-| :---: | :---: |
-| ![Silent Mode](assets/gifs/silent_mode.gif) | ![Ring Mode](assets/gifs/ring_mode.gif) |
-
-> 🎥 Videos: [silent_mode.mp4](assets/videos/silent_mode.mp4) • [ring_mode.mp4](assets/videos/ring_mode.mp4)
+### ✨ Highlights
+- **60 FPS Fluid Physics**: Powered by Qt Quick spring curves (`Easing.OutQuint`, `Easing.OutCubic`) for natural, organic motion without dropped frames.
+- **Standalone Native C++ Backend**: Ships with its own compiled Qt6 QML module (`IslandBackend`) for ultra-low latency window tracking, D-Bus communication, and hardware control.
+- **Automatic Satellite Balancing**: The island dynamically recalculates its center of mass and glides smoothly to stay perfectly centered when docked satellite pills (Discord calls, Bluetooth headphones) appear.
+- **Mechanical Flip Clock**: Time digits transition with a vertical rolling odometer animation.
+- **Native Screen Share Picker & Privacy Rule**: Embedded Apple-style picker with restore-token support, coupled with `no_screen_share` layerrule privacy masking to keep streams clean.
+- **Streamlined Installer**: One-click `./install.sh` building user-level (`~/.local/`) or system-wide binaries, modular Hyprland autostart detection, and automated GTK3, GTK4 (Libadwaita), Qt5, and Qt6 color synchronization.
 
 ---
 
-#### Volume & Brightness On-Screen Display (OSD)
-Smooth hardware indicator pills that morph dynamically from the island when adjusting volume or display brightness. Features speaker/sun icons, precise percentage labels, and circular progress gauges.
+## 📑 Table of Contents
 
-| Volume OSD | Brightness OSD |
-| :---: | :---: |
-| ![Volume OSD](assets/gifs/osd_volume.gif) | ![Brightness OSD](assets/gifs/osd_brightness.gif) |
-
-> 🎥 Videos: [osd_volume.mp4](assets/videos/osd_volume.mp4) • [osd_brightness.mp4](assets/videos/osd_brightness.mp4)
-
----
-
-### 📞 3. Discord Calling Suite
-
-#### Incoming Call with Caller Avatar
-Authentic call banner for Discord, Vesktop, and Armcord voice calls:
-- **Real Caller Avatar**: Automatically extracts and resolves profile pictures from Discord's local cache, LevelDB, or CDN.
-- **Flawless Circular Mask**: Utilizes GPU shaders (`Quickshell.Widgets.ClippingRectangle`) for perfect round clipping with antialiasing inside the pulsing caller ring.
-- **Instant Dismissal**: Listens to DBus notification dismissals (`CloseNotification`, `NotificationClosed`, and missed-call events) to instantly dismiss the banner when the caller hangs up.
-
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Incoming Call](assets/gifs/discord_call_incoming.gif) | ![Incoming Call Still](assets/screenshots/discord_call_incoming.png) |
-
-> 🎥 Video: [discord_call_incoming.mp4](assets/videos/discord_call_incoming.mp4)
+- [Features & Visual Showcase](#-features--visual-showcase)
+  - [1. Dynamic Island Core & Fluid Morphing](#1-dynamic-island-core--fluid-morphing)
+  - [2. Hardware Alerts & Adaptive OSD](#2-hardware-alerts--adaptive-osd)
+  - [3. Modern Control Center & System Drawers](#3-modern-control-center--system-drawers)
+  - [4. Settings App & Studio Layout Canvas](#4-settings-app--studio-layout-canvas)
+  - [5. Discord Calling Suite & Communications](#5-discord-calling-suite--communications)
+  - [6. Media Player & Synced Karaoke Lyrics](#6-media-player--synced-karaoke-lyrics)
+  - [7. Privacy, Streaming & Screen Sharing](#7-privacy-streaming--screen-sharing)
+  - [8. System Utilities & Productivity](#8-system-utilities--productivity)
+- [🏗️ Architecture & Backend](#-architecture--backend)
+- [📦 Essential Dependencies](#-essential-dependencies)
+- [🚀 Quick Start & Installation](#-quick-start--installation)
+- [⌨️ Keybindings & Hyprland Integration](#-keybindings--hyprland-integration)
+- [📜 License](#-license)
 
 ---
 
-#### Ongoing Call Pill
-Seamlessly transitions into an ongoing call capsule featuring the caller's avatar, live call timer, animated audio waveform bars, and a quick-hangup button.
+## ✨ Features & Visual Showcase
 
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Ongoing Call](assets/gifs/discord_call_ongoing.gif) | ![Ongoing Call Still](assets/screenshots/discord_call_ongoing.png) |
+All demonstrations and screenshots are captured on a clean, empty workspace highlighting the 60 FPS physics-based animations.
 
-> 🎥 Video: [discord_call_ongoing.mp4](assets/videos/discord_call_ongoing.mp4)
+### 1. Dynamic Island Core & Fluid Morphing
 
----
+#### Resting Capsule, Flip Clock & Satellite Balancing
+- **Flip Clock Rolling Digits**: As the time advances, changed digits animate upward in a synchronized rolling odometer effect.
+- **Auto-Balancing Satellites**: When satellite pills dock on one side (e.g. active call or connected headphones), the island smoothly glides along the X-axis to keep the visual center of mass aligned at `50%`.
 
-### 🎵 4. Media Player, Satellite Island & Synced Lyrics
-
-#### Satellite Music Pill & Expanded Player
-- **Satellite Floating Island**: Appears automatically alongside the main clock pill when media is playing, showing album artwork in an authentic Apple satellite capsule.
-- **Expanded Player**: Fluidly expands into a full player with album artwork, title, artist, live playback progress bar, playback controls, and animated audio equalizer bars.
-
-| Compact Satellite Pill | Expanded Media Player |
-| :---: | :---: |
-| ![Music Compact](assets/gifs/music_compact_island.gif) | ![Expanded Player](assets/gifs/expanded_media_player.gif) |
-
-> 🎥 Videos: [music_compact_island.mp4](assets/videos/music_compact_island.mp4) • [expanded_media_player.mp4](assets/videos/expanded_media_player.mp4)
-
----
-
-#### Live Synced Lyrics & Interactive Countdown Timer
-- **Synced Lyrics**: Swipe sideways to reveal real-time synchronized karaoke-style lyrics powered by MPRIS and `lyricsmpris`.
-- **Integrated Timer**: Full countdown timer with hour/minute selector, circle progress indicator, and start/reset controls.
-
-| Live Synced Lyrics | Countdown Timer |
-| :---: | :---: |
-| ![Synced Lyrics](assets/gifs/synced_lyrics.gif) | ![Countdown Timer](assets/gifs/countdown_timer.gif) |
-
-> 🎥 Videos: [synced_lyrics.mp4](assets/videos/synced_lyrics.mp4) • [countdown_timer.mp4](assets/videos/countdown_timer.mp4)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/custom_info_date.gif" alt="Flip Clock and Date Transition" />
+      <br/>
+      <sub><b>Flip Clock & Info Transition</b> — 60 FPS fluid horizontal swipe and upward rolling digits</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/custom_info_date.png" alt="Resting Island Capsule" />
+      <br/>
+      <sub><b>Resting Island Capsule</b> — Minimalist matte glass pill centered at the top</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 🎛️ 5. Modern Control Center & System Drawers
+### 2. Hardware Alerts & Adaptive OSD
 
-#### Full Control Center & Adaptive Sliders
-macOS / iOS inspired Control Center with quick toggles, music controls, and custom volume and brightness sliders:
-- **Left-Aligned Display Icon**: Adapts visually to brightness level.
-- **Left-Aligned Sound Icon**: Dynamically adapts to mute, low, and high audio states.
+#### Apple Battery Alerts & Physical Switch Simulation
+- **Charging Capsule**: Replaces generic icons with an authentic Apple battery pill featuring dynamic charge percentage, battery fill level, and charging bolt indicator.
+- **Low Battery Warning**: Automatic warning pill rendered at critical battery levels ($\le 20\%$ and $\le 10\%$).
+- **Silent & Ring Physical Switch**: Realistic physical switch simulation for mute toggles with animated swinging bell physics.
+- **Volume & Brightness OSD**: Adaptive indicator pills that morph dynamically from the island when adjusting hardware sliders.
 
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Control Center](assets/gifs/control_center.gif) | ![Control Center Still](assets/screenshots/control_center.png) |
-
-> 🎥 Video: [control_center.mp4](assets/videos/control_center.mp4)
-
----
-
-#### Wi-Fi & Bluetooth Connectivity Drawers
-Expandable side panels that slide smoothly alongside the Control Center to manage Wi-Fi networks and Bluetooth devices with real-time signal strength and battery levels.
-
-| Wi-Fi Network Drawer | Bluetooth Device Drawer |
-| :---: | :---: |
-| ![Wi-Fi Drawer](assets/gifs/control_center_wifi_drawer.gif) | ![Bluetooth Drawer](assets/gifs/control_center_bluetooth_drawer.gif) |
-
-> 🎥 Videos: [control_center_wifi_drawer.mp4](assets/videos/control_center_wifi_drawer.mp4) • [control_center_bluetooth_drawer.mp4](assets/videos/control_center_bluetooth_drawer.mp4)
-
----
-
-#### Quick Power Menu
-Streamlined power drawer offering quick access to Lock, Sleep, Restart, and Shutdown actions.
-
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Power Menu](assets/gifs/control_center_power_menu.gif) | ![Power Menu Still](assets/screenshots/control_center_power_menu.png) |
-
-> 🎥 Video: [control_center_power_menu.mp4](assets/videos/control_center_power_menu.mp4)
-
----
-
-### 💬 6. Notifications & System Banners
-
-#### Wi-Fi Disconnect Alert & Desktop Notifications
-Immediate island notification banners for system alerts and incoming application notifications (e.g. Telegram, Discord, Mail).
-
-| Wi-Fi Disconnect Alert | Desktop Notification Banner |
-| :---: | :---: |
-| ![Wi-Fi Disconnect](assets/gifs/wifi_disconnect.gif) | ![Desktop Notification](assets/gifs/desktop_notification.gif) |
-
-> 🎥 Videos: [wifi_disconnect.mp4](assets/videos/wifi_disconnect.mp4) • [desktop_notification.mp4](assets/videos/desktop_notification.mp4)
-
----
-
-#### Notification History Center
-Dropdown notification panel keeping track of all incoming notifications with single-click dismissal and clean history management.
-
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Notification Center](assets/gifs/notification_center.gif) | ![Notification Center Still](assets/screenshots/notification_center.png) |
-
-> 🎥 Video: [notification_center.mp4](assets/videos/notification_center.mp4)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/charging_demo.gif" alt="Charging Capsule Animation" />
+      <br/>
+      <sub><b>Charging Alert</b> — Dynamic green battery level with charging bolt</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/low_battery.gif" alt="Low Battery Warning" />
+      <br/>
+      <sub><b>Low Battery Warning</b> — Warning capsule with red accents and prompt</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/silent_mode.gif" alt="Silent Switch Animation" />
+      <br/>
+      <sub><b>Silent Mode</b> — Animated swinging bell with vibration and slash line</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/ring_mode.gif" alt="Ring Switch Animation" />
+      <br/>
+      <sub><b>Ring Mode</b> — Swinging white chime switch with tactile feedback</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/osd_volume.gif" alt="Volume OSD" />
+      <br/>
+      <sub><b>Volume OSD</b> — Morphing hardware slider with circular progress</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/osd_brightness.gif" alt="Brightness OSD" />
+      <br/>
+      <sub><b>Brightness OSD</b> — Real-time display backlight gauge</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 🛡️ 7. System Utilities & Security
+### 3. Modern Control Center & System Drawers
 
-#### FaceID-Style Polkit Authentication Prompt
-Apple FaceID-style animated security prompt replacing conventional sudo/polkit dialogs with an animated glyph, user verification, and password field.
+#### Full Control Center, Connectivity Drawers & Power Menu
+- **Control Center**: Comprehensive panel with quick toggles, adaptive volume and brightness sliders, media playback card, and modular widgets.
+- **Synchronized Tray Pill**: Independent satellite tray pill positioned directly beneath the Control Center, moving frame-by-frame with zero lag.
+- **Wi-Fi & Bluetooth Drawers**: Side-sliding connectivity panels displaying real-time signal strengths, device battery states, and network scanning.
+- **Dedicated Power Menu**: Enlarged 420x96px tactile glass capsule featuring Lock, Logout, Sleep, Restart, and Shutdown actions.
 
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Polkit Auth](assets/gifs/polkit_auth.gif) | ![Polkit Auth Still](assets/screenshots/polkit_auth.png) |
-
-> 🎥 Video: [polkit_auth.mp4](assets/videos/polkit_auth.mp4)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/control_center.gif" alt="Control Center Animation" />
+      <br/>
+      <sub><b>Control Center</b> — Fluid expansion with adaptive cards and sliders</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/control_center.png" alt="Control Center HD Still" />
+      <br/>
+      <sub><b>Control Center Overview</b> — Full layout with synchronized status tray</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/control_center_wifi_drawer.gif" alt="Wi-Fi Drawer" />
+      <br/>
+      <sub><b>Wi-Fi Drawer</b> — Live SSID scan, signal strength and connection controls</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/control_center_bluetooth_drawer.gif" alt="Bluetooth Drawer" />
+      <br/>
+      <sub><b>Bluetooth Drawer</b> — Device pairing, battery levels, and disconnect actions</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/control_center_power_menu.gif" alt="Quick Power Menu" />
+      <br/>
+      <sub><b>Power Menu</b> — Tactile glass buttons with instant keyboard dismissal</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/screenshots/control_center_power_menu.png" alt="Power Menu HD Still" />
+      <br/>
+      <sub><b>Power Menu View</b> — 5-action session capsule</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
-#### Interactive Wallpaper Picker
-Full carousel wallpaper browser embedded directly into the island with live thumbnail previews and instant desktop wallpaper application.
+### 4. Settings App & Studio Layout Canvas
 
-| Animated Demonstration | High-Resolution Screenshot |
-| :---: | :---: |
-| ![Wallpaper Picker](assets/gifs/wallpaper_picker.gif) | ![Wallpaper Picker Still](assets/screenshots/wallpaper_picker.png) |
-
-> 🎥 Video: [wallpaper_picker.mp4](assets/videos/wallpaper_picker.mp4)
+- **Standalone Settings App**: 980x680 floating GUI window with 5 categories (`Bar & Island`, `Control Center`, `Appearance`, `Motion & Animation`, `Modules`).
+- **Studio Layout Canvas**: Visual drag-and-drop grid customizer embedded in the Control Center settings tab, supporting 4-corner card resizing, single-click height adjustments, and live JSON persistence to `~/.config/dynamic-island/userconfig.json`.
 
 ---
 
-#### Spotlight Application Launcher & AirDrop File Shelf
-- **Application Launcher**: Spotlight-style search bar and app grid for fast keyboard application launching.
-- **File Shelf**: macOS / AirDrop-style drop target on the island for dragging, holding, and dropping files across workspaces and applications.
+### 5. Discord Calling Suite & Communications
 
-| Spotlight App Launcher | File Shelf (AirDrop) |
-| :---: | :---: |
-| ![App Launcher](assets/gifs/application_launcher.gif) | ![File Shelf](assets/gifs/file_shelf.gif) |
+- **Incoming Call Banner**: Automatically resolves caller profile pictures from Discord's local cache or CDN, rendered with a flawless GPU shader circular mask and real-time DBus dismissal.
+- **Ongoing Call Pill**: Compact satellite pill showing caller avatar, live call timer, animated audio waveform bars, and hangup button.
 
-> 🎥 Videos: [application_launcher.mp4](assets/videos/application_launcher.mp4) • [file_shelf.mp4](assets/videos/file_shelf.mp4)
-
----
-
-### 🖥️ 8. Compositor & Workspace Integration
-
-#### Workspace Switch Pill & Hyprland Mission Control Overview
-- **Workspace Switch**: Responsive capsule displaying active workspace numbers on workspace transition.
-- **Mission Control Overview**: Full compositor overview with live wallpaper background and workspace window thumbnails.
-
-| Workspace Switch Capsule | Hyprland Workspace Overview |
-| :---: | :---: |
-| ![Workspace Switch](assets/gifs/workspace_switch.gif) | ![Workspace Overview](assets/gifs/workspace_overview.gif) |
-
-> 🎥 Videos: [workspace_switch.mp4](assets/videos/workspace_switch.mp4) • [workspace_overview.mp4](assets/videos/workspace_overview.mp4)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/discord_call_incoming.gif" alt="Incoming Discord Call" />
+      <br/>
+      <sub><b>Incoming Call Banner</b> — Profile avatar, pulsing ring, and action buttons</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/discord_call_ongoing.gif" alt="Ongoing Call Capsule" />
+      <br/>
+      <sub><b>Ongoing Call Pill</b> — Dynamic call timer with audio waveform bars</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
-## 📁 Repository Structure
+### 6. Media Player & Synced Karaoke Lyrics
+
+- **Satellite Music Pill**: Appears automatically alongside the clock when media is playing, showing album artwork in a compact satellite capsule.
+- **Expanded Player**: Fluidly expands into a full player with album artwork, title, artist, live playback progress bar, and animated audio equalizer bars.
+- **Synced Karaoke Lyrics**: Powered by MPRIS and the native `lyricsmpris` C++ helper for syllable-by-syllable synchronized lyrics.
+- **Interactive Timer**: Integrated countdown timer with circular progress gauge and quick presets.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/music_compact_island.gif" alt="Satellite Music Pill" />
+      <br/>
+      <sub><b>Satellite Music Pill</b> — Compact album art pill docked beside the island</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/expanded_media_player.gif" alt="Expanded Media Player" />
+      <br/>
+      <sub><b>Expanded Media Player</b> — Full controls, timeline scrubber, and CAVA visualizer</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/synced_lyrics.gif" alt="Live Synced Lyrics" />
+      <br/>
+      <sub><b>Synced Karaoke Lyrics</b> — Live real-time lyric progression via lyricsmpris</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/countdown_timer.gif" alt="Countdown Timer" />
+      <br/>
+      <sub><b>Interactive Countdown Timer</b> — Quick time picker with circular progress ring</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+### 7. Privacy, Streaming & Screen Sharing
+
+- **Native Screen Share Picker**: Apple-style modal dialog with large preview cards for entire screen, specific windows, or region selection with slurp. Includes a persistent **Restore Token** toggle to prevent repeated browser prompts.
+- **Zero Stream Leakage (`no_screen_share`)**: Automatic layer-shell exclusion rules ensure the Dynamic Island, incoming notifications, and control centers are completely omitted from screencopy and video buffers (OBS, Discord, Zoom, Meet), while remaining fully visible on your monitor.
+- **Recording Indicator**: Prominent live transmission pill and glowing broadcast indicator active whenever screen sharing or recording is detected.
+
+---
+
+### 8. System Utilities & Productivity
+
+- **Apple FaceID Polkit Prompt**: Replaces standard password dialogs with an animated FaceID glyph, user card, and password field.
+- **3D Wallpaper Carousel**: Coverflow carousel browsing wallpapers with live thumbnail generation and automated palette extraction.
+- **Spotlight App Launcher**: Fast keyboard application search and launch grid.
+- **AirDrop File Shelf**: Drag-and-drop staging area on the island for holding files across workspaces.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/polkit_auth.gif" alt="FaceID Polkit Authentication" />
+      <br/>
+      <sub><b>FaceID Polkit Prompt</b> — Apple-style authentication prompt with animated glyph</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/wallpaper_picker.gif" alt="Wallpaper Picker Carousel" />
+      <br/>
+      <sub><b>Wallpaper Picker</b> — 3D coverflow carousel with automated GTK/Qt syncing</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/application_launcher.gif" alt="Spotlight App Launcher" />
+      <br/>
+      <sub><b>Spotlight App Launcher</b> — Instant fuzzy application search and launch</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/file_shelf.gif" alt="AirDrop File Shelf" />
+      <br/>
+      <sub><b>AirDrop File Shelf</b> — Drag, hold, and drop files across desktops</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/workspace_switch.gif" alt="Workspace Switch Pill" />
+      <br/>
+      <sub><b>Workspace Indicator</b> — Active workspace pill on desktop transition</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/workspace_overview.gif" alt="Workspace Overview" />
+      <br/>
+      <sub><b>Mission Control Overview</b> — Full compositor window overview</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🏗️ Architecture & Backend
 
 ```
-.
-├── DynamicIslandWindow.qml      # Main window, Spring physics & layer switching
-├── shell.qml                    # Root Scope, IPC handlers & system services
-├── qml/
-│   ├── island/
-│   │   ├── BatteryAlertLayer.qml    # Apple battery charging & low battery warning
-│   │   ├── SilentRingLayer.qml      # Animated swinging bell switch
-│   │   ├── DiscordCallLayer.qml     # Discord call pill with avatar & waveform
-│   │   ├── ExpandedPlayerLayer.qml  # Media player with controls & timer
-│   │   ├── MusicFloatingIsland.qml  # Satellite compact music pill
-│   │   ├── SwipeLyricsLayer.qml     # Dynamic live synced lyrics
-│   │   ├── OsdLayer.qml             # On-screen volume and brightness sliders
-│   │   ├── PolkitLayer.qml          # Apple FaceID authentication prompt
-│   │   ├── WallpaperPickerLayer.qml # Live thumbnail wallpaper carousel
-│   │   ├── ApplicationLauncherLayer.qml # Spotlight application search
-│   │   ├── FileShelfLayer.qml       # Drag & drop file shelf
-│   │   └── ...
-│   ├── controlcenter/
-│   │   ├── ControlCenterLayer.qml   # Control Center panel
-│   │   ├── ControlSliderCard.qml    # Sliders with left-aligned adaptive icons
-│   │   └── NotificationCenterLayer.qml # Notification history panel
-│   └── connectivity/                # Wi-Fi & Bluetooth detail drawers
-├── scripts/
-│   ├── discord_call_monitor.py      # Real-time DBus notification & hangup daemon
-│   └── resolve_discord_avatar.py    # Automatic Discord avatar cache & CDN resolver
-├── avatars/                         # Custom contact profile picture overrides
-└── assets/
-    ├── gifs/                        # Slow-paced (10 fps) fluid animated demonstrations
-    ├── screenshots/                 # Crisp high-resolution screenshots
-    └── videos/                      # H.264 MP4 video recordings
+dynamic-island-hyprland/
+├── backend/                  # IslandBackend: Native C++20 Qt6 QML Plugin
+│   ├── CompositorBackend     # Wayland layer-shell & active window tracking
+│   ├── UserConfigBackend     # Dynamic JSON schema loader & persistence
+│   ├── WifiController        # NetworkManager D-Bus client
+│   └── BluetoothPairingAgent # BlueZ D-Bus integration
+├── lyricsmpris/              # lyricsmpris: MPRIS synchronized lyrics daemon
+├── qml/                      # QML Component Layers
+│   ├── island/               # Island capsule, OSDs, alerts, and satellite pills
+│   ├── controlcenter/        # Control Center, Settings App, and Studio Canvas
+│   └── connectivity/         # Wi-Fi & Bluetooth sliding detail drawers
+├── scripts/                  # Shell launchers, screen share wrapper & helpers
+├── CMakeLists.txt            # Root build configuration for backend & lyricsmpris
+└── install.sh                # Automated installer & dependency manager
 ```
+
+- **`IslandBackend` (Qt6 Plugin)**: Built directly in C++ to provide seamless, low-overhead access to native Linux APIs, eliminating the need for slow external polling scripts.
+- **`lyricsmpris`**: Synchronous MPRIS lyrics parser providing smooth sub-second line synchronization.
 
 ---
 
-## 🚀 Installation & Setup
+## 📦 Essential Dependencies
 
-### Prerequisites
+The installer checks and installs strictly what is needed for the shell to function:
 
-Ensure you have the following packages installed on your system:
-- **Hyprland** (Wayland compositor)
-- **Quickshell** (>= 0.0.8, Qt 6 / QML)
-- **Python 3** (with `Pillow` and `dbus-python`)
-- **Nerd Fonts** (e.g. `JetBrainsMono Nerd Font` or `Inter`)
-- **grim** & **ffmpeg** (for screenshotting and screen recording utilities)
-
-### Deployment
-
-1. Clone this repository into your Quickshell configuration directory:
+### Core Packages (Arch Linux / pacman)
 ```bash
+cmake ninja qt6-base qt6-declarative jq socat libnotify brightnessctl playerctl wireplumber slurp grim bluez bluez-utils
+```
+
+### AUR Packages
+- **`quickshell`** (or `quickshell-git`)
+- **`awww`** (default animated wallpaper backend)
+
+---
+
+## 🚀 Quick Start & Installation
+
+Clone the repository and run the automated installer:
+
+```bash
+# 1. Clone into your Quickshell configuration path
 git clone https://github.com/St0rmosu/dynamic-island-hyprland.git ~/.config/quickshell/dynamic-island
+
+# 2. Enter directory and run the installer
+cd ~/.config/quickshell/dynamic-island
+chmod +x install.sh
+./install.sh
 ```
 
-2. Launch or reload the bar:
+### What `install.sh` Does:
+1. **Verifies Dependencies**: Checks for missing packages and offers automatic installation via `yay`, `paru`, or `pacman`.
+2. **Compiles C++ Backend**: Builds `IslandBackend` and `lyricsmpris` using CMake and installs them cleanly to `~/.local/` (no root/sudo required).
+3. **Deploys Runtime Config**: Sets up `~/.local/bin/dynamic-island` and configures `~/.config/dynamic-island/userconfig.json`.
+4. **Configures Hyprland Autostart**: Detects whether your Hyprland setup is modular (Lua or `.conf`) or monolithic, safely injecting `dynamic-island -d` without duplication.
+5. **Configures Screencopy Privacy**: Ensures `no_screen_share` layer rules are configured so the island stays private during streaming.
+6. **Configures Wallpaper Engine & Theming**: Sets up wallpaper transition scripts with automated color palette synchronization for **GTK-3.0, GTK-4.0 (Libadwaita), Qt5, and Qt6** apps.
+
+To launch or restart the island immediately:
 ```bash
-# If using quickshell directly:
-quickshell -p ~/.config/quickshell/dynamic-island -d
+dynamic-island -d
 ```
-
-The runtime config lives at `~/.config/quickshell/dynamic-island`; the shell writes its user settings to `~/.config/dynamic-island/userconfig.json`.
 
 ---
 
-## ⚡ IPC Terminal Commands (Testing & Scripting)
+## ⌨️ Keybindings & Hyprland Integration
 
-You can trigger and interact with any feature via `quickshell ipc`:
+Add the following keybindings to your Hyprland configuration (e.g. `~/.config/hypr/hyprland.conf` or `binds.lua`):
 
-```bash
-# Battery & Power
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testCharging 85
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testLowBattery 15
-
-# Silent / Ring Switch
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testSilentRing true   # Silenzioso
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testSilentRing false  # Suoneria
-
-# Hardware OSD
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testVolume 65
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testBrightness 80
-
-# Discord Calls
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDiscordCall "St0rm"
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDiscordCallOngoing "St0rm"
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island acceptCall
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island declineCall
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island closeCall
-
-# Media Player & Utilities
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide togglePlayer
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide showTimer
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide showLyrics
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide showCustom
-
-# Control Center & Drawers
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleControlCenter
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDetailPanel wifi true
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testDetailPanel bluetooth true
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide togglePowerMenu
-
-# System Panels & Security
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleNotificationCenter
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testPolkit
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island closePolkit
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleWallpaperPicker
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleApplicationLauncher
-quickshell ipc -p ~/.config/quickshell/dynamic-island call tide toggleFileShelf
-
-# Overview & Workspaces
-quickshell ipc -p ~/.config/quickshell/dynamic-island call island testWorkspace 3
-quickshell ipc -p ~/.config/quickshell/dynamic-island call overview open
-quickshell ipc -p ~/.config/quickshell/dynamic-island call overview close
-```
+| Action | Shortcut (Recommended) | Command / Dispatcher |
+| :--- | :--- | :--- |
+| **Control Center** | `SUPER + SHIFT + C` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island toggleControlCenter` |
+| **Power Menu** | `SUPER + ESCAPE` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island togglePowerMenu` |
+| **Settings App** | `SUPER + I` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island toggleSettingsApp` |
+| **Wallpaper Picker** | `SUPER + ALT + SPACE` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island toggleWallpaperPicker` |
+| **Clipboard History** | `SUPER + C` | `quickshell ipc --any-display -p ~/.config/quickshell/dynamic-island call island toggleClipboard` |
+| **Toggle Island Bar** | `SUPER + W` | `dynamic-island -d` |
 
 ---
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete terms and details.
