@@ -64,19 +64,19 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
   2. Implemented [`scripts/apply_hyprland_binds.py`](file:///home/lollo/Progetti/dynamic-island-hyprland/scripts/apply_hyprland_binds.py):
      - Safely parses and updates bindings in `~/.config/hypr/moduli/binds.lua`.
      - Automatically reloads Hyprland via `hyprctl reload` so recorded shortcuts take effect instantly.
-### F. Native System Tray Shelf in Control Center Header (`SystemTrayShelf.qml`)
-- **Requirement**: Allow apps running in background (like Discord, Steam, Telegram, Spotify) to stay minimized in the system tray, provide left-click window restore, right-click context menu, and unread notification indicators, integrated cleanly into the top capsule between clock and battery.
+### F. Native System Tray Floating Dock in Control Center (`SystemTrayShelf.qml`)
+- **Requirement**: Allow apps running in background (like Discord, Steam, Telegram, Spotify) to stay minimized in the system tray, provide left-click window restore, right-click context menu, and unread notification indicators, positioned cleanly without colliding with sliders or crowding the header.
 - **Solution**:
   1. Built [`qml/controlcenter/SystemTrayShelf.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SystemTrayShelf.qml) powered by `Quickshell.Services.SystemTray` (StatusNotifierItem protocol):
-     - Automatically renders running background apps on frosted glass squircle chips (`26x26px`, `radius: 7`).
+     - Renders running background apps in a dedicated **Floating Dock Capsule** (`height: 32px`, `radius: 16`, frosted glass `#0e1118`).
      - Includes pulsating green attention dots (`#30d158`) on icons with unread pings/notifications.
      - Hover tooltips showing app titles and statuses.
      - Left click activates/restores the app window (`modelData.activate()`).
-     - Right click opens the native context menu (`QsMenuOpener`) with hover-styled entries and separators.
+     - Right click opens the native context menu (`QsMenuOpener`) **upwards** (`z: 9999`) into unobstructed space, completely immune to slider clipping.
      - Middle click triggers secondary activation; mouse wheel forwards scroll events.
-  2. Integrated `SystemTrayShelf` directly into the center of `headerComponent` in [`ControlCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlCenterLayer.qml):
-     - Dynamically occupies the previously vacant space between the time label on the left and battery indicator on the right.
-     - Zero space footprint on the rest of the Control Center layout; automatically hides when no tray apps are active.
+  2. Integrated as a pinned Floating Dock at the bottom of `mainContent` in [`ControlCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlCenterLayer.qml):
+     - `gridCaselleArea` dynamically adjusts `anchors.bottomMargin` to avoid any overlap.
+     - Automatically expands the Control Center height when apps are running, and cleanly hides when no tray apps are active.
 
 ### G. 11-Point Polish & Portability Overhaul (User Screenshots & Directives)
 1. **Dynamic Island Layer Exclusive Zone**:
