@@ -343,10 +343,18 @@ PanelWindow {
 
         Region {
             intersection: Intersection.Combine
-            x: (controlCenterLoader.item && controlCenterLoader.item.trayMenuVisible) ? Math.floor(controlCenterLoader.item.trayMenuX) : 0
-            y: (controlCenterLoader.item && controlCenterLoader.item.trayMenuVisible) ? Math.floor(controlCenterLoader.item.trayMenuY) : 0
-            width: (controlCenterLoader.item && controlCenterLoader.item.trayMenuVisible) ? Math.ceil(controlCenterLoader.item.trayMenuWidth) : 0
-            height: (controlCenterLoader.item && controlCenterLoader.item.trayMenuVisible) ? Math.ceil(controlCenterLoader.item.trayMenuHeight) : 0
+            x: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(Math.min(trayFloatingIsland.x, mainCapsule.x)) : 0
+            y: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(mainCapsule.y + mainCapsule.height) : 0
+            width: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(Math.max(trayFloatingIsland.width, mainCapsule.width)) : 0
+            height: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height - (mainCapsule.y + mainCapsule.height)) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.floor(trayFloatingIsland.menuX) : 0
+            y: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.floor(trayFloatingIsland.menuY) : 0
+            width: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.ceil(trayFloatingIsland.menuWidth) : 0
+            height: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.ceil(trayFloatingIsland.menuHeight) : 0
         }
     }
     readonly property real capsuleWindowHeight: {
@@ -354,8 +362,11 @@ PanelWindow {
             return root.screen ? root.screen.height : 1080;
         }
         var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
-        if (controlCenterLoader.item && controlCenterLoader.item.trayMenuVisible) {
-            h = Math.max(h, Math.ceil(controlCenterLoader.item.trayMenuY + controlCenterLoader.item.trayMenuHeight + 16));
+        if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
+            h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + 16));
+            if (trayFloatingIsland.menuVisible) {
+                h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + 16));
+            }
         }
         return h;
     }
@@ -1394,7 +1405,8 @@ PanelWindow {
         property bool controlCenterHadPointer: false
         readonly property bool controlCenterPointerInside: Boolean(
             (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered)
-            || (controlCenterLoader.item && controlCenterLoader.item.trayMenuVisible)
+            || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered)
+            || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible)
             || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered)
             || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered)
             || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered)
@@ -1547,13 +1559,12 @@ PanelWindow {
 
         onControlCenterLayerVisibleChanged: {
             if (!controlCenterLayerVisible) {
-                if (controlCenterLoader.item) {
+                if (controlCenterLoader.item)
                     controlCenterLoader.item.closeConnectivityPanels();
-                    if (controlCenterLoader.item.closeTrayMenu) {
-                        controlCenterLoader.item.closeTrayMenu();
-                    }
-                } else
+                else
                     root.closeAllConnectivityDetails();
+                if (trayFloatingIsland)
+                    trayFloatingIsland.closeMenu();
             }
         }
 
@@ -2647,7 +2658,9 @@ PanelWindow {
             }
             repeat: false
             onTriggered: {
-                if (capsuleMouseArea.containsMouse || mainCapsuleHoverHandler.hovered) return;
+                if (capsuleMouseArea.containsMouse || mainCapsuleHoverHandler.hovered
+                        || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered)
+                        || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible)) return;
                 if (!islandContainer.hoverExpandedActive) return;
                 if (islandContainer.islandState === "settings_app" ||
                     islandContainer.islandState === "clipboard" ||
@@ -2838,6 +2851,17 @@ PanelWindow {
             onAccepted: root.acceptDiscordCall()
             onDeclined: root.declineDiscordCall()
             onCallerClicked: root.focusDiscordWindow()
+        }
+
+        TrayFloatingIsland {
+            id: trayFloatingIsland
+            targetCapsule: mainCapsule
+            rootWindow: root
+            accentColor: pywalColors.accent
+            textFontFamily: root.textFontFamily
+            iconFontFamily: root.iconFontFamily
+            activeState: islandContainer.islandState === "control_center"
+            z: 16
         }
 
         // --- UI 渲染：灵动岛主干 ---
@@ -3681,7 +3705,6 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ControlCenterLayer {
-                        parentWindowContainer: islandContainer
                         userConfigData: (root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout)
                             ? { controlCenterCanvasLayout: root.dynamicConfig.controlCenterCanvasLayout }
                             : localUserConfigFile.parsedData

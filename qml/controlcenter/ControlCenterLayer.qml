@@ -23,19 +23,6 @@ Item {
     readonly property var userConfig: UserConfig
     property var notificationModel: null
     property var userConfigData: null
-    property var parentWindowContainer: null
-
-    readonly property bool hasTrayApps: SystemTray.items && SystemTray.items.values ? SystemTray.items.values.length > 0 : false
-
-    readonly property bool trayMenuVisible: integratedTrayDock ? integratedTrayDock.menuVisible : false
-    readonly property real trayMenuX: integratedTrayDock ? integratedTrayDock.menuX : 0
-    readonly property real trayMenuY: integratedTrayDock ? integratedTrayDock.menuY : 0
-    readonly property real trayMenuWidth: integratedTrayDock ? integratedTrayDock.menuWidth : 0
-    readonly property real trayMenuHeight: integratedTrayDock ? integratedTrayDock.menuHeight : 0
-
-    function closeTrayMenu() {
-        if (integratedTrayDock) integratedTrayDock.closeMenu();
-    }
 
     FileView {
         id: localConfigFile
@@ -290,7 +277,7 @@ Item {
         const cellH = 80;
         const gridH = maxRow * cellH + (maxRow - 1) * spacing;
         const headerH = 32;
-        const bottomPadding = controlCenter.hasTrayApps ? 56 : 34;
+        const bottomPadding = 34;
         const padding = 12 + 10 + bottomPadding;
         return Math.max(160, headerH + gridH + padding + extraNotificationH);
     }
@@ -3007,7 +2994,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            anchors.bottomMargin: controlCenter.hasTrayApps ? 56 : 34
+            anchors.bottomMargin: 34
 
             readonly property real gridSpacing: 10
             readonly property real unitColWidth: (width - (3 * gridSpacing)) / 4
@@ -3154,19 +3141,6 @@ Item {
                     }
                 }
             }
-        }
-
-        // Integrated System Tray Dock at the bottom of the Island
-        SystemTrayDock {
-            id: integratedTrayDock
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 11
-            anchors.horizontalCenter: parent.horizontalCenter
-            accentColor: controlCenter.accentColor
-            textFontFamily: controlCenter.textFontFamily
-            iconFontFamily: controlCenter.iconFontFamily
-            rootWindowContainer: controlCenter.parentWindowContainer
-            visible: controlCenter.hasTrayApps
         }
     }
 
