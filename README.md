@@ -12,7 +12,7 @@ This is a personal project, under active development. Some features are not fini
 
 Before you follow the setup steps, know two things:
 
-- The shell depends on an `IslandBackend` C++ plugin for Quickshell that is **not yet public**. Without it the QML files do not load. The backend is unpublished while I finish the build.
+- The C++ backend (`IslandBackend`) and lyrics helper (`lyricsmpris`) are included directly in this repository and can be compiled and installed with `./install.sh`.
 - Several paths in the code (icons, wallpapers, helper scripts) are hardcoded to `/home/lollo/...`. The setup below installs the config, but the running shell still expects my paths until those are made portable.
 
 Treat this as documentation of my current setup, not as install instructions and not yet, for anyone else.
