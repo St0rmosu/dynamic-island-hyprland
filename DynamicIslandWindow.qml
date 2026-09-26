@@ -47,6 +47,7 @@ PanelWindow {
         return compositorIsNiri ? CompositorBackend.activeWorkspaceIndexForOutput(screenOutputName) : (hyprlandIntegration ? hyprlandIntegration.workspaceId : 1);
     }
     readonly property bool screenRecordingActive: shellRootController && shellRootController.screenRecordingActive !== undefined ? !!shellRootController.screenRecordingActive : false
+    readonly property bool lyricsActive: islandContainer ? islandContainer.restingState === "lyrics" : false
     property bool autoHideVisible: false
     property bool autoHidePointerInside: false
     property bool autoHideForcedHidden: false
@@ -676,6 +677,8 @@ PanelWindow {
     }
 
     function toggleLyricsWindow() {
+        if (musicFloatingIsland)
+            musicFloatingIsland.isExpanded = false;
         islandContainer.toggleLyricsMode();
         showAutoHiddenIsland("manual");
         scheduleAutoHide();
@@ -2188,6 +2191,7 @@ PanelWindow {
             islandState = normalizedRestingState;
             clearTransientCapsule();
             applyRestingVisuals();
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             expandedByPlayerAutoOpen = false;
             stopAutoHideTimer();
         }
@@ -3447,7 +3451,7 @@ PanelWindow {
                         textPixelSize: root.bodyFontSize
                         minimumWidth: 220
                         maximumWidth: Math.max(220, root.width - 48)
-                        transitionProgress: islandContainer.rightSwipeProgress
+                        transitionProgress: (islandContainer.islandState === "lyrics" || islandContainer.restingState === "lyrics") ? 1 : islandContainer.rightSwipeProgress
                         recordingActive: islandContainer.screenRecordingActive
                         showSecondaryText: islandContainer.workspaceOriginSide !== "right" && islandContainer.splitOriginSide !== "right"
                         showCondition: true

@@ -134,11 +134,18 @@ Rectangle {
         timeTotal: root.timeTotal
         trackProgress: root.trackProgress
         activePlayer: root.activePlayer
+        lyricsActive: rootWindow ? rootWindow.lyricsActive : false
         iconFontFamily: userConfig ? userConfig.iconFontFamily : "JetBrainsMono Nerd Font"
         textFontFamily: userConfig ? userConfig.textFontFamily : "Sans Serif"
         onControlPressed: {}
         onBackgroundClicked: root.isExpanded = false
         onCloseRequested: root.isExpanded = false
+        onLyricsToggleRequested: {
+            root.isExpanded = false;
+            if (rootWindow) {
+                rootWindow.toggleLyricsWindow();
+            }
+        }
         onPreviousRequested: {
             if (mprisController) mprisController.previous();
             else if (root.activePlayer && root.activePlayer.canGoPrevious) root.activePlayer.previous();
