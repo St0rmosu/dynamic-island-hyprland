@@ -13,6 +13,7 @@ Item {
     signal keyboardFocusRequested()
     signal keyboardFocusReleased()
     signal previousRequested()
+    signal lyricsToggleRequested()
     signal timerToggleRequested(int hours, int minutes)
     signal timerResetRequested()
     signal timerDurationRequested(int hours, int minutes)
@@ -20,6 +21,7 @@ Item {
     readonly property var userConfig: UserConfig
 
     property bool showCondition: false
+    property bool lyricsActive: false
     property string currentArtUrl: ""
     property string currentTrack: ""
     property string currentArtist: ""
@@ -572,6 +574,49 @@ Item {
                                     }
                                     onClicked: if (activePlayer) activePlayer.next()
                                 }
+                            }
+                        }
+
+                        Item {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 32
+                            height: 32
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 8
+                                color: lyricsArea.pressed ? Qt.rgba(255, 255, 255, 0.15) : (root.lyricsActive ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22) : (lyricsArea.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent"))
+                                border.width: root.lyricsActive ? 1 : 0
+                                border.color: root.lyricsActive ? root.accentColor : "transparent"
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on border.color { ColorAnimation { duration: 150 } }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\uf130"
+                                color: root.lyricsActive ? root.accentColor : (lyricsArea.containsMouse ? "#ffffff" : "#8e8e93")
+                                font.pixelSize: 16
+                                font.family: root.iconFontFamily
+                                scale: lyricsArea.pressed ? 0.85 : 1.0
+
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on scale { NumberAnimation { duration: 100 } }
+                            }
+
+                            MouseArea {
+                                id: lyricsArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                preventStealing: true
+                                cursorShape: Qt.PointingHandCursor
+                                onPressed: (mouse) => {
+                                    root.controlPressed();
+                                    mouse.accepted = true;
+                                }
+                                onClicked: root.lyricsToggleRequested()
                             }
                         }
                     }

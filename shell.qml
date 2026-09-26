@@ -619,6 +619,12 @@ Scope {
             });
         }
 
+        function toggleLyrics() {
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleLyricsWindow();
+            });
+        }
+
         function reload() {
             try {
                 Quickshell.reload(false);
@@ -629,6 +635,8 @@ Scope {
 
         target: "island"
     }
+
+
 
     Connections {
         function onReloadCompleted() {

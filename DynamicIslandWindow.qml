@@ -675,30 +675,35 @@ PanelWindow {
         scheduleAutoHide();
     }
 
+    function toggleLyricsWindow() {
+        islandContainer.toggleLyricsMode();
+        showAutoHiddenIsland("manual");
+        scheduleAutoHide();
+    }
+
     function swipeRightWindow() {
         if (islandContainer.restingState === "lyrics") {
             islandContainer.showTimeCapsule();
         } else if (islandContainer.restingState === "normal") {
             if (islandContainer.hasCustomLeftItems)
                 islandContainer.showCustomCapsule();
-            else
-                islandContainer.showLyricsCapsule();
         } else {
-            islandContainer.showLyricsCapsule();
+            islandContainer.showTimeCapsule();
         }
         showAutoHiddenIsland("manual");
         scheduleAutoHide();
     }
 
     function swipeLeftWindow() {
-        if (islandContainer.restingState === "custom")
+        if (islandContainer.restingState === "custom") {
             islandContainer.showTimeCapsule();
-        else if (islandContainer.restingState === "normal")
-            islandContainer.showLyricsCapsule();
-        else if (islandContainer.hasCustomLeftItems)
+        } else if (islandContainer.restingState === "lyrics") {
+            islandContainer.showTimeCapsule();
+        } else if (islandContainer.hasCustomLeftItems) {
             islandContainer.showCustomCapsule();
-        else
+        } else {
             islandContainer.showTimeCapsule();
+        }
         showAutoHiddenIsland("manual");
         scheduleAutoHide();
     }
@@ -1495,7 +1500,7 @@ PanelWindow {
         readonly property var customLeftItems: systemState.customLeftItems
         readonly property bool hasCustomLeftItems: systemState.hasCustomLeftItems
         readonly property bool customSwipeVisible: !root.overviewVisible && hasCustomLeftItems && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0) || (islandState === "split" && splitOriginSide === "left") || (islandState === "long_capsule" && (workspaceOriginSide === "left" || swipeTransitionProgress < 0))))
-        readonly property bool lyricsSwipeVisible: !root.overviewVisible && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0) || (islandState === "split" && splitOriginSide === "right") || (islandState === "long_capsule" && (workspaceOriginSide === "right" || swipeTransitionProgress > 0))))
+        readonly property bool lyricsSwipeVisible: !root.overviewVisible && !expandedLayerVisible && !controlCenterLayerVisible && !powerMenuLayerVisible && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible && !applicationLauncherLayerVisible && !clipboardLayerVisible && !settingsAppLayerVisible && !fileShelfLayerVisible && !polkitLayerVisible && !screenSharePickerLayerVisible && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0) || (islandState === "split" && splitOriginSide === "right") || (islandState === "long_capsule" && (workspaceOriginSide === "right" || swipeTransitionProgress > 0))))
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
         readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
@@ -2378,6 +2383,13 @@ PanelWindow {
             showRestingCapsule("lyrics");
         }
 
+        function toggleLyricsMode() {
+            if (restingState === "lyrics")
+                showRestingCapsule("normal");
+            else
+                showRestingCapsule("lyrics");
+        }
+
         function showTimeCapsule() {
             showRestingCapsule("normal");
         }
@@ -2702,7 +2714,7 @@ PanelWindow {
                 if (current === target)
                     return ;
 
-                if (current !== "normal" && current !== "custom" && current !== "lyrics")
+                if (current !== "normal" && current !== "custom")
                     return ;
 
                 islandContainer.hoverExpandedActive = true;
@@ -3138,7 +3150,7 @@ PanelWindow {
                             root.autoHidePointerInside = true;
                             root.showAutoHiddenIsland();
                         }
-                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
+                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom")) {
                             hoverCollapseDelayTimer.stop();
                             hoverExpandDelayTimer.restart();
                         }
@@ -3182,7 +3194,7 @@ PanelWindow {
                         root.autoHidePointerInside = true;
                         root.showAutoHiddenIsland();
                     }
-                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
+                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom")) {
                         hoverCollapseDelayTimer.stop();
                         hoverExpandDelayTimer.restart();
                     }
@@ -3419,16 +3431,15 @@ PanelWindow {
                 id: lyricsSwipeLoader
 
                 anchors.fill: parent
-                active: islandContainer.lyricsSwipeVisible
+                active: islandContainer.lyricsSwipeVisible || islandContainer.restingState === "lyrics"
                 asynchronous: false
-                visible: active
+                visible: islandContainer.lyricsSwipeVisible
                 onLoaded: islandContainer.syncLyricsCapsuleWidth()
 
                 sourceComponent: Component {
                     SwipeLyricsLayer {
                         accentColor: pywalColors.accent
                         lyricText: islandContainer.lyricsDisplayText
-                        currentArtUrl: islandContainer.currentArtUrl
                         cavaLevels: islandContainer.cavaLevels
                         timeText: timeObj.currentTime
                         textFontFamily: root.textFontFamily
@@ -3551,9 +3562,11 @@ PanelWindow {
                         timerRunning: islandContainer.timerRunning
                         timerActive: islandContainer.timerActive
                         showCondition: islandContainer.expandedLayerVisible
+                        lyricsActive: islandContainer.restingState === "lyrics"
                         onControlPressed: islandContainer.suppressCapsuleClick()
                         onBackgroundClicked: islandContainer.smartRestoreState()
                         onCloseRequested: islandContainer.smartRestoreState()
+                        onLyricsToggleRequested: islandContainer.toggleLyricsMode()
                         onKeyboardFocusRequested: islandContainer.requestExpandedPlayerKeyboardFocus()
                         onKeyboardFocusReleased: islandContainer.releaseExpandedPlayerKeyboardFocus()
                         onPreviousRequested: mediaController.previous()

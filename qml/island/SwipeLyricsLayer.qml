@@ -1,5 +1,4 @@
 import IslandBackend
-import Qt5Compat.GraphicalEffects
 import QtQuick
 
 Item {
@@ -7,7 +6,6 @@ Item {
 
     readonly property var userConfig: UserConfig
     property string lyricText: ""
-    property string currentArtUrl: ""
     property var cavaLevels: []
     property string timeText: ""
     property color accentColor: StyleTokens.accent
@@ -23,9 +21,7 @@ Item {
     property real minimumWidth: 220
     property real maximumWidth: minimumWidth
     property real horizontalPadding: 14
-    property real coverSize: 24
-    property real coverRadius: 7
-    property real visualSpacing: 35
+    property real visualSpacing: 14
     property real hiddenLeftPadding: 18
     property real hiddenRightPadding: 16
     property string activeLyricText: lyricText
@@ -35,7 +31,7 @@ Item {
     readonly property real clampedProgress: Math.max(0, Math.min(1, transitionProgress))
     readonly property bool lyricMostlyVisible: clampedProgress > 0.92
     readonly property real textWidth: Math.max(0, width - horizontalPadding * 2)
-    readonly property real lyricTextWidth: Math.max(0, textWidth - coverSize - cavaBars.implicitWidth - visualSpacing * 2)
+    readonly property real lyricTextWidth: Math.max(0, textWidth - cavaBars.implicitWidth - visualSpacing)
     readonly property real centeredX: horizontalPadding
     readonly property real lyricHiddenLeftX: -textWidth - hiddenLeftPadding
     readonly property real timeHiddenRightX: width + hiddenRightPadding
@@ -49,7 +45,7 @@ Item {
     readonly property real visibleLyricWidth: Math.min(lyricTextWidth, Math.max(0, lyricMetrics.advanceWidth))
     readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
     readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
-    readonly property real preferredWidth: Math.max(minimumWidth, Math.min(Math.max(minimumWidth, maximumWidth), lyricMetrics.advanceWidth + horizontalPadding * 2 + coverSize + cavaBars.implicitWidth + visualSpacing * 2))
+    readonly property real preferredWidth: Math.max(minimumWidth, Math.min(Math.max(minimumWidth, maximumWidth), lyricMetrics.advanceWidth + horizontalPadding * 2 + cavaBars.implicitWidth + visualSpacing))
 
     onLyricTextChanged: {
         if (lyricText === activeLyricText)
@@ -159,48 +155,11 @@ Item {
         height: parent.height
         opacity: root.clampedProgress
 
-        Rectangle {
-            id: coverFrame
-
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: root.coverSize
-            height: root.coverSize
-            radius: root.coverRadius
-            color: "#2c2c2e"
-            antialiasing: true
-
-            Rectangle {
-                id: coverMask
-
-                anchors.fill: parent
-                radius: root.coverRadius
-                antialiasing: true
-                visible: false
-                layer.enabled: true
-            }
-
-            Image {
-                anchors.fill: parent
-                source: root.currentArtUrl
-                fillMode: Image.PreserveAspectCrop
-                visible: source.toString() !== ""
-                sourceSize: Qt.size(root.coverSize * 2, root.coverSize * 2)
-                layer.enabled: true
-
-                layer.effect: OpacityMask {
-                    maskSource: coverMask
-                }
-
-            }
-
-        }
-
         Item {
             id: lyricViewport
 
-            anchors.left: coverFrame.right
-            anchors.leftMargin: root.visualSpacing
+            anchors.left: parent.left
+            anchors.leftMargin: 4
             anchors.right: cavaBars.left
             anchors.rightMargin: root.visualSpacing
             height: parent.height
