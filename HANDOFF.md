@@ -52,11 +52,18 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
   1. Set `overviewLoaderActive: !compositorIsNiri` so the overview component remains prewarmed in memory.
   2. Set `overviewWallpaperReady: true` and simplified `beginOverviewOpening()` so the overview opens immediately (in ~70ms) without waiting for asynchronous disk writes or thumbnail generators.
 
-### D. Minimalist Squircle Power Menu & Cealestia Detached Execution
-- Refreshed [`PowerMenuLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/island/PowerMenuLayer.qml) with 5 minimal 56x56 glass action cards (Lock, Logout, Suspend, Reboot, Shutdown).
-- Removed text labels and top-right key hint badges as requested.
-- Implemented full keyboard arrow navigation (`Left`/`Right`/`Up`/`Down`/`Tab`) and `Enter` execution.
-- Added non-blocking detached process execution via Cealestia wrapper (`Quickshell.execDetached(["bash", "-c", "nohup setsid " + cmd + " >/dev/null 2>&1 &"])`).
+### E. On-the-Fly Interactive Key Recorder for Shortcuts (`ShortcutsPage.qml`)
+- **Problem**: Changing Hyprland shortcuts required manually clicking through static modifier and key chips from a fixed 10-key list, which was cumbersome and lacked support for arbitrary keys.
+- **Solution**:
+  1. Completely rebuilt [`qml/settings/ShortcutsPage.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/settings/ShortcutsPage.qml) with an interactive **Key Recorder**:
+     - User clicks on a shortcut pill or "Registra" button to enter listening mode (`● IN ASCOLTO...`).
+     - Directly captures physical keystrokes (`Keys.onPressed` / `Keys.onReleased`) with full support for `SUPER` (Meta), `ALT`, `CTRL`, `SHIFT`, letters, numbers, arrow keys, `Tab`, `Spazio` (Space), `Return`, `Backspace`, function keys `F1`-`F12`, and punctuation.
+     - Live keystroke preview renders held modifiers in real-time (`[ SUPER ] + [ ALT ] + [ ... ]`) and immediately creates the shortcut upon pressing the trigger key.
+     - Flashes a green confirmation badge (`✔ REGISTRATO!`), saves to `customShortcuts` in `DynamicConfig`, and automatically syncs with Hyprland.
+     - Supports `Esc` to cancel and per-shortcut / global "Ripristina Default" buttons.
+  2. Implemented [`scripts/apply_hyprland_binds.py`](file:///home/lollo/Progetti/dynamic-island-hyprland/scripts/apply_hyprland_binds.py):
+     - Safely parses and updates bindings in `~/.config/hypr/moduli/binds.lua`.
+     - Automatically reloads Hyprland via `hyprctl reload` so recorded shortcuts take effect instantly.
 
 ### E. 11-Point Polish & Portability Overhaul (User Screenshots & Directives)
 1. **Dynamic Island Layer Exclusive Zone**:
