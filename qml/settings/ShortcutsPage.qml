@@ -652,34 +652,6 @@ FocusScope {
                                         onClicked: root.startRecording(index)
                                     }
                                 }
-
-                                // Pulsante Prova Rapida [ ▶ ]
-                                Rectangle {
-                                    width: 32
-                                    height: 32
-                                    radius: 8
-                                    color: testMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.30) : Qt.rgba(255, 255, 255, 0.06)
-                                    border.width: 1
-                                    border.color: testMouse.containsMouse ? root.accentColor : Qt.rgba(255, 255, 255, 0.10)
-                                    anchors.verticalCenter: parent.verticalCenter
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "▶"
-                                        color: testMouse.containsMouse ? "#ffffff" : "#c2c7d4"
-                                        font.pixelSize: 10
-                                    }
-
-                                    MouseArea {
-                                        id: testMouse
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            Quickshell.execDetached(["bash", "-c", "$HOME/.scripts/shell-dispatcher.sh " + modelData.action]);
-                                        }
-                                    }
-                                }
                             }
                         }
 
