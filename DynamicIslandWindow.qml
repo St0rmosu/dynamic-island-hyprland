@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Mpris
+import Quickshell.Services.SystemTray
 import IslandBackend
 import "qml/common"
 import "qml/controlcenter"
@@ -339,12 +340,32 @@ PanelWindow {
             width: powerConnectivityDetailShell.visible ? Math.ceil(powerConnectivityDetailShell.width) : 0
             height: powerConnectivityDetailShell.visible ? Math.ceil(powerConnectivityDetailShell.height) : 0
         }
+
+        Region {
+            intersection: Intersection.Combine
+            x: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(trayFloatingIsland.x) : 0
+            y: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(trayFloatingIsland.y) : 0
+            width: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(trayFloatingIsland.width) : 0
+            height: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(trayFloatingIsland.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: (trayFloatingIsland && trayFloatingIsland.menuVisible) ? Math.floor(trayFloatingIsland.menuX) : 0
+            y: (trayFloatingIsland && trayFloatingIsland.menuVisible) ? Math.floor(trayFloatingIsland.menuY) : 0
+            width: (trayFloatingIsland && trayFloatingIsland.menuVisible) ? Math.ceil(trayFloatingIsland.menuWidth) : 0
+            height: (trayFloatingIsland && trayFloatingIsland.menuVisible) ? Math.ceil(trayFloatingIsland.menuHeight) : 0
+        }
     }
     readonly property real capsuleWindowHeight: {
         if (islandContainer.islandState === "settings_app" || islandContainer.settingsAppLayerVisible) {
             return root.screen ? root.screen.height : 1080;
         }
-        return Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
+        var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
+        if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
+            h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + 16));
+        }
+        return h;
     }
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted
         ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 12)
@@ -2821,6 +2842,17 @@ PanelWindow {
             onAccepted: root.acceptDiscordCall()
             onDeclined: root.declineDiscordCall()
             onCallerClicked: root.focusDiscordWindow()
+        }
+
+        TrayFloatingIsland {
+            id: trayFloatingIsland
+            targetCapsule: mainCapsule
+            rootWindow: root
+            accentColor: pywalColors.accent
+            textFontFamily: root.textFontFamily
+            iconFontFamily: root.iconFontFamily
+            activeState: islandContainer.islandState === "control_center"
+            z: 16
         }
 
         // --- UI 渲染：灵动岛主干 ---

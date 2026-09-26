@@ -277,8 +277,7 @@ Item {
         const cellH = 80;
         const gridH = maxRow * cellH + (maxRow - 1) * spacing;
         const headerH = 32;
-        const hasTrayApps = SystemTray.items && SystemTray.items.values && SystemTray.items.values.length > 0;
-        const bottomPadding = hasTrayApps ? 48 : 20;
+        const bottomPadding = 34;
         const padding = 12 + 10 + bottomPadding;
         return Math.max(160, headerH + gridH + padding + extraNotificationH);
     }
@@ -2995,7 +2994,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.leftMargin: 12
             anchors.rightMargin: 12
-            anchors.bottomMargin: bottomTrayShelf.hasTrayApps ? 46 : 14
+            anchors.bottomMargin: 34
 
             readonly property real gridSpacing: 10
             readonly property real unitColWidth: (width - (3 * gridSpacing)) / 4
@@ -3142,18 +3141,6 @@ Item {
                     }
                 }
             }
-        }
-
-        // Floating Dock alla base del Control Center per le App in Background (System Tray)
-        SystemTrayShelf {
-            id: bottomTrayShelf
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 8
-            anchors.horizontalCenter: parent.horizontalCenter
-            accentColor: controlCenter.accentColor
-            textFontFamily: controlCenter.textFontFamily
-            iconFontFamily: controlCenter.iconFontFamily
-            rootLayer: controlCenter
         }
     }
 
