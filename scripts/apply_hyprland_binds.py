@@ -11,7 +11,7 @@ import json
 import re
 import subprocess
 
-HOME = os.environ.get("HOME", "/home/lollo")
+HOME = os.path.expanduser("~")
 BINDS_LUA = os.path.join(HOME, ".config/hypr/moduli/binds.lua")
 SHORTCUTS_CONF_DYNAMIC = os.path.join(HOME, ".config/dynamic-island/hyprland-shortcuts.conf")
 SHORTCUTS_CONF_TIDE = os.path.join(HOME, ".config/tide-island/hyprland-shortcuts.conf")

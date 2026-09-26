@@ -95,7 +95,16 @@ FocusScope {
 
     Process {
         id: fontScannerProc
-        command: [root.homeDir + "/.config/quickshell/dynamic-island/scripts/scan_system_fonts.py"]
+        command: [
+            "python3", "-c",
+            "import os, subprocess; " +
+            "home = os.path.expanduser('~'); " +
+            "candidates = [" +
+            "os.path.join(home, '.config/quickshell/dynamic-island/scripts/scan_system_fonts.py'), " +
+            "os.path.join(os.getcwd(), 'scripts/scan_system_fonts.py')]; " +
+            "s = next((c for c in candidates if os.path.isfile(c)), None); " +
+            "subprocess.run(['python3', s]) if s else None"
+        ]
         running: false
         onExited: {
             systemFontsCacheView.reload();
