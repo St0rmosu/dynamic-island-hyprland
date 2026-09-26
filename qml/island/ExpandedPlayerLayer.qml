@@ -579,13 +579,16 @@ Item {
 
                         Item {
                             anchors.right: parent.right
+                            anchors.rightMargin: 4
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 32
+                            width: 36
                             height: 32
 
                             Rectangle {
                                 anchors.fill: parent
-                                radius: 8
+                                radius: 10
+                                topRightRadius: 16
+                                bottomRightRadius: 22
                                 color: lyricsArea.pressed ? Qt.rgba(255, 255, 255, 0.15) : (root.lyricsActive ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22) : (lyricsArea.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent"))
                                 border.width: root.lyricsActive ? 1 : 0
                                 border.color: root.lyricsActive ? root.accentColor : "transparent"
@@ -596,6 +599,7 @@ Item {
 
                             Text {
                                 anchors.centerIn: parent
+                                anchors.horizontalCenterOffset: -1
                                 text: "\uf130"
                                 color: root.lyricsActive ? root.accentColor : (lyricsArea.containsMouse ? "#ffffff" : "#8e8e93")
                                 font.pixelSize: 16
