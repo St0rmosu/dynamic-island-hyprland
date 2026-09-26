@@ -64,8 +64,21 @@ This project is a native, highly animated **Dynamic Island & Control Center** sh
   2. Implemented [`scripts/apply_hyprland_binds.py`](file:///home/lollo/Progetti/dynamic-island-hyprland/scripts/apply_hyprland_binds.py):
      - Safely parses and updates bindings in `~/.config/hypr/moduli/binds.lua`.
      - Automatically reloads Hyprland via `hyprctl reload` so recorded shortcuts take effect instantly.
+### F. Native System Tray Shelf in Control Center Header (`SystemTrayShelf.qml`)
+- **Requirement**: Allow apps running in background (like Discord, Steam, Telegram, Spotify) to stay minimized in the system tray, provide left-click window restore, right-click context menu, and unread notification indicators, integrated cleanly into the top capsule between clock and battery.
+- **Solution**:
+  1. Built [`qml/controlcenter/SystemTrayShelf.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/SystemTrayShelf.qml) powered by `Quickshell.Services.SystemTray` (StatusNotifierItem protocol):
+     - Automatically renders running background apps on frosted glass squircle chips (`26x26px`, `radius: 7`).
+     - Includes pulsating green attention dots (`#30d158`) on icons with unread pings/notifications.
+     - Hover tooltips showing app titles and statuses.
+     - Left click activates/restores the app window (`modelData.activate()`).
+     - Right click opens the native context menu (`QsMenuOpener`) with hover-styled entries and separators.
+     - Middle click triggers secondary activation; mouse wheel forwards scroll events.
+  2. Integrated `SystemTrayShelf` directly into the center of `headerComponent` in [`ControlCenterLayer.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/qml/controlcenter/ControlCenterLayer.qml):
+     - Dynamically occupies the previously vacant space between the time label on the left and battery indicator on the right.
+     - Zero space footprint on the rest of the Control Center layout; automatically hides when no tray apps are active.
 
-### E. 11-Point Polish & Portability Overhaul (User Screenshots & Directives)
+### G. 11-Point Polish & Portability Overhaul (User Screenshots & Directives)
 1. **Dynamic Island Layer Exclusive Zone**:
    - In [`DynamicIslandWindow.qml`](file:///home/lollo/Progetti/dynamic-island-hyprland/DynamicIslandWindow.qml), set `exclusiveZone: dynamicConfig.islandExclusiveZone` (default 48px), reserving space at the top so tiled windows never slide underneath the bar, functioning identically to Waybar.
 2. **Settings App Window Geometry**:

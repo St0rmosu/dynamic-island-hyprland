@@ -1714,17 +1714,15 @@ Item {
         Item {
             anchors.fill: parent
 
-            Item {
+            Row {
+                id: timeAndDateRow
                 anchors.left: parent.left
-                anchors.leftMargin: 6
+                anchors.leftMargin: 8
                 anchors.verticalCenter: parent.verticalCenter
-                width: 220
-                height: parent.height
+                spacing: 10
 
                 Text {
                     id: timeLabel
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
                     text: controlCenter.currentTime
                     color: controlCenter.accentColor
                     font.pixelSize: 19
@@ -1738,8 +1736,6 @@ Item {
                 }
 
                 Text {
-                    anchors.left: timeLabel.right
-                    anchors.leftMargin: 10
                     anchors.baseline: timeLabel.baseline
                     text: controlCenter.currentDateLabel
                     color: controlCenter.textSecondary
@@ -1749,9 +1745,19 @@ Item {
                 }
             }
 
+            // System Tray al centro della capsula superiore
+            SystemTrayShelf {
+                id: headerTrayShelf
+                anchors.centerIn: parent
+                accentColor: controlCenter.accentColor
+                textFontFamily: controlCenter.textFontFamily
+                iconFontFamily: controlCenter.iconFontFamily
+            }
+
             Row {
+                id: batteryIndicatorRow
                 anchors.right: parent.right
-                anchors.rightMargin: 2
+                anchors.rightMargin: 4
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
 
