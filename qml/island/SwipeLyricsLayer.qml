@@ -32,8 +32,9 @@ Item {
     readonly property real clampedProgress: Math.max(0, Math.min(1, transitionProgress))
     readonly property bool lyricMostlyVisible: clampedProgress > 0.92
     readonly property real textWidth: Math.max(0, width - horizontalPadding * 2)
-    readonly property real lyricTextWidth: Math.max(0, textWidth - cavaBars.implicitWidth - visualSpacing)
-    readonly property real lyricViewportWidth: Math.max(0, textWidth - cavaBars.implicitWidth - visualSpacing - 4)
+    readonly property real contentGroupWidth: Math.ceil(lyricMetrics.advanceWidth) + visualSpacing + cavaBars.implicitWidth
+    readonly property real groupMargin: Math.max(0, (textWidth - contentGroupWidth) / 2)
+    readonly property real lyricViewportWidth: Math.max(0, textWidth - groupMargin * 2 - cavaBars.implicitWidth - visualSpacing)
     readonly property real lyricOverflow: Math.max(0, Math.ceil(lyricMetrics.advanceWidth) - lyricViewportWidth)
     readonly property real centeredX: horizontalPadding
     readonly property real lyricHiddenLeftX: -textWidth - hiddenLeftPadding
@@ -45,10 +46,8 @@ Item {
     readonly property real timeX: centeredX + clampedProgress * dragDistance
     readonly property real lyricBaselineY: lyricBaselineGuide.y + lyricBaselineGuide.baselineOffset
     readonly property real timeBaselineY: timeBaselineGuide.y + timeBaselineGuide.baselineOffset
-    readonly property real visibleLyricWidth: Math.min(lyricTextWidth, Math.max(0, lyricMetrics.advanceWidth))
-    readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
-    readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
-    readonly property real lyricPadding: horizontalPadding * 2 + cavaBars.implicitWidth + visualSpacing + 36
+    readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
+    readonly property real lyricPadding: horizontalPadding * 2 + cavaBars.implicitWidth + visualSpacing
     readonly property real preferredWidth: Math.max(minimumWidth, Math.min(maximumWidth, Math.ceil(lyricMetrics.advanceWidth) + lyricPadding))
 
     onActiveLyricTextChanged: {
@@ -193,7 +192,7 @@ Item {
             id: lyricViewport
 
             anchors.left: parent.left
-            anchors.leftMargin: 4
+            anchors.leftMargin: root.groupMargin
             anchors.right: cavaBars.left
             anchors.rightMargin: root.visualSpacing
             height: parent.height
@@ -201,9 +200,9 @@ Item {
 
             Text {
                 visible: root.previousLyricText !== ""
-                x: (parent.width - implicitWidth) / 2
+                x: 0
                 y: root.lyricBaselineY - baselineOffset - 14 * root.lyricChangeProgress
-                width: Math.max(parent.width, implicitWidth)
+                width: parent.width
                 text: root.previousLyricText
                 color: "white"
                 opacity: 1 - root.lyricChangeProgress
@@ -211,14 +210,14 @@ Item {
                 font.family: root.textFontFamily
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.15
-                horizontalAlignment: Text.AlignHCenter
+                horizontalAlignment: Text.AlignLeft
                 elide: Text.ElideNone
                 wrapMode: Text.NoWrap
             }
 
             Text {
                 visible: root.activeLyricText !== ""
-                x: root.lyricOverflow > 0 ? -root.marqueeOffset : (parent.width - implicitWidth) / 2
+                x: root.lyricOverflow > 0 ? -root.marqueeOffset : 0
                 y: root.lyricBaselineY - baselineOffset + (root.previousLyricText !== "" ? 12 * (1 - root.lyricChangeProgress) : 0)
                 width: root.lyricOverflow > 0 ? implicitWidth : parent.width
                 text: root.activeLyricText
@@ -228,7 +227,7 @@ Item {
                 font.family: root.textFontFamily
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.15
-                horizontalAlignment: root.lyricOverflow > 0 ? Text.AlignLeft : Text.AlignHCenter
+                horizontalAlignment: Text.AlignLeft
                 elide: Text.ElideNone
                 wrapMode: Text.NoWrap
             }
@@ -239,6 +238,7 @@ Item {
             id: cavaBars
 
             anchors.right: parent.right
+            anchors.rightMargin: root.groupMargin
             anchors.verticalCenter: parent.verticalCenter
             levels: root.cavaLevels
             barCount: 5
