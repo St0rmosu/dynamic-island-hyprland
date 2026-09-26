@@ -1502,8 +1502,8 @@ PanelWindow {
         readonly property real rightSwipeProgress: Math.max(0, swipeTransitionProgress)
         readonly property var customLeftItems: systemState.customLeftItems
         readonly property bool hasCustomLeftItems: systemState.hasCustomLeftItems
-        readonly property bool customSwipeVisible: !root.overviewVisible && hasCustomLeftItems && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0) || (islandState === "split" && splitOriginSide === "left") || (islandState === "long_capsule" && (workspaceOriginSide === "left" || swipeTransitionProgress < 0))))
-        readonly property bool lyricsSwipeVisible: !root.overviewVisible && !expandedLayerVisible && !controlCenterLayerVisible && !powerMenuLayerVisible && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible && !applicationLauncherLayerVisible && !clipboardLayerVisible && !settingsAppLayerVisible && !fileShelfLayerVisible && !polkitLayerVisible && !screenSharePickerLayerVisible && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0) || (islandState === "split" && splitOriginSide === "right") || (islandState === "long_capsule" && (workspaceOriginSide === "right" || swipeTransitionProgress > 0))))
+        readonly property bool customSwipeVisible: !root.overviewVisible && islandState !== "long_capsule" && hasCustomLeftItems && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0) || (islandState === "split" && splitOriginSide === "left")))
+        readonly property bool lyricsSwipeVisible: !root.overviewVisible && islandState !== "long_capsule" && !expandedLayerVisible && !controlCenterLayerVisible && !powerMenuLayerVisible && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible && !applicationLauncherLayerVisible && !clipboardLayerVisible && !settingsAppLayerVisible && !fileShelfLayerVisible && !polkitLayerVisible && !screenSharePickerLayerVisible && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0) || (islandState === "split" && splitOriginSide === "right")))
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
         readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
@@ -2406,16 +2406,16 @@ PanelWindow {
             if (root.autoHideSuppressesTransientReveal)
                 return ;
 
-            if (islandState === "control_center" || islandState === "notification" || islandState === "discord_call")
+            if (islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
-            const animateFromSide = currentTransientOriginSide();
             clearTransientCapsule();
             sideTransientRestoreTimer.stop();
-            workspaceOriginSide = animateFromSide;
+            workspaceOriginSide = "none";
             splitOriginSide = "none";
             islandState = "long_capsule";
             swipeTransitionProgress = 0;
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             restartAutoHideTimer();
         }
 
@@ -3451,7 +3451,7 @@ PanelWindow {
                         textPixelSize: root.bodyFontSize
                         minimumWidth: 220
                         maximumWidth: Math.max(220, root.width - 48)
-                        transitionProgress: (islandContainer.islandState === "lyrics" || islandContainer.restingState === "lyrics") ? 1 : islandContainer.rightSwipeProgress
+                        transitionProgress: (islandContainer.islandState === "lyrics" || (islandContainer.restingState === "lyrics" && islandContainer.islandState !== "long_capsule")) ? 1 : islandContainer.rightSwipeProgress
                         recordingActive: islandContainer.screenRecordingActive
                         showSecondaryText: islandContainer.workspaceOriginSide !== "right" && islandContainer.splitOriginSide !== "right"
                         showCondition: true
@@ -3515,6 +3515,7 @@ PanelWindow {
                 active: !root.overviewVisible
                 asynchronous: false
                 visible: active && islandContainer.islandState === "long_capsule"
+                z: 4
 
                 sourceComponent: Component {
                     WorkspaceLayer {
@@ -3522,10 +3523,10 @@ PanelWindow {
                         displayText: "Workspace " + islandContainer.currentWs
                         textFontFamily: root.textFontFamily
                         textPixelSize: root.bodyFontSize
-                        animateVisibility: islandContainer.restingState === "normal"
-                        transitionProgress: islandContainer.swipeTransitionProgress
+                        animateVisibility: true
+                        transitionProgress: 0
                         showCondition: islandContainer.islandState === "long_capsule"
-                        slideDirection: islandContainer.workspaceOriginSide
+                        slideDirection: "none"
                     }
 
                 }
