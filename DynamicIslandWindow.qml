@@ -364,6 +364,9 @@ PanelWindow {
         var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
         if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
             h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + 16));
+            if (trayFloatingIsland.menuVisible) {
+                h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + 16));
+            }
         }
         return h;
     }
