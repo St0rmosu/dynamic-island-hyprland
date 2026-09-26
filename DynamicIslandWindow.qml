@@ -979,7 +979,7 @@ PanelWindow {
             islandContainer.showNotificationCapsule("Schermo", "Condivisione Schermo", "Trasmissione video attiva", "\u{F0379}", "#af52de");
 
     }
-    color: StyleTokens.transparent
+    color: "transparent"
     implicitHeight: Math.max(root.requestedWindowHeight, root.retainedWindowHeight)
     onRequestedWindowHeightChanged: root.reconcileWindowHeight()
     Component.onCompleted: {
@@ -1501,6 +1501,7 @@ PanelWindow {
         readonly property bool canShowSideSwipe: false
         readonly property real rightSwipeProgress: Math.max(0, swipeTransitionProgress)
         readonly property var customLeftItems: systemState.customLeftItems
+        readonly property bool hasCustomLeftItems: systemState.hasCustomLeftItems
         readonly property bool customSwipeVisible: !root.overviewVisible
             && islandState !== "long_capsule"
             && islandState !== "split"

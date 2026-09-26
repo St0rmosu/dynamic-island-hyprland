@@ -227,9 +227,8 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 ### 6. Media Player & Synced Lyrics
 
 - **Satellite Music Pill**: Appears automatically alongside the clock when media is playing, showing album artwork in a compact satellite capsule.
-- **Expanded Player**: Fluidly expands into a full player with album artwork, title, artist, live playback progress bar, and animated audio equalizer bars.
-- **Live Synced Lyrics**: Powered by MPRIS and the native `lyricsmpris` C++ daemon, displaying the current song lyric line synchronized in real time inside the compact island capsule when swiping left.
-- **Interactive Timer**: Integrated countdown timer with circular progress gauge and quick presets.
+- **Expanded Player**: Fluidly expands into a full player with album artwork, title, artist, live playback progress bar, concentric lyrics button, and animated audio equalizer bars.
+- **Live Synced Lyrics**: Powered by MPRIS and the native `lyricsmpris` C++ daemon, displaying the current song lyric line synchronized in real time inside the compact island capsule with auto-marquee and full-sentence display.
 
 <table>
   <tr>
@@ -239,21 +238,16 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
       <sub><b>Satellite Music Pill</b> — Compact album art pill docked beside the island</sub>
     </td>
     <td align="center" width="50%">
-      <img src="assets/gifs/expanded_media_player.gif" alt="Expanded Media Player" />
-      <br/>
-      <sub><b>Expanded Media Player</b> — Full controls, timeline scrubber, and CAVA visualizer</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
       <img src="assets/gifs/synced_lyrics.gif" alt="Live Synced Lyrics" />
       <br/>
       <sub><b>Live Synced Lyrics</b> — Real-time line progression via MPRIS & lyricsmpris</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="assets/gifs/countdown_timer.gif" alt="Countdown Timer" />
+  </tr>
+  <tr>
+    <td align="center" colspan="2" width="100%">
+      <img src="assets/gifs/expanded_media_player.gif" alt="Expanded Media Player" />
       <br/>
-      <sub><b>Interactive Countdown Timer</b> — Quick time picker with circular progress ring</sub>
+      <sub><b>Expanded Media Player</b> — Full controls, timeline scrubber, concentric lyrics toggle, and CAVA visualizer</sub>
     </td>
   </tr>
 </table>
