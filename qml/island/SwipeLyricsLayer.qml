@@ -19,7 +19,7 @@ Item {
     property real transitionProgress: 0
     property int textPixelSize: userConfig.bodyFontSize
     property real minimumWidth: 220
-    property real maximumWidth: minimumWidth
+    property real maximumWidth: 1600
     property real horizontalPadding: 14
     property real visualSpacing: 14
     property real hiddenLeftPadding: 18
@@ -28,10 +28,13 @@ Item {
     property string previousLyricText: ""
     property real lyricChangeProgress: 1
     property int recordingDotSpacing: 12
+    property real marqueeOffset: 0
     readonly property real clampedProgress: Math.max(0, Math.min(1, transitionProgress))
     readonly property bool lyricMostlyVisible: clampedProgress > 0.92
     readonly property real textWidth: Math.max(0, width - horizontalPadding * 2)
     readonly property real lyricTextWidth: Math.max(0, textWidth - cavaBars.implicitWidth - visualSpacing)
+    readonly property real lyricViewportWidth: Math.max(0, textWidth - cavaBars.implicitWidth - visualSpacing - 4)
+    readonly property real lyricOverflow: Math.max(0, Math.ceil(lyricMetrics.advanceWidth) - lyricViewportWidth)
     readonly property real centeredX: horizontalPadding
     readonly property real lyricHiddenLeftX: -textWidth - hiddenLeftPadding
     readonly property real timeHiddenRightX: width + hiddenRightPadding
@@ -45,7 +48,13 @@ Item {
     readonly property real visibleLyricWidth: Math.min(lyricTextWidth, Math.max(0, lyricMetrics.advanceWidth))
     readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
     readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
-    readonly property real preferredWidth: Math.max(minimumWidth, Math.min(Math.max(minimumWidth, maximumWidth), lyricMetrics.advanceWidth + horizontalPadding * 2 + cavaBars.implicitWidth + visualSpacing))
+    readonly property real lyricPadding: horizontalPadding * 2 + cavaBars.implicitWidth + visualSpacing + 36
+    readonly property real preferredWidth: Math.max(minimumWidth, Math.min(maximumWidth, Math.ceil(lyricMetrics.advanceWidth) + lyricPadding))
+
+    onActiveLyricTextChanged: {
+        marqueeOffset = 0;
+        marqueeAnimation.restart();
+    }
 
     onLyricTextChanged: {
         if (lyricText === activeLyricText)
@@ -91,6 +100,7 @@ Item {
         font.family: textFontFamily
         font.pixelSize: textPixelSize
         font.weight: Font.DemiBold
+        font.letterSpacing: -0.15
         text: activeLyricText !== "" ? activeLyricText : lyricText
     }
 
@@ -147,6 +157,30 @@ Item {
 
     }
 
+    SequentialAnimation {
+        id: marqueeAnimation
+
+        running: root.lyricOverflow > 0 && root.lyricChangeProgress >= 1
+        loops: Animation.Infinite
+
+        PauseAnimation { duration: 1200 }
+        NumberAnimation {
+            target: root
+            property: "marqueeOffset"
+            to: root.lyricOverflow + 8
+            duration: Math.max(1200, root.lyricOverflow * 28)
+            easing.type: Easing.InOutQuad
+        }
+        PauseAnimation { duration: 1500 }
+        NumberAnimation {
+            target: root
+            property: "marqueeOffset"
+            to: 0
+            duration: Math.max(800, root.lyricOverflow * 16)
+            easing.type: Easing.InOutQuad
+        }
+    }
+
     Item {
         id: lyricContent
 
@@ -167,8 +201,9 @@ Item {
 
             Text {
                 visible: root.previousLyricText !== ""
+                x: (parent.width - implicitWidth) / 2
                 y: root.lyricBaselineY - baselineOffset - 14 * root.lyricChangeProgress
-                width: parent.width
+                width: Math.max(parent.width, implicitWidth)
                 text: root.previousLyricText
                 color: "white"
                 opacity: 1 - root.lyricChangeProgress
@@ -177,14 +212,15 @@ Item {
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.15
                 horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
+                elide: Text.ElideNone
                 wrapMode: Text.NoWrap
             }
 
             Text {
                 visible: root.activeLyricText !== ""
+                x: root.lyricOverflow > 0 ? -root.marqueeOffset : (parent.width - implicitWidth) / 2
                 y: root.lyricBaselineY - baselineOffset + (root.previousLyricText !== "" ? 12 * (1 - root.lyricChangeProgress) : 0)
-                width: parent.width
+                width: root.lyricOverflow > 0 ? implicitWidth : parent.width
                 text: root.activeLyricText
                 color: "white"
                 opacity: root.previousLyricText !== "" ? root.lyricChangeProgress : 1
@@ -192,8 +228,8 @@ Item {
                 font.family: root.textFontFamily
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.15
-                horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
+                horizontalAlignment: root.lyricOverflow > 0 ? Text.AlignLeft : Text.AlignHCenter
+                elide: Text.ElideNone
                 wrapMode: Text.NoWrap
             }
 

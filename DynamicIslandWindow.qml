@@ -2464,7 +2464,8 @@ PanelWindow {
             if (!view)
                 return ;
 
-            customCapsuleWidth = Math.max(220, Math.min(root.width - 48, view.preferredWidth));
+            const screenW = root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920);
+            customCapsuleWidth = Math.max(220, Math.min(screenW - 48, view.preferredWidth));
         }
 
         function syncLyricsCapsuleWidth() {
@@ -2472,7 +2473,8 @@ PanelWindow {
             if (!view)
                 return ;
 
-            lyricsCapsuleWidth = Math.max(220, Math.min(root.width - 48, view.preferredWidth));
+            const screenW = root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920);
+            lyricsCapsuleWidth = Math.max(220, Math.min(screenW - 48, view.preferredWidth));
         }
 
         anchors.fill: parent
@@ -3459,7 +3461,7 @@ PanelWindow {
                         textPixelSize: root.bodyFontSize
                         iconPixelSize: root.iconFontSize
                         minimumWidth: 220
-                        maximumWidth: Math.max(220, root.width - 48)
+                        maximumWidth: Math.max(220, (root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920)) - 48)
                         transitionProgress: islandContainer.swipeTransitionProgress
                         recordingActive: islandContainer.screenRecordingActive
                         showSecondaryText: islandContainer.workspaceOriginSide !== "left" && islandContainer.splitOriginSide !== "left"
@@ -3490,7 +3492,7 @@ PanelWindow {
                         timeFontFamily: root.timeFontFamily
                         textPixelSize: root.bodyFontSize
                         minimumWidth: 220
-                        maximumWidth: Math.max(220, root.width - 48)
+                        maximumWidth: Math.max(600, (root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920)) - 48)
                         transitionProgress: (islandContainer.islandState === "lyrics" || (islandContainer.restingState === "lyrics" && islandContainer.islandState === "lyrics")) ? 1 : (islandContainer.islandState === "normal" ? islandContainer.rightSwipeProgress : 0)
                         recordingActive: islandContainer.screenRecordingActive
                         showSecondaryText: true
