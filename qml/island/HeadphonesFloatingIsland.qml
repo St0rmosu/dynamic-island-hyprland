@@ -98,8 +98,9 @@ Rectangle {
         }
     }
 
-    readonly property bool isEarConnected: (nothingBtDevice && nothingBtDevice.connected)
-        || Boolean(headphonesData && headphonesData.connected)
+    property bool forceHidden: false
+    readonly property bool isEarConnected: !forceHidden && ((nothingBtDevice && nothingBtDevice.connected)
+        || Boolean(headphonesData && headphonesData.connected))
 
     visible: isEarConnected && opacity > 0.01
     opacity: isEarConnected ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0

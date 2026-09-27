@@ -729,6 +729,11 @@ PanelWindow {
         }
     }
 
+    function setHeadphonesHidden(hidden) {
+        if (headphonesFloatingIsland)
+            headphonesFloatingIsland.forceHidden = hidden;
+    }
+
     function showTimerWindow() {
         islandContainer.showExpandedTimerPage();
     }

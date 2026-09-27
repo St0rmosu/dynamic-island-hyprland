@@ -589,6 +589,13 @@ Scope {
             });
         }
 
+        function setHeadphonesHidden(hidden: bool) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.setHeadphonesHidden)
+                    window.setHeadphonesHidden(hidden);
+            });
+        }
+
         function toggleControlCenter() {
             shellRoot.forFocusedWindow((window) => {
                 return window.toggleControlCenterWindow();

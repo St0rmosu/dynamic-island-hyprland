@@ -69,18 +69,6 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="assets/gifs/custom_info_date.gif" alt="Flip Clock and Date Transition" />
-      <br/>
-      <sub><b>Flip Clock & Info Transition</b> — 60 FPS fluid horizontal swipe and upward rolling digits</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="assets/screenshots/custom_info_date.png" alt="Resting Island Capsule" />
-      <br/>
-      <sub><b>Resting Island Capsule</b> — Minimalist matte glass pill centered at the top</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
       <img src="assets/gifs/headphones_compact_island.gif" alt="Docked Headphones Satellite Pill" />
       <br/>
       <sub><b>Headphones Satellite Pill</b> — Docked Nothing Ear capsule with auto-balancing center of mass</sub>
