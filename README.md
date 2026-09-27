@@ -64,6 +64,7 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 #### Resting Capsule, Flip Clock & Satellite Balancing
 - **Flip Clock Rolling Digits**: As the time advances, changed digits animate upward in a synchronized rolling odometer effect.
 - **Auto-Balancing Satellites**: When satellite pills dock on one side (e.g. active call or connected headphones), the island smoothly glides along the X-axis to keep the visual center of mass aligned at `50%`.
+- **Bluetooth Headphones Satellite & Controls**: Docked Nothing Ear capsule displaying real-time battery levels for Left, Right, and Case, ANC modes (Noise Cancelling, Transparency, Off), LDAC codec, Bass Boost, and low-latency mode.
 
 <table>
   <tr>
@@ -76,6 +77,18 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
       <img src="assets/screenshots/custom_info_date.png" alt="Resting Island Capsule" />
       <br/>
       <sub><b>Resting Island Capsule</b> — Minimalist matte glass pill centered at the top</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/gifs/headphones_compact_island.gif" alt="Docked Headphones Satellite Pill" />
+      <br/>
+      <sub><b>Headphones Satellite Pill</b> — Docked Nothing Ear capsule with auto-balancing center of mass</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/gifs/expanded_headphones.gif" alt="Expanded Nothing Ear Manager" />
+      <br/>
+      <sub><b>Expanded Headphones Card</b> — Per-earbud + case battery, ANC modes, LDAC, and Bass Boost</sub>
     </td>
   </tr>
 </table>

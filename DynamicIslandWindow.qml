@@ -721,6 +721,14 @@ PanelWindow {
 
     }
 
+    function toggleHeadphonesWindow() {
+        if (headphonesFloatingIsland) {
+            headphonesFloatingIsland.isExpanded = !headphonesFloatingIsland.isExpanded;
+            if (headphonesFloatingIsland.isExpanded)
+                headphonesFloatingIsland.fetchStatus(true);
+        }
+    }
+
     function showTimerWindow() {
         islandContainer.showExpandedTimerPage();
     }

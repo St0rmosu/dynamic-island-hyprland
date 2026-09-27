@@ -583,6 +583,12 @@ Scope {
             });
         }
 
+        function toggleHeadphones() {
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleHeadphonesWindow();
+            });
+        }
+
         function toggleControlCenter() {
             shellRoot.forFocusedWindow((window) => {
                 return window.toggleControlCenterWindow();
