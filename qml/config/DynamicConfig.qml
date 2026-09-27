@@ -90,6 +90,9 @@ Item {
     property int animationFps: 60
     property string motionProfile: "snappy"
 
+    // ── 6. Biometrics & Security ────────────────────────────────────────
+    property bool hasFingerprintReader: false
+
     // ── Internals & State ──────────────────────────────────────────────
     property var rawMap: ({})
     property bool isLoaded: false
@@ -311,6 +314,9 @@ Item {
             if (data.animationFps !== undefined) root.animationFps = Number(data.animationFps) || 60;
             if (data.motionProfile !== undefined) root.motionProfile = String(data.motionProfile);
 
+            // Biometrics & Security
+            if (data.hasFingerprintReader !== undefined) root.hasFingerprintReader = Boolean(data.hasFingerprintReader);
+
             root.isLoaded = true;
             root.configReloaded();
         } catch(e) {
@@ -404,7 +410,8 @@ Item {
 
                 transitionDuration: root.transitionDuration,
                 animationFps: root.animationFps,
-                motionProfile: root.motionProfile
+                motionProfile: root.motionProfile,
+                hasFingerprintReader: root.hasFingerprintReader
             };
 
             const jsonStr = JSON.stringify(payload);

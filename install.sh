@@ -21,6 +21,7 @@ INTERACTIVE=true
 SETUP_WALLPAPER=true
 WALLPAPER_BACKEND="awww"
 SETUP_AUTOSTART=true
+FINGERPRINT_READER=""
 
 # Parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -31,6 +32,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         -y|--yes|--non-interactive)
             INTERACTIVE=false
+            shift
+            ;;
+        --fingerprint)
+            FINGERPRINT_READER=true
+            shift
+            ;;
+        --no-fingerprint)
+            FINGERPRINT_READER=false
             shift
             ;;
         --wallpaper-backend)
@@ -47,7 +56,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./install.sh [--system] [-y|--yes] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
+            echo "Usage: ./install.sh [--system] [-y|--yes] [--fingerprint|--no-fingerprint] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
             exit 1
             ;;
     esac
@@ -206,6 +215,50 @@ if [ ! -f "$HOME/.config/dynamic-island/userconfig.json" ]; then
 fi
 
 # ------------------------------------------------------------------------------
+# Fingerprint Reader Configuration
+# ------------------------------------------------------------------------------
+setup_fingerprint_reader() {
+    echo ""
+    echo "=== Fingerprint Reader Setup ==="
+
+    local HAS_FP=false
+    if [ -n "${FINGERPRINT_READER}" ]; then
+        HAS_FP="${FINGERPRINT_READER}"
+    elif [ "${INTERACTIVE}" = true ]; then
+        echo "Do you have a fingerprint reader? [y/N]"
+        read -r -p "> " FP_CHOICE
+        if [[ "${FP_CHOICE}" =~ ^[Yy] ]]; then
+            HAS_FP=true
+        else
+            HAS_FP=false
+        fi
+    else
+        HAS_FP=false
+    fi
+
+    local USER_CFG="$HOME/.config/dynamic-island/userconfig.json"
+    mkdir -p "$HOME/.config/dynamic-island"
+
+    if [ -f "${USER_CFG}" ]; then
+        if command -v jq >/dev/null 2>&1; then
+            jq --argjson fp "${HAS_FP}" '.hasFingerprintReader = $fp' "${USER_CFG}" > "${USER_CFG}.tmp" && mv "${USER_CFG}.tmp" "${USER_CFG}"
+        else
+            python3 -c "import json; p='${USER_CFG}'; f=open(p); d=json.load(f); f.close(); d['hasFingerprintReader']=${HAS_FP}; f=open(p,'w'); json.dump(d,f,indent=2); f.close()" 2>/dev/null || true
+        fi
+    else
+        echo "{\"dynamicIslandPrimaryAction\":\"toggleControlCenter\",\"hasFingerprintReader\":${HAS_FP}}" > "${USER_CFG}"
+    fi
+
+    if [ "${HAS_FP}" = true ]; then
+        echo "✓ Fingerprint reader enabled for Dynamic Island Polkit authentication."
+    else
+        echo "✓ Fingerprint reader disabled. Polkit will use standard password authentication."
+    fi
+}
+
+setup_fingerprint_reader
+
+# ------------------------------------------------------------------------------
 # 3. Deploy Runtime Config to ~/.config/quickshell/dynamic-island
 # ------------------------------------------------------------------------------
 echo ""
@@ -218,6 +271,7 @@ if [ "${SCRIPT_DIR}" != "${QS_RUNTIME_DIR}" ]; then
     cp -rf "${SCRIPT_DIR}/shell.qml" "${QS_RUNTIME_DIR}/"
     cp -rf "${SCRIPT_DIR}/DynamicIslandWindow.qml" "${QS_RUNTIME_DIR}/"
     cp -rf "${SCRIPT_DIR}/qml" "${QS_RUNTIME_DIR}/"
+    [ -d "${SCRIPT_DIR}/scripts" ] && cp -rf "${SCRIPT_DIR}/scripts" "${QS_RUNTIME_DIR}/"
     [ -d "${SCRIPT_DIR}/assets" ] && cp -rf "${SCRIPT_DIR}/assets" "${QS_RUNTIME_DIR}/"
     [ -d "${SCRIPT_DIR}/avatars" ] && cp -rf "${SCRIPT_DIR}/avatars" "${QS_RUNTIME_DIR}/"
     echo "Runtime files successfully synced."

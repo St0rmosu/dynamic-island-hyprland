@@ -46,8 +46,12 @@ FocusScope {
     property bool userChosePassword: false
 
     onHasFingerprintSensorChanged: {
-        if (hasFingerprintSensor && !userChosePassword) {
-            fingerprintModeActive = true;
+        if (hasFingerprintSensor) {
+            if (!userChosePassword) {
+                fingerprintModeActive = true;
+            }
+        } else {
+            fingerprintModeActive = false;
         }
     }
 
@@ -157,6 +161,13 @@ FocusScope {
             authState = "idle";
             passInput.enabled = true;
             passInput.text = "";
+            if (root.hasFingerprintSensor) {
+                root.fingerprintModeActive = true;
+                root.userChosePassword = false;
+            } else {
+                root.fingerprintModeActive = false;
+                root.userChosePassword = true;
+            }
             fpDetectorProc.running = true;
             focusDelayTimer.restart();
         } else {
@@ -179,6 +190,10 @@ FocusScope {
     }
 
     Component.onCompleted: {
+        if (root.hasFingerprintSensor) {
+            root.fingerprintModeActive = true;
+            root.userChosePassword = false;
+        }
         fpDetectorProc.running = true;
         root.grabKeyboardFocus();
     }
@@ -305,11 +320,11 @@ FocusScope {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: root.fingerprintModeActive ? 80 : 66
+        anchors.topMargin: root.fingerprintModeActive ? 78 : 62
         anchors.bottomMargin: 8
         anchors.leftMargin: 16
         anchors.rightMargin: 16
-        spacing: 8
+        spacing: 6
         opacity: root.isSuccess ? 0 : 1
         visible: !root.isSuccess
 
@@ -516,6 +531,7 @@ FocusScope {
         Item {
             width: parent.width
             height: 26
+            visible: root.hasFingerprintSensor
 
             Rectangle {
                 anchors.centerIn: parent

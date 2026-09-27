@@ -1357,7 +1357,15 @@ PanelWindow {
         running: false
     }
 
-    property bool hasFingerprintSensor: false
+    property bool hasFingerprintSensor: {
+        if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined) {
+            return !!dynamicConfig.hasFingerprintReader;
+        }
+        if (userConfig && userConfig.hasFingerprintReader !== undefined) {
+            return !!userConfig.hasFingerprintReader;
+        }
+        return false;
+    }
 
     Process {
         id: rootFpDetectorProc
@@ -1371,6 +1379,8 @@ PanelWindow {
                 try {
                     const res = JSON.parse(data.trim());
                     if (res && res.available !== undefined) {
+                        if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined) return;
+                        if (userConfig && userConfig.hasFingerprintReader !== undefined) return;
                         root.hasFingerprintSensor = !!res.available;
                     }
                 } catch(e) {}
@@ -3142,7 +3152,7 @@ PanelWindow {
                     if (islandContainer.polkitSuccessMorph)
                         return 58;
 
-                    return 180;
+                    return 186;
                 case "screen_share_picker":
                     return screenSharePickerLoader.item ? screenSharePickerLoader.item.preferredHeight : 220;
                 case "expanded":
