@@ -3092,7 +3092,7 @@ PanelWindow {
                     if (islandContainer.polkitSuccessMorph)
                         return 58;
 
-                    return 400;
+                    return 380;
                 case "screen_share_picker":
                     return screenSharePickerLoader.item ? screenSharePickerLoader.item.preferredWidth : 620;
                 case "expanded":
@@ -3142,7 +3142,7 @@ PanelWindow {
                     if (islandContainer.polkitSuccessMorph)
                         return 58;
 
-                    return 188;
+                    return 180;
                 case "screen_share_picker":
                     return screenSharePickerLoader.item ? screenSharePickerLoader.item.preferredHeight : 220;
                 case "expanded":
@@ -3185,7 +3185,7 @@ PanelWindow {
                     if (islandContainer.polkitSuccessMorph)
                         return 29;
 
-                    return 32;
+                    return 34;
                 case "screen_share_picker":
                     return 32;
                 case "expanded":

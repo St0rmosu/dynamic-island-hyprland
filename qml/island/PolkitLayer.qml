@@ -279,17 +279,18 @@ FocusScope {
         }
     }
 
-    // Top Section: Touch ID Animated Fingerprint Glyph
+    // Top Section: Touch ID Animated Fingerprint Glyph (Round Biometric Sensor)
     FingerprintGlyph {
         id: fingerprintIcon
-        size: 48
+        size: 56
         z: 5
         visible: root.fingerprintModeActive
         anchors.horizontalCenter: parent.horizontalCenter
-        y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 10
+        y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 14
         glyphColor: "#ffffff"
         accentColor: root.accentColor
         stateMode: root.faceIdMode
+        onClicked: root.triggerFingerprintTouch()
 
         Behavior on y {
             NumberAnimation {
@@ -304,11 +305,11 @@ FocusScope {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: 66
+        anchors.topMargin: root.fingerprintModeActive ? 80 : 66
         anchors.bottomMargin: 8
         anchors.leftMargin: 16
         anchors.rightMargin: 16
-        spacing: 6
+        spacing: 8
         opacity: root.isSuccess ? 0 : 1
         visible: !root.isSuccess
 
@@ -322,25 +323,25 @@ FocusScope {
         // Title and Subtitle Text
         Column {
             width: parent.width
-            spacing: 2
+            spacing: 3
 
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: {
                     if (root.isSuccess) {
-                        return root.fingerprintModeActive ? "Autenticato con Touch ID" : "Autenticato con Face ID";
+                        return root.fingerprintModeActive ? "Touch ID Confermato" : "Autenticato con Face ID";
                     }
                     if (root.isFailed) {
                         return root.fingerprintModeActive
-                            ? "Impronta non riconosciuta. Riprova."
+                            ? "Impronta non riconosciuta"
                             : (root.supplementaryMessage !== "" ? root.supplementaryMessage : "Password errata. Riprova.");
                     }
                     if (root.isVerifying) {
                         return root.fingerprintModeActive ? "Verifica impronta in corso..." : "Verifica autorizzazione...";
                     }
                     if (root.fingerprintModeActive) {
-                        return "Tocca il sensore di impronte";
+                        return "Touch ID (Telefono)";
                     }
                     return root.displayMessage;
                 }
@@ -364,9 +365,7 @@ FocusScope {
                             : "Riprova con la password corretta";
                     }
                     if (root.fingerprintModeActive) {
-                        return root.displayMessage !== "Autenticazione richiesta"
-                            ? root.displayMessage
-                            : "Poggia il dito registrato per autenticarti";
+                        return "Poggia il dito per sbloccare";
                     }
                     return "Inserisci la password";
                 }
@@ -374,51 +373,6 @@ FocusScope {
                 font.family: root.textFontFamily
                 font.pixelSize: 13
                 elide: Text.ElideRight
-            }
-        }
-
-        // 1. Touch ID Sensory Card (Shown when fingerprint mode is active)
-        Rectangle {
-            id: touchSensorCard
-            visible: root.fingerprintModeActive
-            width: parent.width
-            height: 42
-            radius: 13
-            color: touchCardMouse.containsMouse ? "#1c1f28" : "#16181e"
-            border.width: root.isVerifying ? 1.5 : 1
-            border.color: root.isFailed ? "#ff453a" : (root.isVerifying ? root.accentColor : "#2a2d37")
-
-            Behavior on border.color { ColorAnimation { duration: 180 } }
-            Behavior on color { ColorAnimation { duration: 140 } }
-
-            Row {
-                anchors.centerIn: parent
-                spacing: 9
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\uf577" // fingerprint icon
-                    font.family: root.iconFontFamily
-                    font.pixelSize: 15
-                    color: root.isVerifying ? root.accentColor : (touchCardMouse.containsMouse ? "#ffffff" : "#8e8e93")
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.isVerifying ? "Riconoscimento in corso..." : "Poggia il dito sul sensore"
-                    font.family: root.textFontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                    color: root.isVerifying ? root.accentColor : "#c7c7cc"
-                }
-            }
-
-            MouseArea {
-                id: touchCardMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.triggerFingerprintTouch()
             }
         }
 
@@ -561,37 +515,40 @@ FocusScope {
         // 3. Apple-style Mode Switcher Pill (Usa Password / Usa Touch ID)
         Item {
             width: parent.width
-            height: 20
+            height: 26
 
             Rectangle {
                 anchors.centerIn: parent
-                height: 20
-                width: switchRow.width + 16
-                radius: 10
-                color: switchMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : "transparent"
+                height: 26
+                width: switchRow.width + 22
+                radius: 13
+                color: switchMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05)
+                border.width: 1
+                border.color: switchMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.4) : Qt.rgba(255, 255, 255, 0.08)
 
                 Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on border.color { ColorAnimation { duration: 120 } }
 
                 Row {
                     id: switchRow
                     anchors.centerIn: parent
-                    spacing: 6
+                    spacing: 7
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.fingerprintModeActive ? "\uf084" : "\uf577"
                         font.family: root.iconFontFamily
-                        font.pixelSize: 11
-                        color: switchMouse.containsMouse ? root.accentColor : "#8e8e93"
+                        font.pixelSize: 12
+                        color: switchMouse.containsMouse ? root.accentColor : "#98989f"
                     }
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.fingerprintModeActive ? "Usa Password" : "Usa Touch ID"
                         font.family: root.textFontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 12
                         font.weight: Font.Medium
-                        color: switchMouse.containsMouse ? "#ffffff" : "#8e8e93"
+                        color: switchMouse.containsMouse ? "#ffffff" : "#c7c7cc"
                     }
                 }
 
