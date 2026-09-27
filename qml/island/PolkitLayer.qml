@@ -46,6 +46,9 @@ FocusScope {
     property string activeAuthMode: "password" // "face", "fingerprint", "password"
     property bool userChosePassword: false
 
+    readonly property real preferredWidth: root.isSuccess ? 58 : 380
+    readonly property real preferredHeight: root.isSuccess ? 58 : ((root.activeAuthMode === "face") ? 310 : 186)
+
     readonly property bool hasBiometrics: hasFingerprintSensor || hasFaceUnlock
 
     function resetAuthMode() {
@@ -182,6 +185,22 @@ FocusScope {
     Timer {
         id: fingerprintSimTimer
         interval: 500
+        repeat: false
+        onTriggered: {
+            root.markSuccess();
+        }
+    }
+
+    function triggerFaceIdScan() {
+        if (isVerifying || isSuccess) return;
+        authState = "verifying";
+        faceSimTimer.restart();
+    }
+
+
+    Timer {
+        id: faceSimTimer
+        interval: 800
         repeat: false
         onTriggered: {
             root.markSuccess();
@@ -331,11 +350,11 @@ FocusScope {
     // Top Section: Face ID Animated Glyph (Positioned directly under webcam notch)
     FaceIdGlyph {
         id: faceIdIcon
-        size: 52
+        size: 42
         z: 5
         visible: root.activeAuthMode === "face"
         anchors.horizontalCenter: parent.horizontalCenter
-        y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 12
+        y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 10
         glyphColor: "#ffffff"
         bracketColor: root.accentColor
         stateMode: root.activeAuthMode === "face" ? root.faceIdMode : "idle"
@@ -375,7 +394,7 @@ FocusScope {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: (root.activeAuthMode !== "password") ? 78 : 62
+        anchors.topMargin: (root.activeAuthMode === "face") ? 54 : ((root.activeAuthMode === "fingerprint") ? 78 : 62)
         anchors.bottomMargin: 8
         anchors.leftMargin: 16
         anchors.rightMargin: 16
@@ -393,7 +412,7 @@ FocusScope {
         // Title and Subtitle Text
         Column {
             width: parent.width
-            spacing: 3
+            spacing: 2
 
             Text {
                 width: parent.width
@@ -426,7 +445,7 @@ FocusScope {
                     ? "#ff453a"
                     : (root.isSuccess ? "#30d158" : "#f5f5f7")
                 font.family: root.heroFontFamily !== "" ? root.heroFontFamily : root.textFontFamily
-                font.pixelSize: 15
+                font.pixelSize: 14
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
@@ -456,9 +475,25 @@ FocusScope {
                 }
                 color: root.isFailed ? "#ff6961" : (root.isSuccess ? "#30d158" : "#98989f")
                 font.family: root.textFontFamily
-                font.pixelSize: 13
+                font.pixelSize: 12
                 elide: Text.ElideRight
             }
+        }
+
+        // Face Camera Live Viewfinder Box ("quadratino nella quale mostra la cam che userà il portatile")
+        FaceCameraBox {
+            id: faceCameraPreview
+            visible: root.activeAuthMode === "face" && !root.isSuccess
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: 136
+            height: 136
+            active: root.showCondition && root.activeAuthMode === "face" && !root.isSuccess
+            isSuccess: root.isSuccess
+            isFailed: root.isFailed
+            accentColor: root.accentColor
+            iconFontFamily: root.iconFontFamily
+            textFontFamily: root.textFontFamily
+            onClicked: root.triggerFaceIdScan()
         }
 
         // 2. Password Input Pill (Shown when password mode is active)

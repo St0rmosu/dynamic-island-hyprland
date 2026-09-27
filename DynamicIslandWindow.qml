@@ -881,7 +881,7 @@ PanelWindow {
 
     Timer {
         id: demoPolkitFaceTimer
-        interval: 1000
+        interval: 2400
         repeat: false
         onTriggered: {
             if (polkitLoader.item) {
@@ -3160,6 +3160,9 @@ PanelWindow {
                     if (islandContainer.polkitSuccessMorph)
                         return 58;
 
+                    if (polkitLoader.item && polkitLoader.item.preferredWidth > 0)
+                        return polkitLoader.item.preferredWidth;
+
                     return 380;
                 case "screen_share_picker":
                     return screenSharePickerLoader.item ? screenSharePickerLoader.item.preferredWidth : 620;
@@ -3209,6 +3212,9 @@ PanelWindow {
                 case "polkit":
                     if (islandContainer.polkitSuccessMorph)
                         return 58;
+
+                    if (polkitLoader.item && polkitLoader.item.preferredHeight > 0)
+                        return polkitLoader.item.preferredHeight;
 
                     return 186;
                 case "screen_share_picker":
