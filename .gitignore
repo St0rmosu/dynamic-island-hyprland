@@ -8,3 +8,5 @@ __pycache__/
 bin/lyricsmpris
 build/
 .cache/
+HANDOFF.md
+handoff.md
