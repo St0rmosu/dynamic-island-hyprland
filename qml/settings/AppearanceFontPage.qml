@@ -91,6 +91,7 @@ Flickable {
             SettingsSegmented {
                 title: "Lingua dell'Interfaccia"
                 description: "Lingua visualizzata nella shell e nell'isola dinamica (rilevata automaticamente dal sistema)"
+                stacked: true
                 model: [
                     { text: "Sistema (Auto)", value: "auto" },
                     { text: "Italiano", value: "it" },
@@ -134,6 +135,7 @@ Flickable {
             SettingsSegmented {
                 title: "Motore Palette Compatibile"
                 description: "Scegli o rileva automaticamente il generatore di colori del tuo sistema"
+                stacked: true
                 model: [
                     { text: "Auto", value: "auto" },
                     { text: "Pywal", value: "pywal" },
