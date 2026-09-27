@@ -294,24 +294,26 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
+    <td align="center" colspan="2" width="100%">
       <img src="assets/gifs/application_launcher.gif" alt="Spotlight App Launcher" />
       <br/>
       <sub><b>Spotlight App Launcher</b> — Instant fuzzy application search and launch</sub>
     </td>
+  </tr>
+  <tr>
     <td align="center" width="50%">
       <img src="assets/gifs/file_shelf.gif" alt="AirDrop File Shelf" />
       <br/>
       <sub><b>AirDrop File Shelf</b> — Drag, hold, and drop files across desktops</sub>
     </td>
-  </tr>
-  <tr>
     <td align="center" width="50%">
       <img src="assets/gifs/workspace_switch.gif" alt="Workspace Switch Pill" />
       <br/>
       <sub><b>Workspace Indicator</b> — Active workspace pill on desktop transition</sub>
     </td>
-    <td align="center" width="50%">
+  </tr>
+  <tr>
+    <td align="center" colspan="2" width="100%">
       <img src="assets/gifs/workspace_overview.gif" alt="Workspace Overview" />
       <br/>
       <sub><b>Mission Control Overview</b> — Full compositor window overview</sub>
