@@ -77,11 +77,11 @@ def record_and_capture(name, geometry, trigger_fn=None, reset_fn=None, duration=
         reset_fn()
         time.sleep(0.4)
 
-    # Encode snappy 50 FPS GIF with 1.45x speedup (setpts=0.68*PTS)
-    print(f"   🎞️  Encoding snappy GIF: {gif_path}")
+    # Encode balanced 50 FPS GIF with ~1.22x speedup (setpts=0.82*PTS)
+    print(f"   🎞️  Encoding calibrated GIF: {gif_path}")
     ffmpeg_cmd = (
         f'ffmpeg -y -i "{mp4_path}" '
-        f'-filter_complex "[0:v]setpts=0.68*PTS,fps=50,split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3" '
+        f'-filter_complex "[0:v]setpts=0.82*PTS,fps=50,split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3" '
         f'"{gif_path}"'
     )
     run_cmd(ffmpeg_cmd)
