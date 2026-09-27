@@ -316,7 +316,7 @@ FocusScope {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: !root.dropPreviewOnly
-            text: "Drag files or folders onto Dynamic Island"
+            text: I18n.tr("Drag files or folders onto Dynamic Island")
             color: StyleTokens.textSecondary
             font.family: root.textFontFamily
             font.pixelSize: 12
@@ -325,7 +325,7 @@ FocusScope {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: !root.dropPreviewOnly
-            text: "Drag a file to reorder it or drop it into another application"
+            text: I18n.tr("Drag a file to reorder it or drop it into another application")
             color: StyleTokens.textTertiary
             font.family: root.textFontFamily
             font.pixelSize: 10

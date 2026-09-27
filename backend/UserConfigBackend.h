@@ -38,6 +38,7 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(QString tlpSudoPassword READ tlpSudoPassword NOTIFY tlpSudoPasswordChanged FINAL)
     Q_PROPERTY(QString tlpPermissionMode READ tlpPermissionMode NOTIFY tlpPermissionModeChanged FINAL)
     Q_PROPERTY(QString powerProfileDriver READ powerProfileDriver NOTIFY powerProfileDriverChanged FINAL)
+    Q_PROPERTY(QString language READ language NOTIFY languageChanged FINAL)
 
     Q_PROPERTY(int workspaceOverviewWindowDragButton READ workspaceOverviewWindowDragButton NOTIFY workspaceOverviewWindowDragButtonChanged FINAL)
 
@@ -98,6 +99,7 @@ public:
     QString tlpSudoPassword() const;
     QString tlpPermissionMode() const;
     QString powerProfileDriver() const;
+    QString language() const;
     int workspaceOverviewWindowDragButton() const;
     int dynamicIslandPrimaryButton() const;
     QString dynamicIslandPrimaryAction() const;
@@ -157,6 +159,7 @@ signals:
     void tlpSudoPasswordChanged();
     void tlpPermissionModeChanged();
     void powerProfileDriverChanged();
+    void languageChanged();
     void workspaceOverviewWindowDragButtonChanged();
     void dynamicIslandPrimaryButtonChanged();
     void dynamicIslandPrimaryActionChanged();
@@ -216,6 +219,7 @@ private:
     QString m_tlpSudoPassword;
     QString m_tlpPermissionMode = QStringLiteral("skip");
     QString m_powerProfileDriver = QStringLiteral("auto");
+    QString m_language = QStringLiteral("auto");
     int m_workspaceOverviewWindowDragButton = 1;
     int m_dynamicIslandPrimaryButton = 1;
     QString m_dynamicIslandPrimaryAction = QStringLiteral("toggleExpandedPlayer");

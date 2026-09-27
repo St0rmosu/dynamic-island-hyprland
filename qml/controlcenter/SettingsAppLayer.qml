@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import IslandBackend
 import "../settings"
 
 FocusScope {
@@ -129,19 +130,19 @@ FocusScope {
 
     readonly property var navigationPages: [
         {
-            title: "Isola & Geometria",
+            title: I18n.tr("Isola & Geometria"),
             icon: "\uf108"
         },
         {
-            title: "Control Center & Studio",
+            title: I18n.tr("Control Center & Studio"),
             icon: "\uf462"
         },
         {
-            title: "Aspetto, Sfondi & Font",
+            title: I18n.tr("Aspetto, Sfondi & Font"),
             icon: "\uf1fc"
         },
         {
-            title: "Scorciatoie da Tastiera",
+            title: I18n.tr("Scorciatoie da Tastiera"),
             icon: "\uf11c"
         }
     ]

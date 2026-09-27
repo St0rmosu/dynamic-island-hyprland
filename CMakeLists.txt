@@ -42,7 +42,9 @@ qt_add_qml_module(IslandBackend
         backend/WifiController.cpp
         backend/WifiNetworkModel.h
         backend/WifiNetworkModel.cpp
-)
+        backend/I18nBackend.h
+        backend/I18nBackend.cpp
+    )
 
 set_target_properties(IslandBackendplugin PROPERTIES
     INSTALL_RPATH "$ORIGIN/../../.."

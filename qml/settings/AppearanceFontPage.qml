@@ -85,6 +85,29 @@ Flickable {
                 textFontFamily: root.textFontFamily
                 onSelected: function(val) { if (root.config) root.config.set("clockFormat", val); }
             }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            SettingsSegmented {
+                title: "Lingua dell'Interfaccia"
+                description: "Lingua visualizzata nella shell e nell'isola dinamica (rilevata automaticamente dal sistema)"
+                model: [
+                    { text: "Sistema (Auto)", value: "auto" },
+                    { text: "Italiano", value: "it" },
+                    { text: "English", value: "en" },
+                    { text: "Español", value: "es" },
+                    { text: "Deutsch", value: "de" },
+                    { text: "Français", value: "fr" }
+                ]
+                currentValue: root.config ? (root.config.language || "auto") : "auto"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onSelected: function(val) {
+                    if (root.config) {
+                        root.config.set("language", val);
+                    }
+                }
+            }
         }
 
         // ── Sezione 2: Colori & Temi Dinamici ───────────────────────────

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import IslandBackend
 
 FocusScope {
     id: root
@@ -368,25 +369,25 @@ FocusScope {
                 horizontalAlignment: Text.AlignHCenter
                 text: {
                     if (root.isSuccess) {
-                        if (root.activeAuthMode === "face") return "Autenticato con Face ID";
-                        if (root.activeAuthMode === "fingerprint") return "Touch ID Confermato";
-                        return "Accesso Consentito";
+                        if (root.activeAuthMode === "face") return I18n.tr("Autenticato con Face ID");
+                        if (root.activeAuthMode === "fingerprint") return I18n.tr("Touch ID Confermato");
+                        return I18n.tr("Accesso Consentito");
                     }
                     if (root.isFailed) {
-                        if (root.activeAuthMode === "face") return "Viso non riconosciuto";
-                        if (root.activeAuthMode === "fingerprint") return "Impronta non riconosciuta";
-                        return (root.supplementaryMessage !== "" ? root.supplementaryMessage : "Password errata. Riprova.");
+                        if (root.activeAuthMode === "face") return I18n.tr("Viso non riconosciuto");
+                        if (root.activeAuthMode === "fingerprint") return I18n.tr("Impronta non riconosciuta");
+                        return (root.supplementaryMessage !== "" ? root.supplementaryMessage : I18n.tr("Password errata. Riprova."));
                     }
                     if (root.isVerifying) {
-                        if (root.activeAuthMode === "face") return "Riconoscimento facciale...";
-                        if (root.activeAuthMode === "fingerprint") return "Verifica impronta in corso...";
-                        return "Verifica autorizzazione...";
+                        if (root.activeAuthMode === "face") return I18n.tr("Riconoscimento facciale...");
+                        if (root.activeAuthMode === "fingerprint") return I18n.tr("Verifica impronta in corso...");
+                        return I18n.tr("Verifica autorizzazione...");
                     }
                     if (root.activeAuthMode === "face") {
-                        return "Face ID (Windows Hello)";
+                        return I18n.tr("Face ID (Windows Hello)");
                     }
                     if (root.activeAuthMode === "fingerprint") {
-                        return "Touch ID (Telefono)";
+                        return I18n.tr("Touch ID (Impronta)");
                     }
                     return root.displayMessage;
                 }
@@ -403,24 +404,24 @@ FocusScope {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 text: {
-                    if (root.isSuccess) return "Accesso consentito";
+                    if (root.isSuccess) return I18n.tr("Accesso consentito");
                     if (root.isFailed) {
-                        if (root.activeAuthMode === "face") return "Posizionati davanti alla fotocamera o usa la password";
-                        if (root.activeAuthMode === "fingerprint") return "Poggia nuovamente il dito sul sensore";
-                        return "Riprova con la password corretta";
+                        if (root.activeAuthMode === "face") return I18n.tr("Posizionati davanti alla fotocamera o usa la password");
+                        if (root.activeAuthMode === "fingerprint") return I18n.tr("Poggia nuovamente il dito sul sensore");
+                        return I18n.tr("Riprova con la password corretta");
                     }
                     if (root.isVerifying) {
-                        if (root.activeAuthMode === "face") return "Scansione del volto...";
-                        if (root.activeAuthMode === "fingerprint") return "Scansione dell'impronta...";
-                        return "Controllo credenziali...";
+                        if (root.activeAuthMode === "face") return I18n.tr("Scansione del volto...");
+                        if (root.activeAuthMode === "fingerprint") return I18n.tr("Scansione dell'impronta...");
+                        return I18n.tr("Controllo credenziali...");
                     }
                     if (root.activeAuthMode === "face") {
-                        return "Posizionati davanti alla fotocamera";
+                        return I18n.tr("Posizionati davanti alla fotocamera");
                     }
                     if (root.activeAuthMode === "fingerprint") {
-                        return "Poggia il dito per sbloccare";
+                        return I18n.tr("Poggia il dito per sbloccare");
                     }
-                    return "Inserisci la password";
+                    return I18n.tr("Inserisci la password");
                 }
                 color: root.isFailed ? "#ff6961" : (root.isSuccess ? "#30d158" : "#98989f")
                 font.family: root.textFontFamily
@@ -620,7 +621,7 @@ FocusScope {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Usa Face ID"
+                            text: I18n.tr("Usa Face ID")
                             font.family: root.textFontFamily
                             font.pixelSize: 12
                             font.weight: Font.Medium
@@ -665,7 +666,7 @@ FocusScope {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Usa Touch ID"
+                            text: I18n.tr("Usa Touch ID")
                             font.family: root.textFontFamily
                             font.pixelSize: 12
                             font.weight: Font.Medium
@@ -710,7 +711,7 @@ FocusScope {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Usa Password"
+                            text: I18n.tr("Usa Password")
                             font.family: root.textFontFamily
                             font.pixelSize: 12
                             font.weight: Font.Medium

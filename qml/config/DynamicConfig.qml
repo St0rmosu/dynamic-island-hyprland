@@ -2,6 +2,7 @@ import QtCore
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import IslandBackend
 
 Item {
     id: root
@@ -93,6 +94,13 @@ Item {
     // ── 6. Biometrics & Security ────────────────────────────────────────
     property var hasFingerprintReader: undefined
     property var hasFaceUnlock: undefined
+    property string language: "auto" // "auto", "it", "en", "de", "es", "fr"
+
+    onLanguageChanged: {
+        if (typeof I18n !== "undefined" && I18n) {
+            I18n.language = root.language;
+        }
+    }
 
     // ── Internals & State ──────────────────────────────────────────────
     property var rawMap: ({})
@@ -315,9 +323,15 @@ Item {
             if (data.animationFps !== undefined) root.animationFps = Number(data.animationFps) || 60;
             if (data.motionProfile !== undefined) root.motionProfile = String(data.motionProfile);
 
-            // Biometrics & Security
+            // Biometrics & Security & Language
             if (data.hasFingerprintReader !== undefined) root.hasFingerprintReader = Boolean(data.hasFingerprintReader);
             if (data.hasFaceUnlock !== undefined) root.hasFaceUnlock = Boolean(data.hasFaceUnlock);
+            if (data.language !== undefined) {
+                root.language = String(data.language);
+                if (typeof I18n !== "undefined" && I18n) {
+                    I18n.language = root.language;
+                }
+            }
 
             root.isLoaded = true;
             root.configReloaded();

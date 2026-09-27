@@ -313,7 +313,7 @@ FocusScope {
                 Text {
                     anchors.left: searchInput.left
                     anchors.verticalCenter: searchInput.verticalCenter
-                    text: "Search clipboard..."
+                    text: I18n.tr("Search clipboard...")
                     color: "#6c6c70"
                     font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                     font.pixelSize: 14
@@ -454,7 +454,7 @@ FocusScope {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Clear"
+                            text: I18n.tr("Clear")
                             font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                             font.pixelSize: 12
                             font.weight: Font.Medium
@@ -516,7 +516,7 @@ FocusScope {
 
             Text {
                 anchors.centerIn: parent
-                text: root.searchQuery === "" ? "Nessun elemento copiato" : "Nessun risultato trovato"
+                text: root.searchQuery === "" ? I18n.tr("Nessun elemento copiato") : I18n.tr("Nessun risultato trovato")
                 color: "#8e8e93"
                 font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                 font.pixelSize: 14
@@ -1063,7 +1063,7 @@ FocusScope {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Copied!"
+                        text: I18n.tr("Copied!")
                         color: "#ffffff"
                         font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                         font.pixelSize: 15

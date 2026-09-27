@@ -1,4 +1,5 @@
 #include "UserConfigBackend.h"
+#include "I18nBackend.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -275,6 +276,11 @@ QString UserConfigBackend::powerProfileDriver() const
     return m_powerProfileDriver;
 }
 
+QString UserConfigBackend::language() const
+{
+    return m_language;
+}
+
 int UserConfigBackend::workspaceOverviewWindowDragButton() const
 {
     return m_workspaceOverviewWindowDragButton;
@@ -527,6 +533,10 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_tlpSudoPassword, jsonString(configObject, QLatin1String("tlpSudoPassword"), m_defaultTlpSudoPassword), &UserConfigBackend::tlpSudoPasswordChanged);
     updateField(this, m_tlpPermissionMode, jsonString(configObject, QLatin1String("tlpPermissionMode"), QStringLiteral("skip")), &UserConfigBackend::tlpPermissionModeChanged);
     updateField(this, m_powerProfileDriver, jsonString(configObject, QLatin1String("powerProfileDriver"), QStringLiteral("auto")), &UserConfigBackend::powerProfileDriverChanged);
+    updateField(this, m_language, jsonString(configObject, QLatin1String("language"), QStringLiteral("auto")), &UserConfigBackend::languageChanged);
+    if (I18nBackend::instance()) {
+        I18nBackend::instance()->setLanguage(m_language);
+    }
     updateField(this, m_workspaceOverviewWindowDragButton, jsonInt(configObject, QLatin1String("workspaceOverviewWindowDragButton"), 1), &UserConfigBackend::workspaceOverviewWindowDragButtonChanged);
     updateField(this, m_dynamicIslandPrimaryButton, jsonInt(configObject, QLatin1String("dynamicIslandPrimaryButton"), 1), &UserConfigBackend::dynamicIslandPrimaryButtonChanged);
     updateField(this, m_dynamicIslandPrimaryAction, jsonString(configObject, QLatin1String("dynamicIslandPrimaryAction"), QStringLiteral("toggleExpandedPlayer")), &UserConfigBackend::dynamicIslandPrimaryActionChanged);

@@ -18,6 +18,7 @@ PanelWindow {
     readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
     property var shellRootController: null
     property var dynamicConfig: null
+    readonly property var i18n: I18n
     readonly property var polkitAgent: shellRootController ? shellRootController.polkitAgent : null
     property string overviewPhase: "closed"
     property bool overviewPreloading: false

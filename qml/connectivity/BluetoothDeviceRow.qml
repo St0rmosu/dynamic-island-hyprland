@@ -26,11 +26,11 @@ Rectangle {
     readonly property bool canInteract: hasProvider && hasDevice && provider.bluetoothEnabled
         && !busy && !anotherOperationActive
     readonly property string actionText: {
-        if (hasDevice && device.state === BluetoothDeviceState.Connecting) return "Connecting";
-        if (hasDevice && device.state === BluetoothDeviceState.Disconnecting) return "Disconnecting";
-        if (section === "connected") return "Disconnect";
-        if (section === "paired") return "Connect";
-        return pairing ? "Pairing" : "Pair";
+        if (hasDevice && device.state === BluetoothDeviceState.Connecting) return I18n.tr("Connecting...");
+        if (hasDevice && device.state === BluetoothDeviceState.Disconnecting) return I18n.tr("Disconnecting...");
+        if (section === "connected") return I18n.tr("Disconnect");
+        if (section === "paired") return I18n.tr("Connect");
+        return pairing ? I18n.tr("Connecting...") : I18n.tr("Connect");
     }
     readonly property string subtitleText: hasProvider && provider.bluetoothDeviceSubtitle
         ? provider.bluetoothDeviceSubtitle(device)
@@ -112,7 +112,7 @@ Rectangle {
             spacing: 10
 
             Text {
-                text: "Forget"
+                text: I18n.tr("Forget")
                 color: forgetMouse.containsMouse ? StyleTokens.error : StyleTokens.textTertiary
                 font.pixelSize: 10
                 font.family: root.textFontFamily

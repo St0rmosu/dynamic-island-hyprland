@@ -195,7 +195,7 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: root.bluetoothScanning ? "Stop" : "Scan"
+                        text: root.bluetoothScanning ? I18n.tr("Stop") : I18n.tr("Scan")
                         color: root.bluetoothScanning ? StyleTokens.accentSoft : StyleTokens.textPrimary
                         font.pixelSize: 10
                         font.family: root.textFontFamily
@@ -355,7 +355,7 @@ Item {
                         anchors.left: parent.left
                         anchors.leftMargin: 28
                         anchors.bottom: parent.bottom
-                        text: "Connected"
+                        text: I18n.tr("Connected")
                         color: StyleTokens.textSoft
                         font.pixelSize: 11
                         font.family: root.textFontFamily

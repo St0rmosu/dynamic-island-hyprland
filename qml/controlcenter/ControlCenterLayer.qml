@@ -2857,7 +2857,7 @@ Item {
                         spacing: 1
 
                         Text {
-                            text: "Barra Desktop"
+                            text: I18n.tr("Barra Desktop")
                             color: controlCenter.textPrimary
                             font.pixelSize: 12
                             font.family: controlCenter.textFontFamily
@@ -2932,7 +2932,7 @@ Item {
                         spacing: 1
 
                         Text {
-                            text: "Appunti"
+                            text: I18n.tr("Appunti")
                             color: controlCenter.textPrimary
                             font.pixelSize: 12
                             font.family: controlCenter.textFontFamily
@@ -2940,7 +2940,7 @@ Item {
                         }
 
                         Text {
-                            text: "Cronologia"
+                            text: I18n.tr("Cronologia")
                             color: StyleTokens.textMuted
                             font.pixelSize: 10
                             font.family: controlCenter.textFontFamily
@@ -3210,7 +3210,7 @@ Item {
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Indietro"
+                            text: I18n.tr("Indietro")
                             font.family: controlCenter.textFontFamily
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -3253,12 +3253,12 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: {
                             switch (controlCenter.activeDetailModule) {
-                            case "volume": return "Controllo Volume";
-                            case "brightness": return "Luminosità Display";
-                            case "battery": return "Profilo Batteria TLP";
-                            case "toggles": return "Luce Notturna & Focus";
-                            case "notifications": return "Centro Notifiche";
-                            case "quickactions": return "Barra & Appunti";
+                            case "volume": return I18n.tr("Controllo Volume");
+                            case "brightness": return I18n.tr("Luminosità Display");
+                            case "battery": return I18n.tr("Profilo Batteria TLP");
+                            case "toggles": return I18n.tr("Luce Notturna & Focus");
+                            case "notifications": return I18n.tr("Centro Notifiche");
+                            case "quickactions": return I18n.tr("Barra & Appunti");
                             default: return "";
                             }
                         }

@@ -353,7 +353,7 @@ Rectangle {
                         }
 
                         Text {
-                            text: root.isEarConnected ? ("Connesso · " + (root.headphonesData.codec || "LDAC")) : "Disconnesso"
+                            text: root.isEarConnected ? (I18n.tr("Connesso") + " · " + (root.headphonesData.codec || "LDAC")) : I18n.tr("Disconnesso")
                             font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                             font.pixelSize: 11
                             color: "#8e8e93"

@@ -101,7 +101,7 @@ Rectangle {
             // Title
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Notifiche"
+                text: I18n.tr("Notifiche")
                 color: cardRoot.hasNotifications ? StyleTokens.textPrimary : StyleTokens.textSecondary
                 font.pixelSize: 13
                 font.family: cardRoot.textFontFamily
@@ -215,7 +215,7 @@ Rectangle {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Nessuna nuova notifica"
+                text: I18n.tr("Nessuna nuova notifica")
                 font.pixelSize: 11
                 font.family: cardRoot.textFontFamily
                 font.weight: Font.Medium
