@@ -213,11 +213,11 @@ Item {
             opacity: 0.65
         }
 
-        // 3. Rounded Fingerprint Glyph (\uf577 in JetBrainsMono Nerd Font)
+        // 3. Rounded Fingerprint Glyph (\udb80\ude37 - mdi-fingerprint in Nerd Fonts)
         Text {
             id: fpIcon
             anchors.centerIn: parent
-            text: "\uf577"
+            text: "\udb80\ude37"
             font.family: root.iconFontFamily !== "" ? root.iconFontFamily : "JetBrainsMono Nerd Font"
             font.pixelSize: Math.round(root.size * 0.52)
             color: (root.stateMode === "success")

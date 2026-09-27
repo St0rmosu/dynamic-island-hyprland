@@ -304,6 +304,7 @@ FocusScope {
         y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 14
         glyphColor: "#ffffff"
         accentColor: root.accentColor
+        iconFontFamily: root.iconFontFamily
         stateMode: root.faceIdMode
         onClicked: root.triggerFingerprintTouch()
 
@@ -552,7 +553,7 @@ FocusScope {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.fingerprintModeActive ? "\uf084" : "\uf577"
+                        text: root.fingerprintModeActive ? "\uf084" : "\udb80\ude37"
                         font.family: root.iconFontFamily
                         font.pixelSize: 12
                         color: switchMouse.containsMouse ? root.accentColor : "#98989f"
