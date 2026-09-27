@@ -92,6 +92,7 @@ Item {
 
     // ── 6. Biometrics & Security ────────────────────────────────────────
     property bool hasFingerprintReader: false
+    property bool hasFaceUnlock: false
 
     // ── Internals & State ──────────────────────────────────────────────
     property var rawMap: ({})
@@ -316,6 +317,7 @@ Item {
 
             // Biometrics & Security
             if (data.hasFingerprintReader !== undefined) root.hasFingerprintReader = Boolean(data.hasFingerprintReader);
+            if (data.hasFaceUnlock !== undefined) root.hasFaceUnlock = Boolean(data.hasFaceUnlock);
 
             root.isLoaded = true;
             root.configReloaded();
@@ -411,7 +413,8 @@ Item {
                 transitionDuration: root.transitionDuration,
                 animationFps: root.animationFps,
                 motionProfile: root.motionProfile,
-                hasFingerprintReader: root.hasFingerprintReader
+                hasFingerprintReader: root.hasFingerprintReader,
+                hasFaceUnlock: root.hasFaceUnlock
             };
 
             const jsonStr = JSON.stringify(payload);

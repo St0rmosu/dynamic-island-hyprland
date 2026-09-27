@@ -864,6 +864,33 @@ PanelWindow {
         demoPolkitFingerprintTimer.restart();
     }
 
+    function testFaceId() {
+        showPolkitPrompt();
+        if (polkitLoader.item) {
+            polkitLoader.item.switchToFace();
+        }
+    }
+
+    function testFaceIdSuccess() {
+        showPolkitPrompt();
+        if (polkitLoader.item) {
+            polkitLoader.item.switchToFace();
+        }
+        demoPolkitFaceTimer.restart();
+    }
+
+    Timer {
+        id: demoPolkitFaceTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (polkitLoader.item) {
+                polkitLoader.item.simulateFaceSuccess();
+                demoMorphTimer.restart();
+            }
+        }
+    }
+
     Timer {
         id: demoPolkitFingerprintTimer
         interval: 1000
@@ -1382,6 +1409,37 @@ PanelWindow {
                         if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined) return;
                         if (userConfig && userConfig.hasFingerprintReader !== undefined) return;
                         root.hasFingerprintSensor = !!res.available;
+                    }
+                } catch(e) {}
+            }
+        }
+    }
+
+    property bool hasFaceUnlock: {
+        if (dynamicConfig && dynamicConfig.hasFaceUnlock !== undefined) {
+            return !!dynamicConfig.hasFaceUnlock;
+        }
+        if (userConfig && userConfig.hasFaceUnlock !== undefined) {
+            return !!userConfig.hasFaceUnlock;
+        }
+        return false;
+    }
+
+    Process {
+        id: rootFaceDetectorProc
+
+        command: ["python3", root.homeDir + "/.config/quickshell/dynamic-island/scripts/detect_face_hardware.py"]
+        running: true
+
+        stdout: StdioCollector {
+            onDataChanged: {
+                if (!data) return;
+                try {
+                    const res = JSON.parse(data.trim());
+                    if (res && res.available !== undefined) {
+                        if (dynamicConfig && dynamicConfig.hasFaceUnlock !== undefined) return;
+                        if (userConfig && userConfig.hasFaceUnlock !== undefined) return;
+                        root.hasFaceUnlock = !!res.available;
                     }
                 } catch(e) {}
             }
@@ -4123,7 +4181,7 @@ PanelWindow {
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
                         hasFingerprintSensor: root.hasFingerprintSensor
-                        fingerprintModeActive: root.hasFingerprintSensor
+                        hasFaceUnlock: root.hasFaceUnlock
                         showCondition: islandContainer.polkitLayerVisible
                         onPolkitSuccessRequested: islandContainer.polkitSuccessMorph = true
                         onCloseRequested: {

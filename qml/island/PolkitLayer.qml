@@ -40,18 +40,39 @@ FocusScope {
         return "idle";
     }
 
-    // Touch ID (Fingerprint) hardware detection and mode state
+    // Biometric hardware detection and mode state
     property bool hasFingerprintSensor: false
-    property bool fingerprintModeActive: false
+    property bool hasFaceUnlock: false
+    property string activeAuthMode: "password" // "face", "fingerprint", "password"
     property bool userChosePassword: false
 
-    onHasFingerprintSensorChanged: {
-        if (hasFingerprintSensor) {
-            if (!userChosePassword) {
-                fingerprintModeActive = true;
-            }
+    readonly property bool hasBiometrics: hasFingerprintSensor || hasFaceUnlock
+
+    function resetAuthMode() {
+        authState = "idle";
+        passInput.enabled = true;
+        passInput.text = "";
+        userChosePassword = false;
+
+        if (root.hasFaceUnlock) {
+            activeAuthMode = "face";
+        } else if (root.hasFingerprintSensor) {
+            activeAuthMode = "fingerprint";
         } else {
-            fingerprintModeActive = false;
+            activeAuthMode = "password";
+            userChosePassword = true;
+        }
+    }
+
+    onHasFingerprintSensorChanged: {
+        if (hasFingerprintSensor && !userChosePassword && !hasFaceUnlock) {
+            activeAuthMode = "fingerprint";
+        }
+    }
+
+    onHasFaceUnlockChanged: {
+        if (hasFaceUnlock && !userChosePassword) {
+            activeAuthMode = "face";
         }
     }
 
@@ -75,8 +96,37 @@ FocusScope {
                     const res = JSON.parse(data.trim());
                     if (res && res.available !== undefined) {
                         root.hasFingerprintSensor = !!res.available;
+                        if (res.available && !root.userChosePassword && !root.hasFaceUnlock) {
+                            root.activeAuthMode = "fingerprint";
+                        }
+                    }
+                } catch(e) {}
+            }
+        }
+    }
+
+    Process {
+        id: faceDetectorProc
+        command: [
+            "python3", "-c",
+            "import os, subprocess; " +
+            "home = os.path.expanduser('~'); " +
+            "candidates = [" +
+            "os.path.join(home, '.config/quickshell/dynamic-island/scripts/detect_face_hardware.py'), " +
+            "os.path.join(os.getcwd(), 'scripts/detect_face_hardware.py')]; " +
+            "s = next((c for c in candidates if os.path.isfile(c)), None); " +
+            "subprocess.run(['python3', s]) if s else None"
+        ]
+        running: false
+        stdout: StdioCollector {
+            onDataChanged: {
+                if (!data) return;
+                try {
+                    const res = JSON.parse(data.trim());
+                    if (res && res.available !== undefined) {
+                        root.hasFaceUnlock = !!res.available;
                         if (res.available && !root.userChosePassword) {
-                            root.fingerprintModeActive = true;
+                            root.activeAuthMode = "face";
                         }
                     }
                 } catch(e) {}
@@ -99,19 +149,25 @@ FocusScope {
 
     function grabKeyboardFocus() {
         forceActiveFocus();
-        if (!fingerprintModeActive) {
+        if (activeAuthMode === "password") {
             passInput.forceActiveFocus();
         }
     }
 
+    function switchToFace() {
+        activeAuthMode = "face";
+        userChosePassword = false;
+        authState = "idle";
+    }
+
     function switchToFingerprint() {
-        fingerprintModeActive = true;
+        activeAuthMode = "fingerprint";
         userChosePassword = false;
         authState = "idle";
     }
 
     function switchToPassword() {
-        fingerprintModeActive = false;
+        activeAuthMode = "password";
         userChosePassword = true;
         authState = "idle";
         grabKeyboardFocus();
@@ -158,17 +214,9 @@ FocusScope {
 
     onShowConditionChanged: {
         if (showCondition) {
-            authState = "idle";
-            passInput.enabled = true;
-            passInput.text = "";
-            if (root.hasFingerprintSensor) {
-                root.fingerprintModeActive = true;
-                root.userChosePassword = false;
-            } else {
-                root.fingerprintModeActive = false;
-                root.userChosePassword = true;
-            }
+            resetAuthMode();
             fpDetectorProc.running = true;
+            faceDetectorProc.running = true;
             focusDelayTimer.restart();
         } else {
             authState = "idle";
@@ -183,18 +231,16 @@ FocusScope {
             passInput.enabled = true;
             shakeAnimation.restart();
             passInput.text = "";
-            if (!fingerprintModeActive) {
+            if (activeAuthMode === "password") {
                 passInput.forceActiveFocus();
             }
         }
     }
 
     Component.onCompleted: {
-        if (root.hasFingerprintSensor) {
-            root.fingerprintModeActive = true;
-            root.userChosePassword = false;
-        }
+        resetAuthMode();
         fpDetectorProc.running = true;
+        faceDetectorProc.running = true;
         root.grabKeyboardFocus();
     }
 
@@ -227,14 +273,22 @@ FocusScope {
     }
 
     function simulateDemoSuccess() {
-        fingerprintModeActive = false;
+        activeAuthMode = "password";
         passInput.text = "password123";
         authState = "verifying";
         demoVerifyTimer.restart();
     }
 
+    function simulateFaceSuccess() {
+        activeAuthMode = "face";
+        userChosePassword = false;
+        authState = "verifying";
+        demoVerifyTimer.restart();
+    }
+
     function simulateFingerprintSuccess() {
-        fingerprintModeActive = true;
+        activeAuthMode = "fingerprint";
+        userChosePassword = false;
         authState = "verifying";
         demoVerifyTimer.restart();
     }
@@ -274,17 +328,17 @@ FocusScope {
         }
     }
 
-    // Top Section: Face ID Animated Glyph
+    // Top Section: Face ID Animated Glyph (Positioned directly under webcam notch)
     FaceIdGlyph {
         id: faceIdIcon
-        size: 48
+        size: 52
         z: 5
-        visible: !root.fingerprintModeActive
+        visible: root.activeAuthMode === "face"
         anchors.horizontalCenter: parent.horizontalCenter
-        y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 10
+        y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 12
         glyphColor: "#ffffff"
         bracketColor: root.accentColor
-        stateMode: root.faceIdMode
+        stateMode: root.activeAuthMode === "face" ? root.faceIdMode : "idle"
 
         Behavior on y {
             NumberAnimation {
@@ -299,13 +353,13 @@ FocusScope {
         id: fingerprintIcon
         size: 56
         z: 5
-        visible: root.fingerprintModeActive
+        visible: root.activeAuthMode === "fingerprint"
         anchors.horizontalCenter: parent.horizontalCenter
         y: root.isSuccess ? Math.round(parent.height / 2 - height / 2) : 14
         glyphColor: "#ffffff"
         accentColor: root.accentColor
         iconFontFamily: root.iconFontFamily
-        stateMode: root.faceIdMode
+        stateMode: root.activeAuthMode === "fingerprint" ? root.faceIdMode : "idle"
         onClicked: root.triggerFingerprintTouch()
 
         Behavior on y {
@@ -321,7 +375,7 @@ FocusScope {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: root.fingerprintModeActive ? 78 : 62
+        anchors.topMargin: (root.activeAuthMode !== "password") ? 78 : 62
         anchors.bottomMargin: 8
         anchors.leftMargin: 16
         anchors.rightMargin: 16
@@ -346,17 +400,24 @@ FocusScope {
                 horizontalAlignment: Text.AlignHCenter
                 text: {
                     if (root.isSuccess) {
-                        return root.fingerprintModeActive ? "Touch ID Confermato" : "Autenticato con Face ID";
+                        if (root.activeAuthMode === "face") return "Autenticato con Face ID";
+                        if (root.activeAuthMode === "fingerprint") return "Touch ID Confermato";
+                        return "Accesso Consentito";
                     }
                     if (root.isFailed) {
-                        return root.fingerprintModeActive
-                            ? "Impronta non riconosciuta"
-                            : (root.supplementaryMessage !== "" ? root.supplementaryMessage : "Password errata. Riprova.");
+                        if (root.activeAuthMode === "face") return "Viso non riconosciuto";
+                        if (root.activeAuthMode === "fingerprint") return "Impronta non riconosciuta";
+                        return (root.supplementaryMessage !== "" ? root.supplementaryMessage : "Password errata. Riprova.");
                     }
                     if (root.isVerifying) {
-                        return root.fingerprintModeActive ? "Verifica impronta in corso..." : "Verifica autorizzazione...";
+                        if (root.activeAuthMode === "face") return "Riconoscimento facciale...";
+                        if (root.activeAuthMode === "fingerprint") return "Verifica impronta in corso...";
+                        return "Verifica autorizzazione...";
                     }
-                    if (root.fingerprintModeActive) {
+                    if (root.activeAuthMode === "face") {
+                        return "Face ID (Windows Hello)";
+                    }
+                    if (root.activeAuthMode === "fingerprint") {
                         return "Touch ID (Telefono)";
                     }
                     return root.displayMessage;
@@ -376,11 +437,19 @@ FocusScope {
                 text: {
                     if (root.isSuccess) return "Accesso consentito";
                     if (root.isFailed) {
-                        return root.fingerprintModeActive
-                            ? "Poggia nuovamente il dito sul sensore"
-                            : "Riprova con la password corretta";
+                        if (root.activeAuthMode === "face") return "Posizionati davanti alla fotocamera o usa la password";
+                        if (root.activeAuthMode === "fingerprint") return "Poggia nuovamente il dito sul sensore";
+                        return "Riprova con la password corretta";
                     }
-                    if (root.fingerprintModeActive) {
+                    if (root.isVerifying) {
+                        if (root.activeAuthMode === "face") return "Scansione del volto...";
+                        if (root.activeAuthMode === "fingerprint") return "Scansione dell'impronta...";
+                        return "Controllo credenziali...";
+                    }
+                    if (root.activeAuthMode === "face") {
+                        return "Posizionati davanti alla fotocamera";
+                    }
+                    if (root.activeAuthMode === "fingerprint") {
                         return "Poggia il dito per sbloccare";
                     }
                     return "Inserisci la password";
@@ -395,9 +464,9 @@ FocusScope {
         // 2. Password Input Pill (Shown when password mode is active)
         Item {
             id: inputWrapper
-            visible: !root.fingerprintModeActive
+            visible: root.activeAuthMode === "password"
             width: parent.width
-            height: 42
+            height: 40
 
             Rectangle {
                 id: inputContainer
@@ -516,6 +585,7 @@ FocusScope {
                     }
 
                     MouseArea {
+                        id: submitMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: (passInput.text.length > 0 && !root.isVerifying && !root.isSuccess) ? Qt.PointingHandCursor : Qt.ArrowCursor
@@ -528,57 +598,148 @@ FocusScope {
             }
         }
 
-        // 3. Apple-style Mode Switcher Pill (Usa Password / Usa Touch ID)
+        // 3. Apple-style Biometric & Password Switcher Pills
         Item {
             width: parent.width
             height: 26
-            visible: root.hasFingerprintSensor
+            visible: root.hasBiometrics
 
-            Rectangle {
+            Row {
                 anchors.centerIn: parent
-                height: 26
-                width: switchRow.width + 22
-                radius: 13
-                color: switchMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05)
-                border.width: 1
-                border.color: switchMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.4) : Qt.rgba(255, 255, 255, 0.08)
+                spacing: 8
 
-                Behavior on color { ColorAnimation { duration: 120 } }
-                Behavior on border.color { ColorAnimation { duration: 120 } }
+                // Switch to Face ID pill
+                Rectangle {
+                    visible: root.hasFaceUnlock && root.activeAuthMode !== "face"
+                    height: 26
+                    width: facePillRow.width + 20
+                    radius: 13
+                    color: faceMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: faceMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.4) : Qt.rgba(255, 255, 255, 0.08)
 
-                Row {
-                    id: switchRow
-                    anchors.centerIn: parent
-                    spacing: 7
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on border.color { ColorAnimation { duration: 120 } }
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.fingerprintModeActive ? "\uf084" : "\udb80\ude37"
-                        font.family: root.iconFontFamily
-                        font.pixelSize: 12
-                        color: switchMouse.containsMouse ? root.accentColor : "#98989f"
+                    Row {
+                        id: facePillRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\uf2bd"
+                            font.family: root.iconFontFamily
+                            font.pixelSize: 12
+                            color: faceMouse.containsMouse ? root.accentColor : "#98989f"
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Usa Face ID"
+                            font.family: root.textFontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            color: faceMouse.containsMouse ? "#ffffff" : "#c7c7cc"
+                        }
                     }
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.fingerprintModeActive ? "Usa Password" : "Usa Touch ID"
-                        font.family: root.textFontFamily
-                        font.pixelSize: 12
-                        font.weight: Font.Medium
-                        color: switchMouse.containsMouse ? "#ffffff" : "#c7c7cc"
+                    MouseArea {
+                        id: faceMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.switchToFace()
                     }
                 }
 
-                MouseArea {
-                    id: switchMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (root.fingerprintModeActive)
-                            root.switchToPassword();
-                        else
-                            root.switchToFingerprint();
+                // Switch to Touch ID pill
+                Rectangle {
+                    visible: root.hasFingerprintSensor && root.activeAuthMode !== "fingerprint"
+                    height: 26
+                    width: fpPillRow.width + 20
+                    radius: 13
+                    color: fpMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: fpMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.4) : Qt.rgba(255, 255, 255, 0.08)
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                    Row {
+                        id: fpPillRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\udb80\ude37"
+                            font.family: root.iconFontFamily
+                            font.pixelSize: 12
+                            color: fpMouse.containsMouse ? root.accentColor : "#98989f"
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Usa Touch ID"
+                            font.family: root.textFontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            color: fpMouse.containsMouse ? "#ffffff" : "#c7c7cc"
+                        }
+                    }
+
+                    MouseArea {
+                        id: fpMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.switchToFingerprint()
+                    }
+                }
+
+                // Switch to Password pill
+                Rectangle {
+                    visible: root.activeAuthMode !== "password"
+                    height: 26
+                    width: passPillRow.width + 20
+                    radius: 13
+                    color: passPillMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05)
+                    border.width: 1
+                    border.color: passPillMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.4) : Qt.rgba(255, 255, 255, 0.08)
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                    Row {
+                        id: passPillRow
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\uf084"
+                            font.family: root.iconFontFamily
+                            font.pixelSize: 12
+                            color: passPillMouse.containsMouse ? root.accentColor : "#98989f"
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "Usa Password"
+                            font.family: root.textFontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            color: passPillMouse.containsMouse ? "#ffffff" : "#c7c7cc"
+                        }
+                    }
+
+                    MouseArea {
+                        id: passPillMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.switchToPassword()
                     }
                 }
             }

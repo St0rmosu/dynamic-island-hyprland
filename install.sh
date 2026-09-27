@@ -22,6 +22,7 @@ SETUP_WALLPAPER=true
 WALLPAPER_BACKEND="awww"
 SETUP_AUTOSTART=true
 FINGERPRINT_READER=""
+FACE_UNLOCK=""
 
 # Parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -42,6 +43,14 @@ while [[ $# -gt 0 ]]; do
             FINGERPRINT_READER=false
             shift
             ;;
+        --face-unlock)
+            FACE_UNLOCK=true
+            shift
+            ;;
+        --no-face-unlock)
+            FACE_UNLOCK=false
+            shift
+            ;;
         --wallpaper-backend)
             WALLPAPER_BACKEND="$2"
             shift 2
@@ -56,7 +65,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./install.sh [--system] [-y|--yes] [--fingerprint|--no-fingerprint] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
+            echo "Usage: ./install.sh [--system] [-y|--yes] [--fingerprint|--no-fingerprint] [--face-unlock|--no-face-unlock] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
             exit 1
             ;;
     esac
@@ -215,11 +224,11 @@ if [ ! -f "$HOME/.config/dynamic-island/userconfig.json" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Fingerprint Reader Configuration
+# Biometric Authentication Setup (Fingerprint & Windows Hello Face ID)
 # ------------------------------------------------------------------------------
-setup_fingerprint_reader() {
+setup_biometrics() {
     echo ""
-    echo "=== Fingerprint Reader Setup ==="
+    echo "=== Biometric Authentication Setup ==="
 
     local HAS_FP=false
     if [ -n "${FINGERPRINT_READER}" ]; then
@@ -236,27 +245,48 @@ setup_fingerprint_reader() {
         HAS_FP=false
     fi
 
+    local HAS_FACE=false
+    if [ -n "${FACE_UNLOCK}" ]; then
+        HAS_FACE="${FACE_UNLOCK}"
+    elif [ "${INTERACTIVE}" = true ]; then
+        echo "Do you have a Windows Hello / IR camera for face unlock (Howdy)? [y/N]"
+        read -r -p "> " FACE_CHOICE
+        if [[ "${FACE_CHOICE}" =~ ^[Yy] ]]; then
+            HAS_FACE=true
+        else
+            HAS_FACE=false
+        fi
+    else
+        HAS_FACE=false
+    fi
+
     local USER_CFG="$HOME/.config/dynamic-island/userconfig.json"
     mkdir -p "$HOME/.config/dynamic-island"
 
     if [ -f "${USER_CFG}" ]; then
         if command -v jq >/dev/null 2>&1; then
-            jq --argjson fp "${HAS_FP}" '.hasFingerprintReader = $fp' "${USER_CFG}" > "${USER_CFG}.tmp" && mv "${USER_CFG}.tmp" "${USER_CFG}"
+            jq --argjson fp "${HAS_FP}" --argjson face "${HAS_FACE}" '.hasFingerprintReader = $fp | .hasFaceUnlock = $face' "${USER_CFG}" > "${USER_CFG}.tmp" && mv "${USER_CFG}.tmp" "${USER_CFG}"
         else
-            python3 -c "import json; p='${USER_CFG}'; f=open(p); d=json.load(f); f.close(); d['hasFingerprintReader']=${HAS_FP}; f=open(p,'w'); json.dump(d,f,indent=2); f.close()" 2>/dev/null || true
+            python3 -c "import json; p='${USER_CFG}'; f=open(p); d=json.load(f); f.close(); d['hasFingerprintReader']=${HAS_FP}; d['hasFaceUnlock']=${HAS_FACE}; f=open(p,'w'); json.dump(d,f,indent=2); f.close()" 2>/dev/null || true
         fi
     else
-        echo "{\"dynamicIslandPrimaryAction\":\"toggleControlCenter\",\"hasFingerprintReader\":${HAS_FP}}" > "${USER_CFG}"
+        echo "{\"dynamicIslandPrimaryAction\":\"toggleControlCenter\",\"hasFingerprintReader\":${HAS_FP},\"hasFaceUnlock\":${HAS_FACE}}" > "${USER_CFG}"
     fi
 
     if [ "${HAS_FP}" = true ]; then
         echo "✓ Fingerprint reader enabled for Dynamic Island Polkit authentication."
     else
-        echo "✓ Fingerprint reader disabled. Polkit will use standard password authentication."
+        echo "✓ Fingerprint reader disabled."
+    fi
+
+    if [ "${HAS_FACE}" = true ]; then
+        echo "✓ Windows Hello Face ID enabled for Dynamic Island Polkit authentication."
+    else
+        echo "✓ Windows Hello Face ID disabled."
     fi
 }
 
-setup_fingerprint_reader
+setup_biometrics
 
 # ------------------------------------------------------------------------------
 # 3. Deploy Runtime Config to ~/.config/quickshell/dynamic-island
