@@ -477,6 +477,20 @@ Scope {
             });
         }
 
+        function testFaceId() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.testFaceId)
+                    window.testFaceId();
+            });
+        }
+
+        function testFaceIdSuccess() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.testFaceIdSuccess)
+                    window.testFaceIdSuccess();
+            });
+        }
+
         function closePolkit() {
             shellRoot.closePolkitPromptAll();
         }
