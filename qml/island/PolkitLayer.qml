@@ -47,7 +47,12 @@ FocusScope {
     property bool userChosePassword: false
 
     readonly property real preferredWidth: root.isSuccess ? 58 : 380
-    readonly property real preferredHeight: root.isSuccess ? 58 : ((root.activeAuthMode === "face") ? 310 : 186)
+    readonly property real preferredHeight: {
+        if (root.isSuccess) return 58;
+        if (root.activeAuthMode === "face") return 310;
+        if (root.hasBiometrics) return 186;
+        return 160;
+    }
 
     readonly property bool hasBiometrics: hasFingerprintSensor || hasFaceUnlock
 
@@ -79,63 +84,6 @@ FocusScope {
         }
     }
 
-    Process {
-        id: fpDetectorProc
-        command: [
-            "python3", "-c",
-            "import os, subprocess; " +
-            "home = os.path.expanduser('~'); " +
-            "candidates = [" +
-            "os.path.join(home, '.config/quickshell/dynamic-island/scripts/detect_fingerprint_hardware.py'), " +
-            "os.path.join(os.getcwd(), 'scripts/detect_fingerprint_hardware.py')]; " +
-            "s = next((c for c in candidates if os.path.isfile(c)), None); " +
-            "subprocess.run(['python3', s]) if s else None"
-        ]
-        running: false
-        stdout: StdioCollector {
-            onDataChanged: {
-                if (!data) return;
-                try {
-                    const res = JSON.parse(data.trim());
-                    if (res && res.available !== undefined) {
-                        root.hasFingerprintSensor = !!res.available;
-                        if (res.available && !root.userChosePassword && !root.hasFaceUnlock) {
-                            root.activeAuthMode = "fingerprint";
-                        }
-                    }
-                } catch(e) {}
-            }
-        }
-    }
-
-    Process {
-        id: faceDetectorProc
-        command: [
-            "python3", "-c",
-            "import os, subprocess; " +
-            "home = os.path.expanduser('~'); " +
-            "candidates = [" +
-            "os.path.join(home, '.config/quickshell/dynamic-island/scripts/detect_face_hardware.py'), " +
-            "os.path.join(os.getcwd(), 'scripts/detect_face_hardware.py')]; " +
-            "s = next((c for c in candidates if os.path.isfile(c)), None); " +
-            "subprocess.run(['python3', s]) if s else None"
-        ]
-        running: false
-        stdout: StdioCollector {
-            onDataChanged: {
-                if (!data) return;
-                try {
-                    const res = JSON.parse(data.trim());
-                    if (res && res.available !== undefined) {
-                        root.hasFaceUnlock = !!res.available;
-                        if (res.available && !root.userChosePassword) {
-                            root.activeAuthMode = "face";
-                        }
-                    }
-                } catch(e) {}
-            }
-        }
-    }
 
     anchors.fill: parent
     focus: showCondition
@@ -234,8 +182,6 @@ FocusScope {
     onShowConditionChanged: {
         if (showCondition) {
             resetAuthMode();
-            fpDetectorProc.running = true;
-            faceDetectorProc.running = true;
             focusDelayTimer.restart();
         } else {
             authState = "idle";
@@ -258,8 +204,6 @@ FocusScope {
 
     Component.onCompleted: {
         resetAuthMode();
-        fpDetectorProc.running = true;
-        faceDetectorProc.running = true;
         root.grabKeyboardFocus();
     }
 
@@ -394,7 +338,12 @@ FocusScope {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.topMargin: (root.activeAuthMode === "face") ? 54 : ((root.activeAuthMode === "fingerprint") ? 78 : 62)
+        anchors.topMargin: {
+            if (root.activeAuthMode === "face") return 54;
+            if (root.activeAuthMode === "fingerprint") return 78;
+            if (root.hasBiometrics) return 42;
+            return 28;
+        }
         anchors.bottomMargin: 8
         anchors.leftMargin: 16
         anchors.rightMargin: 16

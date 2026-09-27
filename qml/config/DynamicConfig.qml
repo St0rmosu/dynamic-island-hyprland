@@ -91,8 +91,8 @@ Item {
     property string motionProfile: "snappy"
 
     // ── 6. Biometrics & Security ────────────────────────────────────────
-    property bool hasFingerprintReader: false
-    property bool hasFaceUnlock: false
+    property var hasFingerprintReader: undefined
+    property var hasFaceUnlock: undefined
 
     // ── Internals & State ──────────────────────────────────────────────
     property var rawMap: ({})

@@ -23,6 +23,7 @@ WALLPAPER_BACKEND="awww"
 SETUP_AUTOSTART=true
 FINGERPRINT_READER=""
 FACE_UNLOCK=""
+BIOMETRICS_CHOICE=""
 
 # Parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -33,6 +34,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         -y|--yes|--non-interactive)
             INTERACTIVE=false
+            shift
+            ;;
+        --biometrics)
+            BIOMETRICS_CHOICE="$2"
+            shift 2
+            ;;
+        --no-biometrics)
+            BIOMETRICS_CHOICE="none"
             shift
             ;;
         --fingerprint)
@@ -65,7 +74,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./install.sh [--system] [-y|--yes] [--fingerprint|--no-fingerprint] [--face-unlock|--no-face-unlock] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
+            echo "Usage: ./install.sh [--system] [-y|--yes] [--biometrics <fingerprint|face|both|none>] [--fingerprint|--no-fingerprint] [--face-unlock|--no-face-unlock] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
             exit 1
             ;;
     esac
@@ -228,62 +237,183 @@ fi
 # ------------------------------------------------------------------------------
 setup_biometrics() {
     echo ""
-    echo "=== Biometric Authentication Setup ==="
+    echo "========================================================"
+    echo "   🔐 Biometric Authentication Setup (Windows Hello)"
+    echo "========================================================"
 
     local HAS_FP=false
-    if [ -n "${FINGERPRINT_READER}" ]; then
-        HAS_FP="${FINGERPRINT_READER}"
-    elif [ "${INTERACTIVE}" = true ]; then
-        echo "Do you have a fingerprint reader? [y/N]"
-        read -r -p "> " FP_CHOICE
-        if [[ "${FP_CHOICE}" =~ ^[Yy] ]]; then
-            HAS_FP=true
-        else
-            HAS_FP=false
-        fi
-    else
-        HAS_FP=false
+    local HAS_FACE=false
+
+    # Detect package helper
+    local AUR_HELPER=""
+    if command -v yay >/dev/null 2>&1; then
+        AUR_HELPER="yay"
+    elif command -v paru >/dev/null 2>&1; then
+        AUR_HELPER="paru"
     fi
 
-    local HAS_FACE=false
-    if [ -n "${FACE_UNLOCK}" ]; then
-        HAS_FACE="${FACE_UNLOCK}"
+    # Handle explicit CLI selection first
+    if [ -n "${BIOMETRICS_CHOICE}" ]; then
+        case "$(echo "${BIOMETRICS_CHOICE}" | tr '[:upper:]' '[:lower:]')" in
+            1|fingerprint|touch|fprintd)
+                HAS_FP=true
+                HAS_FACE=false
+                ;;
+            2|face|faceid|howdy|windows-hello)
+                HAS_FP=false
+                HAS_FACE=true
+                ;;
+            3|both|all)
+                HAS_FP=true
+                HAS_FACE=true
+                ;;
+            4|none|password|false)
+                HAS_FP=false
+                HAS_FACE=false
+                ;;
+            *)
+                echo "⚠️  Unknown biometrics option: ${BIOMETRICS_CHOICE}. Defaulting to password only (none)."
+                HAS_FP=false
+                HAS_FACE=false
+                ;;
+        esac
+    elif [ -n "${FINGERPRINT_READER}" ] || [ -n "${FACE_UNLOCK}" ]; then
+        [ "${FINGERPRINT_READER}" = true ] && HAS_FP=true
+        [ "${FACE_UNLOCK}" = true ] && HAS_FACE=true
     elif [ "${INTERACTIVE}" = true ]; then
-        echo "Do you have a Windows Hello / IR camera for face unlock (Howdy)? [y/N]"
-        read -r -p "> " FACE_CHOICE
-        if [[ "${FACE_CHOICE}" =~ ^[Yy] ]]; then
-            HAS_FACE=true
-        else
-            HAS_FACE=false
-        fi
+        echo "Does your machine have Windows Hello or biometric authentication hardware?"
+        echo "  1) Fingerprint only (Touch ID with fprintd)"
+        echo "  2) Face ID only (Windows Hello IR camera with Howdy)"
+        echo "  3) Both (Fingerprint reader + Face ID IR camera)"
+        echo "  4) None (Standard password authentication only)"
+        read -r -p "Select option [1-4] (default: 4): " BIO_CHOICE
+
+        case "$(echo "${BIO_CHOICE}" | tr '[:upper:]' '[:lower:]')" in
+            1|fingerprint|touch|fprintd)
+                HAS_FP=true
+                HAS_FACE=false
+                ;;
+            2|face|faceid|howdy)
+                HAS_FP=false
+                HAS_FACE=true
+                ;;
+            3|both|all)
+                HAS_FP=true
+                HAS_FACE=true
+                ;;
+            4|none|password|n|no|"")
+                HAS_FP=false
+                HAS_FACE=false
+                ;;
+            *)
+                echo "Selection not recognized. Defaulting to none (password only)."
+                HAS_FP=false
+                HAS_FACE=false
+                ;;
+        esac
     else
+        HAS_FP=false
         HAS_FACE=false
     fi
 
-    local USER_CFG="$HOME/.config/dynamic-island/userconfig.json"
-    mkdir -p "$HOME/.config/dynamic-island"
-
-    if [ -f "${USER_CFG}" ]; then
-        if command -v jq >/dev/null 2>&1; then
-            jq --argjson fp "${HAS_FP}" --argjson face "${HAS_FACE}" '.hasFingerprintReader = $fp | .hasFaceUnlock = $face' "${USER_CFG}" > "${USER_CFG}.tmp" && mv "${USER_CFG}.tmp" "${USER_CFG}"
-        else
-            python3 -c "import json; p='${USER_CFG}'; f=open(p); d=json.load(f); f.close(); d['hasFingerprintReader']=${HAS_FP}; d['hasFaceUnlock']=${HAS_FACE}; f=open(p,'w'); json.dump(d,f,indent=2); f.close()" 2>/dev/null || true
-        fi
-    else
-        echo "{\"dynamicIslandPrimaryAction\":\"toggleControlCenter\",\"hasFingerprintReader\":${HAS_FP},\"hasFaceUnlock\":${HAS_FACE}}" > "${USER_CFG}"
-    fi
-
+    # 1. Setup Fingerprint (fprintd)
     if [ "${HAS_FP}" = true ]; then
-        echo "✓ Fingerprint reader enabled for Dynamic Island Polkit authentication."
+        echo ""
+        echo "--- Configuring Fingerprint Authentication (fprintd) ---"
+        if ! command -v fprintd-verify >/dev/null 2>&1 && ! pacman -Qi fprintd >/dev/null 2>&1; then
+            echo "Installing fprintd package..."
+            if [ -n "${AUR_HELPER}" ]; then
+                "${AUR_HELPER}" -S --needed --noconfirm fprintd imagemagick || true
+            elif command -v pacman >/dev/null 2>&1; then
+                sudo pacman -S --needed --noconfirm fprintd imagemagick || true
+            elif command -v apt-get >/dev/null 2>&1; then
+                sudo apt-get update && sudo apt-get install -y fprintd libpam-fprintd || true
+            elif command -v dnf >/dev/null 2>&1; then
+                sudo dnf install -y fprintd fprintd-pam || true
+            else
+                echo "⚠️  Package manager not recognized. Please install 'fprintd' manually."
+            fi
+        else
+            echo "✓ fprintd is already installed."
+        fi
+
+        if command -v systemctl >/dev/null 2>&1; then
+            echo "Enabling and starting fprintd.service..."
+            sudo systemctl enable --now fprintd.service 2>/dev/null || true
+        fi
+
+        echo "✓ Touch ID / Fingerprint enabled for Dynamic Island Polkit authentication."
+        echo "  👉 TIP: To enroll your fingerprint, run in terminal: fprintd-enroll"
+        echo "  👉 TIP: To verify your registered fingerprint, run: fprintd-verify"
     else
         echo "✓ Fingerprint reader disabled."
     fi
 
+    # 2. Setup Face ID (Howdy)
     if [ "${HAS_FACE}" = true ]; then
+        echo ""
+        echo "--- Configuring Windows Hello Face ID (Howdy) ---"
+        if ! command -v howdy >/dev/null 2>&1; then
+            echo "Installing Howdy face authentication..."
+            if [ -n "${AUR_HELPER}" ]; then
+                "${AUR_HELPER}" -S --needed --noconfirm howdy-git || "${AUR_HELPER}" -S --needed --noconfirm howdy || "${AUR_HELPER}" -S --needed --noconfirm howdy-bin || true
+            elif command -v pacman >/dev/null 2>&1; then
+                echo "⚠️  Howdy is available in the Arch User Repository (AUR)."
+                echo "    Please install it using an AUR helper: yay -S howdy-git"
+            elif command -v apt-get >/dev/null 2>&1; then
+                echo "Installing Howdy from PPA..."
+                sudo add-apt-repository -y ppa:boltgolt/howdy && sudo apt-get update && sudo apt-get install -y howdy || true
+            elif command -v dnf >/dev/null 2>&1; then
+                echo "Installing Howdy from COPR..."
+                sudo dnf copr enable -y principis/howdy && sudo dnf install -y howdy || true
+            else
+                echo "⚠️  Please install 'howdy' manually from https://github.com/boltgolt/howdy"
+            fi
+        else
+            echo "✓ Howdy is already installed."
+        fi
+
+        if [ -n "${AUR_HELPER}" ] && ! command -v linux-enable-ir-emitter >/dev/null 2>&1; then
+            echo "Installing linux-enable-ir-emitter for IR camera support..."
+            "${AUR_HELPER}" -S --needed --noconfirm linux-enable-ir-emitter || true
+        fi
+
         echo "✓ Windows Hello Face ID enabled for Dynamic Island Polkit authentication."
+        echo "  👉 Step 1: Configure your infrared camera device path: sudo howdy config"
+        echo "  👉 Step 2: Enroll your face model: sudo howdy add"
+        echo "  👉 Step 3: Test facial authentication: sudo howdy test"
     else
         echo "✓ Windows Hello Face ID disabled."
     fi
+
+    if [ "${HAS_FP}" = false ] && [ "${HAS_FACE}" = false ]; then
+        echo ""
+        echo "✓ Biometrics disabled. Dynamic Island will use standard password authentication."
+    fi
+
+    # 3. Save to configuration files
+    local USER_CFG="$HOME/.config/dynamic-island/userconfig.json"
+    local MAIN_CFG="$HOME/.config/dynamic-island/config.json"
+    mkdir -p "$HOME/.config/dynamic-island"
+
+    update_config_biometrics() {
+        local target_file="$1"
+        if [ -f "${target_file}" ]; then
+            if command -v jq >/dev/null 2>&1; then
+                jq --argjson fp "${HAS_FP}" --argjson face "${HAS_FACE}" '.hasFingerprintReader = $fp | .hasFaceUnlock = $face' "${target_file}" > "${target_file}.tmp" && mv "${target_file}.tmp" "${target_file}"
+            else
+                python3 -c "import json; p='${target_file}'; f=open(p); d=json.load(f); f.close(); d['hasFingerprintReader']=${HAS_FP}; d['hasFaceUnlock']=${HAS_FACE}; f=open(p,'w'); json.dump(d,f,indent=2); f.close()" 2>/dev/null || true
+            fi
+        fi
+    }
+
+    if [ ! -f "${USER_CFG}" ]; then
+        echo "{\"dynamicIslandPrimaryAction\":\"toggleControlCenter\",\"hasFingerprintReader\":${HAS_FP},\"hasFaceUnlock\":${HAS_FACE}}" > "${USER_CFG}"
+    else
+        update_config_biometrics "${USER_CFG}"
+    fi
+
+    [ -f "${MAIN_CFG}" ] && update_config_biometrics "${MAIN_CFG}"
 }
 
 setup_biometrics
