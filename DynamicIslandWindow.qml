@@ -849,6 +849,33 @@ PanelWindow {
         demoPolkitTimer.restart();
     }
 
+    function testFingerprint() {
+        showPolkitPrompt();
+        if (polkitLoader.item) {
+            polkitLoader.item.switchToFingerprint();
+        }
+    }
+
+    function testFingerprintSuccess() {
+        showPolkitPrompt();
+        if (polkitLoader.item) {
+            polkitLoader.item.switchToFingerprint();
+        }
+        demoPolkitFingerprintTimer.restart();
+    }
+
+    Timer {
+        id: demoPolkitFingerprintTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (polkitLoader.item) {
+                polkitLoader.item.simulateFingerprintSuccess();
+                demoMorphTimer.restart();
+            }
+        }
+    }
+
     Timer {
         id: demoPolkitTimer
         interval: 1000
@@ -879,12 +906,17 @@ PanelWindow {
     }
 
     function handlePolkitFinished() {
-        if (polkitLoader.item && polkitLoader.item.isVerifying && !polkitLoader.item.isFailed) {
-            islandContainer.polkitSuccessMorph = true;
-            polkitLoader.item.markSuccess();
-        } else {
-            closePolkitPrompt();
+        if (polkitLoader.item) {
+            if (polkitLoader.item.isSuccess) {
+                return;
+            }
+            if (!polkitLoader.item.isFailed) {
+                islandContainer.polkitSuccessMorph = true;
+                polkitLoader.item.markSuccess();
+                return;
+            }
         }
+        closePolkitPrompt();
     }
 
     function focusWallpaperPicker() {
@@ -1323,6 +1355,27 @@ PanelWindow {
 
         command: ["python3", root.homeDir + "/.config/quickshell/dynamic-island/scripts/discord_call_action.py", action]
         running: false
+    }
+
+    property bool hasFingerprintSensor: false
+
+    Process {
+        id: rootFpDetectorProc
+
+        command: ["python3", root.homeDir + "/.config/quickshell/dynamic-island/scripts/detect_fingerprint_hardware.py"]
+        running: true
+
+        stdout: StdioCollector {
+            onDataChanged: {
+                if (!data) return;
+                try {
+                    const res = JSON.parse(data.trim());
+                    if (res && res.available !== undefined) {
+                        root.hasFingerprintSensor = !!res.available;
+                    }
+                } catch(e) {}
+            }
+        }
     }
 
     Timer {
@@ -3089,7 +3142,7 @@ PanelWindow {
                     if (islandContainer.polkitSuccessMorph)
                         return 58;
 
-                    return 174;
+                    return 188;
                 case "screen_share_picker":
                     return screenSharePickerLoader.item ? screenSharePickerLoader.item.preferredHeight : 220;
                 case "expanded":
@@ -4004,6 +4057,9 @@ PanelWindow {
                 sourceComponent: Component {
                     SettingsAppLayer {
                         dynamicConfig: root.dynamicConfig
+                        textFontFamily: root.textFontFamily
+                        heroFontFamily: root.heroFontFamily
+                        iconFontFamily: root.iconFontFamily
                         accentColor: pywalColors.accent
                         showCondition: islandContainer.settingsAppLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
@@ -4056,7 +4112,10 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
+                        hasFingerprintSensor: root.hasFingerprintSensor
+                        fingerprintModeActive: root.hasFingerprintSensor
                         showCondition: islandContainer.polkitLayerVisible
+                        onPolkitSuccessRequested: islandContainer.polkitSuccessMorph = true
                         onCloseRequested: {
                             if (root.polkitAgent && root.polkitAgent.flow)
                                 root.polkitAgent.flow.cancelAuthenticationRequest();

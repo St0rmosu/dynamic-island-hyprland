@@ -106,8 +106,13 @@ Item {
         preload: true
         printErrors: false
 
-        Component.onCompleted: root.loadFromDisk()
-        onFileChanged: root.loadFromDisk()
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            if (!root.isSaving) {
+                root.loadFromDisk();
+            }
+        }
     }
 
     // ── Palette Engine Watchers (Pywal, Wallust, Iris, Matugen) ────────
@@ -208,9 +213,17 @@ Item {
     FileView {
         id: fallbackFile
         path: root.fallbackPath
-        watchChanges: false
+        watchChanges: true
         preload: true
         printErrors: false
+
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            if (!root.isLoaded && !root.isSaving) {
+                root.loadFromDisk();
+            }
+        }
     }
 
     function loadFromDisk() {
@@ -327,8 +340,18 @@ Item {
         onTriggered: root.dispatchSave()
     }
 
+    Timer {
+        id: savingResetTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            root.isSaving = false;
+        }
+    }
+
     function dispatchSave() {
         root.isSaving = true;
+        savingResetTimer.restart();
         try {
             // Snapshot current state
             const payload = {
@@ -388,12 +411,12 @@ Item {
             const scriptPath = root.homeDir + "/.config/quickshell/dynamic-island/scripts/save_dynamic_config.py";
             Quickshell.execDetached(["python3", scriptPath, jsonStr]);
             root.saveStatus = "Live Synced";
-            root.isSaving = false;
             root.configSaved();
         } catch(e) {
             console.error("[DynamicConfig] Save failed:", e);
             root.saveStatus = "Save Error";
             root.isSaving = false;
+            savingResetTimer.stop();
         }
     }
 }

@@ -121,9 +121,9 @@ FocusScope {
         return accentColor;
     }
 
-    readonly property string textFontFamily: dynamicConfig ? dynamicConfig.textFontFamily : "Google Sans Flex"
-    readonly property string heroFontFamily: dynamicConfig ? dynamicConfig.heroFontFamily : "Google Sans Flex"
-    readonly property string iconFontFamily: dynamicConfig ? dynamicConfig.iconFontFamily : "JetBrainsMono Nerd Font"
+    property string textFontFamily: (dynamicConfig && dynamicConfig.textFontFamily !== "") ? dynamicConfig.textFontFamily : "Google Sans Flex"
+    property string heroFontFamily: (dynamicConfig && dynamicConfig.heroFontFamily !== "") ? dynamicConfig.heroFontFamily : "Google Sans Flex"
+    property string iconFontFamily: (dynamicConfig && dynamicConfig.iconFontFamily !== "") ? dynamicConfig.iconFontFamily : "JetBrainsMono Nerd Font"
 
     property int selectedCategoryIndex: 0
 
@@ -538,10 +538,15 @@ FocusScope {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (root.dynamicConfig) {
-                                if (root.fontBrowserTarget === "icon") {
+                            if (root.fontBrowserTarget === "icon") {
+                                root.iconFontFamily = modelData;
+                                if (root.dynamicConfig) {
                                     root.dynamicConfig.set("iconFontFamily", modelData);
-                                } else {
+                                }
+                            } else {
+                                root.textFontFamily = modelData;
+                                root.heroFontFamily = modelData;
+                                if (root.dynamicConfig) {
                                     root.dynamicConfig.set("textFontFamily", modelData);
                                     root.dynamicConfig.set("heroFontFamily", modelData);
                                     root.dynamicConfig.set("timeFontFamily", modelData);

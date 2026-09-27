@@ -463,6 +463,20 @@ Scope {
             });
         }
 
+        function testFingerprint() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.testFingerprint)
+                    window.testFingerprint();
+            });
+        }
+
+        function testFingerprintSuccess() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.testFingerprintSuccess)
+                    window.testFingerprintSuccess();
+            });
+        }
+
         function closePolkit() {
             shellRoot.closePolkitPromptAll();
         }

@@ -394,7 +394,7 @@ Flickable {
                             font.family: root.textFontFamily
                         }
                         Text {
-                            text: root.config ? root.config.textFontFamily : "Google Sans Flex"
+                            text: (root.config && root.config.textFontFamily) ? root.config.textFontFamily : root.textFontFamily
                             color: "#7e889b"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -467,7 +467,7 @@ Flickable {
                             font.family: root.textFontFamily
                         }
                         Text {
-                            text: root.config ? root.config.iconFontFamily : "JetBrainsMono Nerd Font"
+                            text: (root.config && root.config.iconFontFamily) ? root.config.iconFontFamily : root.iconFontFamily
                             color: "#7e889b"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
