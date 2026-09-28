@@ -102,6 +102,12 @@ Item {
         }
     }
 
+    Component.onCompleted: {
+        if (root.language && typeof I18n !== "undefined" && I18n) {
+            I18n.language = root.language;
+        }
+    }
+
     // ── Internals & State ──────────────────────────────────────────────
     property var rawMap: ({})
     property bool isLoaded: false
@@ -428,7 +434,8 @@ Item {
                 animationFps: root.animationFps,
                 motionProfile: root.motionProfile,
                 hasFingerprintReader: root.hasFingerprintReader,
-                hasFaceUnlock: root.hasFaceUnlock
+                hasFaceUnlock: root.hasFaceUnlock,
+                language: root.language
             };
 
             const jsonStr = JSON.stringify(payload);

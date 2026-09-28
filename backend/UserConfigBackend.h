@@ -39,6 +39,11 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(QString tlpPermissionMode READ tlpPermissionMode NOTIFY tlpPermissionModeChanged FINAL)
     Q_PROPERTY(QString powerProfileDriver READ powerProfileDriver NOTIFY powerProfileDriverChanged FINAL)
     Q_PROPERTY(QString language READ language NOTIFY languageChanged FINAL)
+    Q_PROPERTY(QString irisAccent READ irisAccent NOTIFY irisAccentChanged FINAL)
+    Q_PROPERTY(QString walAccent READ walAccent NOTIFY walAccentChanged FINAL)
+    Q_PROPERTY(QString paletteAccent READ paletteAccent NOTIFY paletteAccentChanged FINAL)
+    Q_PROPERTY(QString paletteBackground READ paletteBackground NOTIFY paletteBackgroundChanged FINAL)
+    Q_PROPERTY(QString paletteForeground READ paletteForeground NOTIFY paletteForegroundChanged FINAL)
 
     Q_PROPERTY(int workspaceOverviewWindowDragButton READ workspaceOverviewWindowDragButton NOTIFY workspaceOverviewWindowDragButtonChanged FINAL)
 
@@ -100,6 +105,11 @@ public:
     QString tlpPermissionMode() const;
     QString powerProfileDriver() const;
     QString language() const;
+    QString irisAccent() const;
+    QString walAccent() const;
+    QString paletteAccent() const;
+    QString paletteBackground() const;
+    QString paletteForeground() const;
     int workspaceOverviewWindowDragButton() const;
     int dynamicIslandPrimaryButton() const;
     QString dynamicIslandPrimaryAction() const;
@@ -160,6 +170,11 @@ signals:
     void tlpPermissionModeChanged();
     void powerProfileDriverChanged();
     void languageChanged();
+    void irisAccentChanged();
+    void walAccentChanged();
+    void paletteAccentChanged();
+    void paletteBackgroundChanged();
+    void paletteForegroundChanged();
     void workspaceOverviewWindowDragButtonChanged();
     void dynamicIslandPrimaryButtonChanged();
     void dynamicIslandPrimaryActionChanged();
@@ -220,6 +235,11 @@ private:
     QString m_tlpPermissionMode = QStringLiteral("skip");
     QString m_powerProfileDriver = QStringLiteral("auto");
     QString m_language = QStringLiteral("auto");
+    QString m_irisAccent;
+    QString m_walAccent;
+    QString m_paletteAccent = QStringLiteral("#0a84ff");
+    QString m_paletteBackground = QStringLiteral("#0f141c");
+    QString m_paletteForeground = QStringLiteral("#ffffff");
     int m_workspaceOverviewWindowDragButton = 1;
     int m_dynamicIslandPrimaryButton = 1;
     QString m_dynamicIslandPrimaryAction = QStringLiteral("toggleExpandedPlayer");

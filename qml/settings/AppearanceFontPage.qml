@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import IslandBackend
 
 Flickable {
     id: root
@@ -33,15 +34,15 @@ Flickable {
 
         // ── Sezione 1: Stile Vetro & Trasparenza ────────────────────────
         SettingsHeader {
-            text: "Stile Vetro & Trasparenza"
+            text: I18n.tr("Stile Vetro & Trasparenza")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSlider {
-                title: "Opacità Sfondo Isola"
-                description: "Percentuale di copertura del vetro scuro matte"
+                title: I18n.tr("Opacità Sfondo Isola")
+                description: I18n.tr("Percentuale di copertura del vetro scuro matte")
                 icon: "\uf043" // tint
                 from: 30
                 to: 100
@@ -57,8 +58,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSlider {
-                title: "Sfocatura Vetro (Blur)"
-                description: "Intensità dell'effetto frosted glass dietro i pannelli"
+                title: I18n.tr("Sfocatura Vetro (Blur)")
+                description: I18n.tr("Intensità dell'effetto frosted glass dietro i pannelli")
                 icon: "\uf1fc" // magic/brush
                 from: 8
                 to: 48
@@ -74,11 +75,11 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Formato Orologio"
-                description: "Visualizzazione delle ore nei moduli e nell'isola"
+                title: I18n.tr("Formato Orologio")
+                description: I18n.tr("Visualizzazione delle ore nei moduli e nell'isola")
                 model: [
-                    { text: "24 Ore", value: "24h" },
-                    { text: "12 Ore (AM/PM)", value: "12h" }
+                    { text: I18n.tr("24 Ore"), value: "24h" },
+                    { text: I18n.tr("12 Ore (AM/PM)"), value: "12h" }
                 ]
                 currentValue: root.config ? root.config.clockFormat : "24h"
                 accentColor: root.accentColor
@@ -89,11 +90,11 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Lingua dell'Interfaccia"
-                description: "Lingua visualizzata nella shell e nell'isola dinamica (rilevata automaticamente dal sistema)"
+                title: I18n.tr("Lingua dell'Interfaccia")
+                description: I18n.tr("Lingua visualizzata nella shell e nell'isola dinamica (rilevata automaticamente dal sistema)")
                 stacked: true
                 model: [
-                    { text: "Sistema (Auto)", value: "auto" },
+                    { text: I18n.tr("Sistema (Auto)"), value: "auto" },
                     { text: "Italiano", value: "it" },
                     { text: "English", value: "en" },
                     { text: "Español", value: "es" },
@@ -113,15 +114,15 @@ Flickable {
 
         // ── Sezione 2: Colori & Temi Dinamici ───────────────────────────
         SettingsHeader {
-            text: "Colori & Armonia Temi"
+            text: I18n.tr("Colori & Armonia Temi")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSwitch {
-                title: "Palette Dinamica"
-                description: "Estrae e sfuma i colori dell'accento in tempo reale dallo sfondo del desktop"
+                title: I18n.tr("Palette Dinamica")
+                description: I18n.tr("Estrae e sfuma i colori dell'accento in tempo reale dallo sfondo del desktop")
                 icon: "\uf1fc" // paint-brush
                 checked: root.config ? root.config.pywalEnabled : true
                 accentColor: root.accentColor
@@ -133,8 +134,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Motore Palette Compatibile"
-                description: "Scegli o rileva automaticamente il generatore di colori del tuo sistema"
+                title: I18n.tr("Motore Palette Compatibile")
+                description: I18n.tr("Scegli o rileva automaticamente il generatore di colori del tuo sistema")
                 stacked: true
                 model: [
                     { text: "Auto", value: "auto" },
@@ -152,7 +153,7 @@ Flickable {
 
         // ── Sezione 3: Sfondo del Desktop ───────────────────────────────
         SettingsHeader {
-            text: "Gestione Sfondi (Wallpaper)"
+            text: I18n.tr("Gestione Sfondi (Wallpaper)")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
@@ -379,7 +380,7 @@ Flickable {
 
         // ── Sezione 4: Tipografia & Caratteri ───────────────────────────
         SettingsHeader {
-            text: "Tipografia & Caratteri"
+            text: I18n.tr("Tipografia & Caratteri")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
@@ -412,7 +413,7 @@ Flickable {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text {
-                            text: "Carattere Testo & Controlli"
+                            text: I18n.tr("Carattere Testo & Controlli")
                             color: "#f2f4f8"
                             font.pixelSize: 13
                             font.weight: Font.Medium
@@ -439,7 +440,7 @@ Flickable {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "Sfoglia"
+                        text: I18n.tr("Sfoglia")
                         color: "#f2f4f8"
                         font.pixelSize: 11
                         font.weight: Font.Medium
@@ -485,7 +486,7 @@ Flickable {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text {
-                            text: "Carattere Icone & Glifi"
+                            text: I18n.tr("Carattere Icone & Glifi")
                             color: "#f2f4f8"
                             font.pixelSize: 13
                             font.weight: Font.Medium
@@ -512,7 +513,7 @@ Flickable {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "Sfoglia"
+                        text: I18n.tr("Sfoglia")
                         color: "#f2f4f8"
                         font.pixelSize: 11
                         font.weight: Font.Medium

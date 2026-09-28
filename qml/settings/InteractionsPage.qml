@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import IslandBackend
 
 Flickable {
     id: root
@@ -30,19 +31,19 @@ Flickable {
 
         // ── Sezione 1: Azioni dei Click sull'Isola ─────────────────────
         SettingsHeader {
-            text: "Azioni del Click del Mouse"
+            text: I18n.tr("Azioni del Click del Mouse")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSegmented {
-                title: "Click Sinistro (Principale)"
-                description: "Azione quando premi sull'isola a riposo"
+                title: I18n.tr("Click Sinistro (Principale)")
+                description: I18n.tr("Azione quando premi sull'isola a riposo")
                 model: [
-                    { text: "Control Center", value: "control_center" },
-                    { text: "Media Player", value: "player" },
-                    { text: "Clipboard", value: "clipboard" }
+                    { text: I18n.tr("Control Center"), value: "control_center" },
+                    { text: I18n.tr("Media Player"), value: "player" },
+                    { text: I18n.tr("Appunti"), value: "clipboard" }
                 ]
                 currentValue: root.config ? root.config.primaryClickAction : "control_center"
                 accentColor: root.accentColor
@@ -53,12 +54,12 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Click Destro (Secondario)"
-                description: "Azione al tasto destro del mouse"
+                title: I18n.tr("Click Destro (Secondario)")
+                description: I18n.tr("Azione al tasto destro del mouse")
                 model: [
-                    { text: "Power Menu", value: "power_menu" },
-                    { text: "Control Center", value: "control_center" },
-                    { text: "App Launcher", value: "apps" }
+                    { text: I18n.tr("Power Menu"), value: "power_menu" },
+                    { text: I18n.tr("Control Center"), value: "control_center" },
+                    { text: I18n.tr("App Launcher"), value: "apps" }
                 ]
                 currentValue: root.config ? root.config.secondaryClickAction : "power_menu"
                 accentColor: root.accentColor
@@ -69,12 +70,12 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Click Rotella (Centrale)"
-                description: "Azione alla pressione della rotellina del mouse"
+                title: I18n.tr("Click Rotella (Centrale)")
+                description: I18n.tr("Azione alla pressione della rotellina del mouse")
                 model: [
-                    { text: "Clipboard", value: "clipboard" },
-                    { text: "File Shelf", value: "files" },
-                    { text: "Power Menu", value: "power_menu" }
+                    { text: I18n.tr("Appunti"), value: "clipboard" },
+                    { text: I18n.tr("File Shelf"), value: "files" },
+                    { text: I18n.tr("Power Menu"), value: "power_menu" }
                 ]
                 currentValue: root.config ? root.config.middleClickAction : "clipboard"
                 accentColor: root.accentColor
@@ -85,11 +86,11 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Doppio Click"
-                description: "Azione rapida al doppio click rapido"
+                title: I18n.tr("Doppio Click")
+                description: I18n.tr("Azione rapida al doppio click rapido")
                 model: [
-                    { text: "Nascondi Isola", value: "toggle_island" },
-                    { text: "Overview", value: "overview" }
+                    { text: I18n.tr("Nascondi Isola"), value: "toggle_island" },
+                    { text: I18n.tr("Overview"), value: "overview" }
                 ]
                 currentValue: root.config ? root.config.doubleClickAction : "toggle_island"
                 accentColor: root.accentColor
@@ -100,18 +101,18 @@ Flickable {
 
         // ── Sezione 2: Scorrimento Rotellina (Scroll) ───────────────────
         SettingsHeader {
-            text: "Rotella del Mouse (Scroll sull'Isola)"
+            text: I18n.tr("Rotella del Mouse (Scroll sull'Isola)")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSegmented {
-                title: "Scorrimento Verticale (Su / Giù)"
-                description: "Regola al volo una funzione di sistema"
+                title: I18n.tr("Scorrimento Verticale (Su / Giù)")
+                description: I18n.tr("Regola al volo una funzione di sistema")
                 model: [
-                    { text: "Volume Audio", value: "volume" },
-                    { text: "Luminosità", value: "brightness" }
+                    { text: I18n.tr("Volume Audio"), value: "volume" },
+                    { text: I18n.tr("Luminosità"), value: "brightness" }
                 ]
                 currentValue: root.config ? root.config.scrollVerticalAction : "volume"
                 accentColor: root.accentColor
@@ -122,11 +123,11 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSegmented {
-                title: "Scorrimento Orizzontale (Sinistra / Destra)"
-                description: "Spostamento laterale della rotellina"
+                title: I18n.tr("Scorrimento Orizzontale (Sinistra / Destra)")
+                description: I18n.tr("Spostamento laterale della rotellina")
                 model: [
-                    { text: "Cambia Canzone", value: "track" },
-                    { text: "Cambia Workspace", value: "workspace" }
+                    { text: I18n.tr("Cambia Canzone"), value: "track" },
+                    { text: I18n.tr("Cambia Workspace"), value: "workspace" }
                 ]
                 currentValue: root.config ? root.config.scrollHorizontalAction : "track"
                 accentColor: root.accentColor
@@ -137,8 +138,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSlider {
-                title: "Passo di Regolazione Volume/Luminosità"
-                description: "Percentuale per ogni scatto della rotellina"
+                title: I18n.tr("Passo di Regolazione Volume/Luminosità")
+                description: I18n.tr("Percentuale per ogni scatto della rotellina")
                 icon: "\uf1de" // sliders
                 from: 1
                 to: 10
@@ -154,15 +155,15 @@ Flickable {
 
         // ── Sezione 3: Media & Notifiche Brani ──────────────────────────
         SettingsHeader {
-            text: "Comportamento Media Player"
+            text: I18n.tr("Comportamento Media Player")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSwitch {
-                title: "Disabilita Espansione al Cambio Canzone"
-                description: "Evita che l'isola si apra da sola ogni volta che inizia un nuovo brano"
+                title: I18n.tr("Disabilita Espansione al Cambio Canzone")
+                description: I18n.tr("Evita che l'isola si apra da sola ogni volta che inizia un nuovo brano")
                 icon: "\uf001" // music
                 checked: root.config ? root.config.disableAutoExpandOnTrackChange : false
                 accentColor: root.accentColor

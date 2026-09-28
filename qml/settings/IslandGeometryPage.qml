@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import IslandBackend
 
 Flickable {
     id: root
@@ -30,15 +31,15 @@ Flickable {
 
         // ── Sezione 1: Geometria & Dimensioni ───────────────────────────
         SettingsHeader {
-            text: "Geometria Isola & Schermo"
+            text: I18n.tr("Geometria Isola & Schermo")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSlider {
-                title: "Larghezza a Riposo"
-                description: "Larghezza minima della capsula prima delle espansioni"
+                title: I18n.tr("Larghezza a Riposo")
+                description: I18n.tr("Larghezza minima della capsula prima delle espansioni")
                 icon: "\uf07e" // arrows-alt-h
                 from: 90
                 to: 320
@@ -54,8 +55,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSlider {
-                title: "Altezza a Riposo"
-                description: "Altezza base della capsula con orologio"
+                title: I18n.tr("Altezza a Riposo")
+                description: I18n.tr("Altezza base della capsula con orologio")
                 icon: "\uf07d" // arrows-alt-v
                 from: 28
                 to: 60
@@ -71,8 +72,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSlider {
-                title: "Raggio di Curvatura"
-                description: "Morbidezza degli angoli (squircle arrotondato)"
+                title: I18n.tr("Raggio di Curvatura")
+                description: I18n.tr("Morbidezza degli angoli (squircle arrotondato)")
                 icon: "\uf111" // circle
                 from: 12
                 to: 40
@@ -88,8 +89,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSlider {
-                title: "Margine Superiore"
-                description: "Distanza dal bordo alto dello schermo"
+                title: I18n.tr("Margine Superiore")
+                description: I18n.tr("Distanza dal bordo alto dello schermo")
                 icon: "\uf062" // arrow-up
                 from: 0
                 to: 32
@@ -105,8 +106,8 @@ Flickable {
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
             SettingsSlider {
-                title: "Zona Riservata (Exclusive Zone)"
-                description: "Spazio che spinge in basso le finestre delle app"
+                title: I18n.tr("Zona Riservata (Exclusive Zone)")
+                description: I18n.tr("Spazio che spinge in basso le finestre delle app")
                 icon: "\uf2d0" // window-maximize
                 from: 0
                 to: 60
@@ -122,15 +123,15 @@ Flickable {
 
         // ── Sezione 2: Auto-Hide & Comportamento ─────────────────────────
         SettingsHeader {
-            text: "Auto-Nascondimento (Auto-Hide)"
+            text: I18n.tr("Auto-Nascondimento (Auto-Hide)")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSwitch {
-                title: "Nascondi Isola in Inattività"
-                description: "Ritira l'isola verso l'alto quando non ci sono alert o musica"
+                title: I18n.tr("Nascondi Isola in Inattività")
+                description: I18n.tr("Ritira l'isola verso l'alto quando non ci sono alert o musica")
                 icon: "\uf070" // eye-slash
                 checked: root.config ? root.config.autoHideEnabled : false
                 accentColor: root.accentColor
@@ -146,8 +147,8 @@ Flickable {
 
             SettingsSlider {
                 visible: root.config && root.config.autoHideEnabled
-                title: "Ritardo Inattività"
-                description: "Tempo prima di nascondere l'isola in assenza di attività"
+                title: I18n.tr("Ritardo Inattività")
+                description: I18n.tr("Tempo prima di nascondere l'isola in assenza di attività")
                 icon: "\uf017" // clock
                 from: 500
                 to: 5000
@@ -167,8 +168,8 @@ Flickable {
 
             SettingsSwitch {
                 visible: root.config && root.config.autoHideEnabled
-                title: "Mostra Workspace in Auto-Hide"
-                description: "Mostra un piccolo indicatore del desktop quando l'isola è nascosta"
+                title: I18n.tr("Mostra Workspace in Auto-Hide")
+                description: I18n.tr("Mostra un piccolo indicatore del desktop quando l'isola è nascosta")
                 icon: "\uf108" // desktop
                 checked: root.config ? root.config.showWorkspaceOnAutoHide : true
                 accentColor: root.accentColor
@@ -180,15 +181,15 @@ Flickable {
 
         // ── Sezione 3: Passaggio del Mouse (Hover) ───────────────────────
         SettingsHeader {
-            text: "Interazione Hover (Mouse)"
+            text: I18n.tr("Interazione Hover (Mouse)")
             accentColor: root.accentColor
             textFontFamily: root.textFontFamily
         }
 
         SettingsCard {
             SettingsSwitch {
-                title: "Espandi al Passaggio del Mouse"
-                description: "Apre automaticamente l'isola quando il puntatore si sofferma sopra"
+                title: I18n.tr("Espandi al Passaggio del Mouse")
+                description: I18n.tr("Apre automaticamente l'isola quando il puntatore si sofferma sopra")
                 icon: "\uf245" // mouse-pointer
                 checked: root.config ? root.config.hoverExpandEnabled : false
                 accentColor: root.accentColor
@@ -204,11 +205,11 @@ Flickable {
 
             SettingsSegmented {
                 visible: root.config && root.config.hoverExpandEnabled
-                title: "Cosa Aprire all'Hover"
-                description: "Scegli il pannello che appare all'espansione"
+                title: I18n.tr("Cosa Aprire all'Hover")
+                description: I18n.tr("Scegli il pannello che appare all'espansione")
                 model: [
-                    { text: "Control Center", value: 2 },
-                    { text: "Media Player", value: 1 }
+                    { text: I18n.tr("Control Center"), value: 2 },
+                    { text: I18n.tr("Media Player"), value: 1 }
                 ]
                 currentValue: root.config ? root.config.hoverExpandAction : 2
                 accentColor: root.accentColor
@@ -223,8 +224,8 @@ Flickable {
 
             SettingsSlider {
                 visible: root.config && root.config.hoverExpandEnabled
-                title: "Ritardo Espansione Hover"
-                description: "Tempo di permanenza del cursore prima dell'apertura"
+                title: I18n.tr("Ritardo Espansione Hover")
+                description: I18n.tr("Tempo di permanenza del cursore prima dell'apertura")
                 icon: "\uf252" // hourglass-half
                 from: 50
                 to: 600

@@ -18,6 +18,8 @@ find_library(UDEV_LIB NAMES udev REQUIRED)
 # ==============================================================================
 # Main Backend Module (IslandBackend)
 # ==============================================================================
+set_source_files_properties(backend/I18n.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
 qt_add_qml_module(IslandBackend
     URI IslandBackend
     VERSION 1.0
@@ -44,6 +46,8 @@ qt_add_qml_module(IslandBackend
         backend/WifiNetworkModel.cpp
         backend/I18nBackend.h
         backend/I18nBackend.cpp
+    QML_FILES
+        backend/I18n.qml
     )
 
 set_target_properties(IslandBackendplugin PROPERTIES

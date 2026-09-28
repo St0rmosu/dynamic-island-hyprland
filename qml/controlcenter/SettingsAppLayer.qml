@@ -44,7 +44,7 @@ FocusScope {
         id: localWalColors
         path: root.homeDir + "/.cache/wal/colors.json"
         watchChanges: true
-        property string walAccent: ""
+        property string walAccent: (typeof UserConfig !== "undefined" && UserConfig && UserConfig.walAccent !== "") ? UserConfig.walAccent : ""
         Component.onCompleted: reload()
         onFileChanged: reload()
         onLoaded: {
@@ -61,7 +61,7 @@ FocusScope {
         id: localIrisColors
         path: root.homeDir + "/.cache/iris/colors.json"
         watchChanges: true
-        property string irisAccent: ""
+        property string irisAccent: (typeof UserConfig !== "undefined" && UserConfig && UserConfig.irisAccent !== "") ? UserConfig.irisAccent : ""
         Component.onCompleted: reload()
         onFileChanged: reload()
         onLoaded: {
@@ -128,24 +128,27 @@ FocusScope {
 
     property int selectedCategoryIndex: 0
 
-    readonly property var navigationPages: [
-        {
-            title: I18n.tr("Isola & Geometria"),
-            icon: "\uf108"
-        },
-        {
-            title: I18n.tr("Control Center & Studio"),
-            icon: "\uf462"
-        },
-        {
-            title: I18n.tr("Aspetto, Sfondi & Font"),
-            icon: "\uf1fc"
-        },
-        {
-            title: I18n.tr("Scorciatoie da Tastiera"),
-            icon: "\uf11c"
-        }
-    ]
+    readonly property var navigationPages: {
+        const _ = I18n.currentLanguage;
+        return [
+            {
+                title: I18n.tr("Isola & Geometria"),
+                icon: "\uf108"
+            },
+            {
+                title: I18n.tr("Control Center & Studio"),
+                icon: "\uf462"
+            },
+            {
+                title: I18n.tr("Aspetto, Sfondi & Font"),
+                icon: "\uf1fc"
+            },
+            {
+                title: I18n.tr("Scorciatoie da Tastiera"),
+                icon: "\uf11c"
+            }
+        ];
+    }
 
     // ── Layout Principale a Due Colonne ────────────────────────────────
     Rectangle {

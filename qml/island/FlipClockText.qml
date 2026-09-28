@@ -10,6 +10,13 @@ Item {
     property int fontWeight: Font.Bold
     property real fontLetterSpacing: -0.25
     property int animationDuration: 380
+    property bool animReady: false
+
+    Component.onCompleted: {
+        Qt.callLater(function() {
+            root.animReady = true;
+        });
+    }
 
     implicitWidth: digitsRow.implicitWidth
     implicitHeight: Math.ceil(fontPixelSize * 1.5)
@@ -90,10 +97,10 @@ Item {
                     visible: opacity > 0.01
 
                     Behavior on color {
+                        enabled: root.animReady
                         ColorAnimation {
                             duration: 300
                         }
-
                     }
 
                 }
@@ -113,10 +120,10 @@ Item {
                     opacity: 1
 
                     Behavior on color {
+                        enabled: root.animReady
                         ColorAnimation {
                             duration: 300
                         }
-
                     }
 
                 }

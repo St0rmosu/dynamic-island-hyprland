@@ -8,7 +8,7 @@
 
 class I18nBackend final : public QObject {
     Q_OBJECT
-    QML_NAMED_ELEMENT(I18n)
+    QML_NAMED_ELEMENT(I18nBackend)
     QML_SINGLETON
 
     Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY languageChanged FINAL)

@@ -1,6 +1,7 @@
 #include "UserConfigBackend.h"
 #include "I18nBackend.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -279,6 +280,31 @@ QString UserConfigBackend::powerProfileDriver() const
 QString UserConfigBackend::language() const
 {
     return m_language;
+}
+
+QString UserConfigBackend::irisAccent() const
+{
+    return m_irisAccent;
+}
+
+QString UserConfigBackend::walAccent() const
+{
+    return m_walAccent;
+}
+
+QString UserConfigBackend::paletteAccent() const
+{
+    return m_paletteAccent;
+}
+
+QString UserConfigBackend::paletteBackground() const
+{
+    return m_paletteBackground;
+}
+
+QString UserConfigBackend::paletteForeground() const
+{
+    return m_paletteForeground;
 }
 
 int UserConfigBackend::workspaceOverviewWindowDragButton() const
@@ -564,6 +590,41 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_weatherUnits, jsonString(configObject, QLatin1String("weatherUnits"), QStringLiteral("metric")), &UserConfigBackend::weatherUnitsChanged);
     updateField(this, m_weatherRefreshInterval, jsonBoundedInt(configObject, QLatin1String("weatherRefreshInterval"), 1800000, 60000, 86400000), &UserConfigBackend::weatherRefreshIntervalChanged);
 
+    // Synchronously inspect ~/.cache/iris/colors.json and ~/.cache/wal/colors.json
+    const QString homeDir = QDir::homePath();
+    QString nextIrisAccent;
+    QFile irisFile(homeDir + QStringLiteral("/.cache/iris/colors.json"));
+    if (irisFile.exists() && irisFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QJsonDocument irisDoc = QJsonDocument::fromJson(irisFile.readAll());
+        if (irisDoc.isObject()) {
+            nextIrisAccent = irisDoc.object().value(QStringLiteral("accent")).toString().trimmed();
+        }
+    }
+    updateField(this, m_irisAccent, nextIrisAccent, &UserConfigBackend::irisAccentChanged);
+
+    QString nextWalAccent;
+    QString nextPaletteBg = QStringLiteral("#0f141c");
+    QString nextPaletteFg = QStringLiteral("#ffffff");
+    QFile walFile(homeDir + QStringLiteral("/.cache/wal/colors.json"));
+    if (walFile.exists() && walFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QJsonDocument walDoc = QJsonDocument::fromJson(walFile.readAll());
+        if (walDoc.isObject()) {
+            const QJsonObject walObj = walDoc.object();
+            const QJsonObject colors = walObj.value(QStringLiteral("colors")).toObject();
+            nextWalAccent = colors.value(QStringLiteral("color4")).toString().trimmed();
+            if (nextWalAccent.isEmpty()) nextWalAccent = colors.value(QStringLiteral("color2")).toString().trimmed();
+            const QJsonObject special = walObj.value(QStringLiteral("special")).toObject();
+            if (special.contains(QStringLiteral("background"))) nextPaletteBg = special.value(QStringLiteral("background")).toString().trimmed();
+            if (special.contains(QStringLiteral("foreground"))) nextPaletteFg = special.value(QStringLiteral("foreground")).toString().trimmed();
+        }
+    }
+    updateField(this, m_walAccent, nextWalAccent, &UserConfigBackend::walAccentChanged);
+    updateField(this, m_paletteBackground, nextPaletteBg, &UserConfigBackend::paletteBackgroundChanged);
+    updateField(this, m_paletteForeground, nextPaletteFg, &UserConfigBackend::paletteForegroundChanged);
+
+    QString nextPaletteAccent = !m_irisAccent.isEmpty() ? m_irisAccent : (!m_walAccent.isEmpty() ? m_walAccent : QStringLiteral("#0a84ff"));
+    updateField(this, m_paletteAccent, nextPaletteAccent, &UserConfigBackend::paletteAccentChanged);
+
     updateWatchedPaths();
 }
 
@@ -571,9 +632,18 @@ void UserConfigBackend::updateWatchedPaths()
 {
     const QString configDirectory = QFileInfo(m_userConfigPath).absolutePath();
     const QString configParentDirectory = QFileInfo(configDirectory).absolutePath();
-    const QSet<QString> wantedFiles = QFileInfo::exists(m_userConfigPath)
-        ? QSet<QString>{m_userConfigPath}
-        : QSet<QString>{};
+    QSet<QString> wantedFiles;
+    if (QFileInfo::exists(m_userConfigPath))
+        wantedFiles.insert(m_userConfigPath);
+
+    const QString homeDir = QDir::homePath();
+    const QString irisPath = homeDir + QStringLiteral("/.cache/iris/colors.json");
+    if (QFileInfo::exists(irisPath))
+        wantedFiles.insert(irisPath);
+    const QString walPath = homeDir + QStringLiteral("/.cache/wal/colors.json");
+    if (QFileInfo::exists(walPath))
+        wantedFiles.insert(walPath);
+
     QSet<QString> wantedDirectories;
     if (QFileInfo::exists(configParentDirectory))
         wantedDirectories.insert(configParentDirectory);

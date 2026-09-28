@@ -1162,7 +1162,7 @@ PanelWindow {
     FileView {
         id: irisColors
 
-        property string accentHex: ""
+        property string accentHex: (root.userConfig && root.userConfig.irisAccent !== "") ? root.userConfig.irisAccent : ""
         property string bgHex: ""
         property string surfaceHex: ""
         property string fgHex: ""
@@ -1271,9 +1271,9 @@ PanelWindow {
     FileView {
         id: pywalColors
 
-        property color background: "#0f141c"
-        property color foreground: "#ffffff"
-        property string walAccent: "#0a84ff"
+        property color background: (root.userConfig && root.userConfig.paletteBackground !== "") ? root.userConfig.paletteBackground : "#0f141c"
+        property color foreground: (root.userConfig && root.userConfig.paletteForeground !== "") ? root.userConfig.paletteForeground : "#ffffff"
+        property string walAccent: (root.userConfig && root.userConfig.paletteAccent !== "") ? root.userConfig.paletteAccent : "#0a84ff"
         property color accent: irisColors.accentHex !== "" ? irisColors.accentHex : walAccent
         property color accentSoft: Qt.lighter(accent, 1.25)
         property color accentPressed: Qt.darker(accent, 1.3)
