@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏝️ Dynamic Island Hyprland
+#  Dynamic Island Hyprland
 
 **An authentic, fluid Apple-style Dynamic Island & modern Control Center for Hyprland (Wayland)**
 
