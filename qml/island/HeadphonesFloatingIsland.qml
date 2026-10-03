@@ -481,7 +481,7 @@ Rectangle {
                                 color: "#8e8e93"
                             }
                             Text {
-                                text: "Sinistro"
+                                text: I18n.tr("Sinistro")
                                 font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                 font.pixelSize: 10
                                 font.weight: Font.Medium
@@ -547,7 +547,7 @@ Rectangle {
                                 color: "#8e8e93"
                             }
                             Text {
-                                text: "Destro"
+                                text: I18n.tr("Destro")
                                 font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                 font.pixelSize: 10
                                 font.weight: Font.Medium
@@ -613,7 +613,7 @@ Rectangle {
                                 color: "#8e8e93"
                             }
                             Text {
-                                text: "Case"
+                                text: I18n.tr("Case")
                                 font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                 font.pixelSize: 10
                                 font.weight: Font.Medium
@@ -662,7 +662,7 @@ Rectangle {
                 spacing: 6
 
                 Text {
-                    text: "CONTROLLO RUMORE"
+                    text: I18n.tr("CONTROLLO RUMORE")
                     font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                     font.pixelSize: 10
                     font.weight: Font.Bold
@@ -839,7 +839,7 @@ Rectangle {
                                     Behavior on color { ColorAnimation { duration: 180 } }
                                 }
                                 Text {
-                                    text: "Trasparenza"
+                                    text: I18n.tr("Trasparenza")
                                     font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
@@ -947,7 +947,7 @@ Rectangle {
                 spacing: 6
 
                 Text {
-                    text: "AUDIO & PRESTAZIONI"
+                    text: I18n.tr("AUDIO & PRESTAZIONI")
                     font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                     font.pixelSize: 10
                     font.weight: Font.Bold
@@ -1093,7 +1093,7 @@ Rectangle {
                                     color: root.headphonesData.latency ? root.accentColor : "#8e8e93"
                                 }
                                 Text {
-                                    text: "Bassa Latenza"
+                                    text: I18n.tr("Bassa Latenza")
                                     font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                     font.pixelSize: 11
                                     font.weight: Font.Medium

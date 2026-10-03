@@ -256,7 +256,7 @@ FocusScope {
                     spacing: 2
 
                     Text {
-                        text: "Condivisione Schermo"
+                        text: I18n.tr("Condivisione Schermo")
                         color: root.textPrimary
                         font.family: root.heroFontFamily
                         font.pixelSize: 15
@@ -264,7 +264,7 @@ FocusScope {
                     }
 
                     Text {
-                        text: "Seleziona la sorgente da condividere con l'applicazione"
+                        text: I18n.tr("Seleziona la sorgente da condividere con l'applicazione")
                         color: root.textSecondary
                         font.family: root.textFontFamily
                         font.pixelSize: 11
@@ -347,7 +347,7 @@ FocusScope {
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "Schermo"
+                            text: I18n.tr("Schermo")
                             color: root.textPrimary
                             font.family: root.heroFontFamily
                             font.pixelSize: 13
@@ -413,7 +413,7 @@ FocusScope {
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "Finestra"
+                            text: I18n.tr("Finestra")
                             color: root.textPrimary
                             font.family: root.heroFontFamily
                             font.pixelSize: 13
@@ -422,7 +422,7 @@ FocusScope {
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: root.windowList.length > 0 ? (root.windowList.length + " aperte") : "Seleziona..."
+                            text: root.windowList.length > 0 ? (root.windowList.length + " " + I18n.tr("aperte")) : I18n.tr("Seleziona...")
                             color: root.textSecondary
                             font.family: root.textFontFamily
                             font.pixelSize: 11
@@ -482,7 +482,7 @@ FocusScope {
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "Regione"
+                            text: I18n.tr("Regione")
                             color: root.textPrimary
                             font.family: root.heroFontFamily
                             font.pixelSize: 13
@@ -491,7 +491,7 @@ FocusScope {
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "Trascina mirino"
+                            text: I18n.tr("Trascina mirino")
                             color: root.textSecondary
                             font.family: root.textFontFamily
                             font.pixelSize: 11
@@ -554,7 +554,7 @@ FocusScope {
                     }
 
                     Text {
-                        text: "Consenti token di ripristino"
+                        text: I18n.tr("Consenti token di ripristino")
                         color: root.textPrimary
                         font.family: root.heroFontFamily
                         font.pixelSize: 11
@@ -563,7 +563,7 @@ FocusScope {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "— Ricorda l'autorizzazione per non doverla confermare ogni volta"
+                        text: I18n.tr("— Ricorda l'autorizzazione per non doverla confermare ogni volta")
                         color: root.textSecondary
                         font.family: root.textFontFamily
                         font.pixelSize: 10
@@ -635,7 +635,7 @@ FocusScope {
                     spacing: 1
 
                     Text {
-                        text: "Seleziona Finestra"
+                        text: I18n.tr("Seleziona Finestra")
                         color: root.textPrimary
                         font.family: root.heroFontFamily
                         font.pixelSize: 15
@@ -643,7 +643,7 @@ FocusScope {
                     }
 
                     Text {
-                        text: "Fai clic sulla finestra che desideri condividere"
+                        text: I18n.tr("Fai clic sulla finestra che desideri condividere")
                         color: root.textSecondary
                         font.family: root.textFontFamily
                         font.pixelSize: 11
@@ -684,7 +684,7 @@ FocusScope {
                         }
 
                         Text {
-                            text: "Ricorda token"
+                            text: I18n.tr("Ricorda token")
                             color: root.textPrimary
                             font.family: root.textFontFamily
                             font.pixelSize: 10
@@ -815,7 +815,7 @@ FocusScope {
                 Text {
                     anchors.centerIn: parent
                     visible: root.windowList.length === 0
-                    text: "Nessuna finestra aperta rilevata"
+                    text: I18n.tr("Nessuna finestra aperta rilevata")
                     color: root.textSecondary
                     font.family: root.textFontFamily
                     font.pixelSize: 12

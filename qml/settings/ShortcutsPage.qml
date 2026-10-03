@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
+import IslandBackend
 
 FocusScope {
     id: root
@@ -80,7 +81,7 @@ FocusScope {
         running: false
         onExited: {
             root.isApplying = false;
-            root.applyStatusMessage = "Sincronizzato con Hyprland!";
+            root.applyStatusMessage = I18n.tr("Sincronizzato con Hyprland!");
             applyMsgTimer.restart();
         }
     }
@@ -383,7 +384,7 @@ FocusScope {
                 spacing: 12
 
                 SettingsHeader {
-                    text: "Scorciatoie Hyprland (Registra al volo premendo la tastiera)"
+                    text: I18n.tr("Scorciatoie Hyprland (Registra al volo premendo la tastiera)")
                     accentColor: root.accentColor
                     textFontFamily: root.textFontFamily
                 }
@@ -396,7 +397,7 @@ FocusScope {
                 // Pulsante Ripristina Tutte
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 130
+                    width: resetAllRow.width + 20
                     height: 28
                     radius: 7
                     color: resetAllMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05)
@@ -404,6 +405,7 @@ FocusScope {
                     border.color: Qt.rgba(255, 255, 255, 0.10)
 
                     Row {
+                        id: resetAllRow
                         anchors.centerIn: parent
                         spacing: 6
                         Text {
@@ -413,7 +415,7 @@ FocusScope {
                             font.pixelSize: 11
                         }
                         Text {
-                            text: "Ripristina Tutte"
+                            text: I18n.tr("Ripristina Tutte")
                             color: "#c2c7d4"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -478,7 +480,7 @@ FocusScope {
                                     Row {
                                         spacing: 8
                                         Text {
-                                            text: modelData.title
+                                            text: I18n.tr(modelData.title)
                                             color: "#f2f4f8"
                                             font.pixelSize: 13
                                             font.weight: Font.Medium
@@ -488,23 +490,26 @@ FocusScope {
                                         // Badge se personalizzata
                                         Rectangle {
                                             visible: root.isShortcutCustomized(index)
-                                            width: 44
+                                            width: modifiedBadgeRow.width + 10
                                             height: 16
                                             radius: 4
                                             color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.20)
                                             anchors.verticalCenter: parent.verticalCenter
-                                            Text {
+                                            Row {
+                                                id: modifiedBadgeRow
                                                 anchors.centerIn: parent
-                                                text: "Modificata"
-                                                color: root.accentColor
-                                                font.pixelSize: 8
-                                                font.weight: Font.Bold
+                                                Text {
+                                                    text: I18n.tr("Modificata")
+                                                    color: root.accentColor
+                                                    font.pixelSize: 8
+                                                    font.weight: Font.Bold
+                                                }
                                             }
                                         }
                                     }
 
                                     Text {
-                                        text: modelData.desc
+                                        text: I18n.tr(modelData.desc)
                                         color: "#7e889b"
                                         font.pixelSize: 11
                                         font.family: root.textFontFamily
@@ -582,7 +587,7 @@ FocusScope {
                                                     Text {
                                                         id: keyText
                                                         anchors.centerIn: parent
-                                                        text: modelData
+                                                        text: modelData === "Spazio" ? I18n.tr("Spazio") : modelData
                                                         color: "#ffffff"
                                                         font.pixelSize: 10
                                                         font.weight: Font.DemiBold
@@ -635,7 +640,7 @@ FocusScope {
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                         Text {
-                                            text: (root.recordingIndex === index) ? "In Ascolto..." : "Registra"
+                                            text: (root.recordingIndex === index) ? I18n.tr("In Ascolto...") : I18n.tr("Registra")
                                             color: (root.recordingIndex === index) ? "#ffffff" : "#d8dce6"
                                             font.pixelSize: 11
                                             font.weight: Font.Medium
@@ -713,7 +718,7 @@ FocusScope {
                                                 }
 
                                                 Text {
-                                                    text: root.recordingSuccess ? "REGISTRATO!" : "IN ASCOLTO..."
+                                                    text: root.recordingSuccess ? I18n.tr("REGISTRATO!") : I18n.tr("IN ASCOLTO...")
                                                     color: root.recordingSuccess ? "#30d158" : "#ff6961"
                                                     font.pixelSize: 10
                                                     font.weight: Font.Bold
@@ -725,8 +730,8 @@ FocusScope {
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: root.recordingSuccess
-                                                ? "Scorciatoia aggiornata e salvata con successo!"
-                                                : "Premi i tasti sulla tastiera per registrare sul momento (es. SUPER + K)"
+                                                ? I18n.tr("Scorciatoia aggiornata e salvata con successo!")
+                                                : I18n.tr("Premi i tasti sulla tastiera per registrare sul momento (es. SUPER + K)")
                                             color: root.recordingSuccess ? "#30d158" : "#9aa3b5"
                                             font.pixelSize: 11
                                             font.family: root.textFontFamily
@@ -737,7 +742,7 @@ FocusScope {
                                     Rectangle {
                                         anchors.right: parent.right
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: 86
+                                        width: cancelRow.width + 16
                                         height: 22
                                         radius: 6
                                         color: cancelMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.16) : Qt.rgba(255, 255, 255, 0.08)
@@ -745,6 +750,7 @@ FocusScope {
                                         border.color: Qt.rgba(255, 255, 255, 0.12)
 
                                         Row {
+                                            id: cancelRow
                                             anchors.centerIn: parent
                                             spacing: 4
                                             Text {
@@ -753,7 +759,7 @@ FocusScope {
                                                 font.pixelSize: 9
                                             }
                                             Text {
-                                                text: "Annulla (Esc)"
+                                                text: I18n.tr("Annulla (Esc)")
                                                 color: "#c2c7d4"
                                                 font.pixelSize: 10
                                                 font.family: root.textFontFamily
@@ -808,7 +814,7 @@ FocusScope {
                                                     Text {
                                                         id: okPillText
                                                         anchors.centerIn: parent
-                                                        text: modelData
+                                                        text: modelData === "Spazio" ? I18n.tr("Spazio") : modelData
                                                         color: "#ffffff"
                                                         font.pixelSize: 11
                                                         font.weight: Font.Bold
@@ -846,7 +852,7 @@ FocusScope {
                                                     Text {
                                                         id: modHeldText
                                                         anchors.centerIn: parent
-                                                        text: modelData
+                                                        text: modelData === "Spazio" ? I18n.tr("Spazio") : modelData
                                                         color: "#ffffff"
                                                         font.pixelSize: 11
                                                         font.weight: Font.Bold
@@ -904,7 +910,7 @@ FocusScope {
                                         }
 
                                         Text {
-                                            text: "Premi una combinazione (es. SUPER + Tab, ALT + Spazio, o premi solo una lettera)"
+                                            text: I18n.tr("Premi una combinazione (es. SUPER + Tab, ALT + Spazio, o premi solo una lettera)")
                                             color: "#8e99ae"
                                             font.pixelSize: 11
                                             font.family: root.textFontFamily
@@ -929,7 +935,7 @@ FocusScope {
                                         spacing: 6
 
                                         Text {
-                                            text: "Modificatori rapidi:"
+                                            text: I18n.tr("Modificatori rapidi:")
                                             color: "#7e889b"
                                             font.pixelSize: 10
                                             font.family: root.textFontFamily
@@ -970,12 +976,13 @@ FocusScope {
                                         visible: root.isShortcutCustomized(index)
                                         anchors.right: parent.right
                                         anchors.verticalCenter: parent.verticalCenter
-                                        width: 120
+                                        width: resetDefRow.width + 14
                                         height: 18
                                         radius: 4
                                         color: Qt.rgba(255, 255, 255, 0.06)
 
                                         Row {
+                                            id: resetDefRow
                                             anchors.centerIn: parent
                                             spacing: 4
                                             Text {
@@ -985,7 +992,7 @@ FocusScope {
                                                 font.pixelSize: 9
                                             }
                                             Text {
-                                                text: "Ripristina Default"
+                                                text: I18n.tr("Ripristina Default")
                                                 color: "#8e99ae"
                                                 font.pixelSize: 9
                                                 font.family: root.textFontFamily
@@ -1019,7 +1026,7 @@ FocusScope {
                 spacing: 12
 
                 SettingsHeader {
-                    text: "Configurazione Hyprland (Lua) - Aggiornata in Tempo Reale"
+                    text: I18n.tr("Configurazione Hyprland (Lua) - Aggiornata in Tempo Reale")
                     accentColor: root.accentColor
                     textFontFamily: root.textFontFamily
                 }
@@ -1059,7 +1066,7 @@ FocusScope {
                         }
 
                         Text {
-                            text: "Sincronizza automaticamente con ~/.config/hypr/moduli/binds.lua"
+                            text: I18n.tr("Sincronizza automaticamente con ~/.config/hypr/moduli/binds.lua")
                             color: "#c2c7d4"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -1085,7 +1092,7 @@ FocusScope {
 
                         // Pulsante Applica Manuale
                         Rectangle {
-                            width: 140
+                            width: applyBtnRow.width + 20
                             height: 28
                             radius: 6
                             color: applyBtnMouse.containsMouse ? Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.40) : Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22)
@@ -1093,6 +1100,7 @@ FocusScope {
                             border.color: root.accentColor
 
                             Row {
+                                id: applyBtnRow
                                 anchors.centerIn: parent
                                 spacing: 6
                                 Text {
@@ -1102,7 +1110,7 @@ FocusScope {
                                     font.pixelSize: 11
                                 }
                                 Text {
-                                    text: root.isApplying ? "Applicando..." : "Applica a Hyprland"
+                                    text: root.isApplying ? I18n.tr("Applicando...") : I18n.tr("Applica a Hyprland")
                                     color: "#ffffff"
                                     font.pixelSize: 11
                                     font.weight: Font.Medium
@@ -1121,7 +1129,7 @@ FocusScope {
 
                         // Pulsante Copia Codice
                         Rectangle {
-                            width: 120
+                            width: copyBtnRow.width + 20
                             height: 28
                             radius: 6
                             color: copyMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(255, 255, 255, 0.08)
@@ -1129,6 +1137,7 @@ FocusScope {
                             border.color: Qt.rgba(255, 255, 255, 0.15)
 
                             Row {
+                                id: copyBtnRow
                                 anchors.centerIn: parent
                                 spacing: 6
                                 Text {
@@ -1138,7 +1147,7 @@ FocusScope {
                                     font.pixelSize: 11
                                 }
                                 Text {
-                                    text: copyTimer.running ? "Copiato!" : "Copia Codice"
+                                    text: copyTimer.running ? I18n.tr("Copiato!") : I18n.tr("Copia Codice")
                                     color: "#ffffff"
                                     font.pixelSize: 11
                                     font.weight: Font.Medium

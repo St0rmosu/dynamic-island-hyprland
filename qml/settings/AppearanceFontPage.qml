@@ -32,7 +32,41 @@ Flickable {
         anchors.margins: 24
         spacing: 20
 
-        // ── Sezione 1: Stile Vetro & Trasparenza ────────────────────────
+        // ── Sezione 1: Lingua & Localizzazione ─────────────────────────
+        SettingsHeader {
+            text: I18n.tr("Lingua & Localizzazione")
+            accentColor: root.accentColor
+            textFontFamily: root.textFontFamily
+        }
+
+        SettingsCard {
+            SettingsSegmented {
+                title: I18n.tr("Lingua dell'Interfaccia")
+                description: I18n.tr("Lingua visualizzata nella shell e nell'isola dinamica (rilevata automaticamente dal sistema)")
+                stacked: true
+                model: [
+                    { text: I18n.tr("Sistema (Auto)"), value: "auto" },
+                    { text: "English", value: "en" },
+                    { text: "Italiano", value: "it" },
+                    { text: "Español", value: "es" },
+                    { text: "Deutsch", value: "de" },
+                    { text: "Français", value: "fr" }
+                ]
+                currentValue: root.config ? (root.config.language || "auto") : "auto"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onSelected: function(val) {
+                    if (root.config) {
+                        root.config.set("language", val);
+                    }
+                    if (typeof I18n !== "undefined" && I18n) {
+                        I18n.language = val;
+                    }
+                }
+            }
+        }
+
+        // ── Sezione 2: Stile Vetro & Trasparenza ────────────────────────
         SettingsHeader {
             text: I18n.tr("Stile Vetro & Trasparenza")
             accentColor: root.accentColor
@@ -85,30 +119,6 @@ Flickable {
                 accentColor: root.accentColor
                 textFontFamily: root.textFontFamily
                 onSelected: function(val) { if (root.config) root.config.set("clockFormat", val); }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
-
-            SettingsSegmented {
-                title: I18n.tr("Lingua dell'Interfaccia")
-                description: I18n.tr("Lingua visualizzata nella shell e nell'isola dinamica (rilevata automaticamente dal sistema)")
-                stacked: true
-                model: [
-                    { text: I18n.tr("Sistema (Auto)"), value: "auto" },
-                    { text: "Italiano", value: "it" },
-                    { text: "English", value: "en" },
-                    { text: "Español", value: "es" },
-                    { text: "Deutsch", value: "de" },
-                    { text: "Français", value: "fr" }
-                ]
-                currentValue: root.config ? (root.config.language || "auto") : "auto"
-                accentColor: root.accentColor
-                textFontFamily: root.textFontFamily
-                onSelected: function(val) {
-                    if (root.config) {
-                        root.config.set("language", val);
-                    }
-                }
             }
         }
 
@@ -185,14 +195,14 @@ Flickable {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text {
-                            text: "Cartella Raccolta Sfondi"
+                            text: I18n.tr("Cartella Raccolta Sfondi")
                             color: "#f2f4f8"
                             font.pixelSize: 13
                             font.weight: Font.Medium
                             font.family: root.textFontFamily
                         }
                         Text {
-                            text: "Percorso directory da cui il carosello carica le anteprime"
+                            text: I18n.tr("Percorso directory da cui il carosello carica le anteprime")
                             color: "#7e889b"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -242,7 +252,7 @@ Flickable {
 
                         Text {
                             anchors.centerIn: parent
-                            text: "Predefinito"
+                            text: I18n.tr("Predefinito")
                             color: "#c2c7d4"
                             font.pixelSize: 11
                             font.weight: Font.Medium
@@ -296,14 +306,14 @@ Flickable {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text {
-                            text: "Comando Applicazione Sfondo"
+                            text: I18n.tr("Comando Applicazione Sfondo")
                             color: "#f2f4f8"
                             font.pixelSize: 13
                             font.weight: Font.Medium
                             font.family: root.textFontFamily
                         }
                         Text {
-                            text: "Script o comando eseguito passando il file come parametro $1"
+                            text: I18n.tr("Script o comando eseguito passando il file come parametro $1")
                             color: "#7e889b"
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -352,7 +362,7 @@ Flickable {
 
                         Text {
                             anchors.centerIn: parent
-                            text: "Predefinito"
+                            text: I18n.tr("Predefinito")
                             color: "#c2c7d4"
                             font.pixelSize: 11
                             font.weight: Font.Medium

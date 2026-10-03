@@ -24,6 +24,7 @@ SETUP_AUTOSTART=true
 FINGERPRINT_READER=""
 FACE_UNLOCK=""
 BIOMETRICS_CHOICE=""
+LANGUAGE_CHOICE=""
 
 # Parse CLI options
 while [[ $# -gt 0 ]]; do
@@ -32,9 +33,17 @@ while [[ $# -gt 0 ]]; do
             PREFIX="/usr"
             shift
             ;;
+        -h|--help)
+            echo "Usage: ./install.sh [--system] [-y|--yes] [--language <en|it|es|de|fr|auto>] [--biometrics <fingerprint|face|both|none>] [--fingerprint|--no-fingerprint] [--face-unlock|--no-face-unlock] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
+            exit 0
+            ;;
         -y|--yes|--non-interactive)
             INTERACTIVE=false
             shift
+            ;;
+        --lang|--language)
+            LANGUAGE_CHOICE="$2"
+            shift 2
             ;;
         --biometrics)
             BIOMETRICS_CHOICE="$2"
@@ -74,7 +83,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./install.sh [--system] [-y|--yes] [--biometrics <fingerprint|face|both|none>] [--fingerprint|--no-fingerprint] [--face-unlock|--no-face-unlock] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
+            echo "Usage: ./install.sh [--system] [-y|--yes] [--language <en|it|es|de|fr|auto>] [--biometrics <fingerprint|face|both|none>] [--fingerprint|--no-fingerprint] [--face-unlock|--no-face-unlock] [--wallpaper-backend <awww|swww|hyprpaper|mpvpaper|swaybg|wpaperd>] [--no-wallpaper] [--no-autostart]"
             exit 1
             ;;
     esac
@@ -231,6 +240,95 @@ mkdir -p "$HOME/.config/dynamic-island"
 if [ ! -f "$HOME/.config/dynamic-island/userconfig.json" ]; then
     echo '{"dynamicIslandPrimaryAction":"toggleControlCenter"}' > "$HOME/.config/dynamic-island/userconfig.json"
 fi
+
+# ------------------------------------------------------------------------------
+# Language & Localization Setup
+# ------------------------------------------------------------------------------
+setup_language() {
+    echo ""
+    echo "========================================================"
+    echo "   🌍 Language & Localization Setup"
+    echo "========================================================"
+
+    local CURRENT_LANG=""
+    local USER_CFG="$HOME/.config/dynamic-island/userconfig.json"
+    local MAIN_CFG="$HOME/.config/dynamic-island/config.json"
+    mkdir -p "$HOME/.config/dynamic-island"
+
+    if [ -f "${USER_CFG}" ]; then
+        if command -v jq >/dev/null 2>&1; then
+            CURRENT_LANG=$(jq -r '.language // empty' "${USER_CFG}" 2>/dev/null || true)
+        fi
+    fi
+
+    local SELECTED_LANG=""
+
+    if [ -n "${LANGUAGE_CHOICE}" ]; then
+        case "${LANGUAGE_CHOICE,,}" in
+            en|english) SELECTED_LANG="en" ;;
+            it|italian|italiano) SELECTED_LANG="it" ;;
+            es|spanish|espanol|español) SELECTED_LANG="es" ;;
+            de|german|deutsch) SELECTED_LANG="de" ;;
+            fr|french|francais|français) SELECTED_LANG="fr" ;;
+            auto|system) SELECTED_LANG="auto" ;;
+            *)
+                echo "Warning: Unknown language '${LANGUAGE_CHOICE}'. Defaulting to 'en'."
+                SELECTED_LANG="en"
+                ;;
+        esac
+    elif [ "${INTERACTIVE}" = true ]; then
+        local DEF_PROMPT="1 - English"
+        local DEF_VAL="en"
+        if [ -n "${CURRENT_LANG}" ]; then
+            DEF_PROMPT="current: ${CURRENT_LANG}"
+            DEF_VAL="${CURRENT_LANG}"
+        fi
+        echo "Select your preferred interface language for Dynamic Island:"
+        echo "  1) English (Default)"
+        echo "  2) Italiano"
+        echo "  3) Español"
+        echo "  4) Deutsch"
+        echo "  5) Français"
+        echo "  6) System (Auto-detect)"
+        read -r -p "Enter choice [1-6] (default: ${DEF_PROMPT}): " LANG_INPUT
+        case "${LANG_INPUT,,}" in
+            1|en|english) SELECTED_LANG="en" ;;
+            2|it|italian|italiano) SELECTED_LANG="it" ;;
+            3|es|spanish|espanol|español) SELECTED_LANG="es" ;;
+            4|de|german|deutsch) SELECTED_LANG="de" ;;
+            5|fr|french|francais|français) SELECTED_LANG="fr" ;;
+            6|auto|system) SELECTED_LANG="auto" ;;
+            "") SELECTED_LANG="${DEF_VAL}" ;;
+            *)
+                echo "Invalid selection, keeping default (${DEF_VAL})."
+                SELECTED_LANG="${DEF_VAL}"
+                ;;
+        esac
+    else
+        SELECTED_LANG="${CURRENT_LANG:-en}"
+    fi
+
+    echo "✓ Selected language: ${SELECTED_LANG}"
+
+    update_config_language() {
+        local target_file="$1"
+        if [ -f "${target_file}" ]; then
+            if command -v jq >/dev/null 2>&1; then
+                jq --arg lang "${SELECTED_LANG}" '.language = $lang' "${target_file}" > "${target_file}.tmp" && mv "${target_file}.tmp" "${target_file}"
+            else
+                python3 -c "import json; p='${target_file}'; f=open(p); d=json.load(f); f.close(); d['language']='${SELECTED_LANG}'; f=open(p,'w'); json.dump(d,f,indent=2); f.close()" 2>/dev/null || true
+            fi
+        fi
+    }
+
+    if [ ! -f "${USER_CFG}" ]; then
+        echo "{\"dynamicIslandPrimaryAction\":\"toggleControlCenter\",\"language\":\"${SELECTED_LANG}\"}" > "${USER_CFG}"
+    else
+        update_config_language "${USER_CFG}"
+    fi
+
+    [ -f "${MAIN_CFG}" ] && update_config_language "${MAIN_CFG}"
+}
 
 # ------------------------------------------------------------------------------
 # Biometric Authentication Setup (Fingerprint & Windows Hello Face ID)
@@ -416,6 +514,7 @@ setup_biometrics() {
     [ -f "${MAIN_CFG}" ] && update_config_biometrics "${MAIN_CFG}"
 }
 
+setup_language
 setup_biometrics
 
 # ------------------------------------------------------------------------------

@@ -513,14 +513,14 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 1
                             Text {
-                                text: "Studio Canvas • Griglia a Caselle"
+                                text: I18n.tr("Studio Canvas • Griglia a Caselle")
                                 font.family: studioRoot.textFontFamily
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
                                 color: studioRoot.textPrimary
                             }
                             Text {
-                                text: "Trascina per ordinare • Ridimensiona per caselle stile iOS"
+                                text: I18n.tr("Trascina per ordinare • Ridimensiona per caselle stile iOS")
                                 font.family: studioRoot.textFontFamily
                                 font.pixelSize: 10
                                 color: studioRoot.textMuted
@@ -556,7 +556,7 @@ Item {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: "Ripristina"
+                                    text: I18n.tr("Ripristina")
                                     font.family: studioRoot.textFontFamily
                                     font.pixelSize: 10
                                     color: resetMouse.containsMouse ? studioRoot.textPrimary : studioRoot.textSecondary
@@ -595,7 +595,7 @@ Item {
                                 }
                                 Text {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: "Ricarica"
+                                    text: I18n.tr("Ricarica")
                                     font.family: studioRoot.textFontFamily
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
@@ -642,7 +642,7 @@ Item {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.id === "header" ? "Orologio & Batteria (Fisso in Cima)" : (studioRoot.selectedModule.name + " (" + studioRoot.selectedModule.colSpan + "/4 Col)")) : ""
+                            text: studioRoot.selectedModule ? (studioRoot.selectedModule.id === "header" ? I18n.tr("Orologio & Batteria (Fisso in Cima)") : (I18n.tr(studioRoot.selectedModule.name) + " (" + studioRoot.selectedModule.colSpan + "/4 " + I18n.tr("Col") + ")")) : ""
                             font.family: studioRoot.textFontFamily
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -675,7 +675,7 @@ Item {
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "Barra Fissa in Cima (Immobile)"
+                                text: I18n.tr("Barra Fissa in Cima (Immobile)")
                                 font.family: studioRoot.textFontFamily
                                 font.pixelSize: 10
                                 font.weight: Font.DemiBold
@@ -784,7 +784,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                                 Text {
                                     anchors.centerIn: parent
-                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.rowSpan + (studioRoot.selectedModule.rowSpan === 1 ? " Riga" : " Righe")) : "1 Riga"
+                                    text: studioRoot.selectedModule ? (studioRoot.selectedModule.rowSpan + " " + (studioRoot.selectedModule.rowSpan === 1 ? I18n.tr("Riga") : I18n.tr("Righe"))) : ("1 " + I18n.tr("Riga"))
                                     font.family: studioRoot.textFontFamily
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
@@ -840,7 +840,7 @@ Item {
                                     Text { anchors.verticalCenter: parent.verticalCenter; text: "↔"; font.pixelSize: 10; font.weight: Font.Bold; color: studioRoot.accentColor }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan + " Col") : "1 Col"
+                                        text: studioRoot.selectedModule ? (studioRoot.selectedModule.colSpan + " " + I18n.tr("Col")) : ("1 " + I18n.tr("Col"))
                                         font.family: studioRoot.textFontFamily
                                         font.pixelSize: 10
                                         font.weight: Font.DemiBold
@@ -959,7 +959,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 Text {
-                    text: "AREA LIVE CANVAS • WORKSPACE 8 RIGHE • " + studioRoot.controlCenterWidth + "px"
+                    text: I18n.tr("AREA LIVE CANVAS • WORKSPACE 8 RIGHE • ") + studioRoot.controlCenterWidth + "px"
                     font.family: studioRoot.textFontFamily
                     font.pixelSize: 9
                     font.weight: Font.Bold
@@ -1253,7 +1253,7 @@ Item {
 
                                             Text {
                                                 width: parent.width
-                                                text: moduleItemDelegate.modelData.name
+                                                text: I18n.tr(moduleItemDelegate.modelData.name)
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 10
                                                 font.weight: Font.DemiBold
@@ -1285,7 +1285,7 @@ Item {
 
                                             Text {
                                                 visible: (moduleItemDelegate.modelData.id === "brightness" || moduleItemDelegate.modelData.id === "volume") && (moduleItemDelegate.slotHeight >= 110 && moduleItemDelegate.colSpan === 1)
-                                                text: "Cursore Verticale"
+                                                text: I18n.tr("Cursore Verticale")
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 8
                                                 font.weight: Font.DemiBold
@@ -1295,7 +1295,7 @@ Item {
 
                                             Text {
                                                 visible: moduleItemDelegate.modelData.id === "notifications"
-                                                text: "Centro Notifiche"
+                                                text: I18n.tr("Centro Notifiche")
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 8
                                                 color: studioRoot.textMuted
@@ -1304,7 +1304,7 @@ Item {
 
                                             Text {
                                                 visible: moduleItemDelegate.modelData.id === "wifi" || moduleItemDelegate.modelData.id === "bluetooth"
-                                                text: "Connesso"
+                                                text: I18n.tr("Connesso")
                                                 font.family: studioRoot.textFontFamily
                                                 font.pixelSize: 8
                                                 color: studioRoot.accentColor
@@ -1642,7 +1642,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 1
                         Text {
-                            text: "LIBRERIA DEI MODULI DISPONIBILI"
+                            text: I18n.tr("LIBRERIA DEI MODULI DISPONIBILI")
                             font.family: studioRoot.heroFontFamily
                             font.pixelSize: 11
                             font.weight: Font.Bold
@@ -1650,7 +1650,7 @@ Item {
                             color: studioRoot.textSecondary
                         }
                         Text {
-                            text: "Clicca per aggiungere un modulo alla griglia dell'isola o rimuoverlo."
+                            text: I18n.tr("Clicca per aggiungere un modulo alla griglia dell'isola o rimuoverlo.")
                             font.family: studioRoot.textFontFamily
                             font.pixelSize: 9
                             color: studioRoot.textMuted
@@ -1724,7 +1724,7 @@ Item {
 
                                     Text {
                                         width: parent.width
-                                        text: libraryCard.modelData.name
+                                        text: I18n.tr(libraryCard.modelData.name)
                                         font.family: studioRoot.textFontFamily
                                         font.pixelSize: 11
                                         font.weight: Font.DemiBold
@@ -1734,7 +1734,7 @@ Item {
 
                                     Text {
                                         width: parent.width
-                                        text: libraryCard.modelData.desc || ""
+                                        text: I18n.tr(libraryCard.modelData.desc || "")
                                         font.family: studioRoot.textFontFamily
                                         font.pixelSize: 9
                                         color: studioRoot.textMuted
@@ -1783,7 +1783,7 @@ Item {
 
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: libraryCard.isHeader ? "Fisso" : (isInCanvas ? (btnMouse.containsMouse ? "Rimuovi" : "Attivo") : "Aggiungi")
+                                            text: libraryCard.isHeader ? I18n.tr("Fisso") : (isInCanvas ? (btnMouse.containsMouse ? I18n.tr("Rimuovi") : I18n.tr("Attivo")) : I18n.tr("Aggiungi"))
                                             font.family: studioRoot.textFontFamily
                                             font.pixelSize: 9
                                             font.weight: Font.Medium

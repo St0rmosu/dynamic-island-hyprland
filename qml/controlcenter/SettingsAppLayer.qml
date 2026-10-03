@@ -266,30 +266,100 @@ FocusScope {
                             }
                         }
 
-                        // Pulsante Chiudi [ ✕ ]
-                        Rectangle {
+                        // Controlli Header (Selettore Rapido Lingua + Chiudi)
+                        Row {
                             anchors.right: parent.right
                             anchors.rightMargin: 24
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 32
-                            height: 32
-                            radius: 16
-                            color: closeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                            spacing: 12
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "✕"
-                                color: "#d8dce6"
-                                font.pixelSize: 12
-                                font.weight: Font.Bold
+                            // Pillola Rapida Selezione Lingua (Auto | EN | IT)
+                            Rectangle {
+                                height: 30
+                                radius: 8
+                                color: Qt.rgba(255, 255, 255, 0.06)
+                                border.width: 1
+                                border.color: Qt.rgba(255, 255, 255, 0.08)
+                                width: langPillRow.implicitWidth + 6
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                Row {
+                                    id: langPillRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+
+                                    Repeater {
+                                        model: [
+                                            { label: "Auto", value: "auto" },
+                                            { label: "EN", value: "en" },
+                                            { label: "IT", value: "it" }
+                                        ]
+
+                                        Rectangle {
+                                            readonly property bool isSelected: {
+                                                var cur = (root.dynamicConfig && root.dynamicConfig.language) ? root.dynamicConfig.language : "auto";
+                                                return cur === modelData.value;
+                                            }
+                                            width: lText.contentWidth + 14
+                                            height: 22
+                                            radius: 6
+                                            color: isSelected ? root.effectiveAccent : (lMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent")
+                                            border.width: isSelected ? 1 : 0
+                                            border.color: isSelected ? Qt.rgba(255, 255, 255, 0.25) : "transparent"
+
+                                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                                            Text {
+                                                id: lText
+                                                anchors.centerIn: parent
+                                                text: modelData.label
+                                                font.pixelSize: 11
+                                                font.weight: isSelected ? Font.Bold : Font.Normal
+                                                font.family: root.textFontFamily
+                                                color: isSelected ? "#ffffff" : "#a2a8b8"
+                                            }
+
+                                            MouseArea {
+                                                id: lMouse
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                hoverEnabled: true
+                                                onClicked: {
+                                                    if (root.dynamicConfig) {
+                                                        root.dynamicConfig.set("language", modelData.value);
+                                                    }
+                                                    if (typeof I18n !== "undefined" && I18n) {
+                                                        I18n.language = modelData.value;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
-                            MouseArea {
-                                id: closeMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.closeRequested()
+                            // Pulsante Chiudi [ ✕ ]
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 16
+                                color: closeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    color: "#d8dce6"
+                                    font.pixelSize: 12
+                                    font.weight: Font.Bold
+                                }
+
+                                MouseArea {
+                                    id: closeMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.closeRequested()
+                                }
                             }
                         }
 
@@ -425,8 +495,8 @@ FocusScope {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                     text: (root.fontBrowserTarget === "icon")
-                        ? ("Sfoglia Font per Icone & Glifi (" + root.filteredFonts.length + " disponibili)")
-                        : ("Sfoglia Font di Sistema (" + root.systemFontsList.length + " installati)")
+                        ? (I18n.tr("Sfoglia Font per Icone & Glifi") + " (" + root.filteredFonts.length + " " + I18n.tr("disponibili") + ")")
+                        : (I18n.tr("Sfoglia Font di Sistema") + " (" + root.systemFontsList.length + " " + I18n.tr("installati") + ")")
                     color: "#f2f4f8"
                     font.pixelSize: 16
                     font.weight: Font.Bold
@@ -449,6 +519,7 @@ FocusScope {
                     }
 
                     MouseArea {
+                        id: fontCloseMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.fontBrowserVisible = false
@@ -470,8 +541,8 @@ FocusScope {
                     anchors.margins: 10
                     visible: fontInput.text === ""
                     text: (root.fontBrowserTarget === "icon")
-                        ? "Cerca font per icone (es. Nerd Font, Material, Symbols)..."
-                        : "Cerca font di sistema (es. Google Sans, Inter, JetBrains)..."
+                        ? I18n.tr("Cerca font per icone (es. Nerd Font, Material, Symbols)...")
+                        : I18n.tr("Cerca font di sistema (es. Google Sans, Inter, JetBrains)...")
                     color: Qt.rgba(255, 255, 255, 0.35)
                     font.pixelSize: 13
                     font.family: root.textFontFamily

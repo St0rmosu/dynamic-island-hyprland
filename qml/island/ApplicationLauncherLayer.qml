@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
+import IslandBackend
 
 FocusScope {
     id: root
@@ -395,7 +396,7 @@ FocusScope {
                 Text {
                     anchors.left: searchInput.left
                     anchors.verticalCenter: searchInput.verticalCenter
-                    text: "Cerca applicazione..."
+                    text: I18n.tr("Cerca applicazione...")
                     color: "#636366"
                     font.family: root.textFontFamily
                     font.pixelSize: 15
@@ -645,7 +646,7 @@ FocusScope {
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: 36
                 visible: root.visibleApplicationCount === 0
-                text: root.query === "" ? "Nessuna applicazione trovata" : "Nessuna applicazione trovata per “" + root.query + "”"
+                text: root.query === "" ? I18n.tr("Nessuna applicazione trovata") : (I18n.tr("Nessuna applicazione trovata per") + " “" + root.query + "”")
                 color: "#696b72"
                 font.family: root.textFontFamily
                 font.pixelSize: 13

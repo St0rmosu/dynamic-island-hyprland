@@ -138,7 +138,7 @@ Item {
                 }
 
                 Text {
-                    text: root.ongoing ? root.formatTime(root.callSeconds) : root.subtitle
+                    text: root.ongoing ? root.formatTime(root.callSeconds) : I18n.tr(root.subtitle)
                     color: root.ongoing ? "#30d158" : "#8e8e93"
                     font.family: root.heroFontFamily
                     font.pixelSize: 11
