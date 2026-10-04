@@ -113,7 +113,10 @@ PanelWindow {
         let v = cfgVal("islandPositionX", userConfig ? userConfig.islandPositionX : 50);
         return (v !== undefined && !isNaN(Number(v))) ? Number(v) : 50;
     }
+    readonly property bool lockIslandCenter: (dynamicConfig && dynamicConfig.lockIslandCenter !== undefined) ? dynamicConfig.lockIslandCenter : true
     readonly property bool autoBalanceSatellites: {
+        if (lockIslandCenter)
+            return false;
         let v = cfgVal("autoBalanceSatellites", userConfig ? userConfig.autoBalanceSatellites : true);
         return (v !== undefined) ? Boolean(v) : true;
     }
@@ -204,9 +207,21 @@ PanelWindow {
     readonly property string textFontFamily: (dynamicConfig && dynamicConfig.textFontFamily !== "") ? dynamicConfig.textFontFamily : cfgVal("textFontFamily", userConfig ? userConfig.textFontFamily : "Google Sans Flex")
     readonly property string heroFontFamily: (dynamicConfig && dynamicConfig.heroFontFamily !== "") ? dynamicConfig.heroFontFamily : cfgVal("heroFontFamily", userConfig ? userConfig.heroFontFamily : "Google Sans Flex")
     readonly property string timeFontFamily: (dynamicConfig && dynamicConfig.timeFontFamily !== "") ? dynamicConfig.timeFontFamily : cfgVal("timeFontFamily", userConfig ? userConfig.timeFontFamily : "Google Sans Flex")
-    readonly property int bodyFontSize: Number(cfgVal("bodyFontSize", userConfig ? userConfig.bodyFontSize : 14)) || 14
-    readonly property int titleFontSize: Number(cfgVal("titleFontSize", userConfig ? userConfig.titleFontSize : 16)) || 16
-    readonly property int iconFontSize: Number(cfgVal("iconFontSize", userConfig ? userConfig.iconFontSize : 16)) || 16
+    // ── Monitor Resolution & Proportional Font Scaling ───────────────
+    readonly property real screenScaleFactor: {
+        if (!root.screen) return 1.0;
+        const minDim = Math.min(root.screen.width, root.screen.height);
+        return Math.max(1.0, minDim / 1080);
+    }
+    readonly property int autoClockFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.44) * screenScaleFactor)
+    readonly property int autoBodyFontSize: Math.round(Math.max(14, effectiveIslandHeight * 0.36) * screenScaleFactor)
+    readonly property int autoTitleFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.40) * screenScaleFactor)
+    readonly property int autoIconFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.40) * screenScaleFactor)
+
+    readonly property int bodyFontSize: (dynamicConfig && dynamicConfig.bodyFontSize) ? dynamicConfig.bodyFontSize : autoBodyFontSize
+    readonly property int titleFontSize: (dynamicConfig && dynamicConfig.titleFontSize) ? dynamicConfig.titleFontSize : autoTitleFontSize
+    readonly property int iconFontSize: (dynamicConfig && dynamicConfig.iconFontSize) ? dynamicConfig.iconFontSize : autoIconFontSize
+    readonly property int clockFontSize: (dynamicConfig && dynamicConfig.clockFontSize) ? dynamicConfig.clockFontSize : autoClockFontSize
     readonly property string defaultSplitIcon: "\ud83c\udfa7"
     readonly property string notificationStatusIcon: "\uf0f3"
     readonly property real overviewWindowCornerRadius: 12
@@ -280,10 +295,13 @@ PanelWindow {
         if (currentWallpaperFile.wallpaperPath !== "")
             return currentWallpaperFile.wallpaperPath;
 
-        if (userConfig.wallpaperPath !== "")
+        if (userConfig && userConfig.wallpaperPath && userConfig.wallpaperPath !== "")
             return userConfig.wallpaperPath;
 
-        return root.homeDir + "/Sfondi/B & W Window.png";
+        if (dynamicConfig && dynamicConfig.wallpaperPath && dynamicConfig.wallpaperPath !== "")
+            return dynamicConfig.wallpaperPath;
+
+        return "";
     }
     readonly property string effectiveWallpaperUrl: {
         const wp = root.effectiveWallpaperPath;
@@ -560,6 +578,8 @@ PanelWindow {
 
     function handleWallpaperApplySucceeded(filePath) {
         wallpaperPickerActiveWallpaper = filePath;
+        if (dynamicConfig)
+            dynamicConfig.set("wallpaperPath", filePath);
         if (shellRootController && shellRootController.refreshOverviewWallpaperCaches)
             shellRootController.refreshOverviewWallpaperCaches(filePath);
         else
@@ -651,6 +671,8 @@ PanelWindow {
     }
 
     function showWorkspaceWindow(wsId) {
+        if (root.dynamicConfig && root.dynamicConfig.enableWorkspacePill !== false)
+            return ;
         islandContainer.showWorkspaceCapsule(wsId);
         showAutoHiddenIsland("state");
     }
@@ -790,14 +812,19 @@ PanelWindow {
     }
 
     function toggleSettingsAppWindow() {
-        if (islandContainer.islandState === "settings_app")
+        if (shellRootController && shellRootController.toggleSettingsAppWindow)
+            shellRootController.toggleSettingsAppWindow();
+        else if (islandContainer.islandState === "settings_app")
             islandContainer.smartRestoreState();
         else
             islandContainer.showSettingsApp();
     }
 
     function showSettingsAppWindow() {
-        islandContainer.showSettingsApp();
+        if (shellRootController && shellRootController.openSettingsAppWindow)
+            shellRootController.openSettingsAppWindow();
+        else
+            islandContainer.showSettingsApp();
     }
 
     function setSettingsCategory(catIndex) {
@@ -2480,6 +2507,10 @@ PanelWindow {
         }
 
         function showSettingsApp() {
+            if (root.shellRootController && root.shellRootController.openSettingsAppWindow) {
+                root.shellRootController.openSettingsAppWindow();
+                return ;
+            }
             cancelSideSwipeSettle();
             abortSideTransientMode();
             clearTransientCapsule();
@@ -2575,10 +2606,12 @@ PanelWindow {
         }
 
         function showWorkspaceCapsule(wsId) {
-            if (currentWs === wsId && islandState === "long_capsule")
+            currentWs = wsId;
+            if (root.dynamicConfig && root.dynamicConfig.enableWorkspacePill !== false)
                 return ;
 
-            currentWs = wsId;
+            if (currentWs === wsId && islandState === "long_capsule")
+                return ;
             if (root.autoHideSuppressesTransientReveal)
                 return ;
 
@@ -2804,6 +2837,8 @@ PanelWindow {
                 islandContainer.currentWs = workspaceId;
             }
             onWorkspaceActivated: function(workspaceId) {
+                if (root.dynamicConfig && root.dynamicConfig.enableWorkspacePill !== false)
+                    return ;
                 if (userConfig.islandShowWorkspaceOnAutoHide)
                     root.showAutoHiddenIsland();
 
@@ -2967,7 +3002,7 @@ PanelWindow {
             // In all normal modes (control_center, clipboard, etc.):
             // 1:1 locked with mainCapsule with ZERO delay!
             width: isSettingsApp ? (hasTopNotification ? 290 : 0) : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width)
-            x: (isSettingsApp || exitingSettingsApp) ? Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2) : mainCapsule.x
+            x: (isSettingsApp || exitingSettingsApp) ? (root.lockIslandCenter ? Math.round((parent.width - width) / 2) : Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2)) : mainCapsule.x
 
             Timer {
                 id: exitSettingsTimer
@@ -3067,10 +3102,21 @@ PanelWindow {
             z: 8
         }
 
+        WorkspaceFloatingIsland {
+            id: workspaceFloatingIsland
+
+            targetCapsule: topAnchorProxy
+            rootWindow: root
+            dynamicConfig: root.dynamicConfig
+            accentColor: pywalColors.accent
+            z: 8
+        }
+
         HeadphonesFloatingIsland {
             id: headphonesFloatingIsland
 
             targetCapsule: topAnchorProxy
+            neighborPill: workspaceFloatingIsland
             rootWindow: root
             userConfig: root.userConfig
             islandTopMargin: root.effectiveIslandTopMargin
@@ -3294,7 +3340,7 @@ PanelWindow {
             z: 5
             color: root.overviewContentVisible ? root.overviewCapsuleColor : (notificationHistorySurface ? "#080808" : Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100))
             y: (islandContainer.islandState === "settings_app" ? Math.round(((root.screen ? root.screen.height : 1080) - targetHeight) / 2) : root.effectiveIslandTopMargin - (1 - root.autoHideProgress) * (targetHeight + root.effectiveIslandTopMargin + 8))
-            x: parent ? Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2 + (root.autoBalanceSatellites ? root.animatedBalanceOffset : 0)) : 0
+            x: parent ? (root.lockIslandCenter ? Math.round((parent.width - width) / 2) : Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2 + (root.autoBalanceSatellites ? root.animatedBalanceOffset : 0))) : 0
             clip: true
             width: displayedWidth
             height: targetHeight
@@ -3601,6 +3647,7 @@ PanelWindow {
                         textFontFamily: root.heroFontFamily
                         timeFontFamily: root.heroFontFamily
                         textPixelSize: root.bodyFontSize
+                        timePixelSize: root.clockFontSize
                         iconPixelSize: root.iconFontSize
                         minimumWidth: 220
                         maximumWidth: Math.max(220, (root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920)) - 48)
@@ -3633,6 +3680,7 @@ PanelWindow {
                         textFontFamily: root.textFontFamily
                         timeFontFamily: root.timeFontFamily
                         textPixelSize: root.bodyFontSize
+                        timePixelSize: root.clockFontSize
                         minimumWidth: 220
                         maximumWidth: Math.max(600, (root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920)) - 48)
                         transitionProgress: (islandContainer.islandState === "lyrics" || (islandContainer.restingState === "lyrics" && islandContainer.islandState === "lyrics")) ? 1 : (islandContainer.islandState === "normal" ? islandContainer.rightSwipeProgress : 0)
@@ -3980,7 +4028,10 @@ PanelWindow {
                         onConnectivityPanelRequested: function(kind, open) {
                         }
                         onSettingsRequested: {
-                            islandContainer.showSettingsApp();
+                            if (root.shellRootController && root.shellRootController.openSettingsAppWindow)
+                                root.shellRootController.openSettingsAppWindow();
+                            else
+                                islandContainer.showSettingsApp();
                         }
                         onClipboardRequested: {
                             islandContainer.showClipboard();

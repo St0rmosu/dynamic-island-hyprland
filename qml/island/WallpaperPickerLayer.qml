@@ -25,9 +25,13 @@ FocusScope {
     property string transitionPosition: nonEmptyString(userConfig.wallpaperTransitionPosition, "center")
     property string transitionBezier: nonEmptyString(userConfig.wallpaperTransitionBezier, ".54,0,.34,.99")
     property string transitionWave: nonEmptyString(userConfig.wallpaperTransitionWave, "20,20")
-    property bool transitionInvertY: userConfig.wallpaperTransitionInvertY
-    property string wallpaperDir: (dynamicConfig && dynamicConfig.wallpaperLibrary && dynamicConfig.wallpaperLibrary !== "") ? dynamicConfig.wallpaperLibrary : (userConfig.wallpaperLibraryPath || (root.homeDir + "/Sfondi"))
-    property string targetWallpaperPath: (dynamicConfig && dynamicConfig.wallpaperPath) ? dynamicConfig.wallpaperPath : userConfig.wallpaperPath
+    property string wallpaperDir: {
+        if (dynamicConfig && dynamicConfig.wallpaperLibrary && dynamicConfig.wallpaperLibrary !== "" && !dynamicConfig.wallpaperLibrary.endsWith("/Sfondi"))
+            return dynamicConfig.wallpaperLibrary;
+        if (userConfig && userConfig.wallpaperLibraryPath && userConfig.wallpaperLibraryPath !== "" && !userConfig.wallpaperLibraryPath.endsWith("/Sfondi"))
+            return userConfig.wallpaperLibraryPath;
+        return root.homeDir + "/Pictures/Wallpapers";
+    }
     property int thumbnailWidth: 640
     property int thumbnailHeight: 360
     property int thumbnailQuality: 80
@@ -317,8 +321,15 @@ FocusScope {
 
         latestAppliedWallpaper = filePath;
         wallpaperApplied(filePath);
+        if (dynamicConfig) {
+            dynamicConfig.set("wallpaperPath", filePath);
+        }
         closeAfterApply = true;
-        var cmdPattern = (dynamicConfig && dynamicConfig.wallpaperCustomCommand && dynamicConfig.wallpaperCustomCommand !== "") ? dynamicConfig.wallpaperCustomCommand : (root.homeDir + '/.scripts/apply-wallpaper.sh "$1"');
+        var defaultScript = root.homeDir + '/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh "$1"';
+        var cmdPattern = (dynamicConfig && dynamicConfig.wallpaperCustomCommand && dynamicConfig.wallpaperCustomCommand !== "") ? dynamicConfig.wallpaperCustomCommand : defaultScript;
+        if (cmdPattern.indexOf("~/.scripts/apply-wallpaper.sh") !== -1 || cmdPattern.indexOf("/.scripts/apply-wallpaper.sh") !== -1) {
+            cmdPattern = defaultScript;
+        }
         var cmdStr = cmdPattern.indexOf("$1") !== -1 ? cmdPattern.replace('"$1"', '"' + filePath + '"').replace("$1", '"' + filePath + '"') : (cmdPattern + ' "' + filePath + '"');
         var detachedStarted = false;
         try {

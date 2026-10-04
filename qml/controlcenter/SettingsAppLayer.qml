@@ -36,6 +36,8 @@ FocusScope {
     property color bgDark: "#0c0e14"
     property color bgSidebar: "#080a0f"
     property color borderSubtle: Qt.rgba(255, 255, 255, 0.08)
+    property real cornerRadius: 20
+    property bool isEmbeddedInWindow: false
 
     readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
 
@@ -153,9 +155,13 @@ FocusScope {
     // ── Layout Principale a Due Colonne ────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        radius: 32
+        radius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
+        bottomLeftRadius: root.cornerRadius
+        bottomRightRadius: root.cornerRadius
+        topLeftRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
+        topRightRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
         color: root.bgDark
-        border.width: 1
+        border.width: root.isEmbeddedInWindow ? 0 : 1
         border.color: root.borderSubtle
         clip: true
 
@@ -167,17 +173,18 @@ FocusScope {
                 width: 230
                 height: parent.height
                 color: root.bgSidebar
-                topLeftRadius: 32
-                bottomLeftRadius: 32
+                topLeftRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
+                bottomLeftRadius: root.cornerRadius
                 topRightRadius: 0
                 bottomRightRadius: 0
                 border.width: 1
                 border.color: Qt.rgba(255, 255, 255, 0.05)
 
                 Column {
-                    anchors.fill: parent
+                    anchors.top: parent.top
                     anchors.topMargin: 24
-                    anchors.bottomMargin: 24
+                    anchors.left: parent.left
+                    anchors.right: parent.right
                     anchors.leftMargin: 14
                     anchors.rightMargin: 14
                     spacing: 8
@@ -229,6 +236,56 @@ FocusScope {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: root.selectedCategoryIndex = index
                             }
+                        }
+                    }
+                }
+
+                // Pulsante Aggiorna Shell in basso nella Sidebar
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 16
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    height: 38
+                    radius: 10
+                    color: updateHover.containsMouse ? Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.20) : Qt.rgba(255, 255, 255, 0.04)
+                    border.width: 1
+                    border.color: updateHover.containsMouse ? root.effectiveAccent : Qt.rgba(255, 255, 255, 0.08)
+
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Behavior on border.color { ColorAnimation { duration: 120 } }
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\uf021" // sync icon
+                            font.family: root.iconFontFamily
+                            font.pixelSize: 13
+                            color: root.effectiveAccent
+                        }
+
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: I18n.tr("Aggiorna Shell")
+                            font.family: root.textFontFamily
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            color: updateHover.containsMouse ? "#ffffff" : "#c2c7d4"
+                        }
+                    }
+
+                    MouseArea {
+                        id: updateHover
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            Quickshell.execDetached(["foot", "-e", "bash", "-c", "dynamic-island update; echo ''; read -n 1 -s -r -p 'Premi un tasto per uscire...'; exit"]);
                         }
                     }
                 }
@@ -338,12 +395,13 @@ FocusScope {
                                 }
                             }
 
-                            // Pulsante Chiudi [ ✕ ]
+                            // Pulsante Chiudi [ ✕ ] (visibile solo se non integrato nella finestra nativa con barra del titolo)
                             Rectangle {
                                 width: 32
                                 height: 32
                                 radius: 16
                                 color: closeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                                visible: !root.isEmbeddedInWindow
 
                                 Text {
                                     anchors.centerIn: parent

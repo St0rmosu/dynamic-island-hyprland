@@ -4,6 +4,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Polkit
 import "qml/config"
+import "qml/background"
+import "qml/settings"
 
 Scope {
     id: shellRoot
@@ -19,6 +21,27 @@ Scope {
     readonly property alias polkitAgent: polkitAgent
     property string lastNotificationKey: ""
     property real lastNotificationTime: 0
+
+    SettingsAppWindow {
+        id: settingsAppWindow
+        dynamicConfig: shellRoot.dynamicConfig
+    }
+
+    function openSettingsAppWindow() {
+        if (settingsAppWindow) {
+            settingsAppWindow.visible = true;
+            if (settingsAppWindow.minimized)
+                settingsAppWindow.minimized = false;
+        }
+    }
+
+    function toggleSettingsAppWindow() {
+        if (settingsAppWindow) {
+            settingsAppWindow.visible = !settingsAppWindow.visible;
+            if (settingsAppWindow.visible && settingsAppWindow.minimized)
+                settingsAppWindow.minimized = false;
+        }
+    }
 
     function showPolkitPromptAll() {
         shellRoot.forEachWindow((window) => {
@@ -530,19 +553,17 @@ Scope {
         }
 
         function toggleSettingsApp() {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.toggleSettingsAppWindow)
-                    window.toggleSettingsAppWindow();
-
-            });
+            shellRoot.toggleSettingsAppWindow();
         }
 
         function showSettingsApp() {
-            shellRoot.forFocusedWindow((window) => {
-                if (window && window.showSettingsAppWindow)
-                    window.showSettingsAppWindow();
+            shellRoot.openSettingsAppWindow();
+        }
 
-            });
+        function setLanguage(lang: string) {
+            if (shellRoot.dynamicConfig && lang) {
+                shellRoot.dynamicConfig.set("language", lang);
+            }
         }
 
         function setSettingsCategory(catIndex: int) {
@@ -772,6 +793,20 @@ Scope {
         }
 
         target: SystemServices
+    }
+
+    Variants {
+        id: backgroundVariants
+
+        model: Quickshell.screens
+
+        BackgroundWindow {
+            required property var modelData
+
+            screen: modelData
+            shellRootController: shellRoot
+            dynamicConfig: shellRoot.dynamicConfig
+        }
     }
 
     Variants {

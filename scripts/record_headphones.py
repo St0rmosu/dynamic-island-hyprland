@@ -5,8 +5,9 @@ import time
 import subprocess
 import signal
 
-PROJECT_DIR = "/home/lollo/Progetti/dynamic-island-hyprland"
-QS_DIR = "/home/lollo/.config/quickshell/dynamic-island"
+HOME = os.path.expanduser("~")
+QS_DIR = os.environ.get("QUICKSHELL_DIR", os.path.join(HOME, ".config/quickshell/dynamic-island"))
+PROJECT_DIR = os.environ.get("DYNAMIC_ISLAND_PROJECT_DIR", QS_DIR)
 SCREENSHOT_DIR = os.path.join(PROJECT_DIR, "assets/screenshots")
 GIF_DIR = os.path.join(PROJECT_DIR, "assets/gifs")
 
@@ -80,9 +81,10 @@ def record_and_capture(name, geometry, trigger_fn=None, reset_fn=None, duration=
         print(f"   ✅ Done: {size_kb:.1f} KB")
 
 def set_screen_share_rule(enable):
-    val = "false" if enable else "true"
     # When enable is True, no_screen_share must be false so recorder can see it
-    run_cmd(f"sed -i 's/no_screen_share = .*/no_screen_share = {val},/g' /home/lollo/.config/hypr/moduli/rules.lua")
+    for cand in [os.path.join(HOME, ".config/hypr/moduli/rules.lua"), os.path.join(HOME, ".config/hypr/rules.lua")]:
+        if os.path.isfile(cand):
+            run_cmd(f"sed -i 's/no_screen_share = .*/no_screen_share = {val},/g' '{cand}'")
     time.sleep(0.3)
 
 def main():

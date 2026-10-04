@@ -1,9 +1,39 @@
 import QtQuick
 import QtQuick.Controls
 import IslandBackend
+import Quickshell
+import Quickshell.Io
 
 Flickable {
     id: root
+
+    readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
+
+    function resolveDefaultWallpaperDirectory() {
+        return root.homeDir + "/Pictures/Wallpapers";
+    }
+
+    Process {
+        id: pickFolderProcess
+        command: [
+            "bash",
+            root.homeDir + "/.config/quickshell/dynamic-island/scripts/pick_folder.sh",
+            root.resolveDefaultWallpaperDirectory()
+        ]
+        running: false
+        stdout: SplitParser {
+            onRead: (data) => {
+                const trimmed = data.trim();
+                if (trimmed !== "") {
+                    wallDirInput.text = trimmed;
+                    if (root.config) {
+                        root.config.set("wallpaperLibrary", trimmed);
+                        root.config.set("wallpaperLibraryPath", trimmed);
+                    }
+                }
+            }
+        }
+    }
 
     property var config: null
     property color accentColor: "#0a84ff"
@@ -215,7 +245,7 @@ Flickable {
                     spacing: 8
 
                     Rectangle {
-                        width: parent.width - 90
+                        width: parent.width - 274
                         height: 36
                         radius: 8
                         color: "#080a0f"
@@ -228,7 +258,12 @@ Flickable {
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
                             verticalAlignment: TextInput.AlignVCenter
-                            text: root.config ? (root.config.wallpaperLibrary || "") : ""
+                            text: {
+                                if (root.config && root.config.wallpaperLibrary && !root.config.wallpaperLibrary.endsWith("/Sfondi")) {
+                                    return root.config.wallpaperLibrary;
+                                }
+                                return root.resolveDefaultWallpaperDirectory();
+                            }
                             color: "#e2e6ee"
                             font.pixelSize: 12
                             font.family: root.iconFontFamily
@@ -242,6 +277,95 @@ Flickable {
                         }
                     }
 
+                    // Tasto Sfoglia (apre selettore cartella con file manager grafico)
+                    Rectangle {
+                        width: 90
+                        height: 36
+                        radius: 8
+                        color: browseDirMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.08)
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 5
+                            Text {
+                                text: "\uf07c" // folder-open
+                                color: root.accentColor
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            Text {
+                                text: I18n.tr("Sfoglia")
+                                color: "#f2f4f8"
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                font.family: root.textFontFamily
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: browseDirMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: {
+                                const cur = (wallDirInput.text && wallDirInput.text.trim() !== "") ? wallDirInput.text.trim() : root.resolveDefaultWallpaperDirectory();
+                                pickFolderProcess.command = [
+                                    "bash",
+                                    root.homeDir + "/.config/quickshell/dynamic-island/scripts/pick_folder.sh",
+                                    cur
+                                ];
+                                pickFolderProcess.running = false;
+                                pickFolderProcess.running = true;
+                            }
+                        }
+                    }
+
+                    // Tasto Apri (apre nel File Manager del sistema es. Nautilus/Dolphin)
+                    Rectangle {
+                        width: 74
+                        height: 36
+                        radius: 8
+                        color: openDirMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
+                        border.width: 1
+                        border.color: Qt.rgba(255, 255, 255, 0.08)
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 4
+                            Text {
+                                text: "\uf06e" // eye / open
+                                color: "#9aa3b5"
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 11
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                            Text {
+                                text: I18n.tr("Apri")
+                                color: "#c2c7d4"
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                font.family: root.textFontFamily
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        MouseArea {
+                            id: openDirMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: {
+                                const targetPath = wallDirInput.text || root.resolveDefaultWallpaperDirectory();
+                                Quickshell.execDetached(["xdg-open", targetPath]);
+                            }
+                        }
+                    }
+
+                    // Tasto Predefinito
                     Rectangle {
                         width: 82
                         height: 36
@@ -265,8 +389,7 @@ Flickable {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
                             onClicked: {
-                                const home = Quickshell.env("HOME") || "";
-                                const defaultPath = home + "/Sfondi";
+                                const defaultPath = root.resolveDefaultWallpaperDirectory();
                                 wallDirInput.text = defaultPath;
                                 if (root.config) {
                                     root.config.set("wallpaperLibrary", defaultPath);
@@ -274,6 +397,22 @@ Flickable {
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            // Sfondo Integrato Quickshell (Stile Logical Impulse)
+            SettingsSwitch {
+                title: I18n.tr("Sfondo Integrato nella Shell")
+                description: I18n.tr("Lo sfondo viene gestito da Quickshell; chiudendo la shell lo sfondo scompare come su Logical Impulse")
+                checked: root.config ? (root.config.enableQuickshellWallpaper !== false) : true
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onToggled: function(val) {
+                    if (root.config) {
+                        root.config.set("enableQuickshellWallpaper", val);
                     }
                 }
             }
@@ -339,7 +478,15 @@ Flickable {
                             anchors.leftMargin: 12
                             anchors.rightMargin: 12
                             verticalAlignment: TextInput.AlignVCenter
-                            text: root.config ? (root.config.wallpaperCustomCommand || "") : ""
+                            text: {
+                                const defaultCmd = root.homeDir + "/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh \"$1\"";
+                                if (root.config && root.config.wallpaperCustomCommand) {
+                                    const c = root.config.wallpaperCustomCommand;
+                                    if (c.indexOf("/.scripts/apply-wallpaper.sh") === -1)
+                                        return c;
+                                }
+                                return defaultCmd;
+                            }
                             color: "#e2e6ee"
                             font.pixelSize: 12
                             font.family: root.iconFontFamily
@@ -375,8 +522,7 @@ Flickable {
                             cursorShape: Qt.PointingHandCursor
                             hoverEnabled: true
                             onClicked: {
-                                const home = Quickshell.env("HOME") || "";
-                                const defaultCmd = home + "/.scripts/apply-wallpaper.sh \"$1\"";
+                                const defaultCmd = root.homeDir + "/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh \"$1\"";
                                 cmdInput.text = defaultCmd;
                                 if (root.config) {
                                     root.config.set("wallpaperCustomCommand", defaultCmd);

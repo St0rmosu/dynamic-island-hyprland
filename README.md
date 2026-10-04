@@ -81,6 +81,14 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
   </tr>
 </table>
 
+#### 🧭 Satellite Workspace Pill (Logical Impulse Style)
+- **Compact & Symmetrical**: Matches the exact height (40px) and corner radius of the central clock capsule and companion pills for a unified aesthetic.
+- **Fluid Active Indicator**: A smooth sliding solid white circular bubble tracks your current workspace in real-time.
+- **Round App Badges**: Open client applications on each workspace (e.g. Zen Browser, Discord, Foot Terminal, Satty) are resolved and rendered as perfect circular icons with antialiasing.
+- **Unified Occupied Capsule**: Active and occupied workspaces are connected into a sleek semi-transparent pill; empty workspaces remain as discrete, minimal dots.
+- **Interactive Controls**: Click any workspace to jump immediately (supports Hyprland Lua dispatch), scroll the mouse wheel to cycle workspaces, or right-click to reveal the full-screen Workspace Overview.
+- **Configurable**: Easily enable/disable, toggle app icons, or change docking position (Left/Right) directly from the Settings App.
+
 ---
 
 ### 2. Hardware Alerts & Adaptive OSD
@@ -183,8 +191,11 @@ All demonstrations and screenshots are captured on a clean, empty workspace high
 
 ### 4. Settings App & Studio Layout Canvas
 
-- **Standalone Settings App**: 980x680 floating GUI window with 5 categories (`Bar & Island`, `Control Center`, `Appearance`, `Motion & Animation`, `Modules`).
+- **Native Floating Hyprland Window**: The Settings App runs as an authentic Wayland floating window (`FloatingWindow`) with smooth 20px rounded corners (`ClippingRectangle`).
+- **Full Window Management**: Move freely with `SUPER + Left-Click`, resize with `SUPER + Right-Click`, tile, minimize, or maximize seamlessly.
 - **Studio Layout Canvas**: Visual drag-and-drop grid customizer embedded in the Control Center settings tab, supporting 4-corner card resizing, single-click height adjustments, and live JSON persistence to `~/.config/dynamic-island/userconfig.json`.
+- **Graphical Folder Picker**: Clickable folder browser button that opens your system file manager (`zenity`, `kdialog`, `yad`, etc.) to choose custom wallpaper collections graphically.
+- **One-Click Shell Updater**: Integrated `[ 🔄 Aggiorna Shell ]` button in the sidebar to check and apply updates with live progress inside a clean terminal window.
 
 <table>
   <tr>
@@ -364,21 +375,79 @@ cmake ninja qt6-base qt6-declarative jq socat libnotify brightnessctl playerctl 
 
 ## 🚀 Quick Start & Installation
 
-Clone the repository and run the automated installer:
+### ⚡ One-Liner (Recommended)
+Run the automated installer with a single command:
+
+```bash
+bash <(curl -sSL https://raw.githubusercontent.com/St0rmosu/dynamic-island-hyprland/main/install.sh)
+```
+
+The script automatically handles repository setup, dependencies, silent C++ backend compilation, Quickshell runtime deployment, biometrics, language selection, Hyprland autostart, and wallpaper theming.
+
+---
+
+### 📦 Manual Installation
 
 ```bash
 # 1. Clone into your Quickshell configuration path
 git clone https://github.com/St0rmosu/dynamic-island-hyprland.git ~/.config/quickshell/dynamic-island
 
-# 2. Enter directory and run the installer
+# 2. Enter directory and run the installer or setup
 cd ~/.config/quickshell/dynamic-island
-chmod +x install.sh
 ./install.sh
+# or equivalently (Logical Impulse style):
+./setup install
 ```
 
-### What `install.sh` Does:
+### 🛠️ Subcommands & Modular Options
+The installer supports targeted subcommands and silent execution:
+
+```bash
+./setup install        # Full end-to-end automated installation (default)
+./setup update         # Fast update from GitHub, selective recompilation & hot-reload
+./setup deps           # Check and install system (pacman) and AUR dependencies only
+./setup build          # Silently compile and install C++ backend & lyricsmpris daemon
+./setup lang           # Change or configure interface language (interactive or --lang en|it|es|de|fr|auto)
+./setup biometrics     # Configure Fingerprint and Windows Hello Face ID authentication
+./setup wallpaper      # Configure wallpaper engine (awww, swww, hyprpaper, mpvpaper, etc.)
+./setup autostart      # Inject Hyprland startup hooks and screencopy privacy layer rules
+./setup uninstall      # Cleanly remove installed binaries and desktop components
+```
+
+### 🔄 Fast Shell Updates (Single Command)
+You can update your Dynamic Island installation anytime directly from your terminal or from within the **Settings App**:
+
+```bash
+dynamic-island update
+# or equivalently:
+~/.config/quickshell/dynamic-island/install.sh update
+```
+- **100% Non-Destructive**: Your custom settings, themes, layouts, and wallpapers in `~/.config/dynamic-island/` are completely separate from the git repository and are **never overwritten**.
+- **Automated Pre-Update Backup**: Before pulling any code from GitHub, the updater automatically creates a compressed timestamped backup of your settings in `~/.config/dynamic-island/backups/`.
+- **Smart Recompilation**: Automatically checks if C++ backend files were touched, recompiling **only** when necessary (takes <1s for UI/QML/script updates).
+- **Hot-Reload**: Seamlessly reloads the island in the background without restarting your session and pops up a desktop confirmation toast.
+- **Graphical One-Click Option**: You can also click the **"Aggiorna Shell"** button directly in the Settings App sidebar!
+
+**Options & Flags:**
+- `-y`, `--yes`: Non-interactive mode (use defaults without confirmation prompts).
+- `-v`, `--verbose`: Show full verbose compiler / CMake output instead of the clean spinner.
+- `--system`: Install binaries to `/usr` instead of `~/.local`.
+
+---
+
+### 🧰 Standalone Utility Scripts
+Dynamic Island includes dedicated, self-contained scripts in `scripts/`:
+
+- **`scripts/set-language.sh`**: Change the interface language anytime via CLI or interactive prompt (e.g. `./scripts/set-language.sh it`). Changes take effect immediately via IPC without restarting.
+- **`scripts/set-wallpaper-backend.sh`**: Switch wallpaper engines on the fly (`awww`, `swww`, `hyprpaper`, `mpvpaper`, `swaybg`, `wpaperd`).
+- **`scripts/apply-wallpaper.sh`**: Applies wallpapers with smooth transitions and synchronizes colors across GTK-3, GTK-4 (Libadwaita), Qt5, Qt6, Matugen, Pywal, and Hyprland.
+- **`scripts/init_wallpaper.sh`**: Restores the wallpaper and daemon on compositor startup.
+
+---
+
+### What the Installer Does:
 1. **Verifies Dependencies**: Checks for missing packages and offers automatic installation via `yay`, `paru`, or `pacman`.
-2. **Compiles C++ Backend**: Builds `IslandBackend` and `lyricsmpris` using CMake and installs them cleanly to `~/.local/` (no root/sudo required).
+2. **Compiles C++ Backend Silently**: Builds `IslandBackend` and `lyricsmpris` using CMake with clean progress spinners; verbose compiler output is logged cleanly to `/tmp/dynamic-island-install.log`.
 3. **Deploys Runtime Config**: Sets up `~/.local/bin/dynamic-island` and configures `~/.config/dynamic-island/userconfig.json`.
 4. **Configures Hyprland Autostart**: Detects whether your Hyprland setup is modular (Lua or `.conf`) or monolithic, safely injecting `dynamic-island -d` without duplication.
 5. **Configures Screencopy Privacy**: Ensures `no_screen_share` layer rules are configured so the island stays private during streaming.

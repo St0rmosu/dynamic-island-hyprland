@@ -121,7 +121,96 @@ Flickable {
             }
         }
 
-        // ── Sezione 2: Auto-Hide & Comportamento ─────────────────────────
+        // ── Sezione 2: Posizionamento & Pillola Workspace ───────────────
+        SettingsHeader {
+            text: I18n.tr("Posizionamento & Pillola Workspace")
+            accentColor: root.accentColor
+            textFontFamily: root.textFontFamily
+        }
+
+        SettingsCard {
+            SettingsSwitch {
+                title: I18n.tr("Blocca Orologio al Centro Morto")
+                description: I18n.tr("Mantiene l'orologio principale esattamente al centro di tutti i monitor")
+                icon: "\uf05b" // crosshairs
+                checked: root.config ? (root.config.lockIslandCenter !== false) : true
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onToggled: function(st) { if (root.config) root.config.set("lockIslandCenter", st); }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            SettingsSwitch {
+                title: I18n.tr("Pillola Workspace Attivo")
+                description: I18n.tr("Mostra una pillola satellite accanto all'orologio che indica il workspace corrente")
+                icon: "\uf108" // desktop
+                checked: root.config ? (root.config.enableWorkspacePill !== false) : true
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onToggled: function(st) { if (root.config) root.config.set("enableWorkspacePill", st); }
+            }
+
+            Rectangle {
+                visible: root.config && (root.config.enableWorkspacePill !== false)
+                width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05)
+            }
+
+            SettingsSegmented {
+                visible: root.config && (root.config.enableWorkspacePill !== false)
+                title: I18n.tr("Posizione Pillola Workspace")
+                description: I18n.tr("Scegli se posizionare la pillola workspace a destra o a sinistra dell'orologio")
+                model: [
+                    { text: I18n.tr("Destra (Predefinito)"), value: "right" },
+                    { text: I18n.tr("Sinistra"), value: "left" }
+                ]
+                currentValue: root.config ? (root.config.workspacePillPosition || "right") : "right"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onSelected: function(val) { if (root.config) root.config.set("workspacePillPosition", val); }
+            }
+
+            Rectangle {
+                visible: root.config && (root.config.enableWorkspacePill !== false)
+                width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05)
+            }
+
+            SettingsSwitch {
+                visible: root.config && (root.config.enableWorkspacePill !== false)
+                title: I18n.tr("Mostra Icone Applicazioni")
+                description: I18n.tr("Visualizza le miniature delle icone (es. Discord, browser, terminale) nei workspace con finestre aperte")
+                icon: "\uf109" // laptop / app
+                checked: root.config ? (root.config.workspacePillShowAppIcons !== false) : true
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onToggled: function(st) { if (root.config) root.config.set("workspacePillShowAppIcons", st); }
+            }
+
+            Rectangle {
+                visible: root.config && (root.config.enableWorkspacePill !== false)
+                width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05)
+            }
+
+            SettingsSegmented {
+                visible: root.config && (root.config.enableWorkspacePill !== false)
+                title: I18n.tr("Numero Workspace Mostrati")
+                description: I18n.tr("Imposta quanti workspace visualizzare nella pillola (espande automaticamente se navighi oltre)")
+                model: [
+                    { text: "5", value: 5 },
+                    { text: "8", value: 8 },
+                    { text: "10 (Predefinito)", value: 10 }
+                ]
+                currentValue: root.config ? (root.config.workspacePillShownCount || 10) : 10
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onSelected: function(val) { if (root.config) root.config.set("workspacePillShownCount", val); }
+            }
+        }
+
+        // ── Sezione 3: Auto-Hide & Comportamento ─────────────────────────
         SettingsHeader {
             text: I18n.tr("Auto-Nascondimento (Auto-Hide)")
             accentColor: root.accentColor

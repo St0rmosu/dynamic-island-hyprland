@@ -8,6 +8,44 @@ export PATH="$HOME/.local/bin:/usr/local/bin:${PATH}"
 export QUICKSHELL_LYRICS_BACKEND="${QUICKSHELL_LYRICS_BACKEND:-$HOME/.local/bin/lyricsmpris}"
 export MALLOC_CONF="${MALLOC_CONF:-narenas:2,background_thread:true,dirty_decay_ms:2000,muzzy_decay_ms:2000}"
 
+case "$1" in
+  --update|update)
+    shift
+    if [ -f "$QML_PATH/install.sh" ]; then
+      exec bash "$QML_PATH/install.sh" update "$@"
+    elif [ -f "$HOME/dynamic-island-hyprland/install.sh" ]; then
+      exec bash "$HOME/dynamic-island-hyprland/install.sh" update "$@"
+    else
+      echo "Errore: install.sh non trovato in $QML_PATH"
+      exit 1
+    fi
+    ;;
+  --quit|--kill|--stop)
+    pkill -u "$(id -u)" -f "quickshell -p $QML_PATH" 2>/dev/null || true
+    command -v awww >/dev/null 2>&1 && awww clear 2>/dev/null || true
+    command -v swww >/dev/null 2>&1 && swww clear 2>/dev/null || true
+    exit 0
+    ;;
+  --settings|settings)
+    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island toggleSettingsApp >/dev/null 2>&1 || true
+    exit 0
+    ;;
+  --reload|--restart)
+    pkill -u "$(id -u)" -f "quickshell -p $QML_PATH" 2>/dev/null || true
+    sleep 0.3
+    shift
+    ;;
+  --toggle)
+    if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
+      pkill -u "$(id -u)" -f "quickshell -p $QML_PATH" 2>/dev/null || true
+      command -v awww >/dev/null 2>&1 && awww clear 2>/dev/null || true
+      command -v swww >/dev/null 2>&1 && swww clear 2>/dev/null || true
+      exit 0
+    fi
+    shift
+    ;;
+esac
+
 if [[ "${SYSTEMD_EXEC_PID:-}" != "$$" ]]; then
   if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
     /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island show >/dev/null 2>&1 || true

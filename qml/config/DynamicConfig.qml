@@ -20,6 +20,11 @@ Item {
     property int islandExclusiveZone: 48
     property int islandPositionX: 50
     property int islandBackgroundOpacity: 92
+    property bool lockIslandCenter: true
+    property bool enableWorkspacePill: true
+    property string workspacePillPosition: "right"
+    property bool workspacePillShowAppIcons: true
+    property int workspacePillShownCount: 10
 
     // Auto-hide & Hover
     property bool autoHideEnabled: false
@@ -62,10 +67,11 @@ Item {
     property string paletteEngine: "auto" // auto, pywal, wallust, iris, matugen
     property string customAccentColor: ""
     property string wallpaperPath: ""
-    property string wallpaperLibrary: homeDir + "/Sfondi"
-    property string wallpaperCustomCommand: homeDir + "/.scripts/apply-wallpaper.sh \"$1\""
+    property string wallpaperLibrary: homeDir + "/Pictures/Wallpapers"
+    property string wallpaperCustomCommand: homeDir + "/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh \"$1\""
     property string wallpaperTransition: "random"
     property string clockFormat: "24h"
+    property bool enableQuickshellWallpaper: true
 
     // ── 5. Scorciatoie Personalizzate ──────────────────────────────────
     property var customShortcuts: [
@@ -274,6 +280,11 @@ Item {
             if (data.islandExclusiveZone !== undefined) root.islandExclusiveZone = Number(data.islandExclusiveZone) >= 0 ? Number(data.islandExclusiveZone) : 48;
             if (data.islandPositionX !== undefined) root.islandPositionX = Number(data.islandPositionX) || 50;
             if (data.islandBackgroundOpacity !== undefined) root.islandBackgroundOpacity = Number(data.islandBackgroundOpacity) || 92;
+            if (data.lockIslandCenter !== undefined) root.lockIslandCenter = Boolean(data.lockIslandCenter);
+            if (data.enableWorkspacePill !== undefined) root.enableWorkspacePill = Boolean(data.enableWorkspacePill);
+            if (data.workspacePillPosition !== undefined) root.workspacePillPosition = String(data.workspacePillPosition);
+            if (data.workspacePillShowAppIcons !== undefined) root.workspacePillShowAppIcons = Boolean(data.workspacePillShowAppIcons);
+            if (data.workspacePillShownCount !== undefined) root.workspacePillShownCount = parseInt(data.workspacePillShownCount) || 10;
 
             // Auto-hide & Hover
             if (data.islandAutoHideEnabled !== undefined) root.autoHideEnabled = Boolean(data.islandAutoHideEnabled);
@@ -306,9 +317,30 @@ Item {
             if (data.wallpaperPywalEnabled !== undefined) root.pywalEnabled = Boolean(data.wallpaperPywalEnabled);
             if (data.paletteEngine !== undefined) root.paletteEngine = String(data.paletteEngine);
             if (data.customAccentColor !== undefined) root.customAccentColor = String(data.customAccentColor);
-            if (data.wallpaperPath !== undefined) root.wallpaperPath = String(data.wallpaperPath);
-            if (data.wallpaperLibraryPath !== undefined) root.wallpaperLibrary = String(data.wallpaperLibraryPath);
-            if (data.wallpaperCustomCommand !== undefined) root.wallpaperCustomCommand = String(data.wallpaperCustomCommand);
+            if (data.wallpaperLibraryPath !== undefined) {
+                var wlp = String(data.wallpaperLibraryPath).trim();
+                if (wlp !== "" && !wlp.endsWith("/Sfondi")) {
+                    root.wallpaperLibrary = wlp;
+                } else if (wlp.endsWith("/Sfondi")) {
+                    root.wallpaperLibrary = root.homeDir + "/Pictures/Wallpapers";
+                }
+            } else if (data.wallpaperLibrary !== undefined) {
+                var wl = String(data.wallpaperLibrary).trim();
+                if (wl !== "" && !wl.endsWith("/Sfondi")) {
+                    root.wallpaperLibrary = wl;
+                } else if (wl.endsWith("/Sfondi")) {
+                    root.wallpaperLibrary = root.homeDir + "/Pictures/Wallpapers";
+                }
+            }
+            if (data.enableQuickshellWallpaper !== undefined) root.enableQuickshellWallpaper = Boolean(data.enableQuickshellWallpaper);
+            if (data.wallpaperCustomCommand !== undefined) {
+                var wcc = String(data.wallpaperCustomCommand).trim();
+                if (wcc === (root.homeDir + "/.scripts/apply-wallpaper.sh \"$1\"")) {
+                    root.wallpaperCustomCommand = root.homeDir + "/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh \"$1\"";
+                } else {
+                    root.wallpaperCustomCommand = wcc;
+                }
+            }
             if (data.clockFormat !== undefined) root.clockFormat = String(data.clockFormat);
 
             // Shortcuts
@@ -390,6 +422,11 @@ Item {
                 islandExclusiveZone: root.islandExclusiveZone,
                 islandPositionX: root.islandPositionX,
                 islandBackgroundOpacity: root.islandBackgroundOpacity,
+                lockIslandCenter: root.lockIslandCenter,
+                enableWorkspacePill: root.enableWorkspacePill,
+                workspacePillPosition: root.workspacePillPosition,
+                workspacePillShowAppIcons: root.workspacePillShowAppIcons,
+                workspacePillShownCount: root.workspacePillShownCount,
 
                 islandAutoHideEnabled: root.autoHideEnabled,
                 islandAutoHideDelayMs: root.autoHideDelayMs,
@@ -419,6 +456,7 @@ Item {
                 wallpaperPath: root.wallpaperPath,
                 wallpaperLibraryPath: root.wallpaperLibrary,
                 wallpaperCustomCommand: root.wallpaperCustomCommand,
+                enableQuickshellWallpaper: root.enableQuickshellWallpaper,
                 clockFormat: root.clockFormat,
                 customShortcuts: root.customShortcuts,
 

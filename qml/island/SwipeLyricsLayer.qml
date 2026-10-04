@@ -18,6 +18,7 @@ Item {
     property bool recordingActive: false
     property real transitionProgress: 0
     property int textPixelSize: userConfig.bodyFontSize
+    property int timePixelSize: textPixelSize + 3
     property real minimumWidth: 220
     property real maximumWidth: 1600
     property real horizontalPadding: 14
@@ -107,7 +108,7 @@ Item {
         id: timeMetrics
 
         font.family: timeFontFamily
-        font.pixelSize: textPixelSize + 1
+        font.pixelSize: timePixelSize
         font.weight: Font.Bold
         text: timeText
     }
@@ -131,7 +132,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: "00:00"
         opacity: 0
-        font.pixelSize: textPixelSize + 1
+        font.pixelSize: timePixelSize
         font.family: timeFontFamily
         font.weight: Font.Bold
         font.letterSpacing: -0.25
@@ -259,7 +260,7 @@ Item {
         timeText: root.timeText
         color: root.accentColor
         opacity: 1 - clampedProgress
-        fontPixelSize: textPixelSize + 1
+        fontPixelSize: timePixelSize
         fontFamily: timeFontFamily
         fontWeight: Font.Bold
         fontLetterSpacing: -0.25

@@ -46,7 +46,7 @@ FocusScope {
     Item {
         id: keyCaptureItem
         focus: root.recordingIndex !== -1
-        Keys.priority: Keys.BeforeItemPriority
+        Keys.priority: Keys.BeforeItem
         Keys.enabled: root.recordingIndex !== -1
 
         Keys.onEscapePressed: function(event) {

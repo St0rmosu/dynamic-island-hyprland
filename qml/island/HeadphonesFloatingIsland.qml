@@ -51,8 +51,10 @@ Rectangle {
     height: isExpanded ? expandedHeight : compactHeight
     radius: isExpanded ? 36 : compactHeight / 2
 
-    // Posizionamento speculare: ancorato a destra della capsula principale a 7px
-    anchors.left: targetCapsule ? targetCapsule.right : undefined
+    property var neighborPill: null
+
+    // Posizionamento speculare: ancorato a destra della capsula principale o del pill satellite vicino
+    anchors.left: (neighborPill && neighborPill.visible && neighborPill.opacity > 0.05) ? neighborPill.right : (targetCapsule ? targetCapsule.right : undefined)
     anchors.leftMargin: 7
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 

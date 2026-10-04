@@ -27,6 +27,7 @@ Item {
     property real groupSpacing: 16
     property real iconSpacing: 8
     property int textPixelSize: userConfig.bodyFontSize
+    property int timePixelSize: textPixelSize + 3
     property int iconPixelSize: userConfig.iconFontSize
     property int iconBoxSize: 18
     property int albumCoverSize: 28
@@ -69,7 +70,7 @@ Item {
         id: timeMetrics
 
         font.family: timeFontFamily
-        font.pixelSize: root.textPixelSize + 1
+        font.pixelSize: root.timePixelSize
         font.weight: Font.Bold
         text: timeText
     }
@@ -371,7 +372,7 @@ Item {
         timeText: root.timeText
         color: root.accentColor
         opacity: 1 - clampedProgress
-        fontPixelSize: root.textPixelSize + 1
+        fontPixelSize: root.timePixelSize
         fontFamily: timeFontFamily
         fontWeight: Font.Bold
         fontLetterSpacing: -0.25

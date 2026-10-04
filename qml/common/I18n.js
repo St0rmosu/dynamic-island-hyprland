@@ -57,6 +57,7 @@ var translations = {
     "back": { "it": "Indietro", "en": "Back", "de": "Zurück", "es": "Atrás", "fr": "Retour" },
     "silent": { "it": "Silenzioso", "en": "Silent", "de": "Stumm", "es": "Silencio", "fr": "Silencieux" },
     "settings": { "it": "Impostazioni", "en": "Settings", "de": "Einstellungen", "es": "Ajustes", "fr": "Paramètres" },
+    "update_shell": { "it": "Aggiorna Shell", "en": "Update Shell", "de": "Shell aktualisieren", "es": "Actualizar Shell", "fr": "Mettre à jour" },
     "bar_clipboard": { "it": "Barra & Appunti", "en": "Bar & Clipboard", "de": "Leiste & Zwischenablage", "es": "Barra y portapapeles", "fr": "Barre et presse-papiers" },
     "clock_battery": { "it": "Orologio & Batteria", "en": "Clock & Battery", "de": "Uhr & Akku", "es": "Reloj y batería", "fr": "Horloge et batterie" },
     "wifi_card": { "it": "Scheda Wi-Fi", "en": "Wi-Fi Card", "de": "WLAN-Karte", "es": "Tarjeta Wi-Fi", "fr": "Carte Wi-Fi" },
