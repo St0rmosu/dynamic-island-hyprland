@@ -10,7 +10,7 @@ Flickable {
     readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
 
     function resolveDefaultWallpaperDirectory() {
-        return root.homeDir + "/Pictures/Wallpapers";
+        return root.homeDir + "/Sfondi";
     }
 
     Process {
@@ -259,7 +259,7 @@ Flickable {
                             anchors.rightMargin: 12
                             verticalAlignment: TextInput.AlignVCenter
                             text: {
-                                if (root.config && root.config.wallpaperLibrary && !root.config.wallpaperLibrary.endsWith("/Sfondi")) {
+                                if (root.config && root.config.wallpaperLibrary) {
                                     return root.config.wallpaperLibrary;
                                 }
                                 return root.resolveDefaultWallpaperDirectory();

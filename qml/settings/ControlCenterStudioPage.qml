@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import Quickshell
 import "../controlcenter"
 
 Item {
@@ -57,7 +58,17 @@ Item {
             controlCenterWidth: root.config ? root.config.controlCenterWidth : 420
             rawConfig: root.config ? { controlCenterCanvasLayout: root.config.controlCenterCanvasLayout } : ({})
 
-            onRequestReloadQuickshell: root.requestReloadQuickshell()
+            onRequestReloadQuickshell: {
+                root.requestReloadQuickshell();
+                if (root.config && typeof root.config.dispatchSave === "function") {
+                    root.config.dispatchSave();
+                }
+                try {
+                    Quickshell.reload(false);
+                } catch(e) {
+                    console.warn("[ControlCenterStudioPage] reload failed:", e);
+                }
+            }
 
             onLayoutChanged: function(layoutArray) {
                 if (root.config) {

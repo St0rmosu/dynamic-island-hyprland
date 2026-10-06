@@ -451,6 +451,16 @@ FocusScope {
                             textFontFamily: root.textFontFamily
                             heroFontFamily: root.heroFontFamily
                             iconFontFamily: root.iconFontFamily
+                            onRequestReloadQuickshell: {
+                                if (root.dynamicConfig && typeof root.dynamicConfig.dispatchSave === "function") {
+                                    root.dynamicConfig.dispatchSave();
+                                }
+                                try {
+                                    Quickshell.reload(false);
+                                } catch(e) {
+                                    console.warn("[SettingsAppLayer] reload failed:", e);
+                                }
+                            }
                         }
 
                         // Pagina 4: Aspetto, Sfondi & Font

@@ -220,7 +220,7 @@ Item {
                 visible: root.activeLyricText !== ""
                 x: root.lyricOverflow > 0 ? -root.marqueeOffset : 0
                 y: root.lyricBaselineY - baselineOffset + (root.previousLyricText !== "" ? 12 * (1 - root.lyricChangeProgress) : 0)
-                width: root.lyricOverflow > 0 ? implicitWidth : parent.width
+                width: implicitWidth
                 text: root.activeLyricText
                 color: "white"
                 opacity: root.previousLyricText !== "" ? root.lyricChangeProgress : 1

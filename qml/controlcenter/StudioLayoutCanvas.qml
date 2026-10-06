@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
 import IslandBackend
 
 Item {
@@ -92,7 +93,7 @@ Item {
     }
 
     onRawConfigChanged: {
-        if (!canvasInitialized && rawConfig && (rawConfig.controlCenterCanvasLayout || Object.keys(rawConfig).length > 0)) {
+        if (!isInternalSave && rawConfig && (rawConfig.controlCenterCanvasLayout || Object.keys(rawConfig).length > 0)) {
             initializeFromConfig();
             canvasInitialized = true;
         }
@@ -608,7 +609,15 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: studioRoot.requestReloadQuickshell()
+                                onClicked: {
+                                    studioRoot.emitSave();
+                                    studioRoot.requestReloadQuickshell();
+                                    try {
+                                        Quickshell.reload(false);
+                                    } catch(e) {
+                                        console.warn("[StudioLayoutCanvas] reload failed:", e);
+                                    }
+                                }
                             }
                         }
                     }

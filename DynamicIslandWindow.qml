@@ -225,7 +225,7 @@ PanelWindow {
     readonly property string defaultSplitIcon: "\ud83c\udfa7"
     readonly property string notificationStatusIcon: "\uf0f3"
     readonly property real overviewWindowCornerRadius: 12
-    readonly property int dynamicIslandAcceptedButtons: userConfig.mouseButtonsMask([1, userConfig.dynamicIslandPrimaryButton, userConfig.dynamicIslandSecondaryButton])
+    readonly property int dynamicIslandAcceptedButtons: userConfig.mouseButtonsMask([1, 2, userConfig.dynamicIslandPrimaryButton, userConfig.dynamicIslandSecondaryButton])
     readonly property int configuredHoverExpandAction: {
         let action = undefined;
         if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandAction !== undefined)
@@ -242,7 +242,7 @@ PanelWindow {
         if (userConfig && userConfig.hoverExpandEnabled !== undefined)
             return Boolean(userConfig.hoverExpandEnabled);
 
-        return configuredHoverExpandAction > 0;
+        return false;
     }
     readonly property bool topGestureInputActive: false
     readonly property bool autoHideRuntimeEnabled: !shellRootController || shellRootController.islandAutoHideRuntimeEnabled === undefined || !!shellRootController.islandAutoHideRuntimeEnabled
@@ -1264,8 +1264,10 @@ PanelWindow {
             try {
                 var p = text().trim();
                 if (p !== "") {
+                    var changed = (p !== wallpaperPath);
                     wallpaperPath = p;
-                    console.log("[DynamicIsland] Loaded wallpaper from ~/.cache/wal/wal:", p);
+                    if (changed)
+                        console.log("[DynamicIsland] Loaded wallpaper from ~/.cache/wal/wal:", p);
                 }
             } catch (e) {
                 console.warn("[DynamicIsland] Failed to read wal wallpaper path:", e);
@@ -1286,8 +1288,10 @@ PanelWindow {
             try {
                 var p = text().trim();
                 if (p !== "") {
+                    var changed = (p !== wallpaperPath);
                     wallpaperPath = p;
-                    console.log("[DynamicIsland] Loaded current wallpaper path from caelestia:", p);
+                    if (changed)
+                        console.log("[DynamicIsland] Loaded current wallpaper path from caelestia:", p);
                 }
             } catch (e) {
                 console.warn("[DynamicIsland] Failed to read current wallpaper path:", e);
@@ -1727,6 +1731,7 @@ PanelWindow {
             case "":
             case "none":
                 return ;
+            case "player":
             case "toggleExpandedPlayer":
                 if (musicFloatingIsland && musicFloatingIsland.hasTrack) {
                     musicFloatingIsland.isExpanded = !musicFloatingIsland.isExpanded;
@@ -1757,6 +1762,7 @@ PanelWindow {
                     smartRestoreState();
 
                 return ;
+            case "notifications":
             case "toggleNotificationCenter":
                 if (islandState === "notification_center")
                     smartRestoreState();
@@ -1771,6 +1777,7 @@ PanelWindow {
                     smartRestoreState();
 
                 return ;
+            case "control_center":
             case "toggleControlCenter":
                 if (islandState === "control_center")
                     smartRestoreState();
@@ -1785,6 +1792,8 @@ PanelWindow {
                     smartRestoreState();
 
                 return ;
+            case "power_menu":
+            case "power":
             case "togglePowerMenu":
                 if (islandState === "power_menu")
                     smartRestoreState();
@@ -1799,6 +1808,36 @@ PanelWindow {
                     smartRestoreState();
 
                 return ;
+            case "clipboard":
+            case "toggleClipboard":
+                if (islandState === "clipboard")
+                    smartRestoreState();
+                else
+                    showClipboard();
+                return ;
+            case "apps":
+            case "toggleApplicationLauncher":
+                if (islandState === "application_launcher")
+                    smartRestoreState();
+                else
+                    showApplicationLauncher();
+                return ;
+            case "files":
+            case "toggleFileShelf":
+                if (islandState === "file_shelf")
+                    smartRestoreState();
+                else
+                    showFileShelf();
+                return ;
+            case "master-or-wallpaper":
+            case "wallpaper":
+            case "toggleWallpaperPicker":
+                if (islandState === "wallpaper_picker")
+                    smartRestoreState();
+                else
+                    showWallpaperPicker();
+                return ;
+            case "overview":
             case "toggleOverview":
                 root.toggleOverviewEverywhere();
                 return ;
@@ -1820,6 +1859,7 @@ PanelWindow {
             case "showTime":
                 showTimeCapsule();
                 return ;
+            case "toggle_island":
             case "restoreRestingCapsule":
                 smartRestoreState();
                 return ;
@@ -2465,6 +2505,7 @@ PanelWindow {
             cancelSideSwipeSettle();
             abortSideTransientMode();
             clearTransientCapsule();
+            controlCenterAutoCollapseTimer.stop();
             islandState = "control_center";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             stopAutoHideTimer();
@@ -2653,12 +2694,13 @@ PanelWindow {
                 if (controlCenterPointerInside) {
                     controlCenterHadPointer = true;
                     controlCenterAutoCollapseTimer.stop();
-                } else if (controlCenterHadPointer) {
+                } else if (controlCenterHadPointer && hoverExpandedActive) {
                     controlCenterAutoCollapseTimer.restart();
                 }
             }
         }
         onIslandStateChanged: {
+            console.log("[DynamicIsland] islandState changed to:", islandState, "hoverExpandedActive:", islandContainer.hoverExpandedActive, "pointerInside:", islandContainer.controlCenterPointerInside);
             controlCenterAutoCollapseTimer.stop();
             if (islandState === "control_center")
                 controlCenterHadPointer = controlCenterPointerInside;
@@ -2974,7 +3016,7 @@ PanelWindow {
             interval: 400
             repeat: false
             onTriggered: {
-                if (islandContainer.islandState === "control_center" && !islandContainer.controlCenterPointerInside)
+                if (islandContainer.islandState === "control_center" && islandContainer.hoverExpandedActive && !islandContainer.controlCenterPointerInside)
                     islandContainer.smartRestoreState();
 
             }
@@ -3156,6 +3198,16 @@ PanelWindow {
             iconFontFamily: root.iconFontFamily
             activeState: islandContainer.controlCenterLayerVisible
             z: 16
+        }
+
+
+        MouseArea {
+            id: controlCenterOutsideDismissArea
+
+            anchors.fill: parent
+            z: 1
+            enabled: islandContainer.islandState === "control_center"
+            onClicked: islandContainer.smartRestoreState()
         }
 
         // --- UI 渲染：灵动岛主干 ---
@@ -3539,6 +3591,7 @@ PanelWindow {
                     islandContainer.hoverExpandedActive = false;
                     hoverExpandDelayTimer.stop();
                     hoverCollapseDelayTimer.stop();
+                    controlCenterAutoCollapseTimer.stop();
                     if (suppressNextClick) {
                         swipeSuppressReset.stop();
                         suppressNextClick = false;
@@ -3546,7 +3599,7 @@ PanelWindow {
                         return ;
                     }
                     if (mouse.button === userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)) {
-                        if (islandContainer.toggleNotificationExpansionIfNeeded()) {
+                        if (islandContainer.islandState === "notification" && islandContainer.toggleNotificationExpansionIfNeeded()) {
                             if (preparedOverviewOnPress)
                                 root.cancelPreparedOverviewEverywhere();
 
@@ -3554,13 +3607,27 @@ PanelWindow {
                             return ;
                         }
                         preparedOverviewOnPress = false;
-                        const action = userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer" ? userConfig.dynamicIslandPrimaryAction : "toggleControlCenter";
+                        const action = (dynamicConfig && dynamicConfig.primaryClickAction) ? dynamicConfig.primaryClickAction : (userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer" ? userConfig.dynamicIslandPrimaryAction : "toggleControlCenter");
                         islandContainer.handleConfiguredClickAction(action);
                         return ;
                     }
                     if (mouse.button === userConfig.mouseButton(userConfig.dynamicIslandSecondaryButton)) {
                         preparedOverviewOnPress = false;
-                        islandContainer.handleConfiguredClickAction(userConfig.dynamicIslandSecondaryAction);
+                        const secAction = (dynamicConfig && dynamicConfig.secondaryClickAction) ? dynamicConfig.secondaryClickAction : userConfig.dynamicIslandSecondaryAction;
+                        islandContainer.handleConfiguredClickAction(secAction);
+                        return ;
+                    }
+                    if (mouse.button === Qt.MiddleButton || mouse.button === 4) {
+                        preparedOverviewOnPress = false;
+                        const midAction = (dynamicConfig && dynamicConfig.middleClickAction) ? dynamicConfig.middleClickAction : "clipboard";
+                        islandContainer.handleConfiguredClickAction(midAction);
+                        return ;
+                    }
+                }
+                onDoubleClicked: (mouse) => {
+                    if (mouse.button === userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)) {
+                        const dblAction = (dynamicConfig && dynamicConfig.doubleClickAction) ? dynamicConfig.doubleClickAction : "toggle_island";
+                        islandContainer.handleConfiguredClickAction(dblAction);
                     }
                 }
 
@@ -3993,9 +4060,11 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ControlCenterLayer {
-                        userConfigData: (root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout) ? {
-                            "controlCenterCanvasLayout": root.dynamicConfig.controlCenterCanvasLayout
-                        } : localUserConfigFile.parsedData
+                        userConfigData: (root.dynamicConfig && root.dynamicConfig.rawMap && Object.keys(root.dynamicConfig.rawMap).length > 0)
+                            ? root.dynamicConfig.rawMap
+                            : ((root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout)
+                                ? { "controlCenterCanvasLayout": root.dynamicConfig.controlCenterCanvasLayout }
+                                : localUserConfigFile.parsedData)
                         accentColor: pywalColors.accent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily

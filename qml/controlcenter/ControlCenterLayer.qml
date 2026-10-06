@@ -73,11 +73,11 @@ Item {
 
     readonly property bool cfgShowBarraDesktop: {
         const c = getModuleConfig("quickactions");
-        return c !== null ? c.active : cfgValue("showBarraDesktopCard", true);
+        return c !== null ? c.active : cfgValue("showBarraDesktopCard", false);
     }
     readonly property bool cfgShowClipboard: {
         const c = getModuleConfig("quickactions");
-        return c !== null ? c.active : cfgValue("showClipboardQuickAccess", true);
+        return c !== null ? c.active : cfgValue("showClipboardQuickAccess", false);
     }
     readonly property bool cfgShowQuickActions: cfgShowBarraDesktop || cfgShowClipboard
 
@@ -1475,8 +1475,12 @@ Item {
         id: applyBarProcess
         running: false
         function run(bar) {
-            command = [controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar];
-            running = true;
+            try {
+                Quickshell.execDetached([controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar]);
+            } catch (e) {
+                command = [controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar];
+                running = true;
+            }
         }
     }
 

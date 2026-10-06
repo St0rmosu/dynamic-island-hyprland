@@ -460,6 +460,42 @@ dynamic-island -d
 
 ---
 
+## 🚀 Hyprland Autostart & Layer Rules
+
+To automatically start Dynamic Island on compositor login, add the autostart command and privacy layer rules to your Hyprland configuration files:
+
+### Standard Configuration (`~/.config/hypr/hyprland.conf`)
+```ini
+# Autostart Dynamic Island daemon
+exec-once = dynamic-island -d
+
+# Screencopy Privacy: Mask the island during screen sharing/recording
+layerrule = no_screen_share, dynamic-island
+layerrule = no_screen_share, quickshell
+```
+
+### Modular / Lua Configuration (`~/.config/hypr/hyprland.lua` or `autostart.lua`)
+```lua
+-- Autostart Dynamic Island
+hl.on("hyprland.start", function()
+    hl.exec_cmd("dynamic-island -d")
+end)
+
+-- Screencopy Privacy Layer Rules
+hl.layer_rule({
+    name = "dynamic-island-no-screen-share",
+    match = { namespace = "dynamic-island" },
+    no_screen_share = true,
+})
+hl.layer_rule({
+    name = "quickshell-no-screen-share",
+    match = { namespace = "quickshell" },
+    no_screen_share = true,
+})
+```
+
+---
+
 ## ⌨️ Keybindings & Hyprland Integration
 
 Add the following keybindings to your Hyprland configuration (e.g. `~/.config/hypr/hyprland.conf` or `binds.lua`):

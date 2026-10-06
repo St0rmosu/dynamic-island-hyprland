@@ -319,17 +319,13 @@ Item {
             if (data.customAccentColor !== undefined) root.customAccentColor = String(data.customAccentColor);
             if (data.wallpaperLibraryPath !== undefined) {
                 var wlp = String(data.wallpaperLibraryPath).trim();
-                if (wlp !== "" && !wlp.endsWith("/Sfondi")) {
+                if (wlp !== "") {
                     root.wallpaperLibrary = wlp;
-                } else if (wlp.endsWith("/Sfondi")) {
-                    root.wallpaperLibrary = root.homeDir + "/Pictures/Wallpapers";
                 }
             } else if (data.wallpaperLibrary !== undefined) {
                 var wl = String(data.wallpaperLibrary).trim();
-                if (wl !== "" && !wl.endsWith("/Sfondi")) {
+                if (wl !== "") {
                     root.wallpaperLibrary = wl;
-                } else if (wl.endsWith("/Sfondi")) {
-                    root.wallpaperLibrary = root.homeDir + "/Pictures/Wallpapers";
                 }
             }
             if (data.enableQuickshellWallpaper !== undefined) root.enableQuickshellWallpaper = Boolean(data.enableQuickshellWallpaper);

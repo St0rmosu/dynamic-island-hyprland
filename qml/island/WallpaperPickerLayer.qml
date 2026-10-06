@@ -26,11 +26,11 @@ FocusScope {
     property string transitionBezier: nonEmptyString(userConfig.wallpaperTransitionBezier, ".54,0,.34,.99")
     property string transitionWave: nonEmptyString(userConfig.wallpaperTransitionWave, "20,20")
     property string wallpaperDir: {
-        if (dynamicConfig && dynamicConfig.wallpaperLibrary && dynamicConfig.wallpaperLibrary !== "" && !dynamicConfig.wallpaperLibrary.endsWith("/Sfondi"))
+        if (dynamicConfig && dynamicConfig.wallpaperLibrary && dynamicConfig.wallpaperLibrary !== "")
             return dynamicConfig.wallpaperLibrary;
-        if (userConfig && userConfig.wallpaperLibraryPath && userConfig.wallpaperLibraryPath !== "" && !userConfig.wallpaperLibraryPath.endsWith("/Sfondi"))
+        if (userConfig && userConfig.wallpaperLibraryPath && userConfig.wallpaperLibraryPath !== "")
             return userConfig.wallpaperLibraryPath;
-        return root.homeDir + "/Pictures/Wallpapers";
+        return root.homeDir + "/Sfondi";
     }
     property int thumbnailWidth: 640
     property int thumbnailHeight: 360

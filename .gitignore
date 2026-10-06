@@ -10,3 +10,4 @@ build/
 .cache/
 HANDOFF.md
 handoff.md
+qml/island/ThemeFloatingIsland.qml
