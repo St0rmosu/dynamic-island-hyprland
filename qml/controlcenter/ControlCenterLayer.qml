@@ -1476,9 +1476,9 @@ Item {
         running: false
         function run(bar) {
             try {
-                Quickshell.execDetached([controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar]);
+                Quickshell.execDetached(["bash", controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar]);
             } catch (e) {
-                command = [controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar];
+                command = ["bash", controlCenter.homeDir + "/.scripts/apply-qs-bar.sh", bar];
                 running = true;
             }
         }
