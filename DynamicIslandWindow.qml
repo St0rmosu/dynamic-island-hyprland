@@ -228,7 +228,9 @@ PanelWindow {
     readonly property int dynamicIslandAcceptedButtons: userConfig.mouseButtonsMask([1, 2, userConfig.dynamicIslandPrimaryButton, userConfig.dynamicIslandSecondaryButton])
     readonly property int configuredHoverExpandAction: {
         let action = undefined;
-        if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandAction !== undefined)
+        if (dynamicConfig && dynamicConfig.hoverExpandAction !== undefined)
+            action = Number(dynamicConfig.hoverExpandAction);
+        else if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandAction !== undefined)
             action = Number(localUserConfigFile.parsedData.hoverExpandAction);
         else if (userConfig && userConfig.hoverExpandAction !== undefined)
             action = Number(userConfig.hoverExpandAction);
@@ -236,13 +238,13 @@ PanelWindow {
     }
     readonly property real baseExclusiveZone: effectiveIslandExclusiveZone
     readonly property bool hoverExpandEnabled: {
+        if (dynamicConfig && dynamicConfig.hoverExpandEnabled !== undefined)
+            return Boolean(dynamicConfig.hoverExpandEnabled);
         if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandEnabled !== undefined)
             return Boolean(localUserConfigFile.parsedData.hoverExpandEnabled);
-
         if (userConfig && userConfig.hoverExpandEnabled !== undefined)
             return Boolean(userConfig.hoverExpandEnabled);
-
-        return false;
+        return true;
     }
     readonly property bool topGestureInputActive: false
     readonly property bool autoHideRuntimeEnabled: !shellRootController || shellRootController.islandAutoHideRuntimeEnabled === undefined || !!shellRootController.islandAutoHideRuntimeEnabled
@@ -1781,11 +1783,8 @@ PanelWindow {
             case "toggleControlCenter":
                 if (islandState === "control_center")
                     smartRestoreState();
-                else
-                    showControlCenter();
                 return ;
             case "openControlCenter":
-                showControlCenter();
                 return ;
             case "closeControlCenter":
                 if (islandState === "control_center")
@@ -2973,7 +2972,7 @@ PanelWindow {
                 if (current === target)
                     return ;
 
-                if (current !== "normal" && current !== "custom")
+                if (current !== "normal" && current !== "custom" && current !== "lyrics")
                     return ;
 
                 islandContainer.hoverExpandedActive = true;
@@ -3436,7 +3435,7 @@ PanelWindow {
                             root.autoHidePointerInside = true;
                             root.showAutoHiddenIsland();
                         }
-                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom")) {
+                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
                             hoverCollapseDelayTimer.stop();
                             hoverExpandDelayTimer.restart();
                         }
@@ -3480,7 +3479,7 @@ PanelWindow {
                         root.autoHidePointerInside = true;
                         root.showAutoHiddenIsland();
                     }
-                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom")) {
+                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
                         hoverCollapseDelayTimer.stop();
                         hoverExpandDelayTimer.restart();
                     }
@@ -3607,7 +3606,14 @@ PanelWindow {
                             return ;
                         }
                         preparedOverviewOnPress = false;
-                        const action = (dynamicConfig && dynamicConfig.primaryClickAction) ? dynamicConfig.primaryClickAction : (userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer" ? userConfig.dynamicIslandPrimaryAction : "toggleControlCenter");
+                        if (islandContainer.islandState === "control_center") {
+                            islandContainer.smartRestoreState();
+                            return ;
+                        }
+                        const action = (dynamicConfig && dynamicConfig.primaryClickAction) ? dynamicConfig.primaryClickAction : (userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer" ? userConfig.dynamicIslandPrimaryAction : "");
+                        if (action === "control_center" || action === "toggleControlCenter" || action === "openControlCenter" || action === "none" || action === "") {
+                            return ;
+                        }
                         islandContainer.handleConfiguredClickAction(action);
                         return ;
                     }

@@ -30,14 +30,14 @@ Item {
     property bool autoHideEnabled: false
     property int autoHideDelayMs: 2000
     property bool showWorkspaceOnAutoHide: true
-    property bool hoverExpandEnabled: false
+    property bool hoverExpandEnabled: true
     property int hoverExpandAction: 2 // 0: disabled, 1: media player, 2: control center
     property int hoverExpandDelayMs: 200
     property int hoverCollapseDelayMs: 300
     property bool disableAutoExpandOnTrackChange: false
 
     // ── 2. Interazioni & Mouse ─────────────────────────────────────────
-    property string primaryClickAction: "control_center"
+    property string primaryClickAction: "none"
     property string secondaryClickAction: "power_menu"
     property string middleClickAction: "clipboard"
     property string doubleClickAction: "toggle_island"
