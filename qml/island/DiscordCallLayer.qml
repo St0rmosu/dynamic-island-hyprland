@@ -8,7 +8,7 @@ Item {
     readonly property var userConfig: UserConfig
 
     property string callerName: "Discord Call"
-    property string subtitle: "Chiamata in arrivo..."
+    property string subtitle: I18n.tr("Chiamata in arrivo...")
     property string avatarUrl: ""
     property bool ongoing: false
     property int callSeconds: 0

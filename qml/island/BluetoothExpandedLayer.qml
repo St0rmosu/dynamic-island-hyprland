@@ -166,7 +166,7 @@ Item {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
-                    text: "Connected"
+                    text: I18n.tr("Connesso")
                     color: "#34c759"
                     font.pixelSize: userConfig.bodyFontSize - 4
                     font.family: root.textFontFamily

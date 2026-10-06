@@ -1078,7 +1078,7 @@ PanelWindow {
 
     onScreenRecordingActiveChanged: {
         if (screenRecordingActive)
-            islandContainer.showNotificationCapsule("Schermo", "Condivisione Schermo", "Trasmissione video attiva", "\u{F0379}", "#af52de");
+            islandContainer.showNotificationCapsule(I18n.tr("Schermo"), I18n.tr("Condivisione Schermo"), I18n.tr("Trasmissione video attiva"), "\u{F0379}", "#af52de");
 
     }
     color: "transparent"
@@ -1624,7 +1624,7 @@ PanelWindow {
         property bool controlCenterHadPointer: false
         readonly property bool controlCenterPointerInside: Boolean((mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
         property string discordCallerName: "Discord Call"
-        property string discordCallSubtitle: "Chiamata in arrivo..."
+        property string discordCallSubtitle: I18n.tr("Chiamata in arrivo...")
         property string discordCallAvatarUrl: ""
         property bool discordCallOngoing: false
         property bool discordCallActive: false
@@ -2365,7 +2365,7 @@ PanelWindow {
                 return ;
 
             discordCallerName = callerName || "Discord Call";
-            discordCallSubtitle = subtitle || "Chiamata in arrivo...";
+            discordCallSubtitle = subtitle || I18n.tr("Chiamata in arrivo...");
             discordCallAvatarUrl = avatarUrl || "";
             discordCallOngoing = false;
             discordCallActive = true;

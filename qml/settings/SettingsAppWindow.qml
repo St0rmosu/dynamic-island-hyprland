@@ -9,7 +9,7 @@ import "../controlcenter"
 FloatingWindow {
     id: settingsWin
 
-    title: "Dynamic Island — Impostazioni"
+    title: I18n.tr("Dynamic Island — Impostazioni")
     implicitWidth: 980
     implicitHeight: 680
     minimumSize: Qt.size(760, 520)
@@ -77,7 +77,7 @@ FloatingWindow {
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Dynamic Island — Impostazioni"
+                    text: I18n.tr("Dynamic Island — Impostazioni")
                     color: "#d0d4dc"
                     font.pixelSize: 13
                     font.weight: Font.DemiBold

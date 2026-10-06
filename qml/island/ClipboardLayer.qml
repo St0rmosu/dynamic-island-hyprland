@@ -742,7 +742,7 @@ FocusScope {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Image"
+                            text: I18n.tr("Immagine")
                             font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                             font.pixelSize: 10
                             font.weight: Font.SemiBold
@@ -951,7 +951,7 @@ FocusScope {
                         }
 
                         Text {
-                            text: "Da " + (modelData && modelData.source_name ? modelData.source_name + " (" + modelData.domain + ")" : (modelData ? modelData.domain : ""))
+                            text: I18n.tr("Da") + " " + (modelData && modelData.source_name ? modelData.source_name + " (" + modelData.domain + ")" : (modelData ? modelData.domain : ""))
                             color: "#7dd3fc"
                             font.family: root.textFontFamily !== "" ? root.textFontFamily : "Sans Serif"
                             font.pixelSize: 11

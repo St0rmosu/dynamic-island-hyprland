@@ -591,7 +591,7 @@ Item {
 
                             Text {
                                 anchors.centerIn: parent
-                                text: "Cancel"
+                                text: I18n.tr("Cancel")
                                 color: StyleTokens.textPrimary
                                 font.pixelSize: 11
                                 font.family: root.textFontFamily
@@ -632,7 +632,7 @@ Item {
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.right: parent.right
-                        text: "Enter password for " + (root.provider ? root.provider.wifiPendingPasswordSsid : "")
+                        text: I18n.tr("Enter password for ") + (root.provider ? root.provider.wifiPendingPasswordSsid : "")
                         color: StyleTokens.textPrimary
                         font.pixelSize: 12
                         font.family: root.textFontFamily
@@ -655,7 +655,7 @@ Item {
                             anchors.left: parent.left
                             anchors.leftMargin: 12
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Password"
+                            text: I18n.tr("Password")
                             color: StyleTokens.textTertiary
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -706,7 +706,7 @@ Item {
 
                         Text {
                             anchors.centerIn: parent
-                            text: "Join"
+                            text: I18n.tr("Join")
                             color: StyleTokens.white
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -733,7 +733,7 @@ Item {
 
                         Text {
                             anchors.centerIn: parent
-                            text: "Cancel"
+                            text: I18n.tr("Cancel")
                             color: StyleTokens.textPrimary
                             font.pixelSize: 11
                             font.family: root.textFontFamily
@@ -817,7 +817,7 @@ Item {
                         && root.provider.wifiSupported
                         && root.provider.wifiAvailable
                         && !root.provider.wifiEnabled
-                    text: "Turn on Wi-Fi to see nearby networks."
+                    text: I18n.tr("Turn on Wi-Fi to see nearby networks.")
                     color: StyleTokens.textMuted
                     font.pixelSize: 12
                     font.family: root.textFontFamily
@@ -827,7 +827,7 @@ Item {
                 Text {
                     width: parent.width
                     visible: root.isWifi && root.provider && root.provider.wifiListRunning
-                    text: "Scanning nearby networks..."
+                    text: I18n.tr("Scanning nearby networks...")
                     color: StyleTokens.textMuted
                     font.pixelSize: 12
                     font.family: root.textFontFamily
@@ -940,7 +940,7 @@ Item {
                 Text {
                     width: parent.width
                     visible: root.isBluetooth && root.provider && root.provider.bluetoothAvailable && !root.provider.bluetoothEnabled
-                    text: "Turn on Bluetooth to see nearby devices."
+                    text: I18n.tr("Turn on Bluetooth to see nearby devices.")
                     color: StyleTokens.textMuted
                     font.pixelSize: 12
                     font.family: root.textFontFamily
@@ -953,7 +953,7 @@ Item {
                         && root.provider.bluetoothEnabled
                         && root.bluetoothScanning
                         && (!root.provider.bluetoothInfoMessage || root.provider.bluetoothInfoMessage.length === 0)
-                    text: "Scanning nearby devices..."
+                    text: I18n.tr("Scanning nearby devices...")
                     color: StyleTokens.textMuted
                     font.pixelSize: 12
                     font.family: root.textFontFamily
@@ -965,7 +965,7 @@ Item {
                         && root.provider.bluetoothEnabled
                         && !root.bluetoothScanning
                         && root.bluetoothDeviceCount === 0
-                    text: "No devices found. Put your device in pairing mode, then scan again."
+                    text: I18n.tr("No devices found. Put your device in pairing mode, then scan again.")
                     color: StyleTokens.textMuted
                     font.pixelSize: 12
                     font.family: root.textFontFamily
@@ -983,7 +983,7 @@ Item {
                         spacing: 8
 
                         Text {
-                            text: "Connected"
+                            text: I18n.tr("Connected")
                             color: StyleTokens.textTertiary
                             font.pixelSize: 10
                             font.family: root.textFontFamily
@@ -1016,7 +1016,7 @@ Item {
                         spacing: 8
 
                         Text {
-                            text: "Paired"
+                            text: I18n.tr("Paired")
                             color: StyleTokens.textTertiary
                             font.pixelSize: 10
                             font.family: root.textFontFamily
@@ -1049,7 +1049,7 @@ Item {
                         spacing: 8
 
                         Text {
-                            text: "Available"
+                            text: I18n.tr("Available")
                             color: StyleTokens.textTertiary
                             font.pixelSize: 10
                             font.family: root.textFontFamily

@@ -616,7 +616,7 @@ FocusScope {
 
             Text {
                 visible: searchBar.expanded && searchInput.text === ""
-                text: "Search wallpapers…"
+                text: I18n.tr("Cerca sfondi...")
                 font.pixelSize: 12
                 font.family: root.textFontFamily
                 color: Qt.rgba(1, 1, 1, 0.28)

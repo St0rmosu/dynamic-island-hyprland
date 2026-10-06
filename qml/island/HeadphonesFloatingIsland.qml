@@ -920,7 +920,7 @@ Rectangle {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: modelData.name
+                                    text: I18n.tr(modelData.name)
                                     font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                     font.pixelSize: 10
                                     font.weight: Font.DemiBold
@@ -992,7 +992,7 @@ Rectangle {
                                         color: (root.headphonesData.bass && root.headphonesData.bass.enabled) ? root.accentColor : "#8e8e93"
                                     }
                                     Text {
-                                        text: "Bass Boost"
+                                        text: I18n.tr("Bass Boost")
                                         font.family: userConfig ? userConfig.textFontFamily : "Sans Serif"
                                         font.pixelSize: 11
                                         font.weight: Font.Medium

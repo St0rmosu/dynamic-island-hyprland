@@ -2306,7 +2306,7 @@ Item {
         id: brightnessComponent
         ControlSliderCard {
             anchors.fill: parent
-            title: "Display"
+            title: I18n.tr("Display")
             iconText: controlCenter.brightnessIconGlyph
             iconFontFamily: controlCenter.iconFontFamily
             textFontFamily: controlCenter.textFontFamily
@@ -2334,7 +2334,7 @@ Item {
         id: volumeComponent
         ControlSliderCard {
             anchors.fill: parent
-            title: "Sound"
+            title: I18n.tr("Sound")
             iconText: controlCenter.volumeIconGlyph
             iconFontFamily: controlCenter.iconFontFamily
             textFontFamily: controlCenter.textFontFamily
@@ -2402,7 +2402,7 @@ Item {
                 anchors.leftMargin: 14
                 anchors.top: parent.top
                 anchors.topMargin: Math.min(11, Math.max(6, (parent.height - 56) / 2))
-                text: "Battery"
+                text: I18n.tr("Batteria")
                 color: controlCenter.textPrimary
                 font.pixelSize: 13
                 font.family: controlCenter.textFontFamily
@@ -2712,7 +2712,7 @@ Item {
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
                     width: parent.width
-                    text: "Silent"
+                    text: I18n.tr("Silenzioso")
                     color: controlCenter.focusEnabled ? StyleTokens.textPrimaryBright : StyleTokens.textMuted
                     horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: 10
@@ -2797,7 +2797,7 @@ Item {
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
                     width: parent.width
-                    text: "Night mode"
+                    text: I18n.tr("Luce Notturna")
                     color: controlCenter.nightLightEnabled ? StyleTokens.textPrimaryBright : StyleTokens.textMuted
                     horizontalAlignment: Text.AlignHCenter
                     font.pixelSize: 10

@@ -16,7 +16,7 @@ Rectangle {
     property color accentColor: StyleTokens.accent
 
     property string callerName: "Discord Call"
-    property string subtitle: "In chiamata..."
+    property string subtitle: I18n.tr("In chiamata...")
     property string avatarUrl: ""
     property bool hasCall: false
     property bool ongoing: false

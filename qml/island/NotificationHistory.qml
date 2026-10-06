@@ -84,7 +84,7 @@ Item {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "Notification History"
+                text: I18n.tr("Cronologia Notifiche")
                 textFormat: Text.PlainText
                 color: "#f7f7f7"
                 font.pixelSize: 15
@@ -108,7 +108,7 @@ Item {
         Text {
             visible: !root.hasNotifications
             anchors.centerIn: parent
-            text: "No notifications"
+            text: I18n.tr("Nessuna notifica")
             textFormat: Text.PlainText
             color: "#6f6f74"
             font.pixelSize: 10
@@ -177,7 +177,7 @@ Item {
 
                 readonly property string titleText: model.summary !== ""
                     ? model.summary
-                    : "Notification"
+                    : I18n.tr("Notifica")
                 readonly property string bodyText: model.body !== "" && model.body !== model.summary
                     ? model.body
                     : ""

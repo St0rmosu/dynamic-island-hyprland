@@ -201,7 +201,7 @@ Flickable {
                 model: [
                     { text: "5", value: 5 },
                     { text: "8", value: 8 },
-                    { text: "10 (Predefinito)", value: 10 }
+                    { text: I18n.tr("10 (Predefinito)"), value: 10 }
                 ]
                 currentValue: root.config ? (root.config.workspacePillShownCount || 10) : 10
                 accentColor: root.accentColor

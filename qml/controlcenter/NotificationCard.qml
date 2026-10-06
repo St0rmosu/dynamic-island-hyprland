@@ -382,7 +382,7 @@ Rectangle {
 
                 Text {
                     width: parent.width
-                    text: model.summary || "Notifica"
+                    text: model.summary || I18n.tr("Notifica")
                     font.pixelSize: 12
                     font.family: cardRoot.textFontFamily
                     font.weight: Font.DemiBold

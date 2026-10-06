@@ -529,7 +529,7 @@ FocusScope {
                 Text {
                     anchors.left: passInput.left
                     anchors.verticalCenter: passInput.verticalCenter
-                    text: "Password amministratore..."
+                    text: I18n.tr("Password amministratore...")
                     color: "#636366"
                     font.family: root.textFontFamily
                     font.pixelSize: 14

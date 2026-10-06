@@ -13,7 +13,7 @@ Item {
     property string iconFontFamily: userConfig.iconFontFamily
 
     readonly property color themeColor: isMuted ? "#ff453a" : "#f5f5f7"
-    readonly property string labelText: isMuted ? "Silenzioso" : "Suoneria"
+    readonly property string labelText: isMuted ? I18n.tr("Silenzioso") : I18n.tr("Suoneria")
 
     anchors.fill: parent
     opacity: showCondition ? 1 : 0
