@@ -403,10 +403,10 @@ Flickable {
 
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
-            // Sfondo Integrato Quickshell (Stile Logical Impulse)
+            // Sfondo Integrato Quickshell
             SettingsSwitch {
                 title: I18n.tr("Sfondo Integrato nella Shell")
-                description: I18n.tr("Lo sfondo viene gestito da Quickshell; chiudendo la shell lo sfondo scompare come su Logical Impulse")
+                description: I18n.tr("Lo sfondo viene gestito direttamente da Quickshell")
                 checked: root.config ? (root.config.enableQuickshellWallpaper !== false) : true
                 accentColor: root.accentColor
                 textFontFamily: root.textFontFamily

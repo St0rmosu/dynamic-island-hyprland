@@ -252,7 +252,7 @@ Rectangle {
         width: root.totalWorkspaces * root.itemSize + (root.totalWorkspaces - 1) * root.itemSpacing
         height: root.itemSize
 
-        // ── 1. Capsule Background per Workspace Occupati (stile Logical Impulse) ─
+        // ── 1. Capsule Background per Workspace Occupati ─────────────────────────
         Repeater {
             model: root.totalWorkspaces
             delegate: Rectangle {
