@@ -330,7 +330,12 @@ FocusScope {
         if (cmdPattern.indexOf("~/.scripts/apply-wallpaper.sh") !== -1 || cmdPattern.indexOf("/.scripts/apply-wallpaper.sh") !== -1) {
             cmdPattern = defaultScript;
         }
-        var cmdStr = cmdPattern.indexOf("$1") !== -1 ? cmdPattern.replace('"$1"', '"' + filePath + '"').replace("$1", '"' + filePath + '"') : (cmdPattern + ' "' + filePath + '"');
+        var trType = (dynamicConfig && (dynamicConfig.wallpaperTransitionType || dynamicConfig.wallpaperTransition))
+            ? (dynamicConfig.wallpaperTransitionType || dynamicConfig.wallpaperTransition)
+            : "random";
+        var cmdStr = cmdPattern.indexOf("$1") !== -1
+            ? cmdPattern.replace('"$1"', '"' + filePath + '" "' + trType + '"').replace("$1", '"' + filePath + '" "' + trType + '"')
+            : (cmdPattern + ' "' + filePath + '" "' + trType + '"');
         var detachedStarted = false;
         try {
             Quickshell.execDetached(["bash", "-c", cmdStr]);

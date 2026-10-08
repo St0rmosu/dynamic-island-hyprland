@@ -403,11 +403,42 @@ Flickable {
 
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
+            // Animazione Transizione Sfondo (awww)
+            SettingsSegmented {
+                title: I18n.tr("Animazione Cambio Sfondo")
+                description: I18n.tr("Effetto animato applicato da awww al cambio dello sfondo")
+                stacked: true
+                model: [
+                    { text: I18n.tr("Casuale"), value: "random" },
+                    { text: "Wipe", value: "wipe" },
+                    { text: I18n.tr("Onda"), value: "wave" },
+                    { text: I18n.tr("Espansione"), value: "grow" },
+                    { text: I18n.tr("Centro"), value: "center" },
+                    { text: I18n.tr("Cerchio"), value: "outer" },
+                    { text: "Fade", value: "fade" },
+                    { text: I18n.tr("Qualsiasi"), value: "any" },
+                    { text: I18n.tr("Semplice"), value: "simple" }
+                ]
+                currentValue: (root.config && (root.config.wallpaperTransitionType || root.config.wallpaperTransition))
+                    ? (root.config.wallpaperTransitionType || root.config.wallpaperTransition)
+                    : "random"
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                onSelected: function(val) {
+                    if (root.config) {
+                        root.config.set("wallpaperTransitionType", val);
+                        root.config.set("wallpaperTransition", val);
+                    }
+                }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
             // Sfondo Integrato Quickshell
             SettingsSwitch {
                 title: I18n.tr("Sfondo Integrato nella Shell")
-                description: I18n.tr("Lo sfondo viene gestito direttamente da Quickshell")
-                checked: root.config ? (root.config.enableQuickshellWallpaper !== false) : true
+                description: I18n.tr("Gestione statica in Quickshell (lascia disattivato per vedere le animazioni native awww)")
+                checked: root.config ? (root.config.enableQuickshellWallpaper === true) : false
                 accentColor: root.accentColor
                 textFontFamily: root.textFontFamily
                 onToggled: function(val) {

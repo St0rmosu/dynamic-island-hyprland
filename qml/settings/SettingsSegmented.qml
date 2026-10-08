@@ -62,66 +62,153 @@ Item {
         anchors.top: root.isStacked ? textCol.bottom : undefined
         anchors.topMargin: root.isStacked ? 10 : 0
         anchors.verticalCenter: root.isStacked ? undefined : parent.verticalCenter
-        height: 32
-        radius: 8
+        height: 34
+        radius: 17
         color: Qt.rgba(255, 255, 255, 0.06)
         border.width: 1
-        border.color: Qt.rgba(255, 255, 255, 0.05)
-        width: Math.min(rowLayout.implicitWidth + 6, parent ? parent.width : 500)
+        border.color: Qt.rgba(255, 255, 255, 0.08)
+        width: Math.min(rowContainer.width + 6, parent ? parent.width : 500)
         clip: true
 
         Flickable {
+            id: flick
             anchors.fill: parent
-            contentWidth: rowLayout.implicitWidth + 6
+            anchors.margins: 3
+            contentWidth: rowContainer.width
             contentHeight: height
             boundsBehavior: Flickable.StopAtBounds
             flickableDirection: Flickable.HorizontalFlick
 
-            Row {
-                id: rowLayout
-                anchors.verticalCenter: parent.verticalCenter
-                x: 3
-                spacing: 3
+            Item {
+                id: rowContainer
+                width: rowLayout.implicitWidth
+                height: flick.height
 
-                Repeater {
-                    model: root.model
+                // Pillola scorrevole fluida a slider (stile iOS / Nothing Ear)
+                Rectangle {
+                    id: slidingIndicator
+                    y: 0
+                    height: flick.height
+                    radius: 14
+                    color: root.accentColor
+                    visible: width > 0
+                    z: 1
 
-                    Rectangle {
-                        readonly property bool isSelected: root.currentValue === modelData.value
-                        width: btnText.contentWidth + 20
-                        height: 26
-                        radius: 6
-                        color: isSelected ? root.accentColor : (btnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent")
-                        border.width: isSelected ? 1 : 0
-                        border.color: isSelected ? Qt.rgba(255, 255, 255, 0.25) : "transparent"
+                    property real targetX: 0
+                    property real targetWidth: 0
 
-                        Behavior on color {
-                            ColorAnimation { duration: 120 }
+                    x: targetX
+                    width: targetWidth
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 250
+                            easing.type: Easing.OutQuint
                         }
-
-                        Text {
-                            id: btnText
-                            anchors.centerIn: parent
-                            text: modelData.text
-                            font.pixelSize: 11
-                            font.weight: isSelected ? Font.DemiBold : Font.Normal
-                            font.family: root.textFontFamily
-                            color: isSelected ? "#ffffff" : "#a2a8b8"
+                    }
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: 250
+                            easing.type: Easing.OutQuint
                         }
+                    }
+                }
 
-                        MouseArea {
-                            id: btnMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: {
-                                root.currentValue = modelData.value;
-                                root.selected(modelData.value);
+                Row {
+                    id: rowLayout
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: 0
+                    spacing: 3
+                    z: 2
+
+                    Repeater {
+                        id: btnRepeater
+                        model: root.model
+
+                        Item {
+                            id: btnItem
+                            readonly property bool isSelected: String(root.currentValue) === String(modelData.value)
+                            width: btnText.contentWidth + 22
+                            height: flick.height
+
+                            function updateIndicator() {
+                                if (isSelected) {
+                                    slidingIndicator.targetX = btnItem.x;
+                                    slidingIndicator.targetWidth = btnItem.width;
+                                    ensureVisible();
+                                }
+                            }
+
+                            function ensureVisible() {
+                                if (flick.contentWidth <= flick.width) return;
+                                var absX = btnItem.x;
+                                if (absX < flick.contentX) {
+                                    flick.contentX = Math.max(0, absX - 6);
+                                } else if (absX + btnItem.width > flick.contentX + flick.width) {
+                                    flick.contentX = Math.min(flick.contentWidth - flick.width, absX + btnItem.width - flick.width + 6);
+                                }
+                            }
+
+                            onIsSelectedChanged: updateIndicator()
+                            Component.onCompleted: updateIndicator()
+                            onXChanged: if (isSelected) updateIndicator()
+                            onWidthChanged: if (isSelected) updateIndicator()
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 14
+                                color: (btnMouse.containsMouse && !btnItem.isSelected) ? Qt.rgba(255, 255, 255, 0.08) : "transparent"
+                                Behavior on color { ColorAnimation { duration: 120 } }
+                            }
+
+                            Text {
+                                id: btnText
+                                anchors.centerIn: parent
+                                text: modelData.text
+                                font.pixelSize: 11
+                                font.weight: btnItem.isSelected ? Font.DemiBold : Font.Normal
+                                font.family: root.textFontFamily
+                                color: btnItem.isSelected ? "#ffffff" : "#a2a8b8"
+                                Behavior on color { ColorAnimation { duration: 180 } }
+                            }
+
+                            MouseArea {
+                                id: btnMouse
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
+                                onClicked: {
+                                    root.currentValue = modelData.value;
+                                    root.selected(modelData.value);
+                                    btnItem.updateIndicator();
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    onCurrentValueChanged: {
+        for (var i = 0; i < btnRepeater.count; i++) {
+            var it = btnRepeater.itemAt(i);
+            if (it && it.isSelected) {
+                it.updateIndicator();
+                break;
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        Qt.callLater(function() {
+            for (var i = 0; i < btnRepeater.count; i++) {
+                var it = btnRepeater.itemAt(i);
+                if (it && it.isSelected) {
+                    it.updateIndicator();
+                    break;
+                }
+            }
+        });
     }
 }

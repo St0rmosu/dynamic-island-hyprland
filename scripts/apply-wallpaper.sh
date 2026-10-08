@@ -42,21 +42,28 @@ elif command -v wpaperctl >/dev/null 2>&1; then
     WALLPAPER_BACKEND="wpaperd"
 fi
 
-# 2. Applica lo sfondo con il backend scelto
+# 2. Rileva tipo di transizione
+TRANSITION_TYPE="${2:-}"
+if [ -z "$TRANSITION_TYPE" ] && [ -f "${CONFIG_DIR}/config.json" ]; then
+    TRANSITION_TYPE=$(jq -r '.wallpaperTransitionType // .wallpaperTransition // empty' "${CONFIG_DIR}/config.json" 2>/dev/null)
+fi
+TRANSITION_TYPE="${TRANSITION_TYPE:-random}"
+
+# 3. Applica lo sfondo con il backend scelto
 case "${WALLPAPER_BACKEND}" in
     awww)
         if ! pgrep -x "awww-daemon" >/dev/null 2>&1; then
             awww-daemon >/dev/null 2>&1 &
             sleep 0.2
         fi
-        awww img "$FULL_PATH" --transition-type any --transition-pos 0.9,0.9 --transition-step 45 --transition-fps 60 2>/dev/null || true
+        awww img "$FULL_PATH" --transition-type "${TRANSITION_TYPE}" --transition-pos 0.9,0.9 --transition-step 45 --transition-fps 60 2>/dev/null || true
         ;;
     swww)
         if ! pgrep -x "swww-daemon" >/dev/null 2>&1; then
             swww-daemon >/dev/null 2>&1 &
             sleep 0.2
         fi
-        swww img "$FULL_PATH" --transition-type any --transition-pos 0.9,0.9 --transition-step 45 --transition-fps 60 2>/dev/null || true
+        swww img "$FULL_PATH" --transition-type "${TRANSITION_TYPE}" --transition-pos 0.9,0.9 --transition-step 45 --transition-fps 60 2>/dev/null || true
         ;;
     hyprpaper)
         if ! pgrep -x "hyprpaper" >/dev/null 2>&1; then

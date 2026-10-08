@@ -70,8 +70,9 @@ Item {
     property string wallpaperLibrary: homeDir + "/Pictures/Wallpapers"
     property string wallpaperCustomCommand: homeDir + "/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh \"$1\""
     property string wallpaperTransition: "random"
+    property string wallpaperTransitionType: "random"
     property string clockFormat: "24h"
-    property bool enableQuickshellWallpaper: true
+    property bool enableQuickshellWallpaper: false
 
     // ── 5. Scorciatoie Personalizzate ──────────────────────────────────
     property var customShortcuts: [
@@ -329,6 +330,13 @@ Item {
                 }
             }
             if (data.enableQuickshellWallpaper !== undefined) root.enableQuickshellWallpaper = Boolean(data.enableQuickshellWallpaper);
+            if (data.wallpaperTransitionType !== undefined) {
+                root.wallpaperTransitionType = String(data.wallpaperTransitionType);
+                root.wallpaperTransition = root.wallpaperTransitionType;
+            } else if (data.wallpaperTransition !== undefined) {
+                root.wallpaperTransitionType = String(data.wallpaperTransition);
+                root.wallpaperTransition = root.wallpaperTransitionType;
+            }
             if (data.wallpaperCustomCommand !== undefined) {
                 var wcc = String(data.wallpaperCustomCommand).trim();
                 if (wcc === (root.homeDir + "/.scripts/apply-wallpaper.sh \"$1\"")) {
@@ -452,6 +460,8 @@ Item {
                 wallpaperPath: root.wallpaperPath,
                 wallpaperLibraryPath: root.wallpaperLibrary,
                 wallpaperCustomCommand: root.wallpaperCustomCommand,
+                wallpaperTransition: root.wallpaperTransitionType,
+                wallpaperTransitionType: root.wallpaperTransitionType,
                 enableQuickshellWallpaper: root.enableQuickshellWallpaper,
                 clockFormat: root.clockFormat,
                 customShortcuts: root.customShortcuts,
