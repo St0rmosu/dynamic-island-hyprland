@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Widgets
 import Quickshell.Io
@@ -14,6 +16,9 @@ Rectangle {
     property var dynamicConfig: null
     property var userConfig: UserConfig
     property color accentColor: StyleTokens.accent
+    property color textColor: "#c8c3b6"
+    property color dimColor: "#606c75"
+    property color surfaceColor: "#2e383f"
 
     readonly property string iconFontFamily: rootWindow ? rootWindow.iconFontFamily : "JetBrainsMono Nerd Font"
     readonly property string textFontFamily: rootWindow ? rootWindow.textFontFamily : "Google Sans Flex"
@@ -58,30 +63,42 @@ Rectangle {
     anchors.rightMargin: (positionSide === "left") ? 8 : 0
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 
-    visible: isEnabled && (!rootWindow || !rootWindow.overviewVisible) && opacity > 0.01
-    opacity: isEnabled && (!rootWindow || !rootWindow.overviewVisible) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: isEnabled ? 1.0 : 0.8
+    visible: isEnabled && (!rootWindow || (!rootWindow.overviewVisible && !rootWindow.isScreenshotModeActive)) && opacity > 0.01
+    opacity: isEnabled && (!rootWindow || (!rootWindow.overviewVisible && !rootWindow.isScreenshotModeActive)) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: isEnabled && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.8
 
     clip: true
-    color: Qt.rgba(14 / 255, 16 / 255, 22 / 255, (rootWindow ? rootWindow.effectiveIslandBackgroundOpacity : 92) / 100)
+    color: Qt.rgba(0, 0, 0, (rootWindow ? rootWindow.effectiveIslandBackgroundOpacity : 92) / 100)
     border.width: 1
-    border.color: pillHoverArea.containsMouse ? Qt.rgba(255, 255, 255, 0.22) : Qt.rgba(255, 255, 255, 0.08)
+    border.color: pillHoverArea.containsMouse ? root.accentColor : Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22)
 
     // Animazioni fluide
     Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
     Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
-    Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-    Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+    Behavior on opacity {
+        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
+        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+    }
+    Behavior on scale {
+        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
+        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+    }
     Behavior on border.color { ColorAnimation { duration: 200 } }
 
-    // ── Risoluzione Icone Applicazioni (Zen, Discord, Foot, etc.) ─────────────
+    // ── Risoluzione Icone Applicazioni (Zen, Discord, Foot, OBS, etc.) ─────────────
     function resolveAppIcon(appClass) {
         if (!appClass || appClass === "") return "";
         const lower = appClass.toLowerCase();
 
+        // Supporto dedicato OBS Studio
+        if (lower.indexOf("obs") !== -1) {
+            return Quickshell.iconPath("com.obsproject.Studio") || Quickshell.iconPath("obs") || "";
+        }
+
         const overrides = {
             "zen": "zen-browser",
             "zen-alpha": "zen-browser",
+            "zen-browser": "zen-browser",
             "foot": "foot",
             "footclient": "foot",
             "discord": "discord",
@@ -90,24 +107,46 @@ Rectangle {
             "spotify": "spotify",
             "code": "visual-studio-code",
             "code-url-handler": "visual-studio-code",
+            "com.microsoft.vscode": "visual-studio-code",
+            "visual-studio-code": "visual-studio-code",
             "vscodium": "vscodium",
             "firefox": "firefox",
             "firefox-developer-edition": "firefox-developer-edition",
             "google-chrome": "google-chrome",
+            "google-chrome-stable": "google-chrome",
             "chromium": "chromium",
             "steam": "steam",
             "thunar": "system-file-manager",
             "nautilus": "org.gnome.Nautilus",
+            "org.gnome.nautilus": "org.gnome.Nautilus",
             "dolphin": "system-file-manager",
             "kitty": "kitty",
             "alacritty": "Alacritty",
             "wezterm": "org.wezfurlong.wezterm",
+            "org.wezfurlong.wezterm": "org.wezfurlong.wezterm",
             "pavucontrol": "pavucontrol",
+            "org.pulseaudio.pavucontrol": "pavucontrol",
             "obs": "com.obsproject.Studio",
+            "obs-studio": "com.obsproject.Studio",
+            "com.obsproject.studio": "com.obsproject.Studio",
             "telegramdesktop": "telegram",
             "org.telegram.desktop": "telegram",
+            "telegram": "telegram",
             "com.gabm.satty": "satty",
-            "satty": "satty"
+            "satty": "satty",
+            "localsend": "localsend",
+            "localsend_app": "localsend",
+            "teams": "teams-for-linux",
+            "teams-for-linux": "teams-for-linux",
+            "whatsapp": "whatsapp-linux-desktop",
+            "whatsapp-linux-desktop": "whatsapp-linux-desktop",
+            "zathura": "org.pwmt.zathura",
+            "org.pwmt.zathura": "org.pwmt.zathura",
+            "mpv": "mpv",
+            "btop": "btop",
+            "yazi": "yazi",
+            "scrcpy": "scrcpy",
+            "notion": "notion"
         };
 
         if (overrides[lower]) {
@@ -115,16 +154,21 @@ Rectangle {
             if (p && p !== "") return p;
         }
 
-        let p = Quickshell.iconPath(lower);
+        if (overrides[appClass]) {
+            const p = Quickshell.iconPath(overrides[appClass]);
+            if (p && p !== "") return p;
+        }
+
+        let p = Quickshell.iconPath(appClass);
         if (p && p !== "") return p;
 
-        p = Quickshell.iconPath(appClass);
+        p = Quickshell.iconPath(lower);
         if (p && p !== "") return p;
 
         const parts = appClass.split(".");
         if (parts.length > 1) {
-            const lastPart = parts[parts.length - 1].toLowerCase();
-            p = Quickshell.iconPath(lastPart);
+            const lastPart = parts[parts.length - 1];
+            p = Quickshell.iconPath(lastPart) || Quickshell.iconPath(lastPart.toLowerCase());
             if (p && p !== "") return p;
         }
 
@@ -157,12 +201,13 @@ Rectangle {
                         if (appClass === "") continue;
 
                         const area = (win.size && win.size.length >= 2) ? (win.size[0] * win.size[1]) : 0;
+                        const iconRes = root.resolveAppIcon(appClass);
                         const existing = appMap[wsId];
                         if (!existing || area > existing.area) {
                             appMap[wsId] = {
                                 clazz: appClass,
                                 area: area,
-                                icon: root.resolveAppIcon(appClass)
+                                icon: iconRes
                             };
                         }
                     }
@@ -269,7 +314,7 @@ Rectangle {
                 height: root.itemSize
                 visible: isOcc
 
-                color: Qt.rgba(255, 255, 255, 0.08)
+                color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.16)
                 topLeftRadius: prevOcc ? 0 : root.itemSize / 2
                 bottomLeftRadius: prevOcc ? 0 : root.itemSize / 2
                 topRightRadius: nextOcc ? 0 : root.itemSize / 2
@@ -278,13 +323,13 @@ Rectangle {
             }
         }
 
-        // ── 2. Indicatore Workspace Attivo (Bolla Bianca Fluida) ───────────────────
+        // ── 2. Indicatore Workspace Attivo (Bolla Iris Accent Fluida) ───────────────────
         Rectangle {
             id: activeBubble
             width: root.itemSize
             height: root.itemSize
             radius: root.itemSize / 2
-            color: "#ffffff"
+            color: root.accentColor
             z: 2
 
             visible: root.currentWorkspace >= 1 && root.currentWorkspace <= root.totalWorkspaces
@@ -341,14 +386,25 @@ Rectangle {
                         fillMode: Image.PreserveAspectCrop
                         mipmap: true
                         smooth: true
+                        visible: false
                         property bool loadError: false
 
                         onStatusChanged: {
-                            if (status === Image.Error)
+                            if (status === Image.Error) {
                                 loadError = true;
-                            else if (status === Image.Ready)
+                            } else if (status === Image.Ready) {
                                 loadError = false;
+                            }
                         }
+                    }
+
+                    MultiEffect {
+                        anchors.fill: slotAppIcon
+                        source: slotAppIcon
+                        colorization: wsSlot.isActive ? 0.0 : 0.20
+                        colorizationColor: root.accentColor
+                        brightness: 0
+                        visible: !slotAppIcon.loadError
                     }
                 }
 
@@ -360,7 +416,7 @@ Rectangle {
                     font.family: root.textFontFamily
                     font.pixelSize: Math.round(root.itemSize * 0.44)
                     font.weight: wsSlot.isActive ? Font.Bold : Font.DemiBold
-                    color: wsSlot.isActive ? "#0b0d13" : "#f0f3fa"
+                    color: wsSlot.isActive ? "#000000" : root.textColor
                     visible: (!wsSlot.hasAppIcon || slotAppIcon.loadError) && (wsSlot.isActive || wsSlot.isOccupied)
                 }
 
@@ -371,7 +427,7 @@ Rectangle {
                     width: Math.round(root.itemSize * 0.20)
                     height: width
                     radius: width / 2
-                    color: "#525766"
+                    color: root.dimColor
                     visible: !wsSlot.isActive && !wsSlot.isOccupied
                 }
 

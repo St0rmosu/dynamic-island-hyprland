@@ -50,9 +50,9 @@ Rectangle {
 
     readonly property bool shouldShow: hasCall && (islandState !== "discord_call" || isExpanded)
 
-    visible: shouldShow && opacity > 0.01
-    opacity: shouldShow ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: shouldShow ? 1.0 : 0.82
+    visible: shouldShow && (!rootWindow || !rootWindow.isScreenshotModeActive) && opacity > 0.01
+    opacity: shouldShow && (!rootWindow || !rootWindow.isScreenshotModeActive) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: shouldShow && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.82
 
     clip: true
     color: "#000000"
@@ -69,9 +69,11 @@ Rectangle {
         NumberAnimation { duration: 380; easing.type: Easing.OutQuint }
     }
     Behavior on opacity {
+        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
     }
     Behavior on scale {
+        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
     }
 

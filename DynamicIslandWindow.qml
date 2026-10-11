@@ -53,10 +53,24 @@ PanelWindow {
     property bool autoHidePointerInside: false
     property bool autoHideForcedHidden: false
     property string autoHideRevealSource: "none"
+    property bool screenshotSnippingActive: false
+    property bool screenshotSnippingSattyMode: false
+    property string screenshotSnippingStatusText: "Clicca finestra o trascina"
+    property bool screenshotFlyAnimationActive: false
+    property bool screenshotImageLanded: false
+    property bool screenshotCapturing: false
+    readonly property bool isScreenshotModeActive: root.screenshotCapturing
+        || root.screenshotSnippingActive
+        || root.screenshotFlyAnimationActive
+        || (islandContainer && (islandContainer.islandState === "screenshot_snipping"
+            || islandContainer.islandState === "screenshot_preview"
+            || islandContainer.islandState === "screenshot_editor"))
     readonly property var userConfig: UserConfig
     property string awwwWallpaperPath: ""
     readonly property real capsuleWindowHeight: {
         if (islandContainer.islandState === "settings_app" || islandContainer.settingsAppLayerVisible)
+            return root.screen ? root.screen.height : 1080;
+        if (root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.islandState === "screenshot_editor")
             return root.screen ? root.screen.height : 1080;
 
         var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
@@ -66,6 +80,11 @@ PanelWindow {
                 h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + 16));
 
         }
+        if (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)) {
+            h = Math.max(h, Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + 16));
+            if (themeFloatingIsland.y > 0)
+                h = Math.max(h, Math.ceil(themeFloatingIsland.y + themeFloatingIsland.height + 16));
+        }
         return h;
     }
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 12) : 0
@@ -73,7 +92,10 @@ PanelWindow {
     readonly property real musicFloatingIslandHeight: musicFloatingIsland && musicFloatingIsland.visible ? Math.ceil(musicFloatingIsland.y + musicFloatingIsland.height + 12) : 0
     readonly property real headphonesFloatingIslandHeight: headphonesFloatingIsland && headphonesFloatingIsland.visible ? Math.ceil(headphonesFloatingIsland.y + headphonesFloatingIsland.height + 12) : 0
     readonly property real callFloatingIslandHeight: callFloatingIsland && callFloatingIsland.visible ? Math.ceil(callFloatingIsland.y + callFloatingIsland.height + 12) : 0
-    readonly property real requestedWindowHeight: Math.max(root.notificationCenterWindowHeight, root.capsuleWindowHeight, root.connectivityDetailWindowHeight, root.overviewWindowHeight, Math.ceil(root.controlCenterWindowHeight), root.musicFloatingIslandHeight, root.headphonesFloatingIslandHeight, root.callFloatingIslandHeight)
+    readonly property real themeFloatingIslandHeight: themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)
+        ? Math.ceil(Math.max(themeFloatingIsland.y + themeFloatingIsland.height + 16, effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + 16))
+        : 0
+    readonly property real requestedWindowHeight: Math.max(root.notificationCenterWindowHeight, root.capsuleWindowHeight, root.connectivityDetailWindowHeight, root.overviewWindowHeight, Math.ceil(root.controlCenterWindowHeight), root.musicFloatingIslandHeight, root.headphonesFloatingIslandHeight, root.callFloatingIslandHeight, root.themeFloatingIslandHeight)
     // Grow the layer surface immediately, but keep the old extent while the
     // capsule finishes its collapse animation. A later expansion interrupts
     // the pending shrink instead of letting a stale timer clip new content.
@@ -598,6 +620,126 @@ PanelWindow {
         islandContainer.showNotificationCapsule(appName, summary, body, icon, customColor);
     }
 
+    function showScreenshotPreview(filePath) {
+        islandContainer.showScreenshotPreviewCapsule(filePath);
+    }
+
+    function startScreenshotSnipping() {
+        if (root.screenshotSnippingActive) {
+            cancelScreenshotSnipping();
+            return;
+        }
+        root.screenshotSnippingActive = true;
+        root.screenshotSnippingSattyMode = false;
+        root.screenshotSnippingStatusText = "Clicca finestra o trascina";
+        if (root.shellRootController && root.shellRootController.notifySnipStarted) {
+            root.shellRootController.notifySnipStarted();
+        }
+        islandContainer.showScreenshotSnippingCapsule();
+    }
+
+    function cancelScreenshotSnipping() {
+        root.screenshotSnippingActive = false;
+        root.screenshotSnippingSattyMode = false;
+        root.screenshotFlyAnimationActive = false;
+        screenshotCaptureProc.running = false;
+        if (root.shellRootController && root.shellRootController.notifySnipCancelled) {
+            root.shellRootController.notifySnipCancelled();
+        }
+        islandContainer.smartRestoreState();
+    }
+
+    function handleScreenshotImageLanded() {
+        if (!screenshotCaptureProc.running) {
+            root.screenshotImageLanded = true;
+        } else {
+            screenshotCaptureProc.landPending = true;
+        }
+    }
+
+    function executeSnip(x, y, w, h, isSatty) {
+        root.screenshotSnippingActive = false;
+
+        if (w <= 2 || h <= 2) {
+            root.screenshotFlyAnimationActive = false;
+            islandContainer.smartRestoreState();
+            return;
+        }
+
+        const sw = root.screen ? root.screen.width : 1920;
+        const sh = root.screen ? root.screen.height : 1080;
+
+        x = Math.max(0, Math.round(x));
+        y = Math.max(0, Math.round(y));
+        w = Math.max(1, Math.min(Math.round(w), sw - x));
+        h = Math.max(1, Math.min(Math.round(h), sh - y));
+
+        const monX = root.hyprMonitor ? root.hyprMonitor.x : 0;
+        const monY = root.hyprMonitor ? root.hyprMonitor.y : 0;
+        const scale = (root.hyprMonitor && root.hyprMonitor.scale) ? root.hyprMonitor.scale : 1.0;
+
+        const gx = Math.round((monX + x) * scale);
+        const gy = Math.round((monY + y) * scale);
+        const gw = Math.round(w * scale);
+        const gh = Math.round(h * scale);
+        const geom = `${gx},${gy} ${gw}x${gh}`;
+
+        const d = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        const dir = root.homeDir + "/Pictures/Screenshots";
+        const file = dir + "/Screenshot_" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+            + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + ".png";
+
+        root.screenshotFlyAnimationActive = false;
+        root.screenshotImageLanded = false;
+
+        const asp = Math.max(0.4, Math.min(6.0, w / h));
+        let targetCapsuleW = 380;
+        if (asp >= 1.6) targetCapsuleW = 400;
+        else if (asp >= 1.1) targetCapsuleW = 360;
+        else if (asp >= 0.8) targetCapsuleW = 320;
+        else targetCapsuleW = 280;
+
+        const capsuleCenterX = root.lockIslandCenter
+            ? (root.width / 2)
+            : (root.width * root.effectiveIslandPositionX / 100);
+
+        const targetW = targetCapsuleW - 24;
+        const targetH = Math.max(50, Math.min(220, Math.round(targetW / asp)));
+        const targetX = capsuleCenterX - targetW / 2;
+        const targetY = root.effectiveIslandTopMargin + 52;
+
+        islandContainer.updateScreenshotAspect(w, h);
+
+        screenshotCaptureProc.targetFile = file;
+        screenshotCaptureProc.isSattyMode = isSatty;
+        screenshotCaptureProc.landPending = false;
+        screenshotCaptureProc.pendingSnipX = x;
+        screenshotCaptureProc.pendingSnipY = y;
+        screenshotCaptureProc.pendingSnipW = w;
+        screenshotCaptureProc.pendingSnipH = h;
+        screenshotCaptureProc.pendingTargetX = targetX;
+        screenshotCaptureProc.pendingTargetY = targetY;
+        screenshotCaptureProc.pendingTargetW = targetW;
+        screenshotCaptureProc.pendingTargetH = targetH;
+
+        // Nascondi completamente l'isola durante lo scatto di grim per non fotografare nessuna notch o overlay!
+        root.screenshotCapturing = true;
+        if (root.shellRootController) {
+            root.shellRootController.screenshotCapturing = true;
+        }
+
+        // sleep 0.04 assicura che il compositor Wayland abbia completato il frame nascondendo l'overlay prima dello scatto
+        const captureCmd = `sleep 0.04 && mkdir -p '${dir}' && grim -l 1 -g '${geom}' '${file}' && (wl-copy < '${file}' &)`;
+        screenshotCaptureProc.command = ["bash", "-c", captureCmd];
+        screenshotCaptureProc.running = false;
+        screenshotCaptureProc.running = true;
+    }
+
+    function openScreenshotEditor(filePath) {
+        islandContainer.showScreenshotEditorCapsule(filePath);
+    }
+
     function showCharging(capacity, isCharging) {
         islandContainer.showChargingCapsule(capacity, isCharging);
     }
@@ -1089,10 +1231,12 @@ PanelWindow {
         root.refreshWallpaperSources();
     }
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
-    WlrLayershell.namespace: "dynamic-island"
-    WlrLayershell.layer: islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.notificationLayerVisible ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.screenshotEditorLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.notificationLayerVisible ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: {
-        if (islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible)
+        if (root.screenshotSnippingActive || islandContainer.screenshotEditorLayerVisible)
+            return WlrKeyboardFocus.Exclusive;
+
+        if (islandContainer.screenshotPreviewLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible)
             return WlrKeyboardFocus.Exclusive;
 
         if (islandContainer.fileShelfLayerVisible)
@@ -1234,11 +1378,11 @@ PanelWindow {
                     if (idata.yellow)
                         yellowHex = idata.yellow;
 
-                    if (idata.syntax_type || idata.syntax_keyword)
-                        purpleHex = idata.syntax_type || idata.syntax_keyword;
+                    if (idata.syntax_const || idata.syntax_type || idata.syntax_keyword)
+                        purpleHex = idata.syntax_const || idata.syntax_type || idata.syntax_keyword;
 
-                    if (idata.syntax_func)
-                        blueHex = idata.syntax_func;
+                    if (idata.syntax_operator || idata.syntax_func)
+                        blueHex = idata.syntax_operator || idata.syntax_func;
 
                     console.log("[DynamicIsland] Loaded iris colors! accent:", accentHex, "fg:", fgHex);
                 }
@@ -1304,10 +1448,10 @@ PanelWindow {
     FileView {
         id: pywalColors
 
-        property color background: (root.userConfig && root.userConfig.paletteBackground !== "") ? root.userConfig.paletteBackground : "#0f141c"
-        property color foreground: (root.userConfig && root.userConfig.paletteForeground !== "") ? root.userConfig.paletteForeground : "#ffffff"
+        property color background: root.themeBg
+        property color foreground: root.themeFg
         property string walAccent: (root.userConfig && root.userConfig.paletteAccent !== "") ? root.userConfig.paletteAccent : "#0a84ff"
-        property color accent: irisColors.accentHex !== "" ? irisColors.accentHex : walAccent
+        property color accent: root.themeAccent
         property color accentSoft: Qt.lighter(accent, 1.25)
         property color accentPressed: Qt.darker(accent, 1.3)
         property string wallpaper: ""
@@ -1345,6 +1489,112 @@ PanelWindow {
             }
         }
     }
+
+    FileView {
+        id: wallustColors
+        property string accentHex: ""
+        property string bgHex: ""
+        property string fgHex: ""
+        property string surfaceHex: ""
+        path: root.homeDir + "/.cache/wallust/colors.json"
+        watchChanges: true
+        printErrors: false
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                var d = JSON.parse(text());
+                if (d) {
+                    if (d.colors && (d.colors.color4 || d.colors.color2))
+                        accentHex = d.colors.color4 || d.colors.color2;
+                    if (d.special && d.special.background)
+                        bgHex = d.special.background;
+                    if (d.special && d.special.foreground)
+                        fgHex = d.special.foreground;
+                    if (d.colors && d.colors.color8)
+                        surfaceHex = d.colors.color8;
+                    else if (d.colors && d.colors.color0)
+                        surfaceHex = d.colors.color0;
+                }
+            } catch (e) {}
+        }
+    }
+
+    FileView {
+        id: matugenColors
+        property string accentHex: ""
+        property string bgHex: ""
+        property string fgHex: ""
+        property string surfaceHex: ""
+        path: root.homeDir + "/.config/matugen/colors.json"
+        watchChanges: true
+        printErrors: false
+        Component.onCompleted: reload()
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                var d = JSON.parse(text());
+                if (d && d.colors) {
+                    if (d.colors.primary && d.colors.primary.default && d.colors.primary.default.hex)
+                        accentHex = d.colors.primary.default.hex;
+                    else if (typeof d.colors.primary === "string")
+                        accentHex = d.colors.primary;
+                    if (d.colors.background && d.colors.background.default && d.colors.background.default.hex)
+                        bgHex = d.colors.background.default.hex;
+                    else if (typeof d.colors.background === "string")
+                        bgHex = d.colors.background;
+                    if (d.colors.on_background && d.colors.on_background.default && d.colors.on_background.default.hex)
+                        fgHex = d.colors.on_background.default.hex;
+                    else if (typeof d.colors.on_background === "string")
+                        fgHex = d.colors.on_background;
+                    if (d.colors.surface && d.colors.surface.default && d.colors.surface.default.hex)
+                        surfaceHex = d.colors.surface.default.hex;
+                }
+            } catch (e) {}
+        }
+    }
+
+    readonly property color themeAccent: {
+        if (irisColors && irisColors.accentHex !== "") return irisColors.accentHex;
+        if (matugenColors && matugenColors.accentHex !== "") return matugenColors.accentHex;
+        if (wallustColors && wallustColors.accentHex !== "") return wallustColors.accentHex;
+        return pywalColors.walAccent;
+    }
+    readonly property color themeBg: {
+        if (irisColors && irisColors.bgHex !== "") return irisColors.bgHex;
+        if (matugenColors && matugenColors.bgHex !== "") return matugenColors.bgHex;
+        if (wallustColors && wallustColors.bgHex !== "") return wallustColors.bgHex;
+        return "#1e3a6c";
+    }
+    readonly property color themeSurface: {
+        if (irisColors && irisColors.surfaceHex !== "") return irisColors.surfaceHex;
+        if (matugenColors && matugenColors.surfaceHex !== "") return matugenColors.surfaceHex;
+        if (wallustColors && wallustColors.surfaceHex !== "") return wallustColors.surfaceHex;
+        return "#264988";
+    }
+    readonly property color themeFg: {
+        if (irisColors && irisColors.fgHex !== "") return irisColors.fgHex;
+        if (matugenColors && matugenColors.fgHex !== "") return matugenColors.fgHex;
+        if (wallustColors && wallustColors.fgHex !== "") return wallustColors.fgHex;
+        return "#ffffff";
+    }
+    readonly property color themeDim: {
+        if (irisColors && irisColors.dimHex !== "") return irisColors.dimHex;
+        return Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.62);
+    }
+    readonly property color themeRed: (irisColors && irisColors.redHex !== "") ? irisColors.redHex : "#c29770"
+    readonly property color themeGreen: (irisColors && irisColors.greenHex !== "") ? irisColors.greenHex : "#54b699"
+    readonly property color themeYellow: (irisColors && irisColors.yellowHex !== "") ? irisColors.yellowHex : "#c29770"
+    readonly property color themeBlue: (irisColors && irisColors.blueHex !== "") ? irisColors.blueHex : "#84a1e6"
+    readonly property var irisColorPalette: [
+        themeAccent,
+        themeRed,
+        themeGreen,
+        themeYellow,
+        themeBlue,
+        "#ffffff",
+        "#000000"
+    ]
 
     Process {
         id: awwwQueryProc
@@ -1385,6 +1635,62 @@ PanelWindow {
             if (walWallpaperFile)
                 walWallpaperFile.reload();
 
+        }
+    }
+
+    Process {
+        id: screenshotCaptureProc
+
+        running: false
+        property string targetFile: ""
+        property bool isSattyMode: false
+        property bool landPending: false
+        property real pendingSnipX: 0
+        property real pendingSnipY: 0
+        property real pendingSnipW: 0
+        property real pendingSnipH: 0
+        property real pendingTargetX: 0
+        property real pendingTargetY: 0
+        property real pendingTargetW: 0
+        property real pendingTargetH: 0
+
+        onExited: (code) => {
+            root.screenshotCapturing = false;
+            if (root.shellRootController) {
+                root.shellRootController.screenshotCapturing = false;
+            }
+
+            if (code !== 0) {
+                console.log("[DynamicIsland] Grim error:", code);
+                root.screenshotFlyAnimationActive = false;
+                islandContainer.smartRestoreState();
+                return;
+            }
+
+            // Apri l'isola istantaneamente e pulita, senza alcuna animazione trasparente di trasporto
+            root.screenshotImageLanded = true;
+            root.screenshotFlyAnimationActive = false;
+            if (isSattyMode) {
+                islandContainer.showScreenshotEditorCapsule(targetFile);
+            } else {
+                islandContainer.showScreenshotPreviewCapsule(targetFile);
+            }
+
+            if (screenshotPreviewLoader && screenshotPreviewLoader.item && typeof screenshotPreviewLoader.item.refreshImage === "function") {
+                screenshotPreviewLoader.item.refreshImage(targetFile);
+            }
+            if (screenshotEditorLoader && screenshotEditorLoader.item && typeof screenshotEditorLoader.item.refreshImage === "function") {
+                screenshotEditorLoader.item.refreshImage(targetFile);
+            }
+
+            if (root.shellRootController && root.shellRootController.notifyScreenshotFileReady) {
+                root.shellRootController.notifyScreenshotFileReady(targetFile);
+            }
+
+            if (landPending || !root.screenshotFlyAnimationActive) {
+                root.screenshotImageLanded = true;
+                landPending = false;
+            }
         }
     }
 
@@ -1590,9 +1896,51 @@ PanelWindow {
         clockFormat: userConfig.clockFormat
     }
 
+    Loader {
+        id: screenshotOverlayLoader
+
+        anchors.fill: parent
+        active: root.screenshotSnippingActive
+        visible: active
+        z: 0
+
+        sourceComponent: Component {
+            ScreenshotOverlayLayer {
+                targetScreen: root.screen
+                sattyDirectMode: root.screenshotSnippingSattyMode
+                accentColor: root.themeAccent
+                textColor: root.themeFg
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                islandCenterX: root.lockIslandCenter ? (root.width / 2) : (root.width * root.effectiveIslandPositionX / 100)
+                islandTopMargin: root.effectiveIslandTopMargin
+                islandHeight: root.effectiveIslandHeight
+                onSnipRequested: (x, y, w, h, isSatty) => root.executeSnip(x, y, w, h, isSatty)
+                onDragUpdated: (w, h) => {
+                    root.screenshotSnippingStatusText = Math.round(w) + " × " + Math.round(h) + " px";
+                }
+                onCancelRequested: root.cancelScreenshotSnipping()
+            }
+        }
+    }
+
+    ScreenshotFlyLayer {
+        id: screenshotFlyLayer
+        anchors.fill: parent
+        z: 15
+        enabled: false
+        visible: false
+        accentColor: root.themeAccent
+        onAnimationFinished: {
+            root.screenshotFlyAnimationActive = false;
+            root.screenshotImageLanded = true;
+        }
+    }
+
     // --- 灵动岛主容器与全局状态 ---
     FocusScope {
         id: islandContainer
+        z: 10
 
         property string islandState: "normal"
         property bool reloadFailed: false
@@ -1622,7 +1970,7 @@ PanelWindow {
         property bool silentRingIsMuted: false
         property bool pendingPowerView: false
         property bool controlCenterHadPointer: false
-        readonly property bool controlCenterPointerInside: Boolean((mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
+        readonly property bool controlCenterPointerInside: Boolean((mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
         property string discordCallerName: "Discord Call"
         property string discordCallSubtitle: I18n.tr("Chiamata in arrivo...")
         property string discordCallAvatarUrl: ""
@@ -1660,7 +2008,7 @@ PanelWindow {
         readonly property bool timerBubbleWanted: (timerActive && timerRemainingSeconds > 0 || timerCompletionAnimating) && !root.overviewVisible && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
         readonly property bool fileShelfBubbleWanted: FileShelf.count > 0 && !root.overviewVisible && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
         readonly property bool fileShelfCanAutoOpen: !root.overviewVisible && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
-        readonly property bool blocksTransientSplit: islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "control_center" || islandState === "power_menu" || islandState === "notification" || islandState === "reload" || islandState === "wallpaper_picker" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "file_shelf" || islandState === "polkit" || islandState === "charging" || islandState === "silent_ring" || islandState === "discord_call"
+        readonly property bool blocksTransientSplit: islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "control_center" || islandState === "power_menu" || islandState === "notification" || islandState === "screenshot_preview" || islandState === "screenshot_snipping" || islandState === "screenshot_editor" || islandState === "reload" || islandState === "wallpaper_picker" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "file_shelf" || islandState === "polkit" || islandState === "charging" || islandState === "silent_ring" || islandState === "discord_call"
         readonly property bool splitShowsProgress: islandState === "split" && osdProgress >= 0
         readonly property bool splitShowsText: islandState === "split" && osdProgress < 0 && osdCustomText !== ""
         readonly property bool splitShowsIconOnly: islandState === "split" && osdProgress < 0 && osdCustomText === ""
@@ -1676,6 +2024,9 @@ PanelWindow {
             && islandState !== "charging"
             && islandState !== "silent_ring"
             && islandState !== "notification"
+            && islandState !== "screenshot_preview"
+            && islandState !== "screenshot_snipping"
+            && islandState !== "screenshot_editor"
             && islandState !== "reload"
             && islandState !== "discord_call"
             && !expandedLayerVisible && !bluetoothExpandedLayerVisible
@@ -1692,6 +2043,9 @@ PanelWindow {
             && islandState !== "charging"
             && islandState !== "silent_ring"
             && islandState !== "notification"
+            && islandState !== "screenshot_preview"
+            && islandState !== "screenshot_snipping"
+            && islandState !== "screenshot_editor"
             && islandState !== "reload"
             && islandState !== "discord_call"
             && !expandedLayerVisible && !bluetoothExpandedLayerVisible
@@ -1704,6 +2058,13 @@ PanelWindow {
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
         readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
+        readonly property bool screenshotPreviewLayerVisible: !root.overviewVisible && islandState === "screenshot_preview"
+        readonly property bool screenshotSnippingLayerVisible: !root.overviewVisible && islandState === "screenshot_snipping"
+        readonly property bool screenshotEditorLayerVisible: !root.overviewVisible && islandState === "screenshot_editor"
+        property string screenshotPreviewPath: ""
+        property real screenshotAspect: 1.77
+        property real screenshotImgWidth: 0
+        property real screenshotImgHeight: 0
         readonly property bool controlCenterLayerVisible: !root.overviewVisible && islandState === "control_center"
         readonly property bool powerMenuLayerVisible: !root.overviewVisible && islandState === "power_menu"
         readonly property bool notificationCenterLayerVisible: !root.overviewVisible && islandState === "notification_center"
@@ -2294,6 +2655,83 @@ PanelWindow {
             }
         }
 
+        function recordScreenshotNotification(filePath, summaryText) {
+            if (notificationHistoryModel) {
+                const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "Screenshot";
+                notificationHistoryModel.insert(0, {
+                    "appName": "Screenshot",
+                    "summary": summaryText || "Screenshot catturato",
+                    "body": fileName + " • Copiato negli appunti",
+                    "timestamp": new Date()
+                });
+                if (notificationHistoryModel.count > 50)
+                    notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+            }
+        }
+
+        function showScreenshotPreviewCapsule(filePath) {
+            abortSideTransientMode();
+            clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
+            screenshotPreviewPath = filePath || "";
+            islandState = "screenshot_preview";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            root.showAutoHiddenIsland("state");
+            restartAutoHideTimer(7500);
+            recordScreenshotNotification(filePath, "Screenshot catturato");
+        }
+
+        function showScreenshotSnippingCapsule() {
+            abortSideTransientMode();
+            clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
+            autoHideTimer.stop();
+            islandState = "screenshot_snipping";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            root.showAutoHiddenIsland("state");
+        }
+
+        function openScreenshotInSatty() {
+            if (screenshotPreviewPath !== "") {
+                const p = screenshotPreviewPath;
+                const cmd = `satty --filename '${p}' --copy-command wl-copy --output-filename '${p}'`;
+                Quickshell.execDetached(["bash", "-c", cmd]);
+            }
+            smartRestoreState();
+        }
+
+        function showScreenshotEditorCapsule(filePath) {
+            abortSideTransientMode();
+            clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
+            autoHideTimer.stop();
+            const hadDifferentPath = filePath && filePath !== "" && filePath !== screenshotPreviewPath;
+            if (filePath && filePath !== "")
+                screenshotPreviewPath = filePath;
+            islandState = "screenshot_editor";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            root.showAutoHiddenIsland("state");
+            if (hadDifferentPath)
+                recordScreenshotNotification(filePath, "Screenshot catturato");
+        }
+
+        function updateScreenshotAspect(w, h) {
+            if (w > 0 && h > 0) {
+                screenshotImgWidth = w;
+                screenshotImgHeight = h;
+                screenshotAspect = Math.max(0.4, Math.min(6.0, w / h));
+                if (islandState === "screenshot_preview" || islandState === "screenshot_editor") {
+                    mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+                }
+            }
+        }
+
         function showReloadCapsule(failed, errorString) {
             if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
@@ -2687,7 +3125,7 @@ PanelWindow {
         }
 
         anchors.fill: parent
-        focus: controlCenterLayerVisible || wallpaperPickerLayerVisible || applicationLauncherLayerVisible || clipboardLayerVisible || settingsAppLayerVisible || fileShelfLayerVisible || polkitLayerVisible || expandedPlayerKeyboardFocusRequested || (root.monitorFocused && (root.overviewVisible || root.connectivityPromptActive))
+        focus: root.screenshotSnippingActive || screenshotPreviewLayerVisible || screenshotEditorLayerVisible || controlCenterLayerVisible || wallpaperPickerLayerVisible || applicationLauncherLayerVisible || clipboardLayerVisible || settingsAppLayerVisible || fileShelfLayerVisible || polkitLayerVisible || expandedPlayerKeyboardFocusRequested || (root.monitorFocused && (root.overviewVisible || root.connectivityPromptActive))
         onControlCenterPointerInsideChanged: {
             if (islandState === "control_center") {
                 if (controlCenterPointerInside) {
@@ -2741,25 +3179,20 @@ PanelWindow {
         }
         Keys.onPressed: (event) => {
             if (event.key === Qt.Key_Escape) {
+                if (root.screenshotSnippingActive) {
+                    root.cancelScreenshotSnipping();
+                    event.accepted = true;
+                    return;
+                }
                 if (root.overviewVisible) {
                     root.closeOverviewEverywhere();
                     event.accepted = true;
-                    return ;
+                    return;
                 }
-                if (islandContainer.expandedLayerVisible) {
+                if (islandContainer.islandState !== "normal") {
                     islandContainer.smartRestoreState();
                     event.accepted = true;
-                    return ;
-                }
-                if (islandContainer.controlCenterLayerVisible) {
-                    islandContainer.smartRestoreState();
-                    event.accepted = true;
-                    return ;
-                }
-                if (islandContainer.powerMenuLayerVisible) {
-                    islandContainer.smartRestoreState();
-                    event.accepted = true;
-                    return ;
+                    return;
                 }
             }
             if (!root.overviewVisible)
@@ -3030,7 +3463,7 @@ PanelWindow {
 
             y: root.effectiveIslandTopMargin
             height: root.effectiveIslandHeight
-            opacity: mainCapsule.opacity
+            opacity: root.isScreenshotModeActive ? 0 : mainCapsule.opacity
             z: 7
             onIsSettingsAppChanged: {
                 if (!isSettingsApp) {
@@ -3042,7 +3475,7 @@ PanelWindow {
             // Animate smoothly between compact center and resting width.
             // In all normal modes (control_center, clipboard, etc.):
             // 1:1 locked with mainCapsule with ZERO delay!
-            width: isSettingsApp ? (hasTopNotification ? 290 : 0) : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width)
+            width: root.isScreenshotModeActive ? 0 : (isSettingsApp ? (hasTopNotification ? 290 : 0) : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width))
             x: (isSettingsApp || exitingSettingsApp) ? (root.lockIslandCenter ? Math.round((parent.width - width) / 2) : Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2)) : mainCapsule.x
 
             Timer {
@@ -3139,7 +3572,7 @@ PanelWindow {
             mprisController: mediaController
             userConfig: root.userConfig
             islandTopMargin: root.effectiveIslandTopMargin
-            accentColor: pywalColors.accent
+            accentColor: root.themeAccent
             z: 8
         }
 
@@ -3149,7 +3582,10 @@ PanelWindow {
             targetCapsule: topAnchorProxy
             rootWindow: root
             dynamicConfig: root.dynamicConfig
-            accentColor: pywalColors.accent
+            accentColor: root.themeAccent
+            textColor: root.themeFg
+            dimColor: root.themeDim
+            surfaceColor: root.themeSurface
             z: 8
         }
 
@@ -3161,7 +3597,7 @@ PanelWindow {
             rootWindow: root
             userConfig: root.userConfig
             islandTopMargin: root.effectiveIslandTopMargin
-            accentColor: pywalColors.accent
+            accentColor: root.themeAccent
             z: 8
         }
 
@@ -3173,7 +3609,7 @@ PanelWindow {
             rootWindow: root
             userConfig: root.userConfig
             islandTopMargin: root.effectiveIslandTopMargin
-            accentColor: pywalColors.accent
+            accentColor: root.themeAccent
             hasCall: islandContainer.discordCallActive
             ongoing: islandContainer.discordCallOngoing
             callerName: islandContainer.discordCallerName
@@ -3192,13 +3628,24 @@ PanelWindow {
 
             targetCapsule: mainCapsule
             rootWindow: root
-            accentColor: pywalColors.accent
+            accentColor: root.themeAccent
             textFontFamily: root.textFontFamily
             iconFontFamily: root.iconFontFamily
             activeState: islandContainer.controlCenterLayerVisible
             z: 16
         }
 
+        ThemeFloatingIsland {
+            id: themeFloatingIsland
+
+            targetCapsule: mainCapsule
+            rootWindow: root
+            accentColor: root.themeAccent
+            textFontFamily: root.textFontFamily
+            iconFontFamily: root.iconFontFamily
+            activeState: islandContainer.wallpaperPickerLayerVisible
+            z: 16
+        }
 
         MouseArea {
             id: controlCenterOutsideDismissArea
@@ -3213,7 +3660,13 @@ PanelWindow {
         Rectangle {
             id: mainCapsule
 
-            property int morphDuration: (islandContainer.islandState === "polkit" && islandContainer.polkitSuccessMorph) ? 320 : 400
+            property int morphDuration: {
+                if (islandContainer.islandState === "polkit" && islandContainer.polkitSuccessMorph)
+                    return 320;
+                if (islandContainer.islandState === "screenshot_preview")
+                    return 290;
+                return 400;
+            }
             readonly property bool notificationHistorySurface: islandContainer.islandState === "notification_center"
             property real outlineWidth: root.overviewContentVisible || notificationHistorySurface ? 1 : 0
             property color outlineColor: root.overviewContentVisible ? root.overviewCapsuleBorderColor : (notificationHistorySurface ? "#1affffff" : StyleTokens.clearBlack)
@@ -3267,6 +3720,19 @@ PanelWindow {
                 case "expanded":
                 case "bluetooth_expanded":
                     return 410;
+                case "screenshot_snipping":
+                    return 280;
+                case "screenshot_preview": {
+                    const asp = islandContainer.screenshotAspect || 1.77;
+                    if (asp >= 1.6) return 400;
+                    if (asp >= 1.1) return 360;
+                    if (asp >= 0.8) return 320;
+                    return 280;
+                }
+                case "screenshot_editor": {
+                    const screenW = root.screen ? root.screen.width : 1920;
+                    return Math.min(screenW - 48, 860);
+                }
                 case "notification":
                     if (!notificationLoader.item)
                         return 272;
@@ -3320,6 +3786,19 @@ PanelWindow {
                 case "expanded":
                 case "bluetooth_expanded":
                     return 165;
+                case "screenshot_snipping":
+                    return root.effectiveIslandHeight;
+                case "screenshot_preview": {
+                    const asp = Math.max(0.4, Math.min(6.0, islandContainer.screenshotAspect || 1.77));
+                    const w = mainCapsule.baseTargetWidth;
+                    const contentW = Math.max(200, w - 24);
+                    const imgH = Math.max(50, Math.min(220, Math.round(contentW / asp)));
+                    return imgH + 102;
+                }
+                case "screenshot_editor": {
+                    const screenH = root.screen ? root.screen.height : 1080;
+                    return Math.min(screenH - 80, 580);
+                }
                 case "notification":
                     return notificationLoader.item ? Math.max(56, notificationLoader.item.preferredHeight) : 56;
                 case "reload":
@@ -3363,6 +3842,12 @@ PanelWindow {
                 case "expanded":
                 case "bluetooth_expanded":
                     return 40;
+                case "screenshot_snipping":
+                    return root.effectiveIslandCornerRadius;
+                case "screenshot_preview":
+                    return 22;
+                case "screenshot_editor":
+                    return 26;
                 case "notification":
                     return islandContainer.notificationExpanded ? 28 : mainCapsule.targetHeight / 2;
                 case "reload":
@@ -3396,7 +3881,8 @@ PanelWindow {
             width: displayedWidth
             height: targetHeight
             radius: targetRadius
-            opacity: root.autoHideProgress
+            opacity: root.screenshotCapturing ? 0.0 : root.autoHideProgress
+            visible: opacity > 0.01
             scale: 0.96 + root.autoHideProgress * 0.04
             transformOrigin: Item.Top
             onBaseTargetWidthChanged: {
@@ -3598,6 +4084,14 @@ PanelWindow {
                         return ;
                     }
                     if (mouse.button === userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)) {
+                        if (islandContainer.islandState === "screenshot_snipping") {
+                            preparedOverviewOnPress = false;
+                            return ;
+                        }
+                        if (islandContainer.islandState === "screenshot_preview") {
+                            preparedOverviewOnPress = false;
+                            return ;
+                        }
                         if (islandContainer.islandState === "notification" && islandContainer.toggleNotificationExpansionIfNeeded()) {
                             if (preparedOverviewOnPress)
                                 root.cancelPreparedOverviewEverywhere();
@@ -3712,7 +4206,7 @@ PanelWindow {
 
                 sourceComponent: Component {
                     SwipeCustomInfoLayer {
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         items: islandContainer.customLeftItems
                         cavaLevels: islandContainer.cavaLevels
                         timeText: timeObj.currentTime
@@ -3746,7 +4240,7 @@ PanelWindow {
 
                 sourceComponent: Component {
                     SwipeLyricsLayer {
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         lyricText: islandContainer.lyricsDisplayText
                         cavaLevels: islandContainer.cavaLevels
                         timeText: timeObj.currentTime
@@ -3857,7 +4351,7 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ExpandedPlayerLayer {
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         currentArtUrl: islandContainer.currentArtUrl
                         currentTrack: islandContainer.currentTrack !== "" ? islandContainer.currentTrack : "Starboy"
                         currentArtist: islandContainer.currentArtist !== "" ? islandContainer.currentArtist : "The Weeknd"
@@ -3959,6 +4453,100 @@ PanelWindow {
             }
 
             Loader {
+                id: screenshotPreviewLoader
+
+                anchors.fill: parent
+                active: islandContainer.screenshotPreviewLayerVisible
+                asynchronous: false
+                visible: active
+                z: 4
+
+                sourceComponent: Component {
+                    ScreenshotPreviewLayer {
+                        screenshotPath: islandContainer.screenshotPreviewPath
+                        screenshotAspect: islandContainer.screenshotAspect
+                        iconFontFamily: root.iconFontFamily
+                        textFontFamily: root.textFontFamily
+                        accentColor: root.themeAccent
+                        textColor: root.themeFg
+                        dimColor: root.themeDim
+                        surfaceColor: root.themeSurface
+                        irisBlue: root.themeBlue
+                        irisPurple: (irisColors && irisColors.purpleHex !== "") ? irisColors.purpleHex : "#bb95d0"
+                        irisGreen: root.themeGreen
+                        irisYellow: root.themeYellow
+                        irisRed: root.themeRed
+                        showCondition: islandContainer.screenshotPreviewLayerVisible
+                        imageLanded: root.screenshotImageLanded
+                        onOpenSattyRequested: islandContainer.openScreenshotInSatty()
+                        onOpenEditorRequested: islandContainer.showScreenshotEditorCapsule()
+                        onImageSizeReady: (w, h) => islandContainer.updateScreenshotAspect(w, h)
+                        onDismissRequested: islandContainer.smartRestoreState()
+                    }
+                }
+            }
+
+            Loader {
+                id: screenshotEditorLoader
+
+                anchors.fill: parent
+                active: islandContainer.screenshotEditorLayerVisible
+                asynchronous: false
+                visible: active
+                z: 4
+
+                sourceComponent: Component {
+                    ScreenshotEditorLayer {
+                        screenshotPath: islandContainer.screenshotPreviewPath
+                        iconFontFamily: root.iconFontFamily
+                        textFontFamily: root.textFontFamily
+                        accentColor: root.themeAccent
+                        textColor: root.themeFg
+                        dimColor: root.themeDim
+                        surfaceColor: root.themeSurface
+                        customColorPalette: root.irisColorPalette
+                        onCloseRequested: islandContainer.smartRestoreState()
+                        onOpenSattyRequested: islandContainer.openScreenshotInSatty()
+                        onScreenshotSaved: (path) => islandContainer.recordScreenshotNotification(path, "Screenshot modificato")
+                    }
+                }
+            }
+
+            Loader {
+                id: screenshotSnippingLoader
+
+                anchors.fill: parent
+                active: islandContainer.screenshotSnippingLayerVisible
+                asynchronous: false
+                visible: active
+                z: 4
+
+                sourceComponent: Component {
+                    ScreenshotSnippingCapsule {
+                        statusText: root.screenshotSnippingStatusText
+                        sattyDirectMode: root.screenshotSnippingSattyMode
+                        textFontFamily: root.textFontFamily
+                        iconFontFamily: root.iconFontFamily
+                        accentColor: root.themeAccent
+                        textColor: root.themeFg
+                        dimColor: root.themeDim
+                        surfaceColor: root.themeSurface
+                        onFullscreenRequested: {
+                            const sw = root.screen ? root.screen.width : 1920;
+                            const sh = root.screen ? root.screen.height : 1080;
+                            root.executeSnip(0, 0, sw, sh, root.screenshotSnippingSattyMode);
+                        }
+                        onSattyToggleRequested: {
+                            root.screenshotSnippingSattyMode = !root.screenshotSnippingSattyMode;
+                        }
+                        onCancelRequested: {
+                            root.cancelScreenshotSnipping();
+                        }
+                    }
+                }
+            }
+
+            Loader {
                 id: reloadLoader
 
                 anchors.fill: parent
@@ -3974,7 +4562,7 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         showCondition: islandContainer.reloadLayerVisible
                         onDismissRequested: islandContainer.smartRestoreState()
                     }
@@ -4071,7 +4659,7 @@ PanelWindow {
                             : ((root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout)
                                 ? { "controlCenterCanvasLayout": root.dynamicConfig.controlCenterCanvasLayout }
                                 : localUserConfigFile.parsedData)
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
@@ -4135,7 +4723,7 @@ PanelWindow {
                     PowerMenuLayer {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         showCondition: islandContainer.powerMenuLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }
@@ -4179,7 +4767,7 @@ PanelWindow {
                 sourceComponent: Component {
                     WallpaperPickerLayer {
                         dynamicConfig: root.dynamicConfig
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         activeWallpaper: root.effectiveWallpaperPath
@@ -4210,6 +4798,11 @@ PanelWindow {
                     ApplicationLauncherLayer {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
+                        accentColor: root.themeAccent
+                        textColor: root.themeFg
+                        dimColor: root.themeDim
+                        surfaceColor: root.themeSurface
+                        bgColor: root.themeBg
                         showCondition: islandContainer.applicationLauncherLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }
@@ -4234,7 +4827,7 @@ PanelWindow {
                     ClipboardLayer {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         showCondition: islandContainer.clipboardLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                         onItemCopied: function(msg) {
@@ -4261,7 +4854,7 @@ PanelWindow {
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
                         iconFontFamily: root.iconFontFamily
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         showCondition: islandContainer.settingsAppLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }
@@ -4309,7 +4902,7 @@ PanelWindow {
                 sourceComponent: Component {
                     PolkitLayer {
                         polkitAgent: root.polkitAgent
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
@@ -4342,7 +4935,7 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ScreenSharePickerLayer {
-                        accentColor: pywalColors.accent
+                        accentColor: root.themeAccent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
@@ -4436,7 +5029,7 @@ PanelWindow {
             Behavior on displayedWidth {
                 NumberAnimation {
                     duration: capsuleMouseArea.sideSwipeInteractive ? 0 : mainCapsule.morphDuration
-                    easing.type: Easing.OutQuint
+                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -4446,7 +5039,7 @@ PanelWindow {
 
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: Easing.OutQuint
+                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -4454,7 +5047,20 @@ PanelWindow {
             Behavior on y {
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: Easing.OutQuint
+                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
+                }
+
+            }
+
+            Behavior on x {
+                // Disabilitato: x è calcolato direttamente come (parent.width - width) / 2
+                // e segue già in tempo reale la transizione fluida di displayedWidth.
+                // Una seconda animazione su x causava il ritardo asimmetrico (oscillazione destra-sinistra).
+                enabled: false
+
+                NumberAnimation {
+                    duration: mainCapsule.morphDuration
+                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -4462,7 +5068,7 @@ PanelWindow {
             Behavior on radius {
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: Easing.OutQuint
+                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -4503,7 +5109,7 @@ PanelWindow {
             x: mainCapsule.x - width - 8
             y: mainCapsule.y + mainCapsule.height / 2 - height / 2
             z: 6
-            visible: islandContainer.fileShelfBubbleWanted
+            visible: islandContainer.fileShelfBubbleWanted && !root.isScreenshotModeActive
             opacity: root.autoHideProgress
             scale: 0.96 + root.autoHideProgress * 0.04
             transformOrigin: Item.Center
@@ -4587,7 +5193,7 @@ PanelWindow {
             x: hiddenX + (shownX - hiddenX) * reveal
             y: centerY + (1 - reveal) * 10
             z: 6
-            visible: mounted
+            visible: mounted && !root.isScreenshotModeActive
             opacity: reveal * root.autoHideProgress
             scale: (0.55 + reveal * 0.45) * (0.96 + root.autoHideProgress * 0.04) * (1 + islandContainer.timerCompletionPulse * 0.12)
             transformOrigin: Item.Center
@@ -4891,9 +5497,19 @@ PanelWindow {
     }
 
     mask: Region {
+        // Se lo screenshot è attivo, la maschera copre l'INTERO schermo per catturare drag e click
+        Region {
+            intersection: Intersection.Combine
+            x: 0
+            y: 0
+            width: root.screenshotSnippingActive ? (root.screen ? root.screen.width : 1920) : 0
+            height: root.screenshotSnippingActive ? (root.screen ? root.screen.height : 1080) : 0
+        }
+
         // Input is the union of the island's visible surfaces plus a compact top
         // gesture strip. The gesture strip must not grow with expanded content.
         Region {
+            intersection: Intersection.Combine
             x: Math.floor(root.topGestureInputX)
             y: 0
             width: Math.ceil(root.topGestureInputWidth)
@@ -4987,6 +5603,14 @@ PanelWindow {
             y: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.floor(trayFloatingIsland.menuY) : 0
             width: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.ceil(trayFloatingIsland.menuWidth) : 0
             height: (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) ? Math.ceil(trayFloatingIsland.menuHeight) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: (themeFloatingIsland && themeFloatingIsland.visible) ? Math.floor(Math.min(themeFloatingIsland.x, mainCapsule.x)) : 0
+            y: (themeFloatingIsland && themeFloatingIsland.visible) ? Math.floor(mainCapsule.y + mainCapsule.height) : 0
+            width: (themeFloatingIsland && themeFloatingIsland.visible) ? Math.ceil(Math.max(themeFloatingIsland.width, mainCapsule.width)) : 0
+            height: (themeFloatingIsland && themeFloatingIsland.visible) ? Math.ceil(themeFloatingIsland.y + themeFloatingIsland.height - (mainCapsule.y + mainCapsule.height)) : 0
         }
 
     }

@@ -104,9 +104,9 @@ Rectangle {
     readonly property bool isEarConnected: !forceHidden && ((nothingBtDevice && nothingBtDevice.connected)
         || Boolean(headphonesData && headphonesData.connected))
 
-    visible: isEarConnected && opacity > 0.01
-    opacity: isEarConnected ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: isEarConnected ? 1.0 : 0.82
+    visible: isEarConnected && (!rootWindow || !rootWindow.isScreenshotModeActive) && opacity > 0.01
+    opacity: isEarConnected && (!rootWindow || !rootWindow.isScreenshotModeActive) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: isEarConnected && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.82
 
     clip: true
     color: "#000000"
@@ -117,8 +117,14 @@ Rectangle {
     Behavior on width { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
     Behavior on height { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
     Behavior on radius { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
-    Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-    Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+    Behavior on opacity {
+        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+    }
+    Behavior on scale {
+        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
+        NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+    }
 
     onIsEarConnectedChanged: {
         if (!isEarConnected) isExpanded = false;

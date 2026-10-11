@@ -16,6 +16,11 @@ FocusScope {
     property bool showCondition: false
     property string iconFontFamily: ""
     property string textFontFamily: ""
+    property color accentColor: "#84a1e6"
+    property color textColor: "#ffffff"
+    property color dimColor: "#8e8e93"
+    property color surfaceColor: "#17181c"
+    property color bgColor: "#0e0f12"
     property string query: ""
     property var allApplications: []
     property var filteredApplications: []
@@ -376,9 +381,9 @@ FocusScope {
                 id: searchField
                 anchors.fill: parent
                 radius: 16
-                color: searchInput.activeFocus ? "#17181c" : "#111216"
+                color: searchInput.activeFocus ? Qt.rgba(root.surfaceColor.r, root.surfaceColor.g, root.surfaceColor.b, 0.95) : Qt.rgba(root.surfaceColor.r, root.surfaceColor.g, root.surfaceColor.b, 0.65)
                 border.width: 1
-                border.color: searchInput.activeFocus ? "#3d3f47" : "#292a30"
+                border.color: searchInput.activeFocus ? root.accentColor : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.15)
 
                 Behavior on color { ColorAnimation { duration: 140 } }
                 Behavior on border.color { ColorAnimation { duration: 140 } }
@@ -388,7 +393,7 @@ FocusScope {
                     anchors.leftMargin: 16
                     anchors.verticalCenter: parent.verticalCenter
                     text: "\uf002"
-                    color: searchInput.activeFocus ? "#d1d1d6" : "#8e8e93"
+                    color: searchInput.activeFocus ? root.textColor : root.dimColor
                     font.family: root.iconFontFamily
                     font.pixelSize: 15
                 }
@@ -397,7 +402,7 @@ FocusScope {
                     anchors.left: searchInput.left
                     anchors.verticalCenter: searchInput.verticalCenter
                     text: I18n.tr("Cerca applicazione...")
-                    color: "#636366"
+                    color: root.dimColor
                     font.family: root.textFontFamily
                     font.pixelSize: 15
                     visible: searchInput.text === "" && !searchInput.activeFocus
@@ -410,8 +415,8 @@ FocusScope {
                     anchors.right: parent.right
                     anchors.rightMargin: root.query === "" ? 16 : 42
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "#f5f5f7"
-                    selectionColor: "#0a84ff"
+                    color: root.textColor
+                    selectionColor: root.accentColor
                     selectedTextColor: "#ffffff"
                     font.family: root.textFontFamily
                     font.pixelSize: 15
@@ -599,7 +604,7 @@ FocusScope {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: parent.width - 6
                         text: appDelegate.entry.name || ""
-                        color: appDelegate.selected ? "#f5f5f7" : "#d0d1d5"
+                        color: appDelegate.selected ? root.textColor : root.dimColor
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                         font.family: root.textFontFamily
@@ -647,7 +652,7 @@ FocusScope {
                 anchors.verticalCenterOffset: 36
                 visible: root.visibleApplicationCount === 0
                 text: root.query === "" ? I18n.tr("Nessuna applicazione trovata") : (I18n.tr("Nessuna applicazione trovata per") + " “" + root.query + "”")
-                color: "#696b72"
+                color: root.dimColor
                 font.family: root.textFontFamily
                 font.pixelSize: 13
             }

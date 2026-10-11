@@ -22,6 +22,63 @@ Scope {
     property string lastNotificationKey: ""
     property real lastNotificationTime: 0
 
+    // ── Under-window screenshot coordinator ───────────────────────────
+    property bool screenshotSnippingUnderActive: false
+    property bool screenshotFlyingUnderActive: false
+    property bool screenshotCapturing: false
+    property real screenshotSnipX: 0
+    property real screenshotSnipY: 0
+    property real screenshotSnipW: 0
+    property real screenshotSnipH: 0
+    property real screenshotTargetX: 0
+    property real screenshotTargetY: 0
+    property real screenshotTargetW: 0
+    property real screenshotTargetH: 0
+    property string screenshotTempPath: ""
+
+    function notifySnipStarted() {
+        screenshotSnippingUnderActive = false;
+    }
+
+    function notifySnipCancelled() {
+        screenshotSnippingUnderActive = false;
+        screenshotFlyingUnderActive = false;
+    }
+
+    function notifySnipCaptured(x, y, w, h, tx, ty, tw, th, filePath) {
+        screenshotSnippingUnderActive = false;
+        screenshotFlyingUnderActive = false;
+        forEachWindow((w) => {
+            if (w && w.handleScreenshotImageLanded)
+                w.handleScreenshotImageLanded();
+        });
+    }
+
+    function notifySnipFlightFinished() {
+        screenshotFlyingUnderActive = false;
+        forEachWindow((w) => {
+            if (w && w.handleScreenshotImageLanded)
+                w.handleScreenshotImageLanded();
+        });
+    }
+
+    function forEachBackgroundWindow(callback) {
+        const windows = backgroundVariants.instances ? backgroundVariants.instances : [];
+        for (let index = 0; index < windows.length; index++) {
+            const window = windows[index];
+            if (window)
+                callback(window);
+        }
+    }
+
+    function notifyScreenshotFileReady(path) {
+        screenshotTempPath = path;
+        forEachBackgroundWindow((bg) => {
+            if (bg && bg.refreshUnderFlightImage)
+                bg.refreshUnderFlightImage(path);
+        });
+    }
+
     SettingsAppWindow {
         id: settingsAppWindow
         dynamicConfig: shellRoot.dynamicConfig
@@ -101,6 +158,27 @@ Scope {
             if (window && window.showNotification)
                 window.showNotification(appName, summary, body, icon, customColor);
 
+        });
+    }
+
+    function showScreenshotPreviewAll(filePath) {
+        shellRoot.forEachWindow((window) => {
+            if (window && window.showScreenshotPreview)
+                window.showScreenshotPreview(filePath);
+        });
+    }
+
+    function startScreenshotSnippingAll() {
+        shellRoot.forFocusedWindow((window) => {
+            if (window && window.startScreenshotSnipping)
+                window.startScreenshotSnipping();
+        });
+    }
+
+    function showScreenshotEditorAll(filePath) {
+        shellRoot.forEachWindow((window) => {
+            if (window && window.openScreenshotEditor)
+                window.openScreenshotEditor(filePath);
         });
     }
 
@@ -363,6 +441,29 @@ Scope {
 
         function showReload(failed: bool, error: string) {
             shellRoot.showReloadAll(failed, error);
+        }
+
+        function showScreenshotPreview(filePath: string) {
+            shellRoot.showScreenshotPreviewAll(filePath);
+        }
+
+        function screenshot() {
+            shellRoot.startScreenshotSnippingAll();
+        }
+
+        function showScreenshotSnipping() {
+            shellRoot.startScreenshotSnippingAll();
+        }
+
+        function showScreenshotEditor(filePath: string) {
+            shellRoot.showScreenshotEditorAll(filePath);
+        }
+
+        function testScreenshotFly() {
+            shellRoot.forEachWindow((window) => {
+                if (window && window.executeSnip)
+                    window.executeSnip(200, 300, 480, 270, false);
+            });
         }
 
         function testWifiDisconnect() {
@@ -687,6 +788,20 @@ Scope {
             });
         }
 
+        function startScreenshot() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.startScreenshotSnipping)
+                    window.startScreenshotSnipping();
+            });
+        }
+
+        function cancelScreenshot() {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.cancelScreenshotSnipping)
+                    window.cancelScreenshotSnipping();
+            });
+        }
+
         function reload() {
             try {
                 Quickshell.reload(false);
@@ -771,6 +886,13 @@ Scope {
                     app = "Telegram";
                 else if (lowerSummary.indexOf("spotify") !== -1 || lowerBody.indexOf("spotify") !== -1)
                     app = "Spotify";
+            }
+            if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
+                const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
+                if (match && match[0]) {
+                    shellRoot.showScreenshotPreviewAll(match[0]);
+                    return ;
+                }
             }
             if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
                 if (lowerSummary.indexOf("persa") !== -1 || lowerBody.indexOf("persa") !== -1 || lowerSummary.indexOf("missed") !== -1 || lowerBody.indexOf("missed") !== -1 || lowerSummary.indexOf("terminat") !== -1 || lowerBody.indexOf("terminat") !== -1 || lowerSummary.indexOf("ended") !== -1 || lowerBody.indexOf("ended") !== -1 || lowerSummary.indexOf("annullat") !== -1 || lowerBody.indexOf("annullat") !== -1 || lowerSummary.indexOf("rifiutat") !== -1 || lowerBody.indexOf("rifiutat") !== -1 || lowerSummary.indexOf("chiusa") !== -1 || lowerBody.indexOf("chiusa") !== -1) {
