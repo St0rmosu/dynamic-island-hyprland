@@ -3924,13 +3924,15 @@ PanelWindow {
                 readonly property real batteryFraction: Math.max(0.0, Math.min(1.0, batteryCap / 100.0))
 
                 readonly property color indicatorColor: {
-                    if (islandContainer.isCharging)
-                        return root.themeGreen;
                     if (batteryCap <= 20)
-                        return root.themeRed;
+                        return "#ff3b30"; // Rosso vivo critico (< 20%)
                     if (batteryCap <= 40)
-                        return root.themeYellow;
-                    return root.themeGreen;
+                        return "#ff9500"; // Arancione di avviso (21-40%)
+                    if (batteryCap <= 65)
+                        return "#ffd60a"; // Giallo medio (41-65%)
+                    if (batteryCap <= 85)
+                        return (irisColors && irisColors.greenHex !== "") ? irisColors.greenHex : "#30d158"; // Verde menta / Iris (66-85%)
+                    return "#34c759"; // Verde brillante (86-100%)
                 }
 
                 anchors.left: parent.left
