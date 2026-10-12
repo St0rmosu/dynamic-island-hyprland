@@ -382,7 +382,7 @@ Rectangle {
                 ClippingRectangle {
                     id: slotAppIconFrame
                     anchors.centerIn: parent
-                    width: Math.round(root.itemSize * 0.72)
+                    width: Math.round(root.itemSize * 0.88)
                     height: width
                     radius: width / 2
                     color: "transparent"
@@ -393,7 +393,7 @@ Rectangle {
                     Image {
                         id: slotAppIcon
                         anchors.centerIn: parent
-                        width: Math.round(slotAppIconFrame.width * 1.50)
+                        width: Math.round(slotAppIconFrame.width * 1.35)
                         height: width
                         source: wsSlot.appIconSource
                         sourceSize: Qt.size(width * 2, width * 2)

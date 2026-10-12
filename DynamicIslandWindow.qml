@@ -1,6 +1,7 @@
 import IslandBackend
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
@@ -3651,98 +3652,6 @@ PanelWindow {
             onClicked: islandContainer.smartRestoreState()
         }
 
-        // ── Indicatore di Batteria a Cornice Aperta (Excalidraw design) ────────────
-        Rectangle {
-            id: batteryContourIndicator
-
-            readonly property int batteryCap: islandContainer.batteryCapacity
-            readonly property bool hasBattery: batteryCap >= 0
-            readonly property bool isResting: islandContainer.islandState === "normal"
-                || islandContainer.islandState === "custom"
-                || islandContainer.islandState === "lyrics"
-            readonly property real dischargeProgress: Math.max(0.0, Math.min(1.0, (100.0 - batteryCap) / 100.0))
-
-            // Più la batteria è scarica, più si apre (gap verso l'esterno)
-            readonly property real maxGapY: 5.5
-            readonly property real maxGapX: 8.5
-            property real openGapY: (hasBattery && isResting) ? (dischargeProgress * maxGapY) : 0.0
-            property real openGapX: (hasBattery && isResting) ? (dischargeProgress * maxGapX) : 0.0
-
-            readonly property color indicatorColor: {
-                if (islandContainer.isCharging)
-                    return root.themeGreen;
-                if (batteryCap <= 20)
-                    return root.themeRed;
-                if (batteryCap <= 40)
-                    return root.themeYellow;
-                return root.themeGreen;
-            }
-
-            z: 4
-            x: mainCapsule.x - openGapX
-            y: mainCapsule.y - openGapY
-            width: mainCapsule.width + openGapX * 2
-            height: mainCapsule.height + openGapY * 2
-            radius: mainCapsule.radius + (openGapX + openGapY) / 2
-            color: "transparent"
-            border.width: (openGapY > 0.4 || islandContainer.isCharging) ? 1.5 : 0.0
-            border.color: indicatorColor
-            antialiasing: true
-
-            scale: mainCapsule.scale
-            transformOrigin: mainCapsule.transformOrigin
-            visible: hasBattery && isResting && !root.overviewVisible && !root.isScreenshotModeActive && !root.screenshotCapturing
-            opacity: visible ? (root.autoHideProgress * (islandContainer.isCharging ? 0.95 : 0.85)) : 0.0
-
-            HoverHandler {
-                id: batteryContourHoverHandler
-                onHoveredChanged: {
-                    if (hovered && root.autoHideEnabled) {
-                        root.autoHidePointerInside = true;
-                        root.showAutoHiddenIsland();
-                    }
-                }
-            }
-
-            Behavior on openGapY {
-                NumberAnimation {
-                    duration: 400
-                    easing.type: Easing.OutCubic
-                }
-            }
-            Behavior on openGapX {
-                NumberAnimation {
-                    duration: 400
-                    easing.type: Easing.OutCubic
-                }
-            }
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 260
-                    easing.type: Easing.InOutQuad
-                }
-            }
-            Behavior on border.color {
-                ColorAnimation {
-                    duration: 300
-                    easing.type: Easing.InOutQuad
-                }
-            }
-            Behavior on border.width {
-                NumberAnimation {
-                    duration: 260
-                    easing.type: Easing.InOutQuad
-                }
-            }
-
-            SequentialAnimation on opacity {
-                running: islandContainer.isCharging && batteryContourIndicator.hasBattery && batteryContourIndicator.isResting && !root.overviewVisible && !root.isScreenshotModeActive
-                loops: Animation.Infinite
-                NumberAnimation { from: 0.95; to: 0.40; duration: 1300; easing.type: Easing.InOutSine }
-                NumberAnimation { from: 0.40; to: 0.95; duration: 1300; easing.type: Easing.InOutSine }
-            }
-        }
-
         // --- UI 渲染：灵动岛主干 ---
         Rectangle {
             id: mainCapsule
@@ -3977,8 +3886,8 @@ PanelWindow {
                     displayedWidth = baseTargetWidth;
 
             }
-            border.width: (batteryContourIndicator.visible && batteryContourIndicator.openGapY > 0.4) ? 1.0 : outlineWidth
-            border.color: (batteryContourIndicator.visible && batteryContourIndicator.openGapY > 0.4) ? Qt.rgba(1, 1, 1, 0.12) : outlineColor
+            border.width: outlineWidth
+            border.color: outlineColor
 
             Rectangle {
                 anchors.fill: parent
@@ -3997,6 +3906,110 @@ PanelWindow {
 
                 }
 
+            }
+
+            // ── Indicatore di Batteria a Bordo Interno Dinamico (cerchio dentro l'isola) ──
+            Shape {
+                id: innerBatteryShape
+
+                readonly property int batteryCap: islandContainer.batteryCapacity
+                readonly property bool hasBattery: batteryCap >= 0
+                readonly property bool isResting: (islandContainer.islandState === "normal"
+                    || islandContainer.islandState === "custom"
+                    || islandContainer.islandState === "lyrics")
+                    && !root.overviewVisible
+                    && !root.isScreenshotModeActive
+                    && !root.screenshotCapturing
+
+                readonly property real batteryFraction: Math.max(0.0, Math.min(1.0, batteryCap / 100.0))
+                readonly property real sw: 1.5
+                readonly property real inset: sw / 2
+                readonly property real w: mainCapsule.width - sw
+                readonly property real h: mainCapsule.height - sw
+                readonly property real r: Math.max(1, mainCapsule.radius - inset)
+                readonly property real straight: Math.max(0, w - 2 * r)
+                readonly property real totalPerim: 2 * straight + 2 * Math.PI * r
+
+                readonly property real dashLen: totalPerim * batteryFraction
+                readonly property real gapLen: totalPerim * (1.0 - batteryFraction)
+
+                readonly property color indicatorColor: {
+                    if (islandContainer.isCharging)
+                        return root.themeGreen;
+                    if (batteryCap <= 20)
+                        return root.themeRed;
+                    if (batteryCap <= 40)
+                        return root.themeYellow;
+                    return root.themeGreen;
+                }
+
+                property real chargingOffset: 0
+                NumberAnimation on chargingOffset {
+                    running: islandContainer.isCharging && innerBatteryShape.isResting
+                    loops: Animation.Infinite
+                    from: 0
+                    to: innerBatteryShape.totalPerim / innerBatteryShape.sw
+                    duration: 3500
+                }
+
+                anchors.fill: parent
+                z: 3
+                layer.enabled: true
+                layer.samples: 4
+                visible: hasBattery && isResting && (batteryCap > 0 || islandContainer.isCharging)
+                opacity: visible ? root.autoHideProgress : 0.0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 240; easing.type: Easing.InOutQuad }
+                }
+
+                ShapePath {
+                    strokeColor: innerBatteryShape.indicatorColor
+                    strokeWidth: innerBatteryShape.sw
+                    fillColor: "transparent"
+                    capStyle: ShapePath.RoundCap
+                    joinStyle: ShapePath.RoundJoin
+                    strokeStyle: ShapePath.DashLine
+                    dashPattern: [
+                        innerBatteryShape.dashLen / innerBatteryShape.sw,
+                        Math.max(0.01, innerBatteryShape.gapLen / innerBatteryShape.sw)
+                    ]
+                    dashOffset: islandContainer.isCharging
+                        ? (-0.5 * (innerBatteryShape.gapLen / innerBatteryShape.sw) + innerBatteryShape.chargingOffset)
+                        : (-0.5 * (innerBatteryShape.gapLen / innerBatteryShape.sw))
+
+                    startX: innerBatteryShape.inset + innerBatteryShape.w / 2
+                    startY: innerBatteryShape.inset + innerBatteryShape.h
+
+                    PathLine {
+                        x: innerBatteryShape.inset + innerBatteryShape.r
+                        y: innerBatteryShape.inset + innerBatteryShape.h
+                    }
+                    PathArc {
+                        x: innerBatteryShape.inset + innerBatteryShape.r
+                        y: innerBatteryShape.inset
+                        radiusX: innerBatteryShape.r
+                        radiusY: innerBatteryShape.r
+                    }
+                    PathLine {
+                        x: innerBatteryShape.inset + innerBatteryShape.w - innerBatteryShape.r
+                        y: innerBatteryShape.inset
+                    }
+                    PathArc {
+                        x: innerBatteryShape.inset + innerBatteryShape.w - innerBatteryShape.r
+                        y: innerBatteryShape.inset + innerBatteryShape.h
+                        radiusX: innerBatteryShape.r
+                        radiusY: innerBatteryShape.r
+                    }
+                    PathLine {
+                        x: innerBatteryShape.inset + innerBatteryShape.w / 2
+                        y: innerBatteryShape.inset + innerBatteryShape.h
+                    }
+
+                    Behavior on strokeColor {
+                        ColorAnimation { duration: 300 }
+                    }
+                }
             }
 
             HoverHandler {
