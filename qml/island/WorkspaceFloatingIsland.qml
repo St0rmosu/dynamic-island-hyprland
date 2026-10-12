@@ -15,10 +15,10 @@ Rectangle {
     property var rootWindow: null
     property var dynamicConfig: null
     property var userConfig: UserConfig
-    property color accentColor: StyleTokens.accent
-    property color textColor: "#c8c3b6"
-    property color dimColor: "#606c75"
-    property color surfaceColor: "#2e383f"
+    property color accentColor: (rootWindow && rootWindow.themeAccent) ? rootWindow.themeAccent : StyleTokens.accent
+    property color textColor: (rootWindow && rootWindow.themeFg) ? rootWindow.themeFg : "#c8c3b6"
+    property color dimColor: (rootWindow && rootWindow.themeDim) ? rootWindow.themeDim : "#606c75"
+    property color surfaceColor: (rootWindow && rootWindow.themeSurface) ? rootWindow.themeSurface : "#2e383f"
 
     readonly property string iconFontFamily: rootWindow ? rootWindow.iconFontFamily : "JetBrainsMono Nerd Font"
     readonly property string textFontFamily: rootWindow ? rootWindow.textFontFamily : "Google Sans Flex"
@@ -63,9 +63,9 @@ Rectangle {
     anchors.rightMargin: (positionSide === "left") ? 8 : 0
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 
-    visible: isEnabled && (!rootWindow || (!rootWindow.overviewVisible && !rootWindow.isScreenshotModeActive)) && opacity > 0.01
-    opacity: isEnabled && (!rootWindow || (!rootWindow.overviewVisible && !rootWindow.isScreenshotModeActive)) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: isEnabled && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.8
+    visible: isEnabled && (!rootWindow || !rootWindow.overviewVisible) && opacity > 0.01
+    opacity: isEnabled && (!rootWindow || !rootWindow.overviewVisible) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: 1.0
 
     clip: true
     color: Qt.rgba(0, 0, 0, (rootWindow ? rootWindow.effectiveIslandBackgroundOpacity : 92) / 100)
@@ -76,11 +76,9 @@ Rectangle {
     Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
     Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
     Behavior on opacity {
-        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
         NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
     }
     Behavior on scale {
-        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
         NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
     }
     Behavior on border.color { ColorAnimation { duration: 200 } }
@@ -365,7 +363,7 @@ Rectangle {
                 height: root.itemSize
                 z: 3
 
-                // Icona dell'Applicazione rotonda (ritagliata a cerchio perfetto anche per Foot, Satty, ecc.)
+                // Icona dell'Applicazione (stile end-4 / dots-hyprland con tinta dinamica M3/Iris)
                 ClippingRectangle {
                     id: slotAppIconFrame
                     anchors.centerIn: parent
@@ -379,11 +377,11 @@ Rectangle {
                     Image {
                         id: slotAppIcon
                         anchors.centerIn: parent
-                        width: Math.round(slotAppIconFrame.width * 1.25)
+                        width: Math.round(slotAppIconFrame.width * 0.88)
                         height: width
                         source: wsSlot.appIconSource
                         sourceSize: Qt.size(width * 2, width * 2)
-                        fillMode: Image.PreserveAspectCrop
+                        fillMode: Image.PreserveAspectFit
                         mipmap: true
                         smooth: true
                         visible: false
@@ -401,9 +399,9 @@ Rectangle {
                     MultiEffect {
                         anchors.fill: slotAppIcon
                         source: slotAppIcon
-                        colorization: wsSlot.isActive ? 0.0 : 0.20
+                        colorization: 0.50
                         colorizationColor: root.accentColor
-                        brightness: 0
+                        brightness: 0.0
                         visible: !slotAppIcon.loadError
                     }
                 }

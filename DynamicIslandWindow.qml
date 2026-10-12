@@ -60,11 +60,6 @@ PanelWindow {
     property bool screenshotImageLanded: false
     property bool screenshotCapturing: false
     readonly property bool isScreenshotModeActive: root.screenshotCapturing
-        || root.screenshotSnippingActive
-        || root.screenshotFlyAnimationActive
-        || (islandContainer && (islandContainer.islandState === "screenshot_snipping"
-            || islandContainer.islandState === "screenshot_preview"
-            || islandContainer.islandState === "screenshot_editor"))
     readonly property var userConfig: UserConfig
     property string awwwWallpaperPath: ""
     readonly property real capsuleWindowHeight: {
@@ -730,7 +725,7 @@ PanelWindow {
         }
 
         // sleep 0.04 assicura che il compositor Wayland abbia completato il frame nascondendo l'overlay prima dello scatto
-        const captureCmd = `sleep 0.04 && mkdir -p '${dir}' && grim -l 1 -g '${geom}' '${file}' && (wl-copy < '${file}' &)`;
+        const captureCmd = `sleep 0.04 && mkdir -p '${dir}' && grim -l 0 -g '${geom}' '${file}' && (wl-copy < '${file}' >/dev/null 2>&1 &)`;
         screenshotCaptureProc.command = ["bash", "-c", captureCmd];
         screenshotCaptureProc.running = false;
         screenshotCaptureProc.running = true;
@@ -3463,7 +3458,7 @@ PanelWindow {
 
             y: root.effectiveIslandTopMargin
             height: root.effectiveIslandHeight
-            opacity: root.isScreenshotModeActive ? 0 : mainCapsule.opacity
+            opacity: mainCapsule.opacity
             z: 7
             onIsSettingsAppChanged: {
                 if (!isSettingsApp) {
@@ -3475,7 +3470,7 @@ PanelWindow {
             // Animate smoothly between compact center and resting width.
             // In all normal modes (control_center, clipboard, etc.):
             // 1:1 locked with mainCapsule with ZERO delay!
-            width: root.isScreenshotModeActive ? 0 : (isSettingsApp ? (hasTopNotification ? 290 : 0) : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width))
+            width: isSettingsApp ? (hasTopNotification ? 290 : 0) : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width)
             x: (isSettingsApp || exitingSettingsApp) ? (root.lockIslandCenter ? Math.round((parent.width - width) / 2) : Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2)) : mainCapsule.x
 
             Timer {
