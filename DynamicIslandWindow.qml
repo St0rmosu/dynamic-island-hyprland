@@ -3908,7 +3908,7 @@ PanelWindow {
 
             }
 
-            // ── Indicatore Batteria Interno (da destra a sinistra, sopra e sotto) ─────
+            // ── Indicatore Batteria Interno (da sinistra verso destra, sopra e sotto) ─
             Item {
                 id: innerBatteryClip
 
@@ -3933,7 +3933,7 @@ PanelWindow {
                     return root.themeGreen;
                 }
 
-                anchors.right: parent.right
+                anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 width: isResting ? Math.round(parent.width * batteryFraction) : 0
@@ -3956,7 +3956,7 @@ PanelWindow {
                 }
 
                 Rectangle {
-                    anchors.right: parent.right
+                    anchors.left: parent.left
                     anchors.top: parent.top
                     width: mainCapsule.width
                     height: mainCapsule.height
