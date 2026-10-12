@@ -178,7 +178,9 @@ Item {
                 if (isNaN(r) || r < 0) r = def.row;
 
                 let isAct = true;
-                if (m.active !== undefined) {
+                if (m.id === "battery" && !controlCenter.hasBattery) {
+                    isAct = false;
+                } else if (m.active !== undefined) {
                     isAct = Boolean(m.active);
                 } else {
                     if (m.id === "wifi" && cfgValue("showWifiCard", null) !== null) isAct = Boolean(cfgValue("showWifiCard", true));
@@ -239,7 +241,7 @@ Item {
             { id: "volume", col: 3, row: 0, colSpan: 1, rowSpan: 2, height: 160, active: cfgValue("showDisplaySoundSliders", true) },
             { id: "notifications", col: 0, row: 2, colSpan: 4, rowSpan: 2, height: 160, active: cfgValue("controlCenterShowNotifications", true) },
             { id: "toggles", col: 0, row: 4, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showNightFocusToggles", false) },
-            { id: "battery", col: 0, row: 5, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showTlpBatteryMode", false) },
+            { id: "battery", col: 0, row: 5, colSpan: 2, rowSpan: 1, height: 80, active: controlCenter.hasBattery && cfgValue("showTlpBatteryMode", false) },
             { id: "quickactions", col: 2, row: 4, colSpan: 2, rowSpan: 1, height: 80, active: cfgValue("showBarraDesktopCard", false) || cfgValue("showClipboardQuickAccess", false) }
         ];
     }
@@ -299,6 +301,7 @@ Item {
     }
     property string currentTime: "00:00"
     property string currentDateLabel: ""
+    property bool hasBattery: true
     property int batteryCapacity: 0
     property bool isCharging: false
     property real volumeLevel: -1
@@ -1752,6 +1755,7 @@ Item {
 
             Row {
                 id: batteryIndicatorRow
+                visible: controlCenter.hasBattery
                 anchors.right: parent.right
                 anchors.rightMargin: 4
                 anchors.verticalCenter: parent.verticalCenter
@@ -3136,7 +3140,7 @@ Item {
                             case "brightness": return brightnessComponent;
                             case "volume": return volumeComponent;
                             case "notifications": return notificationsComponent;
-                            case "battery": return batteryComponent;
+                            case "battery": return controlCenter.hasBattery ? batteryComponent : null;
                             case "toggles": return togglesComponent;
                             case "quickactions": return quickactionsComponent;
                             default: return null;
@@ -3304,7 +3308,7 @@ Item {
                         switch (controlCenter.activeDetailModule) {
                         case "volume": return volumeComponent;
                         case "brightness": return brightnessComponent;
-                        case "battery": return batteryComponent;
+                        case "battery": return controlCenter.hasBattery ? batteryComponent : null;
                         case "toggles": return togglesComponent;
                         case "notifications": return notificationsComponent;
                         case "quickactions": return quickactionsComponent;

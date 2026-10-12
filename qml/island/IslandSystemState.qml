@@ -42,6 +42,14 @@ Item {
     readonly property string ramStatusIcon: "\u{F061A}"
     readonly property string bluetoothStatusIcon: "\u{F02CB}"
 
+    property bool hasBatteryHardware: true
+    readonly property bool hasBattery: {
+        if (SysBackend.hasBattery !== undefined) {
+            return SysBackend.hasBattery && hasBatteryHardware;
+        }
+        return hasBatteryHardware && batteryCapacity >= 0;
+    }
+
     property int batteryCapacity: SysBackend.batteryCapacity
     property bool isCharging: SysBackend.batteryStatus === "Charging" || SysBackend.batteryStatus === "Full"
     property real currentVolume: -1
@@ -79,6 +87,7 @@ Item {
     onLyricsCavaActiveChanged: updateCavaSubscription()
     onBatteryCapacityChanged: syncCustomLeftItems()
     onIsChargingChanged: syncCustomLeftItems()
+    onHasBatteryChanged: syncCustomLeftItems()
     onCurrentVolumeChanged: syncCustomLeftItems()
     onIsMutedChanged: syncCustomLeftItems()
     onCurrentBrightnessChanged: syncCustomLeftItems()
@@ -203,7 +212,7 @@ Item {
         case "date":
             return { id: itemId, icon: "", text: dateText };
         case "battery":
-            if (batteryCapacity < 0) return null;
+            if (!root.hasBattery || batteryCapacity < 0) return null;
             return {
                 id: itemId,
                 kind: "battery",
@@ -390,6 +399,19 @@ Item {
         onTriggered: storagePollProcess.running = true
     }
 
+    Process {
+        id: batteryCheckProcess
+        command: ["sh", "-c", "grep -qi 'Battery' /sys/class/power_supply/*/type 2>/dev/null && echo 1 || echo 0"]
+        running: true
+        stdout: SplitParser {
+            onRead: function(line) {
+                const val = line.trim();
+                root.hasBatteryHardware = (val === "1");
+                root.syncCustomLeftItems();
+            }
+        }
+    }
+
 
     Connections {
         target: SystemServices
@@ -463,6 +485,9 @@ Item {
         }
 
         function onBatteryChanged(capacity, statusString) {
+            if (!root.hasBattery)
+                return;
+
             root.batteryCapacity = capacity;
             root.isCharging = (statusString === "Charging" || statusString === "Full");
 

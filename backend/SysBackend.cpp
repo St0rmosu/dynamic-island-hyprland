@@ -37,10 +37,11 @@ SysBackend::SysBackend(QObject *parent)
       m_lyricsCurrentLyric(),
       m_lyricsBackendStatus("idle"),
       m_lyricsIsSynced(false),
-      m_batteryCap(0),
-      m_batteryStatus("Unknown"),
+      m_batteryCap(-1),
+      m_batteryStatus(""),
       m_upowerBatteryPath(),
       m_hasBatteryState(false),
+      m_hasBattery(false),
       m_udev(nullptr),
       m_batteryMonitor(nullptr) {
     setupBattery();
@@ -53,6 +54,10 @@ SysBackend::~SysBackend() {
     stopLyricsBackend();
     if (m_batteryMonitor) udev_monitor_unref(m_batteryMonitor);
     if (m_udev) udev_unref(m_udev);
+}
+
+bool SysBackend::hasBattery() const {
+    return m_hasBattery;
 }
 
 int SysBackend::batteryCapacity() const {
@@ -128,6 +133,7 @@ void SysBackend::setupBattery() {
 void SysBackend::detectPowerSupplyPaths() {
     m_batteryPath.clear();
     m_acPath.clear();
+    m_hasBattery = false;
 
     const QDir dir("/sys/class/power_supply");
     const QFileInfoList supplies = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);
@@ -137,9 +143,13 @@ void SysBackend::detectPowerSupplyPaths() {
         const QString supplyPath = supplyInfo.absoluteFilePath();
         const QString supplyType = readSysfsTextFile(supplyPath + "/type");
 
-        if (m_batteryPath.isEmpty() && (supplyType == "Battery" || supplyName.startsWith("BAT"))) {
-            m_batteryPath = supplyPath;
-            continue;
+        if (m_batteryPath.isEmpty() && (supplyType.compare("Battery", Qt::CaseInsensitive) == 0 || supplyName.startsWith("BAT"))) {
+            const QString present = readSysfsTextFile(supplyPath + "/present");
+            if (present.isEmpty() || present == "1") {
+                m_batteryPath = supplyPath;
+                m_hasBattery = true;
+                continue;
+            }
         }
 
         if (m_acPath.isEmpty() &&
@@ -181,6 +191,28 @@ void SysBackend::setupBatteryUpower() {
         return;
     }
 
+    QDBusInterface batteryProps(
+        "org.freedesktop.UPower",
+        m_upowerBatteryPath,
+        "org.freedesktop.DBus.Properties",
+        bus,
+        this
+    );
+
+    if (batteryProps.isValid()) {
+        QDBusReply<QVariant> typeReply = batteryProps.call("Get", "org.freedesktop.UPower.Device", "Type");
+        QDBusReply<QVariant> isPresentReply = batteryProps.call("Get", "org.freedesktop.UPower.Device", "IsPresent");
+        if (typeReply.isValid()) {
+            const uint devType = typeReply.value().toUInt();
+            const bool isPresent = isPresentReply.isValid() ? isPresentReply.value().toBool() : true;
+            if (devType == 2 && isPresent) {
+                m_hasBattery = true;
+            } else if (m_batteryPath.isEmpty()) {
+                m_hasBattery = false;
+            }
+        }
+    }
+
     const bool changedConnected = bus.connect(
         "org.freedesktop.UPower",
         m_upowerBatteryPath,
@@ -209,20 +241,28 @@ void SysBackend::setupBatteryUpower() {
 }
 
 void SysBackend::updateBatteryState(int capacity, const QString &statusString) {
-    const bool capacityChanged = !m_hasBatteryState || capacity != m_batteryCap;
-    const bool statusChanged = !m_hasBatteryState || statusString != m_batteryStatus;
+    int cap = capacity;
+    QString status = statusString;
+    if (!m_hasBattery) {
+        cap = -1;
+        status = "";
+    }
+
+    const bool capacityChanged = !m_hasBatteryState || cap != m_batteryCap;
+    const bool statusChanged = !m_hasBatteryState || status != m_batteryStatus;
 
     if (!capacityChanged && !statusChanged) return;
 
-    m_batteryCap = capacity;
-    m_batteryStatus = statusString;
+    m_batteryCap = cap;
+    m_batteryStatus = status;
     m_hasBatteryState = true;
 
-    qDebug() << "[Battery] State:" << m_batteryCap << "% -" << m_batteryStatus;
+    qDebug() << "[Battery] State: hasBattery=" << m_hasBattery << ", Cap:" << m_batteryCap << "% -" << m_batteryStatus;
 
     if (capacityChanged) emit batteryCapacityChanged(m_batteryCap);
     if (statusChanged) emit batteryStatusChanged(m_batteryStatus);
     emit batteryChanged(m_batteryCap, m_batteryStatus);
+    emit hasBatteryChanged(m_hasBattery);
 }
 
 QString SysBackend::upowerStateToBatteryStatus(uint state) const {
@@ -243,6 +283,11 @@ QString SysBackend::upowerStateToBatteryStatus(uint state) const {
 }
 
 void SysBackend::updateBatterySysfs() {
+    if (!m_hasBattery) {
+        updateBatteryState(-1, "");
+        return;
+    }
+
     int currentCap = m_batteryCap;
     QString currentStatus = m_batteryStatus;
 
@@ -285,6 +330,25 @@ void SysBackend::updateBatteryUpower() {
 
     if (!batteryProps.isValid()) {
         qWarning() << "[Battery] Failed to create UPower battery properties interface";
+        return;
+    }
+
+    QDBusReply<QVariant> typeReply = batteryProps.call("Get", "org.freedesktop.UPower.Device", "Type");
+    QDBusReply<QVariant> isPresentReply = batteryProps.call("Get", "org.freedesktop.UPower.Device", "IsPresent");
+    if (typeReply.isValid()) {
+        const uint devType = typeReply.value().toUInt();
+        const bool isPresent = isPresentReply.isValid() ? isPresentReply.value().toBool() : true;
+        if (devType == 2 && isPresent) {
+            m_hasBattery = true;
+        } else if (m_batteryPath.isEmpty()) {
+            m_hasBattery = false;
+            updateBatteryState(-1, "");
+            return;
+        }
+    }
+
+    if (!m_hasBattery) {
+        updateBatteryState(-1, "");
         return;
     }
 

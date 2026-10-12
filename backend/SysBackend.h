@@ -19,6 +19,7 @@ class SysBackend : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
+    Q_PROPERTY(bool hasBattery READ hasBattery NOTIFY hasBatteryChanged FINAL)
     Q_PROPERTY(int batteryCapacity READ batteryCapacity NOTIFY batteryCapacityChanged FINAL)
     Q_PROPERTY(QString batteryStatus READ batteryStatus NOTIFY batteryStatusChanged FINAL)
     Q_PROPERTY(QString lyricsCurrentLyric READ lyricsCurrentLyric NOTIFY lyricsCurrentLyricChanged FINAL)
@@ -29,6 +30,7 @@ public:
     explicit SysBackend(QObject *parent = nullptr);
     ~SysBackend() override;
 
+    bool hasBattery() const;
     int batteryCapacity() const;
     QString batteryStatus() const;
     QString lyricsCurrentLyric() const;
@@ -37,6 +39,7 @@ public:
     Q_INVOKABLE void setLyricsClientActive(const QString &clientId, bool active);
 
 signals:
+    void hasBatteryChanged(bool hasBattery);
     void brightnessChanged(double val);
     void volumeChanged(int volPercentage, bool isMuted);
     void batteryCapacityChanged(int capacity);
@@ -110,6 +113,7 @@ private:
     QString m_batteryStatus;
     QString m_upowerBatteryPath;
     bool m_hasBatteryState;
+    bool m_hasBattery;
 
     struct udev *m_udev;
     struct udev_monitor *m_batteryMonitor;

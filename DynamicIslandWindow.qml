@@ -737,10 +737,12 @@ PanelWindow {
     }
 
     function showCharging(capacity, isCharging) {
+        if (!islandContainer.hasBattery) return;
         islandContainer.showChargingCapsule(capacity, isCharging);
     }
 
     function showLowBattery(capacity) {
+        if (!islandContainer.hasBattery) return;
         islandContainer.showLowBatteryCapsule(capacity);
     }
 
@@ -1948,6 +1950,7 @@ PanelWindow {
         property bool osdProgressAnimationEnabled: true
         property string osdCustomText: ""
         property int currentWs: root.currentMonitorWorkspaceId > 0 ? root.currentMonitorWorkspaceId : 1
+        readonly property bool hasBattery: systemState.hasBattery
         readonly property int batteryCapacity: systemState.batteryCapacity
         readonly property bool isCharging: systemState.isCharging
         readonly property real currentVolume: systemState.currentVolume
@@ -2745,7 +2748,7 @@ PanelWindow {
         }
 
         function showChargingCapsule(capacity, isCharging) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (!hasBattery || root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
             abortSideTransientMode();
@@ -2762,7 +2765,7 @@ PanelWindow {
         }
 
         function showLowBatteryCapsule(capacity) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (!hasBattery || root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
                 return ;
 
             abortSideTransientMode();
@@ -3913,7 +3916,7 @@ PanelWindow {
                 id: innerBatteryClip
 
                 readonly property int batteryCap: islandContainer.batteryCapacity
-                readonly property bool hasBattery: batteryCap >= 0
+                readonly property bool hasBattery: islandContainer.hasBattery && batteryCap > 0
                 readonly property bool isResting: (islandContainer.islandState === "normal"
                     || islandContainer.islandState === "custom"
                     || islandContainer.islandState === "lyrics")
@@ -4637,7 +4640,7 @@ PanelWindow {
                 id: batteryAlertLoader
 
                 anchors.fill: parent
-                active: !root.overviewVisible && islandContainer.islandState === "charging"
+                active: islandContainer.hasBattery && !root.overviewVisible && islandContainer.islandState === "charging"
                 asynchronous: false
                 visible: active
                 z: 4
@@ -4727,6 +4730,7 @@ PanelWindow {
                         heroFontFamily: root.heroFontFamily
                         currentTime: timeObj.currentTime
                         currentDateLabel: timeObj.currentDateLabel
+                        hasBattery: islandContainer.hasBattery
                         batteryCapacity: islandContainer.batteryCapacity
                         isCharging: islandContainer.isCharging
                         volumeLevel: islandContainer.currentVolume
