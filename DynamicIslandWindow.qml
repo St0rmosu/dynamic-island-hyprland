@@ -68,7 +68,7 @@ PanelWindow {
         if (root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.islandState === "screenshot_editor")
             return root.screen ? root.screen.height : 1080;
 
-        var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 12);
+        var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 16);
         if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
             h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + 16));
             if (trayFloatingIsland.menuVisible)
@@ -3651,6 +3651,98 @@ PanelWindow {
             onClicked: islandContainer.smartRestoreState()
         }
 
+        // ── Indicatore di Batteria a Cornice Aperta (Excalidraw design) ────────────
+        Rectangle {
+            id: batteryContourIndicator
+
+            readonly property int batteryCap: islandContainer.batteryCapacity
+            readonly property bool hasBattery: batteryCap >= 0
+            readonly property bool isResting: islandContainer.islandState === "normal"
+                || islandContainer.islandState === "custom"
+                || islandContainer.islandState === "lyrics"
+            readonly property real dischargeProgress: Math.max(0.0, Math.min(1.0, (100.0 - batteryCap) / 100.0))
+
+            // Più la batteria è scarica, più si apre (gap verso l'esterno)
+            readonly property real maxGapY: 5.5
+            readonly property real maxGapX: 8.5
+            property real openGapY: (hasBattery && isResting) ? (dischargeProgress * maxGapY) : 0.0
+            property real openGapX: (hasBattery && isResting) ? (dischargeProgress * maxGapX) : 0.0
+
+            readonly property color indicatorColor: {
+                if (islandContainer.isCharging)
+                    return root.themeGreen;
+                if (batteryCap <= 20)
+                    return root.themeRed;
+                if (batteryCap <= 40)
+                    return root.themeYellow;
+                return root.themeGreen;
+            }
+
+            z: 4
+            x: mainCapsule.x - openGapX
+            y: mainCapsule.y - openGapY
+            width: mainCapsule.width + openGapX * 2
+            height: mainCapsule.height + openGapY * 2
+            radius: mainCapsule.radius + (openGapX + openGapY) / 2
+            color: "transparent"
+            border.width: (openGapY > 0.4 || islandContainer.isCharging) ? 1.5 : 0.0
+            border.color: indicatorColor
+            antialiasing: true
+
+            scale: mainCapsule.scale
+            transformOrigin: mainCapsule.transformOrigin
+            visible: hasBattery && isResting && !root.overviewVisible && !root.isScreenshotModeActive && !root.screenshotCapturing
+            opacity: visible ? (root.autoHideProgress * (islandContainer.isCharging ? 0.95 : 0.85)) : 0.0
+
+            HoverHandler {
+                id: batteryContourHoverHandler
+                onHoveredChanged: {
+                    if (hovered && root.autoHideEnabled) {
+                        root.autoHidePointerInside = true;
+                        root.showAutoHiddenIsland();
+                    }
+                }
+            }
+
+            Behavior on openGapY {
+                NumberAnimation {
+                    duration: 400
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on openGapX {
+                NumberAnimation {
+                    duration: 400
+                    easing.type: Easing.OutCubic
+                }
+            }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 260
+                    easing.type: Easing.InOutQuad
+                }
+            }
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+            Behavior on border.width {
+                NumberAnimation {
+                    duration: 260
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            SequentialAnimation on opacity {
+                running: islandContainer.isCharging && batteryContourIndicator.hasBattery && batteryContourIndicator.isResting && !root.overviewVisible && !root.isScreenshotModeActive
+                loops: Animation.Infinite
+                NumberAnimation { from: 0.95; to: 0.40; duration: 1300; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 0.40; to: 0.95; duration: 1300; easing.type: Easing.InOutSine }
+            }
+        }
+
         // --- UI 渲染：灵动岛主干 ---
         Rectangle {
             id: mainCapsule
@@ -3885,8 +3977,8 @@ PanelWindow {
                     displayedWidth = baseTargetWidth;
 
             }
-            border.width: outlineWidth
-            border.color: outlineColor
+            border.width: (batteryContourIndicator.visible && batteryContourIndicator.openGapY > 0.4) ? 1.0 : outlineWidth
+            border.color: (batteryContourIndicator.visible && batteryContourIndicator.openGapY > 0.4) ? Qt.rgba(1, 1, 1, 0.12) : outlineColor
 
             Rectangle {
                 anchors.fill: parent

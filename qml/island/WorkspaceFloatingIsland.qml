@@ -103,11 +103,14 @@ Rectangle {
             "webcord": "discord",
             "vesktop": "discord",
             "spotify": "spotify",
-            "code": "visual-studio-code",
-            "code-url-handler": "visual-studio-code",
-            "com.microsoft.vscode": "visual-studio-code",
-            "visual-studio-code": "visual-studio-code",
+            "code": "vscode",
+            "code-url-handler": "vscode",
+            "com.microsoft.vscode": "vscode",
+            "visual-studio-code": "vscode",
             "vscodium": "vscodium",
+            "draw-io": "drawio",
+            "drawio": "drawio",
+            "draw.io": "drawio",
             "firefox": "firefox",
             "firefox-developer-edition": "firefox-developer-edition",
             "google-chrome": "google-chrome",
@@ -147,26 +150,38 @@ Rectangle {
             "notion": "notion"
         };
 
+        function tryIcon(name) {
+            if (!name || name === "") return "";
+            if (Array.isArray(name)) {
+                for (var i = 0; i < name.length; i++) {
+                    var res = Quickshell.iconPath(name[i]);
+                    if (res && res !== "") return res;
+                }
+                return "";
+            }
+            return Quickshell.iconPath(name) || "";
+        }
+
         if (overrides[lower]) {
-            const p = Quickshell.iconPath(overrides[lower]);
+            const p = tryIcon(overrides[lower]);
             if (p && p !== "") return p;
         }
 
         if (overrides[appClass]) {
-            const p = Quickshell.iconPath(overrides[appClass]);
+            const p = tryIcon(overrides[appClass]);
             if (p && p !== "") return p;
         }
 
-        let p = Quickshell.iconPath(appClass);
+        let p = tryIcon(appClass);
         if (p && p !== "") return p;
 
-        p = Quickshell.iconPath(lower);
+        p = tryIcon(lower);
         if (p && p !== "") return p;
 
         const parts = appClass.split(".");
         if (parts.length > 1) {
             const lastPart = parts[parts.length - 1];
-            p = Quickshell.iconPath(lastPart) || Quickshell.iconPath(lastPart.toLowerCase());
+            p = tryIcon(lastPart) || tryIcon(lastPart.toLowerCase());
             if (p && p !== "") return p;
         }
 
@@ -363,25 +378,26 @@ Rectangle {
                 height: root.itemSize
                 z: 3
 
-                // Icona dell'Applicazione (stile end-4 / dots-hyprland con tinta dinamica M3/Iris)
+                // Icona dell'Applicazione tonda con tinta dinamica M3/Iris
                 ClippingRectangle {
                     id: slotAppIconFrame
                     anchors.centerIn: parent
-                    width: Math.round(root.itemSize * 0.78)
+                    width: Math.round(root.itemSize * 0.72)
                     height: width
                     radius: width / 2
                     color: "transparent"
                     antialiasing: true
+                    clip: true
                     visible: wsSlot.hasAppIcon && !slotAppIcon.loadError
 
                     Image {
                         id: slotAppIcon
                         anchors.centerIn: parent
-                        width: Math.round(slotAppIconFrame.width * 0.88)
+                        width: Math.round(slotAppIconFrame.width * 1.50)
                         height: width
                         source: wsSlot.appIconSource
                         sourceSize: Qt.size(width * 2, width * 2)
-                        fillMode: Image.PreserveAspectFit
+                        fillMode: Image.PreserveAspectCrop
                         mipmap: true
                         smooth: true
                         visible: false
