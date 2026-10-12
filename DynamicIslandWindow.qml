@@ -3908,9 +3908,9 @@ PanelWindow {
 
             }
 
-            // ── Indicatore di Batteria a Bordo Interno Dinamico (cerchio dentro l'isola) ──
-            Shape {
-                id: innerBatteryShape
+            // ── Indicatore Batteria Interno (da destra a sinistra, sopra e sotto) ─────
+            Item {
+                id: innerBatteryClip
 
                 readonly property int batteryCap: islandContainer.batteryCapacity
                 readonly property bool hasBattery: batteryCap >= 0
@@ -3922,16 +3922,6 @@ PanelWindow {
                     && !root.screenshotCapturing
 
                 readonly property real batteryFraction: Math.max(0.0, Math.min(1.0, batteryCap / 100.0))
-                readonly property real sw: 1.5
-                readonly property real inset: sw / 2
-                readonly property real w: mainCapsule.width - sw
-                readonly property real h: mainCapsule.height - sw
-                readonly property real r: Math.max(1, mainCapsule.radius - inset)
-                readonly property real straight: Math.max(0, w - 2 * r)
-                readonly property real totalPerim: 2 * straight + 2 * Math.PI * r
-
-                readonly property real dashLen: totalPerim * batteryFraction
-                readonly property real gapLen: totalPerim * (1.0 - batteryFraction)
 
                 readonly property color indicatorColor: {
                     if (islandContainer.isCharging)
@@ -3943,70 +3933,40 @@ PanelWindow {
                     return root.themeGreen;
                 }
 
-                property real chargingOffset: 0
-                NumberAnimation on chargingOffset {
-                    running: islandContainer.isCharging && innerBatteryShape.isResting
-                    loops: Animation.Infinite
-                    from: 0
-                    to: innerBatteryShape.totalPerim / innerBatteryShape.sw
-                    duration: 3500
-                }
-
-                anchors.fill: parent
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                width: isResting ? Math.round(parent.width * batteryFraction) : 0
+                clip: true
                 z: 3
-                layer.enabled: true
-                layer.samples: 4
                 visible: hasBattery && isResting && (batteryCap > 0 || islandContainer.isCharging)
                 opacity: visible ? root.autoHideProgress : 0.0
 
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 500
+                        easing.type: Easing.OutCubic
+                    }
+                }
                 Behavior on opacity {
-                    NumberAnimation { duration: 240; easing.type: Easing.InOutQuad }
+                    NumberAnimation {
+                        duration: 240
+                        easing.type: Easing.InOutQuad
+                    }
                 }
 
-                ShapePath {
-                    strokeColor: innerBatteryShape.indicatorColor
-                    strokeWidth: innerBatteryShape.sw
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
-                    strokeStyle: ShapePath.DashLine
-                    dashPattern: [
-                        innerBatteryShape.dashLen / innerBatteryShape.sw,
-                        Math.max(0.01, innerBatteryShape.gapLen / innerBatteryShape.sw)
-                    ]
-                    dashOffset: islandContainer.isCharging
-                        ? (-0.5 * (innerBatteryShape.gapLen / innerBatteryShape.sw) + innerBatteryShape.chargingOffset)
-                        : (-0.5 * (innerBatteryShape.gapLen / innerBatteryShape.sw))
+                Rectangle {
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    width: mainCapsule.width
+                    height: mainCapsule.height
+                    radius: mainCapsule.radius
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: innerBatteryClip.indicatorColor
+                    antialiasing: true
 
-                    startX: innerBatteryShape.inset + innerBatteryShape.w / 2
-                    startY: innerBatteryShape.inset + innerBatteryShape.h
-
-                    PathLine {
-                        x: innerBatteryShape.inset + innerBatteryShape.r
-                        y: innerBatteryShape.inset + innerBatteryShape.h
-                    }
-                    PathArc {
-                        x: innerBatteryShape.inset + innerBatteryShape.r
-                        y: innerBatteryShape.inset
-                        radiusX: innerBatteryShape.r
-                        radiusY: innerBatteryShape.r
-                    }
-                    PathLine {
-                        x: innerBatteryShape.inset + innerBatteryShape.w - innerBatteryShape.r
-                        y: innerBatteryShape.inset
-                    }
-                    PathArc {
-                        x: innerBatteryShape.inset + innerBatteryShape.w - innerBatteryShape.r
-                        y: innerBatteryShape.inset + innerBatteryShape.h
-                        radiusX: innerBatteryShape.r
-                        radiusY: innerBatteryShape.r
-                    }
-                    PathLine {
-                        x: innerBatteryShape.inset + innerBatteryShape.w / 2
-                        y: innerBatteryShape.inset + innerBatteryShape.h
-                    }
-
-                    Behavior on strokeColor {
+                    Behavior on border.color {
                         ColorAnimation { duration: 300 }
                     }
                 }
