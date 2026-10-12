@@ -279,6 +279,54 @@ Rectangle {
         }
     }
 
+    property int _wheelAccumulator: 0
+    Timer {
+        id: wheelResetTimer
+        interval: 300
+        repeat: false
+        onTriggered: root._wheelAccumulator = 0
+    }
+
+    function handleWheelScroll(wheel) {
+        let delta = wheel.angleDelta.y;
+        if (delta === 0 && wheel.angleDelta.x !== 0) {
+            delta = -wheel.angleDelta.x;
+        }
+        if (delta === 0) return;
+
+        root._wheelAccumulator += delta;
+        wheelResetTimer.restart();
+
+        if (Math.abs(root._wheelAccumulator) >= 60) {
+            const isUp = root._wheelAccumulator > 0;
+            root._wheelAccumulator = 0;
+            root.scrollStep(isUp ? -1 : 1);
+        }
+    }
+
+    function scrollStep(direction) {
+        let cur = root.currentWorkspace;
+        let target = cur + direction;
+        if (target < 1) target = 1;
+        if (target > root.totalWorkspaces) target = root.totalWorkspaces;
+        if (target === cur) return;
+
+        root.switchToWorkspace(target);
+    }
+
+    function switchToWorkspace(wsId) {
+        if (wsId < 1 || wsId > root.totalWorkspaces) return;
+        try {
+            Hyprland.dispatch("hl.dsp.focus({ workspace = " + wsId + " })");
+        } catch (e) {}
+
+        try {
+            Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.focus({ workspace = " + wsId + " })"]);
+        } catch (e2) {
+            Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(wsId)]);
+        }
+    }
+
     // ── MouseArea Globale per Scroll e RightClick ─────────────────────────────
     MouseArea {
         id: pillHoverArea
@@ -295,11 +343,7 @@ Rectangle {
             }
         }
         onWheel: function(wheel) {
-            if (wheel.angleDelta.y > 0) {
-                Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e-1"]);
-            } else if (wheel.angleDelta.y < 0) {
-                Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e+1"]);
-            }
+            root.handleWheelScroll(wheel);
         }
     }
 
@@ -455,11 +499,7 @@ Rectangle {
 
                     onClicked: function(mouse) {
                         if (mouse.button === Qt.LeftButton) {
-                            try {
-                                Hyprland.dispatch("hl.dsp.focus({ workspace = " + wsSlot.wsId + " })");
-                            } catch (e) {
-                                Quickshell.execDetached(["hyprctl", "dispatch", "workspace", String(wsSlot.wsId)]);
-                            }
+                            root.switchToWorkspace(wsSlot.wsId);
                         } else if (mouse.button === Qt.RightButton) {
                             if (rootWindow && rootWindow.openOverviewEverywhere) {
                                 rootWindow.openOverviewEverywhere();
@@ -470,19 +510,7 @@ Rectangle {
                     }
 
                     onWheel: function(wheel) {
-                        if (wheel.angleDelta.y > 0) {
-                            try {
-                                Hyprland.dispatch("hl.dsp.focus({ workspace = 'e-1' })");
-                            } catch (e) {
-                                Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e-1"]);
-                            }
-                        } else if (wheel.angleDelta.y < 0) {
-                            try {
-                                Hyprland.dispatch("hl.dsp.focus({ workspace = 'e+1' })");
-                            } catch (e) {
-                                Quickshell.execDetached(["hyprctl", "dispatch", "workspace", "e+1"]);
-                            }
-                        }
+                        root.handleWheelScroll(wheel);
                     }
                 }
             }
