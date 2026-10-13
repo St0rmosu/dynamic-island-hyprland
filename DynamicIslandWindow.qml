@@ -642,9 +642,7 @@ PanelWindow {
     }
 
     function showScreenshotPreview(filePath) {
-        const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "";
-        const bodyText = fileName !== "" ? (fileName + " • Copiato negli appunti") : "Copiato negli appunti";
-        islandContainer.showNotificationCapsule("Screenshot", "Screenshot catturato", bodyText, "\uf030", "#ff9f0a");
+        islandContainer.showScreenshotPreviewCapsule(filePath);
     }
 
     function startScreenshotSnipping() {
@@ -1705,9 +1703,7 @@ PanelWindow {
             if (isSattyMode) {
                 islandContainer.showScreenshotEditorCapsule(targetFile);
             } else {
-                const fileName = (targetFile && targetFile !== "") ? targetFile.split("/").pop() : "";
-                const bodyText = fileName !== "" ? (fileName + " • Copiato negli appunti") : "Copiato negli appunti";
-                islandContainer.showNotificationCapsule("Screenshot", "Screenshot catturato", bodyText, "\uf030", "#ff9f0a");
+                islandContainer.showScreenshotPreviewCapsule(targetFile);
             }
 
             if (screenshotPreviewLoader && screenshotPreviewLoader.item && typeof screenshotPreviewLoader.item.refreshImage === "function") {
@@ -2735,10 +2731,17 @@ PanelWindow {
         }
 
         function showScreenshotPreviewCapsule(filePath) {
+            abortSideTransientMode();
+            clearTransientCapsule();
+            workspaceOriginSide = "none";
+            splitOriginSide = "none";
+            swipeTransitionProgress = 0;
             screenshotPreviewPath = filePath || "";
-            const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "";
-            const bodyText = fileName !== "" ? (fileName + " • Copiato negli appunti") : "Copiato negli appunti";
-            showNotificationCapsule("Screenshot", "Screenshot catturato", bodyText, "\uf030", "#ff9f0a");
+            islandState = "screenshot_preview";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            root.showAutoHiddenIsland("state");
+            restartAutoHideTimer(7500);
+            recordScreenshotNotification(filePath, "Screenshot catturato");
         }
 
         function showScreenshotSnippingCapsule() {

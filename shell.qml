@@ -184,11 +184,11 @@ Scope {
 
         if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
             const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
-            const path = (match && match[0]) ? match[0] : "";
-            const filename = path ? path.split("/").pop() : "";
-            const notifBody = filename ? (filename + " • Copiato negli appunti") : (body || "Copiato negli appunti");
-            shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", notifBody, "\uf030", "#ff9f0a");
-            return ;
+            if (match && match[0]) {
+                shellRoot.showScreenshotPreviewAll(match[0]);
+                shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, icon || "", customColor || "");
+                return ;
+            }
         }
 
         if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
@@ -213,9 +213,10 @@ Scope {
     }
 
     function showScreenshotPreviewAll(filePath) {
-        const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "";
-        const bodyText = fileName !== "" ? (fileName + " • Copiato negli appunti") : "Copiato negli appunti";
-        shellRoot.showNotificationAll("Screenshot", "Screenshot catturato", bodyText, "\uf030", "#ff9f0a");
+        shellRoot.forEachWindow((window) => {
+            if (window && window.showScreenshotPreview)
+                window.showScreenshotPreview(filePath);
+        });
     }
 
     function startScreenshotSnippingAll() {
