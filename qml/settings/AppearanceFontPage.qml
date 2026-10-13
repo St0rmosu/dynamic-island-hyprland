@@ -141,10 +141,13 @@ Flickable {
             SettingsSegmented {
                 title: I18n.tr("Formato Orologio")
                 description: I18n.tr("Visualizzazione delle ore nei moduli e nell'isola")
-                model: [
-                    { text: I18n.tr("24 Ore"), value: "24h" },
-                    { text: I18n.tr("12 Ore (AM/PM)"), value: "12h" }
-                ]
+                model: {
+                    const _ = I18n.currentLanguage;
+                    return [
+                        { text: I18n.tr("24 Ore"), value: "24h" },
+                        { text: I18n.tr("12 Ore (AM/PM)"), value: "12h" }
+                    ];
+                }
                 currentValue: root.config ? root.config.clockFormat : "24h"
                 accentColor: root.accentColor
                 textFontFamily: root.textFontFamily
@@ -582,17 +585,20 @@ Flickable {
                 title: I18n.tr("Animazione Cambio Sfondo")
                 description: I18n.tr("Effetto animato applicato da awww al cambio dello sfondo")
                 stacked: true
-                model: [
-                    { text: I18n.tr("Casuale"), value: "random" },
-                    { text: "Wipe", value: "wipe" },
-                    { text: I18n.tr("Onda"), value: "wave" },
-                    { text: I18n.tr("Espansione"), value: "grow" },
-                    { text: I18n.tr("Centro"), value: "center" },
-                    { text: I18n.tr("Cerchio"), value: "outer" },
-                    { text: "Fade", value: "fade" },
-                    { text: I18n.tr("Qualsiasi"), value: "any" },
-                    { text: I18n.tr("Semplice"), value: "simple" }
-                ]
+                model: {
+                    const _ = I18n.currentLanguage;
+                    return [
+                        { text: I18n.tr("Casuale"), value: "random" },
+                        { text: "Wipe", value: "wipe" },
+                        { text: I18n.tr("Onda"), value: "wave" },
+                        { text: I18n.tr("Espansione"), value: "grow" },
+                        { text: I18n.tr("Centro"), value: "center" },
+                        { text: I18n.tr("Cerchio"), value: "outer" },
+                        { text: "Fade", value: "fade" },
+                        { text: I18n.tr("Qualsiasi"), value: "any" },
+                        { text: I18n.tr("Semplice"), value: "simple" }
+                    ];
+                }
                 currentValue: (root.config && (root.config.wallpaperTransitionType || root.config.wallpaperTransition))
                     ? (root.config.wallpaperTransitionType || root.config.wallpaperTransition)
                     : "random"

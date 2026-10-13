@@ -2624,17 +2624,25 @@ PanelWindow {
             const cleanedSummary = cleanNotificationText(summary);
             const cleanedBody = cleanNotificationText(body);
             const resolvedSummary = cleanedSummary !== "" ? cleanedSummary : (cleanedBody !== "" ? cleanedBody : "New notification");
-            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit") {
+            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screenshot_preview") {
                 if (notificationHistoryModel) {
-                    notificationHistoryModel.insert(0, {
-                        "appName": cleanedAppName !== "" ? cleanedAppName : "Notification",
-                        "summary": resolvedSummary,
-                        "body": cleanedSummary !== "" ? cleanedBody : "",
-                        "timestamp": new Date()
-                    });
-                    if (notificationHistoryModel.count > 50)
-                        notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
-
+                    let duplicate = false;
+                    if (notificationHistoryModel.count > 0) {
+                        const first = notificationHistoryModel.get(0);
+                        if (first && (first.summary === resolvedSummary || (cleanedBody !== "" && first.body === cleanedBody))) {
+                            duplicate = true;
+                        }
+                    }
+                    if (!duplicate) {
+                        notificationHistoryModel.insert(0, {
+                            "appName": cleanedAppName !== "" ? cleanedAppName : "Notification",
+                            "summary": resolvedSummary,
+                            "body": cleanedSummary !== "" ? cleanedBody : "",
+                            "timestamp": new Date()
+                        });
+                        if (notificationHistoryModel.count > 50)
+                            notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+                    }
                 }
                 return ;
             }
@@ -2701,10 +2709,20 @@ PanelWindow {
         function recordScreenshotNotification(filePath, summaryText) {
             if (notificationHistoryModel) {
                 const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "Screenshot";
+                const summary = summaryText || "Screenshot catturato";
+                const body = fileName + " • Copiato negli appunti";
+                if (notificationHistoryModel.count > 0) {
+                    const first = notificationHistoryModel.get(0);
+                    if (first && (first.appName === "Screenshot" || String(first.summary).indexOf("Screenshot") !== -1)) {
+                        if (first.body && (first.body === body || first.body.indexOf(fileName) !== -1)) {
+                            return;
+                        }
+                    }
+                }
                 notificationHistoryModel.insert(0, {
                     "appName": "Screenshot",
-                    "summary": summaryText || "Screenshot catturato",
-                    "body": fileName + " • Copiato negli appunti",
+                    "summary": summary,
+                    "body": body,
                     "timestamp": new Date()
                 });
                 if (notificationHistoryModel.count > 50)
@@ -3644,7 +3662,7 @@ PanelWindow {
             color: Qt.rgba(0, 0, 0, 0.40 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
             cornerRadius: workspaceFloatingIsland.radius + glowRadius
             z: 7
-            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
+            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing && !root.overviewVisible && root.overviewPhase === "closed" && !root.overviewMounted
             opacity: workspaceFloatingIsland.opacity
         }
 

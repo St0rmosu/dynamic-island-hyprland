@@ -137,7 +137,44 @@ var translations = {
     "anc_mid": { "it": "Media", "en": "Medium", "de": "Mittel", "es": "Media", "fr": "Moyenne" },
     "anc_low": { "it": "Bassa", "en": "Low", "de": "Niedrig", "es": "Baja", "fr": "Basse" },
     "anc_adaptive": { "it": "Adattiva", "en": "Adaptive", "de": "Adaptiv", "es": "Adaptativa", "fr": "Adaptative" },
-    "bass_boost": { "it": "Bass Boost", "en": "Bass Boost", "de": "Bass-Verstärkung", "es": "Realce de graves", "fr": "Amplification des basses" }
+    "bass_boost": { "it": "Bass Boost", "en": "Bass Boost", "de": "Bass-Verstärkung", "es": "Realce de graves", "fr": "Amplification des basses" },
+
+    // --- Shadows & Visual Depth ---
+    "shadows_visual_depth": { "it": "Ombre & Profondità Visiva", "en": "Shadows & Visual Depth", "de": "Schatten & Visuelle Tiefe", "es": "Sombras y profundidad visual", "fr": "Ombres et profondeur visuelle" },
+    "enable_floating_shadows": { "it": "Abilita Ombre Fluttuanti", "en": "Enable Floating Shadows", "de": "Schwebende Schatten aktivieren", "es": "Activar sombras flotantes", "fr": "Activer les ombres flottantes" },
+    "floating_shadows_desc": { "it": "Crea un effetto rilievo moderno sotto la capsula principale e i satelliti", "en": "Create a modern elevation relief under the main capsule and satellites", "de": "Erstellt ein modernes Relief unter der Hauptkapsel und Satelliten", "es": "Crea un efecto de relieve moderno bajo la cápsula principal y satélites", "fr": "Crée un effet de relief moderne sous la capsule principale et satellites" },
+    "shadow_intensity": { "it": "Intensità Ombre", "en": "Shadow Intensity", "de": "Schattenintensität", "es": "Intensidad de sombras", "fr": "Intensité des ombres" },
+    "shadow_intensity_desc": { "it": "Opacità e contrasto dello strato di profondità scuro", "en": "Dark depth layer opacity and contrast", "de": "Deckkraft und Kontrast der dunklen Tiefenebene", "es": "Opacidad y contraste de la capa de profundidad oscura", "fr": "Opacité et contraste du calque de profondeur sombre" },
+    "shadow_spread_radius": { "it": "Diffusione e Raggio Ombre", "en": "Shadow Spread & Radius", "de": "Schattenausbreitung & -radius", "es": "Difusión y radio de sombras", "fr": "Diffusion et rayon des ombres" },
+    "shadow_spread_radius_desc": { "it": "Raggio di sfocatura per ombre morbide ed eleganti", "en": "Blur radius for soft and elegant shadows", "de": "Unschärferadius für weiche und elegante Schatten", "es": "Radio de desenfoque para sombras suaves y elegantes", "fr": "Rayon de flou pour des ombres douces et élégantes" },
+
+    // --- Wallpaper Transitions & Custom Colors ---
+    "wallpaper_anim_title": { "it": "Animazione Cambio Sfondo", "en": "Wallpaper Transition Animation", "de": "Hintergrundübergang-Animation", "es": "Animación de transición de fondo", "fr": "Animation de transition du fond" },
+    "wallpaper_anim_desc": { "it": "Effetto animato applicato da awww al cambio dello sfondo", "en": "Animated effect applied by awww when changing wallpaper", "de": "Animierter Effekt von awww beim Hintergrundwechsel", "es": "Efecto animado aplicado por awww al cambiar de fondo", "fr": "Effet animé appliqué par awww lors du changement de fond" },
+    "anim_random": { "it": "Casuale", "en": "Random", "de": "Zufällig", "es": "Aleatorio", "fr": "Aléatoire" },
+    "anim_simple": { "it": "Semplice", "en": "Simple", "de": "Einfach", "es": "Simple", "fr": "Simple" },
+    "anim_circle": { "it": "Cerchio", "en": "Circle", "de": "Kreis", "es": "Círculo", "fr": "Cercle" },
+    "anim_wave": { "it": "Onda", "en": "Wave", "de": "Welle", "es": "Ola", "fr": "Vague" },
+    "anim_grow": { "it": "Espansione", "en": "Grow", "de": "Wachsen", "es": "Expansión", "fr": "Expansion" },
+    "anim_center": { "it": "Centro", "en": "Center", "de": "Zentrum", "es": "Centro", "fr": "Centre" },
+    "anim_any": { "it": "Qualsiasi", "en": "Any", "de": "Beliebig", "es": "Cualquiera", "fr": "N'importe" },
+    "static_wallpaper_desc": { "it": "Gestione statica in Quickshell (lascia disattivato per vedere le animazioni native awww)", "en": "Static handling in Quickshell (leave off to see native awww animations)", "de": "Statische Verwaltung in Quickshell (deaktiviert lassen für native awww-Animationen)", "es": "Gestión estática en Quickshell (dejar desactivado para animaciones nativas awww)", "fr": "Gestion statique dans Quickshell (laisser désactivé pour voir les animations awww)" },
+    "custom_accent_color": { "it": "Colore Accento Personalizzato", "en": "Custom Accent Color", "de": "Benutzerdefinierte Akzentfarbe", "es": "Color de acento personalizado", "fr": "Couleur d'accent personnalisée" },
+    "custom_accent_desc": { "it": "Seleziona una tonalità vivace o digita un codice HEX", "en": "Select a vibrant tone or type a HEX code", "de": "Wähle einen lebendigen Ton oder gib einen HEX-Code ein", "es": "Selecciona un tono vibrante o introduce un código HEX", "fr": "Sélectionnez une teinte vive ou entrez un code HEX" },
+
+    // --- Hover & Behavior ---
+    "behavior_media_mouse": { "it": "Comportamento, Media & Mouse", "en": "Behavior, Media & Mouse", "de": "Verhalten, Medien & Maus", "es": "Comportamiento, multimedia y ratón", "fr": "Comportement, médias et souris" },
+    "expand_island_hover": { "it": "Espandi Isola al Passaggio del Mouse (Hover)", "en": "Expand Island on Mouse Hover", "de": "Insel bei Mausberührung (Hover) erweitern", "es": "Expandir isla al pasar el ratón (Hover)", "fr": "Agrandir l'île au survol de la souris (Hover)" },
+    "hover_action_desc": { "it": "Apre il centro di controllo o il player multimediale quando passi il cursore sopra la barra", "en": "Opens control center or media player when hovering over the bar", "de": "Öffnet das Kontrollzentrum oder den Medienplayer beim Überfahren der Leiste", "es": "Abre el centro de control o el reproductor multimedia al pasar el cursor sobre la barra", "fr": "Ouvre le centre de contrôle ou le lecteur multimédia au survol de la barre" },
+    "prevent_auto_expand_desc": { "it": "Evita che l'isola si apra da sola a schermo ogni volta che inizia un nuovo brano", "en": "Prevent island from expanding on screen each time a new track starts", "de": "Verhindert automatisches Erweitern der Insel bei jedem neuen Titel", "es": "Evita que la isla se expanda sola en pantalla cada vez que empieza una nueva canción", "fr": "Évite que l'île ne s'agrandisse à l'écran à chaque nouveau morceau" },
+
+    // --- Shelf, Clipboard & Bluetooth Messages ---
+    "connecting_ellipsis": { "it": "Connessione in corso...", "en": "Connecting...", "de": "Verbinde...", "es": "Conectando...", "fr": "Connexion..." },
+    "disconnecting_ellipsis": { "it": "Disconnessione in corso...", "en": "Disconnecting...", "de": "Trenne...", "es": "Desconectando...", "fr": "Déconnexion..." },
+    "copied_excl": { "it": "Copiato!", "en": "Copied!", "de": "Kopiert!", "es": "¡Copiado!", "fr": "Copié !" },
+    "search_clipboard": { "it": "Cerca negli appunti...", "en": "Search clipboard...", "de": "Zwischenablage durchsuchen...", "es": "Buscar en portapapeles...", "fr": "Rechercher dans le presse-papiers..." },
+    "file_shelf_drop_hint": { "it": "Trascina file o cartelle sulla Dynamic Island", "en": "Drag files or folders onto Dynamic Island", "de": "Dateien oder Ordner auf die Dynamic Island ziehen", "es": "Arrastra archivos o carpetas a la Dynamic Island", "fr": "Faites glisser des fichiers ou des dossiers sur Dynamic Island" },
+    "file_shelf_reorder_hint": { "it": "Trascina un file per riordinarlo o rilascialo in un'altra applicazione", "en": "Drag a file to reorder it or drop it into another application", "de": "Datei ziehen zum Umordnen oder in einer anderen Anwendung ablegen", "es": "Arrastra un archivo para reordenarlo o suéltalo en otra aplicación", "fr": "Faites glisser un fichier pour le réordonner ou déposez-le dans une autre application" }
 };
 
 // Build reverse lookup index for Italian & English strings

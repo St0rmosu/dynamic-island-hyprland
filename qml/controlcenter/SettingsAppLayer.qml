@@ -172,7 +172,8 @@ FocusScope {
 
             // ── Colonna Sinistra: Sidebar ──────────────────────────────
             Rectangle {
-                width: 230
+                id: sidebarRect
+                width: 275
                 height: parent.height
                 color: root.bgSidebar
                 topLeftRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
@@ -187,8 +188,8 @@ FocusScope {
                     anchors.topMargin: 24
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.leftMargin: 14
-                    anchors.rightMargin: 14
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
                     spacing: 8
 
                     Repeater {
@@ -208,12 +209,14 @@ FocusScope {
                             Behavior on color { ColorAnimation { duration: 120 } }
 
                             Row {
+                                id: itemRow
                                 anchors.fill: parent
-                                anchors.leftMargin: 14
-                                anchors.rightMargin: 14
-                                spacing: 12
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
+                                spacing: 10
 
                                 Text {
+                                    id: itemIconText
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: modelData.icon
                                     font.family: root.iconFontFamily
@@ -222,10 +225,13 @@ FocusScope {
                                 }
 
                                 Text {
+                                    id: itemTitleText
                                     anchors.verticalCenter: parent.verticalCenter
+                                    width: itemRow.width - itemIconText.width - itemRow.spacing
                                     text: modelData.title
+                                    elide: Text.ElideRight
                                     color: isSelected ? "#ffffff" : "#c2c7d4"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     font.weight: isSelected ? Font.DemiBold : Font.Normal
                                     font.family: root.textFontFamily
                                 }
@@ -295,7 +301,7 @@ FocusScope {
 
             // ── Colonna Destra: Contenuto Pagina ───────────────────────
             Rectangle {
-                width: parent.width - 230
+                width: parent.width - 275
                 height: parent.height
                 color: "transparent"
 

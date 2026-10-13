@@ -123,19 +123,105 @@ Item {
         }
 
         Rectangle {
-            width: 58
+            id: badgeRect
+            property bool isEditing: false
+
+            function commitEdit() {
+                if (!isEditing) return;
+                var raw = editInput.text.trim();
+                var parsed = parseFloat(raw);
+                if (!isNaN(parsed)) {
+                    var clamped = Math.max(root.from, Math.min(root.to, parsed));
+                    if (root.stepSize >= 1) {
+                        clamped = Math.round(clamped);
+                    } else if (root.stepSize > 0) {
+                        var precision = Math.round(1 / root.stepSize);
+                        clamped = Math.round(clamped * precision) / precision;
+                    }
+                    root.value = clamped;
+                    root.valueModified(clamped);
+                }
+                isEditing = false;
+            }
+
+            function cancelEdit() {
+                isEditing = false;
+            }
+
+            width: Math.max(58, badgeContent.width + 16)
             height: 26
             radius: 6
-            color: Qt.rgba(255, 255, 255, 0.06)
+            color: isEditing
+                ? Qt.rgba(255, 255, 255, 0.12)
+                : (badgeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.06))
+            border.width: 1
+            border.color: isEditing
+                ? root.accentColor
+                : (badgeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.18) : "transparent")
             anchors.verticalCenter: parent.verticalCenter
 
-            Text {
+            Behavior on color { ColorAnimation { duration: 120 } }
+            Behavior on border.color { ColorAnimation { duration: 120 } }
+
+            Item {
+                id: badgeContent
                 anchors.centerIn: parent
-                text: Math.round(root.value * 10) / 10 + (root.suffix !== "" ? " " + root.suffix : "")
-                color: "#e2e6ee"
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                font.family: root.textFontFamily
+                width: badgeRect.isEditing ? editInput.implicitWidth : badgeLabel.implicitWidth
+                height: parent.height
+
+                Text {
+                    id: badgeLabel
+                    visible: !badgeRect.isEditing
+                    anchors.centerIn: parent
+                    text: (Math.round(root.value * 10) / 10) + (root.suffix !== "" ? " " + root.suffix : "")
+                    color: "#e2e6ee"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.family: root.textFontFamily
+                }
+
+                TextInput {
+                    id: editInput
+                    visible: badgeRect.isEditing
+                    anchors.centerIn: parent
+                    color: "#ffffff"
+                    font.pixelSize: 11
+                    font.weight: Font.Bold
+                    font.family: root.textFontFamily
+                    horizontalAlignment: TextInput.AlignHCenter
+                    verticalAlignment: TextInput.AlignVCenter
+                    selectByMouse: true
+                    inputMethodHints: Qt.ImhFormattedNumbersOnly
+
+                    onAccepted: {
+                        badgeRect.commitEdit();
+                    }
+
+                    Keys.onEscapePressed: {
+                        badgeRect.cancelEdit();
+                    }
+
+                    onActiveFocusChanged: {
+                        if (!activeFocus && badgeRect.isEditing) {
+                            badgeRect.commitEdit();
+                        }
+                    }
+                }
+            }
+
+            MouseArea {
+                id: badgeMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: badgeRect.isEditing ? Qt.IBeamCursor : Qt.PointingHandCursor
+                onClicked: {
+                    if (!badgeRect.isEditing) {
+                        badgeRect.isEditing = true;
+                        editInput.text = String(Math.round(root.value * 10) / 10);
+                        editInput.forceActiveFocus();
+                        editInput.selectAll();
+                    }
+                }
             }
         }
     }

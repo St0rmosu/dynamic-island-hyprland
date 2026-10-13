@@ -93,12 +93,13 @@ Rectangle {
         }
     }
 
+    readonly property bool overviewActive: rootWindow && (rootWindow.overviewVisible || rootWindow.overviewPhase !== "closed" || rootWindow.overviewMounted || rootWindow.overviewContentVisible)
     readonly property bool isAutoHidden: rootWindow && rootWindow.autoHideEnabled && !rootWindow.autoHideTargetVisible
     readonly property bool showOnAutoHide: dynamicConfig ? (dynamicConfig.showWorkspaceOnAutoHide !== false) : true
     readonly property bool modalOrSnipping: rootWindow && (rootWindow.isScreenshotModeActive || rootWindow.screenshotSnippingActive || (rootWindow.islandContainer && rootWindow.islandContainer.islandState === "settings_app"))
 
-    visible: isEnabled && (!rootWindow || !rootWindow.overviewVisible) && !modalOrSnipping && opacity > 0.01
-    opacity: isEnabled && (!rootWindow || (!rootWindow.overviewVisible && !modalOrSnipping)) ? ((isAutoHidden && showOnAutoHide) ? 1.0 : (targetCapsule ? targetCapsule.opacity : 1.0)) : 0.0
+    visible: isEnabled && !overviewActive && !modalOrSnipping && opacity > 0.01
+    opacity: isEnabled && !overviewActive && !modalOrSnipping ? ((isAutoHidden && showOnAutoHide) ? 1.0 : (targetCapsule ? targetCapsule.opacity : 1.0)) : 0.0
     scale: 1.0
 
     clip: true
@@ -111,7 +112,7 @@ Rectangle {
     Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
     Behavior on opacity {
         NumberAnimation {
-            duration: (rootWindow && rootWindow.screenshotCapturing) ? 0 : 220
+            duration: (overviewActive || (rootWindow && rootWindow.screenshotCapturing)) ? 0 : 220
             easing.type: Easing.OutCubic
         }
     }

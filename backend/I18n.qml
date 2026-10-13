@@ -14,6 +14,14 @@ QtObject {
             I18nBackend.language = language;
     }
 
+    property var _conn: Connections {
+        target: I18nBackend
+        function onLanguageChanged() {
+            if (root.language !== I18nBackend.language)
+                root.language = I18nBackend.language;
+        }
+    }
+
     readonly property bool isItalian: currentLanguage === "it"
     readonly property bool isEnglish: currentLanguage === "en"
     readonly property bool isGerman: currentLanguage === "de"

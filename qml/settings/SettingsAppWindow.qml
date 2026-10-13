@@ -22,6 +22,12 @@ FloatingWindow {
     readonly property string iconFontFamily: (dynamicConfig && dynamicConfig.iconFontFamily !== "") ? dynamicConfig.iconFontFamily : "JetBrainsMono Nerd Font"
     readonly property string textFontFamily: (dynamicConfig && dynamicConfig.textFontFamily !== "") ? dynamicConfig.textFontFamily : "Google Sans Flex"
 
+    function setCategory(catIndex) {
+        if (appContent) {
+            appContent.selectedCategoryIndex = catIndex;
+        }
+    }
+
     ClippingRectangle {
         id: bgRect
         anchors.fill: parent

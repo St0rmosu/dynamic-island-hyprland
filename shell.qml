@@ -628,6 +628,17 @@ Scope {
         }
 
         function postNotification(appName: string, summary: string, body: string, icon: string, customColor: string) {
+            let app = String(appName || "");
+            const lowerApp = app.toLowerCase();
+            const lowerSummary = String(summary || "").toLowerCase();
+            if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
+                const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
+                if (match && match[0]) {
+                    shellRoot.showScreenshotPreviewAll(match[0]);
+                    shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, icon, customColor);
+                    return ;
+                }
+            }
             shellRoot.showNotificationAll(appName, summary, body, icon, customColor);
         }
 
@@ -672,6 +683,8 @@ Scope {
         }
 
         function setSettingsCategory(catIndex: int) {
+            if (settingsAppWindow && settingsAppWindow.setCategory)
+                settingsAppWindow.setCategory(catIndex);
             shellRoot.forFocusedWindow((window) => {
                 if (window && window.setSettingsCategory)
                     window.setSettingsCategory(catIndex);
@@ -895,6 +908,7 @@ Scope {
                 const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
                 if (match && match[0]) {
                     shellRoot.showScreenshotPreviewAll(match[0]);
+                    shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, "", "");
                     return ;
                 }
             }
