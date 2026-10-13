@@ -3,6 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Polkit
+import Quickshell.Services.Notifications
 import "qml/config"
 import "qml/background"
 import "qml/settings"
@@ -159,6 +160,56 @@ Scope {
                 window.showNotification(appName, summary, body, icon, customColor);
 
         });
+    }
+
+    function handleIncomingNotification(appName, summary, body, icon, customColor) {
+        let app = String(appName || "");
+        const lowerApp = app.toLowerCase();
+        const lowerSummary = String(summary || "").toLowerCase();
+        const lowerBody = String(body || "").toLowerCase();
+
+        // Detect app from summary/body if appName is empty or generic
+        if (app === "" || lowerApp === "notification" || lowerApp === "notify-send") {
+            if (lowerSummary.indexOf("whatsapp") !== -1 || lowerBody.indexOf("whatsapp") !== -1)
+                app = "WhatsApp";
+            else if (lowerSummary.indexOf("discord") !== -1 || lowerBody.indexOf("discord") !== -1)
+                app = "Discord";
+            else if (lowerSummary.indexOf("telegram") !== -1 || lowerBody.indexOf("telegram") !== -1)
+                app = "Telegram";
+            else if (lowerSummary.indexOf("spotify") !== -1 || lowerBody.indexOf("spotify") !== -1)
+                app = "Spotify";
+            else if (lowerApp === "notify-send" || app === "")
+                app = "Notifica";
+        }
+
+        if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
+            const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
+            if (match && match[0]) {
+                shellRoot.showScreenshotPreviewAll(match[0]);
+                shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, icon || "", customColor || "");
+                return ;
+            }
+        }
+
+        if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
+            if (lowerSummary.indexOf("persa") !== -1 || lowerBody.indexOf("persa") !== -1 || lowerSummary.indexOf("missed") !== -1 || lowerBody.indexOf("missed") !== -1 || lowerSummary.indexOf("terminat") !== -1 || lowerBody.indexOf("terminat") !== -1 || lowerSummary.indexOf("ended") !== -1 || lowerBody.indexOf("ended") !== -1 || lowerSummary.indexOf("annullat") !== -1 || lowerBody.indexOf("annullat") !== -1 || lowerSummary.indexOf("rifiutat") !== -1 || lowerBody.indexOf("rifiutat") !== -1 || lowerSummary.indexOf("chiusa") !== -1 || lowerBody.indexOf("chiusa") !== -1) {
+                shellRoot.closeDiscordCallAll();
+                return ;
+            }
+            if (lowerSummary.indexOf("call") !== -1 || lowerSummary.indexOf("chiamat") !== -1 || lowerBody.indexOf("call") !== -1 || lowerBody.indexOf("chiamat") !== -1 || lowerSummary.indexOf("incoming") !== -1 || lowerBody.indexOf("incoming") !== -1) {
+                const caller = summary || "Discord";
+                const sub = body || "Chiamata in arrivo...";
+                shellRoot.showDiscordCallAll(caller, sub, "");
+                avatarResolverProc.pendingCaller = caller;
+                avatarResolverProc.pendingSubtitle = sub;
+                avatarResolverProc.command = [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", caller];
+                avatarResolverProc.running = false;
+                avatarResolverProc.running = true;
+                return ;
+            }
+        }
+
+        shellRoot.showNotificationAll(app, summary, body, icon || "", customColor || "");
     }
 
     function showScreenshotPreviewAll(filePath) {
@@ -628,18 +679,7 @@ Scope {
         }
 
         function postNotification(appName: string, summary: string, body: string, icon: string, customColor: string) {
-            let app = String(appName || "");
-            const lowerApp = app.toLowerCase();
-            const lowerSummary = String(summary || "").toLowerCase();
-            if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
-                const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
-                if (match && match[0]) {
-                    shellRoot.showScreenshotPreviewAll(match[0]);
-                    shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, icon, customColor);
-                    return ;
-                }
-            }
-            shellRoot.showNotificationAll(appName, summary, body, icon, customColor);
+            shellRoot.handleIncomingNotification(appName, summary, body, icon, customColor);
         }
 
         function testDetailPanel(kind: string, open: bool) {
@@ -887,52 +927,32 @@ Scope {
         running: !shellRoot.shuttingDown
     }
 
-    Connections {
-        function onNotificationReceived(appName, summary, body) {
-            let app = String(appName || "");
-            const lowerApp = app.toLowerCase();
-            const lowerSummary = String(summary || "").toLowerCase();
-            const lowerBody = String(body || "").toLowerCase();
-            // Detect app from summary/body if appName is empty or generic
-            if (app === "" || lowerApp === "notification" || lowerApp === "notify-send") {
-                if (lowerSummary.indexOf("whatsapp") !== -1 || lowerBody.indexOf("whatsapp") !== -1)
-                    app = "WhatsApp";
-                else if (lowerSummary.indexOf("discord") !== -1 || lowerBody.indexOf("discord") !== -1)
-                    app = "Discord";
-                else if (lowerSummary.indexOf("telegram") !== -1 || lowerBody.indexOf("telegram") !== -1)
-                    app = "Telegram";
-                else if (lowerSummary.indexOf("spotify") !== -1 || lowerBody.indexOf("spotify") !== -1)
-                    app = "Spotify";
-            }
-            if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
-                const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
-                if (match && match[0]) {
-                    shellRoot.showScreenshotPreviewAll(match[0]);
-                    shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, "", "");
-                    return ;
-                }
-            }
-            if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
-                if (lowerSummary.indexOf("persa") !== -1 || lowerBody.indexOf("persa") !== -1 || lowerSummary.indexOf("missed") !== -1 || lowerBody.indexOf("missed") !== -1 || lowerSummary.indexOf("terminat") !== -1 || lowerBody.indexOf("terminat") !== -1 || lowerSummary.indexOf("ended") !== -1 || lowerBody.indexOf("ended") !== -1 || lowerSummary.indexOf("annullat") !== -1 || lowerBody.indexOf("annullat") !== -1 || lowerSummary.indexOf("rifiutat") !== -1 || lowerBody.indexOf("rifiutat") !== -1 || lowerSummary.indexOf("chiusa") !== -1 || lowerBody.indexOf("chiusa") !== -1) {
-                    shellRoot.closeDiscordCallAll();
-                    return ;
-                }
-                if (lowerSummary.indexOf("call") !== -1 || lowerSummary.indexOf("chiamat") !== -1 || lowerBody.indexOf("call") !== -1 || lowerBody.indexOf("chiamat") !== -1 || lowerSummary.indexOf("incoming") !== -1 || lowerBody.indexOf("incoming") !== -1) {
-                    const caller = summary || "Discord";
-                    const sub = body || "Chiamata in arrivo...";
-                    shellRoot.showDiscordCallAll(caller, sub, "");
-                    avatarResolverProc.pendingCaller = caller;
-                    avatarResolverProc.pendingSubtitle = sub;
-                    avatarResolverProc.command = [shellRoot.homeDir + "/.config/quickshell/dynamic-island/scripts/resolve_discord_avatar.py", caller];
-                    avatarResolverProc.running = false;
-                    avatarResolverProc.running = true;
-                    return ;
-                }
-            }
-            shellRoot.showNotificationAll(app, summary, body);
-        }
+    NotificationServer {
+        id: notificationServer
+        keepOnReload: false
+        actionsSupported: true
+        bodyHyperlinksSupported: true
+        bodyImagesSupported: true
+        bodyMarkupSupported: true
+        imageSupported: true
+        persistenceSupported: true
 
+        onNotification: function(notif) {
+            shellRoot.handleIncomingNotification(
+                notif.appName,
+                notif.summary,
+                notif.body,
+                notif.appIcon || notif.image || "",
+                ""
+            );
+        }
+    }
+
+    Connections {
         target: SystemServices
+        function onNotificationReceived(appName, summary, body) {
+            shellRoot.handleIncomingNotification(appName, summary, body, "", "");
+        }
     }
 
     Variants {
