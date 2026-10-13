@@ -3666,6 +3666,7 @@ PanelWindow {
             id: workspaceFloatingIsland
 
             targetCapsule: topAnchorProxy
+            musicPill: musicFloatingIsland
             rootWindow: root
             dynamicConfig: root.dynamicConfig
             accentColor: root.themeAccent

@@ -56,12 +56,46 @@ Rectangle {
     height: compactHeight
     radius: compactHeight / 2
 
-    // Posizionamento satellite a fianco dell'orologio (perfettamente allineato)
-    anchors.left: (positionSide === "right") ? (targetCapsule ? targetCapsule.right : undefined) : undefined
-    anchors.right: (positionSide === "left") ? (targetCapsule ? targetCapsule.left : undefined) : undefined
-    anchors.leftMargin: (positionSide === "right") ? 8 : 0
-    anchors.rightMargin: (positionSide === "left") ? 8 : 0
-    anchors.top: targetCapsule ? targetCapsule.top : undefined
+    width: implicitWidth
+    height: compactHeight
+    radius: compactHeight / 2
+
+    property var musicPill: null
+    property bool _switchingPositionSide: false
+
+    Timer {
+        id: switchPositionTimer
+        interval: 320
+        repeat: false
+        onTriggered: root._switchingPositionSide = false
+    }
+
+    onPositionSideChanged: {
+        root._switchingPositionSide = true;
+        switchPositionTimer.restart();
+    }
+
+    // Posizionamento satellite a fianco dell'orologio (privo di conflitti di ancoraggio mutuo)
+    x: {
+        if (!targetCapsule) return 0;
+        if (positionSide === "left") {
+            if (musicPill && musicPill.visible && musicPill.opacity > 0.05) {
+                return musicPill.x - width - 8;
+            }
+            return targetCapsule.x - width - 8;
+        } else {
+            return targetCapsule.x + targetCapsule.width + 8;
+        }
+    }
+    y: targetCapsule ? targetCapsule.y : 0
+
+    Behavior on x {
+        enabled: root._switchingPositionSide
+        NumberAnimation {
+            duration: 280
+            easing.type: Easing.OutQuint
+        }
+    }
 
     readonly property bool isAutoHidden: rootWindow && rootWindow.autoHideEnabled && !rootWindow.autoHideTargetVisible
     readonly property bool showOnAutoHide: dynamicConfig ? (dynamicConfig.showWorkspaceOnAutoHide !== false) : true
