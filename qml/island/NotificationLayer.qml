@@ -64,10 +64,23 @@ Item {
         if (s.indexOf("bluetooth") !== -1)
             return { icon: "\uf294", color: "#0a84ff", bg: Qt.rgba(10/255, 132/255, 255/255, 0.22) };
         return {
-            icon: (root.iconText !== "" && root.iconText !== "" && root.iconText !== "\uf0f3") ? root.iconText : "\uf0f3",
+            icon: (root.iconText !== "" && root.iconText !== "" && root.iconText !== "\uf0f3" && !root.isImageIcon) ? root.iconText : "\uf0f3",
             color: "#64d2ff",
             bg: Qt.rgba(100/255, 210/255, 255/255, 0.18)
         };
+    }
+
+    readonly property bool isImageIcon: {
+        const raw = String(root.iconText || "").trim();
+        return raw.startsWith("/") || raw.startsWith("file://") ||
+               raw.endsWith(".png") || raw.endsWith(".jpg") || raw.endsWith(".jpeg") ||
+               raw.endsWith(".svg") || raw.endsWith(".webp");
+    }
+
+    readonly property string resolvedImageSource: {
+        if (!isImageIcon) return "";
+        const raw = String(root.iconText || "").trim();
+        return raw.startsWith("file://") ? raw : ("file://" + raw);
     }
 
     // Measurements for dynamic sizing
@@ -172,11 +185,24 @@ Item {
             height: 42
             radius: 21
             anchors.verticalCenter: parent.verticalCenter
-            color: root.appMeta.bg
+            color: root.isImageIcon ? Qt.rgba(0, 0, 0, 0.40) : root.appMeta.bg
             border.width: 1
-            border.color: Qt.rgba(root.appMeta.color.r, root.appMeta.color.g, root.appMeta.color.b, 0.45)
+            border.color: root.isImageIcon ? Qt.rgba(255, 255, 255, 0.25) : Qt.rgba(root.appMeta.color.r, root.appMeta.color.g, root.appMeta.color.b, 0.45)
+            clip: true
+
+            Image {
+                id: notifImageItem
+                anchors.fill: parent
+                anchors.margins: 1
+                visible: root.isImageIcon
+                source: root.resolvedImageSource
+                fillMode: Image.PreserveAspectCrop
+                mipmap: true
+                smooth: true
+            }
 
             Text {
+                visible: !root.isImageIcon || notifImageItem.status !== Image.Ready
                 anchors.centerIn: parent
                 text: root.appMeta.icon
                 color: root.appMeta.color
