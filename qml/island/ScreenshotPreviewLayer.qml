@@ -17,6 +17,8 @@ Item {
     property color irisGreen: "#58b654"
     property color irisYellow: "#b7a558"
     property color irisRed: "#d0bf92"
+    property string titleText: "Screenshot Catturato"
+    property string subtitleText: "Copiato negli appunti"
     property bool showCondition: false
     property bool imageLanded: true
     property real screenshotAspect: 1.77
@@ -109,6 +111,12 @@ Item {
         }
     }
 
+    onScreenshotPathChanged: {
+        if (screenshotPath !== "") {
+            refreshImage(screenshotPath);
+        }
+    }
+
     function copyToClipboard() {
         if (!screenshotPath || screenshotPath === "") return
         const copyCmd = `wl-copy < '${screenshotPath}'`
@@ -182,7 +190,7 @@ Item {
                 width: parent.width - 28 - 26 - 16
 
                 Text {
-                    text: "Screenshot Catturato"
+                    text: root.titleText
                     color: root.textColor
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
@@ -200,11 +208,12 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
-                        text: "Copiato negli appunti"
+                        text: root.subtitleText
                         color: root.dimColor
                         font.pixelSize: 10
                         font.family: root.textFontFamily
                         anchors.verticalCenter: parent.verticalCenter
+                        elide: Text.ElideRight
                     }
                 }
             }

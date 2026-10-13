@@ -2688,21 +2688,45 @@ PanelWindow {
             notificationIcon = (icon !== undefined && icon !== null) ? String(icon) : "";
             notificationIconColor = customColor ? customColor : (notificationAppName === "Wi-Fi" ? "#ff9f0a" : "#f4f5f7");
             notificationExpanded = false;
+
+            const rawIcon = String(notificationIcon || "").trim();
+            const rawBody = String(notificationBody || "").trim();
+            const rawSumm = String(notificationSummary || "").trim();
+            const isImgIcon = (rawIcon.startsWith("/") || rawIcon.startsWith("file://")) &&
+                              (rawIcon.endsWith(".png") || rawIcon.endsWith(".jpg") || rawIcon.endsWith(".jpeg") || rawIcon.endsWith(".webp"));
+            const matchImg = String(rawBody + " " + rawSumm).match(/(?:\/[^\s\n\r"']+\.(?:png|jpg|jpeg|webp))/);
+            if (isImgIcon) {
+                screenshotPreviewPath = rawIcon.replace(/^file:\/\//, "");
+            } else if (matchImg && matchImg[0]) {
+                screenshotPreviewPath = matchImg[0];
+            } else if (notificationAppName.toLowerCase().indexOf("screenshot") === -1) {
+                screenshotPreviewPath = "";
+            }
+
             islandState = "notification";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             root.showAutoHiddenIsland("state");
-            restartAutoHideTimer(notificationAutoHideInterval);
+            const isScrn = screenshotPreviewPath !== "" || notificationAppName.toLowerCase().indexOf("screenshot") !== -1;
+            restartAutoHideTimer(isScrn ? 7500 : notificationAutoHideInterval);
             // Store in notification history
             if (notificationHistoryModel) {
-                notificationHistoryModel.insert(0, {
-                    "appName": cleanedAppName !== "" ? cleanedAppName : "Notification",
-                    "summary": resolvedSummary,
-                    "body": cleanedSummary !== "" ? cleanedBody : "",
-                    "timestamp": new Date()
-                });
-                if (notificationHistoryModel.count > 50)
-                    notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
-
+                let duplicate = false;
+                if (notificationHistoryModel.count > 0) {
+                    const first = notificationHistoryModel.get(0);
+                    if (first && (first.summary === resolvedSummary || (cleanedBody !== "" && first.body === cleanedBody))) {
+                        duplicate = true;
+                    }
+                }
+                if (!duplicate) {
+                    notificationHistoryModel.insert(0, {
+                        "appName": cleanedAppName !== "" ? cleanedAppName : "Notification",
+                        "summary": resolvedSummary,
+                        "body": cleanedSummary !== "" ? cleanedBody : "",
+                        "timestamp": new Date()
+                    });
+                    if (notificationHistoryModel.count > 50)
+                        notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+                }
             }
         }
 
@@ -2731,17 +2755,10 @@ PanelWindow {
         }
 
         function showScreenshotPreviewCapsule(filePath) {
-            abortSideTransientMode();
-            clearTransientCapsule();
-            workspaceOriginSide = "none";
-            splitOriginSide = "none";
-            swipeTransitionProgress = 0;
             screenshotPreviewPath = filePath || "";
-            islandState = "screenshot_preview";
-            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-            root.showAutoHiddenIsland("state");
-            restartAutoHideTimer(7500);
-            recordScreenshotNotification(filePath, "Screenshot catturato");
+            const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "";
+            const bodyText = fileName !== "" ? (fileName + " • Copiato negli appunti") : "Copiato negli appunti";
+            showNotificationCapsule("Screenshot", "Screenshot catturato", bodyText, filePath, "#ff9f0a");
         }
 
         function showScreenshotSnippingCapsule() {
@@ -2756,9 +2773,9 @@ PanelWindow {
             root.showAutoHiddenIsland("state");
         }
 
-        function openScreenshotInSatty() {
-            if (screenshotPreviewPath !== "") {
-                const p = screenshotPreviewPath;
+        function openScreenshotInSatty(filePath) {
+            const p = (filePath && filePath !== "") ? filePath : screenshotPreviewPath;
+            if (p !== "") {
                 const cmd = `satty --filename '${p}' --copy-command wl-copy --output-filename '${p}'`;
                 Quickshell.execDetached(["bash", "-c", cmd]);
             }
@@ -2787,7 +2804,7 @@ PanelWindow {
                 screenshotImgWidth = w;
                 screenshotImgHeight = h;
                 screenshotAspect = Math.max(0.4, Math.min(6.0, w / h));
-                if (islandState === "screenshot_preview" || islandState === "screenshot_editor") {
+                if (islandState === "screenshot_preview" || islandState === "screenshot_editor" || islandState === "notification") {
                     mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
                 }
             }
@@ -3810,10 +3827,12 @@ PanelWindow {
         Rectangle {
             id: mainCapsule
 
+            readonly property bool isScreenshotPreviewActive: islandContainer.islandState === "screenshot_preview" || (islandContainer.islandState === "notification" && notificationLoader.item && notificationLoader.item.hasScreenshotPreview)
+
             property int morphDuration: {
                 if (islandContainer.islandState === "polkit" && islandContainer.polkitSuccessMorph)
                     return 320;
-                if (islandContainer.islandState === "screenshot_preview")
+                if (mainCapsule.isScreenshotPreviewActive)
                     return 290;
                 return 400;
             }
@@ -3999,6 +4018,8 @@ PanelWindow {
                 case "screenshot_editor":
                     return 26;
                 case "notification":
+                    if (notificationLoader.item && notificationLoader.item.hasScreenshotPreview)
+                        return 22;
                     return islandContainer.notificationExpanded ? 28 : mainCapsule.targetHeight / 2;
                 case "reload":
                     return reloadLoader.item ? reloadLoader.item.preferredRadius : mainCapsule.targetHeight / 2;
@@ -4319,6 +4340,10 @@ PanelWindow {
                             return ;
                         }
                         if (islandContainer.islandState === "screenshot_preview") {
+                            preparedOverviewOnPress = false;
+                            return ;
+                        }
+                        if (islandContainer.islandState === "notification" && notificationLoader.item && notificationLoader.item.hasScreenshotPreview) {
                             preparedOverviewOnPress = false;
                             return ;
                         }
@@ -4695,6 +4720,8 @@ PanelWindow {
                         appName: islandContainer.notificationAppName
                         summary: islandContainer.notificationSummary
                         body: islandContainer.notificationBody
+                        screenshotPath: islandContainer.screenshotPreviewPath
+                        screenshotAspect: islandContainer.screenshotAspect
                         expanded: islandContainer.notificationExpanded
                         toggleButton: userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)
                         iconText: {
@@ -4710,10 +4737,31 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         heroFontFamily: root.heroFontFamily
+                        accentColor: root.themeAccent
+                        textColor: root.themeFg
+                        dimColor: root.themeDim
+                        surfaceColor: root.themeSurface
+                        irisBlue: root.themeBlue
+                        irisPurple: (irisColors && irisColors.purpleHex !== "") ? irisColors.purpleHex : "#bb95d0"
+                        irisGreen: root.themeGreen
+                        irisYellow: root.themeYellow
+                        irisRed: root.themeRed
                         showCondition: true
                         onExpansionToggleRequested: {
                             islandContainer.suppressCapsuleClick(true);
                             islandContainer.toggleNotificationExpansionIfNeeded();
+                        }
+                        onOpenSattyRequested: (path) => {
+                            islandContainer.openScreenshotInSatty(path || islandContainer.screenshotPreviewPath);
+                        }
+                        onOpenEditorRequested: (path) => {
+                            islandContainer.showScreenshotEditorCapsule(path || islandContainer.screenshotPreviewPath);
+                        }
+                        onImageSizeReady: (w, h) => {
+                            islandContainer.updateScreenshotAspect(w, h);
+                        }
+                        onDismissRequested: {
+                            islandContainer.smartRestoreState();
                         }
                     }
 
@@ -5299,7 +5347,7 @@ PanelWindow {
             Behavior on displayedWidth {
                 NumberAnimation {
                     duration: capsuleMouseArea.sideSwipeInteractive ? 0 : mainCapsule.morphDuration
-                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -5309,7 +5357,7 @@ PanelWindow {
 
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -5317,7 +5365,7 @@ PanelWindow {
             Behavior on y {
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -5330,7 +5378,7 @@ PanelWindow {
 
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -5338,7 +5386,7 @@ PanelWindow {
             Behavior on radius {
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: islandContainer.islandState === "screenshot_preview" ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }

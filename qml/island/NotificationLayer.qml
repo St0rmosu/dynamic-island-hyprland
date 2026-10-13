@@ -20,7 +20,23 @@ Item {
     property string textFontFamily: activeConfig.textFontFamily || "Google Sans Flex"
     property string heroFontFamily: activeConfig.heroFontFamily || "Google Sans Flex"
 
+    property string screenshotPath: ""
+    property real screenshotAspect: 1.77
+    property color accentColor: "#ff9f0a"
+    property color textColor: "#ffffff"
+    property color dimColor: "#a6b0c3"
+    property color surfaceColor: "#2e383f"
+    property color irisBlue: "#95acd0"
+    property color irisPurple: "#bb95d0"
+    property color irisGreen: "#58b654"
+    property color irisYellow: "#b7a558"
+    property color irisRed: "#d0bf92"
+
     signal expansionToggleRequested()
+    signal openSattyRequested(string path)
+    signal openEditorRequested(string path)
+    signal dismissRequested()
+    signal imageSizeReady(real w, real h)
 
     // Title / Sender name
     readonly property string senderName: {
@@ -83,6 +99,26 @@ Item {
         return raw.startsWith("file://") ? raw : ("file://" + raw);
     }
 
+    readonly property string resolvedScreenshotPath: {
+        if (screenshotPath !== "") return screenshotPath;
+        const rawIcon = String(root.iconText || "").trim();
+        if ((rawIcon.startsWith("/") || rawIcon.startsWith("file://")) &&
+            (rawIcon.endsWith(".png") || rawIcon.endsWith(".jpg") || rawIcon.endsWith(".jpeg") || rawIcon.endsWith(".webp"))) {
+            return rawIcon.replace(/^file:\/\//, "");
+        }
+        const combined = root.appName + " " + root.summary + " " + root.body;
+        const m = combined.match(/(?:\/[^\s\n\r"']+\.(?:png|jpg|jpeg|webp))/);
+        return m ? m[0] : "";
+    }
+
+    readonly property bool isScreenshot: {
+        if (screenshotPath !== "") return true;
+        const combined = (root.appName + " " + root.summary + " " + root.body).toLowerCase();
+        return combined.indexOf("screenshot") !== -1 || combined.indexOf("satty") !== -1;
+    }
+
+    readonly property bool hasScreenshotPreview: isScreenshot && resolvedScreenshotPath !== ""
+
     // Measurements for dynamic sizing
     TextMetrics {
         id: senderMetrics
@@ -99,21 +135,35 @@ Item {
         text: root.messageContent
     }
 
-    readonly property real minimumWidth: 290
+    readonly property real minimumWidth: hasScreenshotPreview ? 280 : 290
     readonly property real maximumWidth: 480
     readonly property bool isLongMessage: bodyMetrics.advanceWidth > 260
     readonly property bool isVeryLongMessage: bodyMetrics.advanceWidth > 520
 
-    // Dynamic width based on sender + body length
+    // Dynamic width based on sender + body length or screenshot preview
     readonly property real preferredWidth: {
+        if (hasScreenshotPreview) {
+            const asp = screenshotAspect || 1.77;
+            if (asp >= 1.6) return 400;
+            if (asp >= 1.1) return 360;
+            if (asp >= 0.8) return 320;
+            return 280;
+        }
         let maxTextW = Math.max(senderMetrics.advanceWidth, Math.min(340, bodyMetrics.advanceWidth));
         // Add margins (18 + 18) + spacing (14) + circular icon (42)
         let calcW = maxTextW + 36 + 14 + 42;
         return Math.max(minimumWidth, Math.min(maximumWidth, calcW));
     }
 
-    // Dynamic height: adapts between 56px (single line), 66px (2 lines), 82px (3 lines)
+    // Dynamic height: adapts between 56px (single line), 66px (2 lines), 82px (3 lines) or rich screenshot preview
     readonly property real preferredHeight: {
+        if (hasScreenshotPreview) {
+            const asp = Math.max(0.4, Math.min(6.0, screenshotAspect || 1.77));
+            const w = preferredWidth;
+            const contentW = Math.max(200, w - 24);
+            const imgH = Math.max(50, Math.min(220, Math.round(contentW / asp)));
+            return imgH + 106;
+        }
         if (messageContent === "") return 56;
         if (isVeryLongMessage) return 82;
         if (isLongMessage) return 68;
@@ -131,8 +181,37 @@ Item {
         }
     }
 
+    // ── Rich Screenshot Notification Preview (Interactive Editor & Copy Actions) ──
+    ScreenshotPreviewLayer {
+        id: screenshotPreview
+        anchors.fill: parent
+        visible: root.hasScreenshotPreview
+        screenshotPath: root.resolvedScreenshotPath
+        screenshotAspect: root.screenshotAspect
+        titleText: (root.senderName !== "" && root.senderName !== "Nuova Notifica") ? root.senderName : "Screenshot Catturato"
+        subtitleText: root.messageContent !== "" ? root.messageContent : "Copiato negli appunti"
+        iconFontFamily: root.iconFontFamily
+        textFontFamily: root.textFontFamily
+        accentColor: root.accentColor
+        textColor: root.textColor
+        dimColor: root.dimColor
+        surfaceColor: root.surfaceColor
+        irisBlue: root.irisBlue
+        irisPurple: root.irisPurple
+        irisGreen: root.irisGreen
+        irisYellow: root.irisYellow
+        irisRed: root.irisRed
+        showCondition: root.showCondition && root.hasScreenshotPreview
+        imageLanded: true
+        onOpenSattyRequested: root.openSattyRequested(root.resolvedScreenshotPath)
+        onOpenEditorRequested: root.openEditorRequested(root.resolvedScreenshotPath)
+        onImageSizeReady: (w, h) => root.imageSizeReady(w, h)
+        onDismissRequested: root.dismissRequested()
+    }
+
     // ── Notification Layout (Mockup: Text Left, Circular Badge Right) ──
     Row {
+        visible: !root.hasScreenshotPreview
         anchors.fill: parent
         anchors.leftMargin: 18
         anchors.rightMargin: 16
@@ -213,6 +292,7 @@ Item {
     }
 
     TapHandler {
+        enabled: !root.hasScreenshotPreview
         acceptedButtons: root.toggleButton
         onTapped: root.expansionToggleRequested()
     }

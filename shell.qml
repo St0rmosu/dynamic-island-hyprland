@@ -183,12 +183,12 @@ Scope {
         }
 
         if (lowerApp.indexOf("screenshot") !== -1 || lowerSummary.indexOf("screenshot") !== -1) {
-            const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.png)/);
-            if (match && match[0]) {
-                shellRoot.showScreenshotPreviewAll(match[0]);
-                shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body, icon || "", customColor || "");
-                return ;
-            }
+            const match = String(body || "").match(/(?:\/[^\s\n\r"']+\.(?:png|jpg|jpeg|webp))/);
+            const rawIcon = String(icon || "").trim();
+            const imgPath = (match && match[0]) ? match[0] : ((rawIcon.startsWith("/") || rawIcon.startsWith("file://")) ? rawIcon : "");
+            const pathToSend = imgPath || icon || "";
+            shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body || "Copiato negli appunti", pathToSend, customColor || "#ff9f0a");
+            return ;
         }
 
         if (lowerApp.indexOf("discord") !== -1 || lowerApp.indexOf("vesktop") !== -1 || lowerApp.indexOf("armcord") !== -1) {
