@@ -28,8 +28,8 @@ Rectangle {
     readonly property string positionSide: (dynamicConfig && dynamicConfig.workspacePillPosition) ? dynamicConfig.workspacePillPosition : "right"
     readonly property bool showAppIcons: dynamicConfig ? (dynamicConfig.workspacePillShowAppIcons !== false) : true
 
-    // Esattamente 5 workspace fissi come richiesto
-    readonly property int totalWorkspaces: 5
+    // Workspace configurabili (5, 8 o 10 da impostazioni)
+    readonly property int totalWorkspaces: (dynamicConfig && dynamicConfig.workspacePillShownCount > 0) ? dynamicConfig.workspacePillShownCount : 5
 
     // Tracciamento workspace corrente dal monitor attivo
     readonly property int currentWorkspace: {
@@ -63,8 +63,12 @@ Rectangle {
     anchors.rightMargin: (positionSide === "left") ? 8 : 0
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 
-    visible: isEnabled && (!rootWindow || !rootWindow.overviewVisible) && opacity > 0.01
-    opacity: isEnabled && (!rootWindow || !rootWindow.overviewVisible) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    readonly property bool isAutoHidden: rootWindow && rootWindow.autoHideEnabled && !rootWindow.autoHideTargetVisible
+    readonly property bool showOnAutoHide: dynamicConfig ? (dynamicConfig.showWorkspaceOnAutoHide !== false) : true
+    readonly property bool modalOrSnipping: rootWindow && (rootWindow.isScreenshotModeActive || rootWindow.screenshotSnippingActive || (rootWindow.islandContainer && rootWindow.islandContainer.islandState === "settings_app"))
+
+    visible: isEnabled && (!rootWindow || !rootWindow.overviewVisible) && !modalOrSnipping && opacity > 0.01
+    opacity: isEnabled && (!rootWindow || (!rootWindow.overviewVisible && !modalOrSnipping)) ? ((isAutoHidden && showOnAutoHide) ? 1.0 : (targetCapsule ? targetCapsule.opacity : 1.0)) : 0.0
     scale: 1.0
 
     clip: true
@@ -76,7 +80,10 @@ Rectangle {
     Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
     Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutQuint } }
     Behavior on opacity {
-        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            duration: (rootWindow && rootWindow.screenshotCapturing) ? 0 : 220
+            easing.type: Easing.OutCubic
+        }
     }
     Behavior on scale {
         NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
@@ -280,14 +287,24 @@ Rectangle {
     }
 
     property int _wheelAccumulator: 0
+    property bool _scrollCooldown: false
+
     Timer {
         id: wheelResetTimer
-        interval: 300
+        interval: 350
         repeat: false
         onTriggered: root._wheelAccumulator = 0
     }
 
+    Timer {
+        id: scrollCooldownTimer
+        interval: 160
+        repeat: false
+        onTriggered: root._scrollCooldown = false
+    }
+
     function handleWheelScroll(wheel) {
+        if (!wheel) return;
         let delta = wheel.angleDelta.y;
         if (delta === 0 && wheel.angleDelta.x !== 0) {
             delta = -wheel.angleDelta.x;
@@ -297,9 +314,13 @@ Rectangle {
         root._wheelAccumulator += delta;
         wheelResetTimer.restart();
 
-        if (Math.abs(root._wheelAccumulator) >= 60) {
+        // 60 threshold accommodates standard mouse notches (120) and trackpad swipes
+        if (Math.abs(root._wheelAccumulator) >= 60 && !root._scrollCooldown) {
             const isUp = root._wheelAccumulator > 0;
             root._wheelAccumulator = 0;
+            root._scrollCooldown = true;
+            scrollCooldownTimer.restart();
+            // Up/left = previous workspace (-1), Down/right = next workspace (+1)
             root.scrollStep(isUp ? -1 : 1);
         }
     }
@@ -344,6 +365,7 @@ Rectangle {
         }
         onWheel: function(wheel) {
             root.handleWheelScroll(wheel);
+            wheel.accepted = true;
         }
     }
 
@@ -511,6 +533,7 @@ Rectangle {
 
                     onWheel: function(wheel) {
                         root.handleWheelScroll(wheel);
+                        wheel.accepted = true;
                     }
                 }
             }

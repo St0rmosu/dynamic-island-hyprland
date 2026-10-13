@@ -10,10 +10,10 @@ Item {
 
     signal wifiDisconnected(string ssid)
 
-    readonly property var controller: WifiController
-    readonly property string currentSsid: controller ? controller.currentSsid : ""
-    readonly property bool wifiEnabled: controller ? controller.enabled : false
-    readonly property bool wifiAvailable: controller ? controller.available : false
+    readonly property var controller: (typeof WifiController !== "undefined" && WifiController) ? WifiController : null
+    readonly property string currentSsid: (controller && controller.currentSsid !== undefined && controller.currentSsid !== null) ? controller.currentSsid : ""
+    readonly property bool wifiEnabled: (controller && controller.enabled !== undefined) ? Boolean(controller.enabled) : false
+    readonly property bool wifiAvailable: (controller && controller.available !== undefined) ? Boolean(controller.available) : false
 
     property string lastKnownSsid: ""
     property string pendingDisconnectedSsid: ""

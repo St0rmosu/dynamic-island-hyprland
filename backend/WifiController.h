@@ -25,7 +25,6 @@ class WifiController final : public QObject {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
-    QML_UNCREATABLE("Singleton")
 
     Q_PROPERTY(QString backendName READ backendName NOTIFY backendNameChanged)
     Q_PROPERTY(bool supported READ supported NOTIFY supportedChanged)
@@ -43,6 +42,10 @@ class WifiController final : public QObject {
 
 public:
     using ConnectionSettingsMap = QMap<QString, QVariantMap>;
+
+    static WifiController *create(QQmlEngine * = nullptr, QJSEngine * = nullptr) {
+        return new WifiController();
+    }
 
     explicit WifiController(QObject *parent = nullptr);
 

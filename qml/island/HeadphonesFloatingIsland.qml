@@ -54,7 +54,7 @@ Rectangle {
     property var neighborPill: null
 
     // Posizionamento speculare: ancorato a destra della capsula principale o del pill satellite vicino
-    anchors.left: (neighborPill && neighborPill.visible && neighborPill.opacity > 0.05) ? neighborPill.right : (targetCapsule ? targetCapsule.right : undefined)
+    anchors.left: (neighborPill && neighborPill.positionSide !== "left" && neighborPill.visible && neighborPill.opacity > 0.05) ? neighborPill.right : (targetCapsule ? targetCapsule.right : undefined)
     anchors.leftMargin: 7
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 
@@ -104,9 +104,9 @@ Rectangle {
     readonly property bool isEarConnected: !forceHidden && ((nothingBtDevice && nothingBtDevice.connected)
         || Boolean(headphonesData && headphonesData.connected))
 
-    visible: isEarConnected && (!rootWindow || !rootWindow.isScreenshotModeActive) && opacity > 0.01
-    opacity: isEarConnected && (!rootWindow || !rootWindow.isScreenshotModeActive) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: isEarConnected && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.82
+    visible: isEarConnected && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) && opacity > 0.01
+    opacity: isEarConnected && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: isEarConnected && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) ? 1.0 : 0.82
 
     clip: true
     color: "#000000"
@@ -118,7 +118,7 @@ Rectangle {
     Behavior on height { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
     Behavior on radius { NumberAnimation { duration: 380; easing.type: Easing.OutQuint } }
     Behavior on opacity {
-        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
+        enabled: !rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.screenshotCapturing)
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
     }
     Behavior on scale {

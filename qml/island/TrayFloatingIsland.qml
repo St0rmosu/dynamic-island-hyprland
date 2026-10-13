@@ -37,7 +37,10 @@ Rectangle {
 
     // Bridge di collegamento puntatore con il Centro di Controllo:
     // Evita che spostando il mouse tra il centro di controllo e la tray si esca dal focus
-    readonly property bool hovered: (trayHoverHandler && trayHoverHandler.hovered) || (bridgeHoverHandler && bridgeHoverHandler.hovered)
+    readonly property bool hovered: (trayHoverHandler && trayHoverHandler.hovered && trayMouseTracker.containsMouse)
+        || (bridgeHoverHandler && bridgeHoverHandler.hovered && bridgeMouseTracker.containsMouse)
+        || trayMouseTracker.containsMouse
+        || bridgeMouseTracker.containsMouse
 
     Item {
         id: hoverBridge
@@ -46,8 +49,34 @@ Rectangle {
         width: Math.max(parent.width, 240)
         height: 14 // Copre gli 8px di distacco + 6px di sovrapposizione con la capsula superiore
 
+        MouseArea {
+            id: bridgeMouseTracker
+            anchors.fill: parent
+            z: -1
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+            onExited: {
+                if (rootWindow && rootWindow.hoverCollapseDelayTimer && rootWindow.islandContainer && rootWindow.islandContainer.hoverExpandedActive) {
+                    rootWindow.hoverCollapseDelayTimer.restart();
+                }
+            }
+        }
+
         HoverHandler {
             id: bridgeHoverHandler
+        }
+    }
+
+    MouseArea {
+        id: trayMouseTracker
+        anchors.fill: parent
+        z: -1
+        hoverEnabled: true
+        acceptedButtons: Qt.NoButton
+        onExited: {
+            if (rootWindow && rootWindow.hoverCollapseDelayTimer && rootWindow.islandContainer && rootWindow.islandContainer.hoverExpandedActive) {
+                rootWindow.hoverCollapseDelayTimer.restart();
+            }
         }
     }
 

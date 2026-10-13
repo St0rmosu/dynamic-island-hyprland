@@ -46,9 +46,9 @@ Rectangle {
     anchors.rightMargin: 7
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 
-    visible: hasTrack && (!rootWindow || !rootWindow.isScreenshotModeActive) && opacity > 0.01
-    opacity: hasTrack && (!rootWindow || !rootWindow.isScreenshotModeActive) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: hasTrack && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.82
+    visible: hasTrack && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) && opacity > 0.01
+    opacity: hasTrack && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: hasTrack && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) ? 1.0 : 0.82
 
     clip: true
     color: "#000000"
@@ -66,7 +66,7 @@ Rectangle {
         NumberAnimation { duration: 380; easing.type: Easing.OutQuint }
     }
     Behavior on opacity {
-        enabled: !rootWindow || !rootWindow.isScreenshotModeActive
+        enabled: !rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.screenshotCapturing)
         NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
     }
     Behavior on scale {

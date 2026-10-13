@@ -28,9 +28,10 @@ Item {
 
     function updateClock() {
         const now = new Date();
-        root.currentTime = Qt.formatTime(now, root.clockFormat === "24" ? "HH:mm" : "hh:mm ap");
+        const is24 = (root.clockFormat === "24" || root.clockFormat === "24h");
+        root.currentTime = Qt.formatTime(now, is24 ? "HH:mm" : "hh:mm ap");
         root.currentDateLabel = root.formatDateLabel(now);
-        clockTimer.interval = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+        clockTimer.interval = Math.max(100, (60 - now.getSeconds()) * 1000 - now.getMilliseconds());
     }
 
     onClockFormatChanged: updateClock()

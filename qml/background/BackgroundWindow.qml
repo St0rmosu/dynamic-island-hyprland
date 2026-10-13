@@ -266,7 +266,7 @@ PanelWindow {
         asynchronous: true
         cache: true
         smooth: true
-        visible: (dynamicConfig ? (dynamicConfig.enableQuickshellWallpaper !== false) : true) && bgWindow.effectiveWallpaperUrl !== ""
+        visible: (dynamicConfig ? Boolean(dynamicConfig.enableQuickshellWallpaper) : false) && bgWindow.effectiveWallpaperUrl !== ""
 
         Behavior on opacity {
             NumberAnimation {

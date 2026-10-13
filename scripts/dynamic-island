@@ -37,20 +37,23 @@ case "$1" in
     ;;
   --toggle)
     if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
-      pkill -u "$(id -u)" -f "quickshell -p $QML_PATH" 2>/dev/null || true
-      command -v awww >/dev/null 2>&1 && awww clear 2>/dev/null || true
-      command -v swww >/dev/null 2>&1 && swww clear 2>/dev/null || true
+      /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island toggle >/dev/null 2>&1 || true
       exit 0
     fi
     shift
     ;;
 esac
 
-if [[ "${SYSTEMD_EXEC_PID:-}" != "$$" ]]; then
+if [[ "${SYSTEMD_EXEC_PID:-}" != "$$" ]] && [[ "$1" != "-d" ]] && [[ "$1" != "--force" ]]; then
   if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
-    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island show >/dev/null 2>&1 || true
+    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island reveal >/dev/null 2>&1 || \
+    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island open >/dev/null 2>&1 || true
     exit 0
   fi
 fi
 
-exec /usr/bin/quickshell -p "$QML_PATH" "$@"
+if [[ " $* " != *" -d "* ]] && [[ " $* " != *" --daemonize "* ]]; then
+  exec /usr/bin/quickshell -p "$QML_PATH" -d "$@"
+else
+  exec /usr/bin/quickshell -p "$QML_PATH" "$@"
+fi

@@ -30,6 +30,13 @@ Item {
     property bool autoHideEnabled: false
     property int autoHideDelayMs: 2000
     property bool showWorkspaceOnAutoHide: true
+    property alias islandAutoHideEnabled: root.autoHideEnabled
+    property alias islandAutoHideDelayMs: root.autoHideDelayMs
+    property alias islandShowWorkspaceOnAutoHide: root.showWorkspaceOnAutoHide
+    property alias wallpaperLibraryPath: root.wallpaperLibrary
+    property bool enableShadows: true
+    property int shadowIntensity: 60
+    property int shadowRadius: 18
     property bool hoverExpandEnabled: true
     property int hoverExpandAction: 2 // 0: disabled, 1: media player, 2: control center
     property int hoverExpandDelayMs: 200
@@ -37,7 +44,7 @@ Item {
     property bool disableAutoExpandOnTrackChange: false
 
     // ── 2. Interazioni & Mouse ─────────────────────────────────────────
-    property string primaryClickAction: "none"
+    property string primaryClickAction: "control_center"
     property string secondaryClickAction: "power_menu"
     property string middleClickAction: "clipboard"
     property string doubleClickAction: "toggle_island"
@@ -214,8 +221,8 @@ Item {
     }
 
     readonly property color effectiveAccentColor: {
-        if (root.customAccentColor !== "" && !root.pywalEnabled)
-            return root.customAccentColor;
+        if (!root.pywalEnabled)
+            return (root.customAccentColor !== "") ? root.customAccentColor : "#0a84ff";
 
         if (root.paletteEngine === "iris" && irisColorsFile.accent !== "")
             return irisColorsFile.accent;
@@ -289,8 +296,14 @@ Item {
 
             // Auto-hide & Hover
             if (data.islandAutoHideEnabled !== undefined) root.autoHideEnabled = Boolean(data.islandAutoHideEnabled);
+            else if (data.autoHideEnabled !== undefined) root.autoHideEnabled = Boolean(data.autoHideEnabled);
             if (data.islandAutoHideDelayMs !== undefined) root.autoHideDelayMs = Number(data.islandAutoHideDelayMs) || 2000;
+            else if (data.autoHideDelayMs !== undefined) root.autoHideDelayMs = Number(data.autoHideDelayMs) || 2000;
             if (data.islandShowWorkspaceOnAutoHide !== undefined) root.showWorkspaceOnAutoHide = Boolean(data.islandShowWorkspaceOnAutoHide);
+            else if (data.showWorkspaceOnAutoHide !== undefined) root.showWorkspaceOnAutoHide = Boolean(data.showWorkspaceOnAutoHide);
+            if (data.enableShadows !== undefined) root.enableShadows = Boolean(data.enableShadows);
+            if (data.shadowIntensity !== undefined) root.shadowIntensity = Number(data.shadowIntensity) || 60;
+            if (data.shadowRadius !== undefined) root.shadowRadius = Number(data.shadowRadius) || 18;
             if (data.hoverExpandEnabled !== undefined) root.hoverExpandEnabled = Boolean(data.hoverExpandEnabled);
             if (data.hoverExpandAction !== undefined) root.hoverExpandAction = Number(data.hoverExpandAction) || 2;
             if (data.hoverExpandDelayMs !== undefined) root.hoverExpandDelayMs = Number(data.hoverExpandDelayMs) || 200;
@@ -383,10 +396,35 @@ Item {
     }
 
     function set(key, value) {
-        if (root[key] !== undefined) {
-            root[key] = value;
+        let m = Object.assign({}, root.rawMap);
+        if (key === "islandAutoHideEnabled" || key === "autoHideEnabled") {
+            root.autoHideEnabled = Boolean(value);
+            m["islandAutoHideEnabled"] = Boolean(value);
+            m["autoHideEnabled"] = Boolean(value);
+        } else if (key === "islandAutoHideDelayMs" || key === "autoHideDelayMs") {
+            root.autoHideDelayMs = Number(value) || 2000;
+            m["islandAutoHideDelayMs"] = Number(value) || 2000;
+            m["autoHideDelayMs"] = Number(value) || 2000;
+        } else if (key === "islandShowWorkspaceOnAutoHide" || key === "showWorkspaceOnAutoHide") {
+            root.showWorkspaceOnAutoHide = Boolean(value);
+            m["islandShowWorkspaceOnAutoHide"] = Boolean(value);
+            m["showWorkspaceOnAutoHide"] = Boolean(value);
+        } else if (key === "wallpaperLibraryPath" || key === "wallpaperLibrary") {
+            root.wallpaperLibrary = String(value);
+            m["wallpaperLibraryPath"] = String(value);
+            m["wallpaperLibrary"] = String(value);
+        } else if (key === "wallpaperTransition" || key === "wallpaperTransitionType") {
+            root.wallpaperTransition = String(value);
+            root.wallpaperTransitionType = String(value);
+            m["wallpaperTransition"] = String(value);
+            m["wallpaperTransitionType"] = String(value);
+        } else {
+            if (root[key] !== undefined) {
+                root[key] = value;
+            }
+            m[key] = value;
         }
-        root.rawMap[key] = value;
+        root.rawMap = m;
         root.saveStatus = "Saving...";
         saveDebounceTimer.restart();
     }
@@ -433,8 +471,14 @@ Item {
                 workspacePillShownCount: root.workspacePillShownCount,
 
                 islandAutoHideEnabled: root.autoHideEnabled,
+                autoHideEnabled: root.autoHideEnabled,
                 islandAutoHideDelayMs: root.autoHideDelayMs,
+                autoHideDelayMs: root.autoHideDelayMs,
                 islandShowWorkspaceOnAutoHide: root.showWorkspaceOnAutoHide,
+                showWorkspaceOnAutoHide: root.showWorkspaceOnAutoHide,
+                enableShadows: root.enableShadows,
+                shadowIntensity: root.shadowIntensity,
+                shadowRadius: root.shadowRadius,
                 hoverExpandEnabled: root.hoverExpandEnabled,
                 hoverExpandAction: root.hoverExpandAction,
                 hoverExpandDelayMs: root.hoverExpandDelayMs,
@@ -459,6 +503,7 @@ Item {
                 customAccentColor: root.customAccentColor,
                 wallpaperPath: root.wallpaperPath,
                 wallpaperLibraryPath: root.wallpaperLibrary,
+                wallpaperLibrary: root.wallpaperLibrary,
                 wallpaperCustomCommand: root.wallpaperCustomCommand,
                 wallpaperTransition: root.wallpaperTransitionType,
                 wallpaperTransitionType: root.wallpaperTransitionType,

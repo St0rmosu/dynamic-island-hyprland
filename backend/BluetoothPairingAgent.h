@@ -15,7 +15,6 @@ class BluetoothPairingAgent final : public QObject, protected QDBusContext {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
-    QML_UNCREATABLE("Singleton")
     Q_CLASSINFO("D-Bus Interface", "org.bluez.Agent1")
 
     Q_PROPERTY(bool registered READ registered NOTIFY registeredChanged)
@@ -33,6 +32,10 @@ class BluetoothPairingAgent final : public QObject, protected QDBusContext {
     Q_PROPERTY(int displayedEnteredCount READ displayedEnteredCount NOTIFY requestChanged)
 
 public:
+    static BluetoothPairingAgent *create(QQmlEngine * = nullptr, QJSEngine * = nullptr) {
+        return new BluetoothPairingAgent();
+    }
+
     explicit BluetoothPairingAgent(QObject *parent = nullptr);
     ~BluetoothPairingAgent() override;
 

@@ -18,7 +18,7 @@ FloatingWindow {
 
     property var dynamicConfig: null
     readonly property real windowCornerRadius: settingsWin.maximized ? 0 : 20
-    readonly property color accentColor: (dynamicConfig && dynamicConfig.customAccentColor && dynamicConfig.customAccentColor !== "") ? dynamicConfig.customAccentColor : "#0a84ff"
+    readonly property color accentColor: (dynamicConfig && dynamicConfig.effectiveAccentColor) ? dynamicConfig.effectiveAccentColor : "#0a84ff"
     readonly property string iconFontFamily: (dynamicConfig && dynamicConfig.iconFontFamily !== "") ? dynamicConfig.iconFontFamily : "JetBrainsMono Nerd Font"
     readonly property string textFontFamily: (dynamicConfig && dynamicConfig.textFontFamily !== "") ? dynamicConfig.textFontFamily : "Google Sans Flex"
 

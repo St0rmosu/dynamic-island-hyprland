@@ -152,6 +152,60 @@ Flickable {
             }
         }
 
+        // ── Sezione: Ombre & Profondità Visiva ─────────────────────────
+        SettingsHeader {
+            text: I18n.tr("Ombre & Profondità Visiva")
+            accentColor: root.accentColor
+            textFontFamily: root.textFontFamily
+        }
+
+        SettingsCard {
+            SettingsSwitch {
+                title: I18n.tr("Abilita Ombre Fluttuanti")
+                description: I18n.tr("Crea un effetto rilievo moderno sotto la capsula principale e i satelliti")
+                icon: "\uf185"
+                checked: root.config ? (root.config.enableShadows !== false) : true
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onToggled: function(st) { if (root.config) root.config.set("enableShadows", st); }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            SettingsSlider {
+                title: I18n.tr("Intensità Ombre")
+                description: I18n.tr("Opacità e contrasto dello strato di profondità scuro")
+                icon: "\uf042"
+                from: 10
+                to: 100
+                stepSize: 5
+                suffix: "%"
+                value: root.config ? root.config.shadowIntensity : 60
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onValueModified: function(val) { if (root.config) root.config.set("shadowIntensity", Math.round(val)); }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            SettingsSlider {
+                title: I18n.tr("Diffusione e Raggio Ombre")
+                description: I18n.tr("Raggio di sfocatura per ombre morbide ed eleganti")
+                icon: "\uf065"
+                from: 6
+                to: 36
+                stepSize: 2
+                suffix: "px"
+                value: root.config ? root.config.shadowRadius : 18
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onValueModified: function(val) { if (root.config) root.config.set("shadowRadius", Math.round(val)); }
+            }
+        }
+
         // ── Sezione 2: Colori & Temi Dinamici ───────────────────────────
         SettingsHeader {
             text: I18n.tr("Colori & Armonia Temi")
@@ -171,9 +225,13 @@ Flickable {
                 onToggled: function(st) { if (root.config) root.config.set("pywalEnabled", st); }
             }
 
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+            Rectangle {
+                visible: root.config ? root.config.pywalEnabled : true
+                width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05)
+            }
 
             SettingsSegmented {
+                visible: root.config ? root.config.pywalEnabled : true
                 title: I18n.tr("Motore Palette Compatibile")
                 description: I18n.tr("Scegli o rileva automaticamente il generatore di colori del tuo sistema")
                 stacked: true
@@ -188,6 +246,122 @@ Flickable {
                 accentColor: root.accentColor
                 textFontFamily: root.textFontFamily
                 onSelected: function(val) { if (root.config) root.config.set("paletteEngine", val); }
+            }
+
+            Rectangle {
+                visible: root.config ? !root.config.pywalEnabled : false
+                width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05)
+            }
+
+            // Sezione Colore Accento Manuale (quando Palette Dinamica è disattivata)
+            Column {
+                visible: root.config ? !root.config.pywalEnabled : false
+                width: parent.width
+                spacing: 12
+
+                Row {
+                    width: parent.width
+                    spacing: 12
+
+                    Rectangle {
+                        width: 32; height: 32; radius: 8
+                        color: Qt.rgba(255, 255, 255, 0.05)
+                        anchors.verticalCenter: parent.verticalCenter
+                        Text {
+                            anchors.centerIn: parent
+                            text: "\uf53f" // palette
+                            color: root.accentColor
+                            font.family: root.iconFontFamily
+                            font.pixelSize: 14
+                        }
+                    }
+
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2
+                        Text {
+                            text: I18n.tr("Colore Accento Personalizzato")
+                            color: "#f2f4f8"
+                            font.pixelSize: 13
+                            font.weight: Font.Medium
+                            font.family: root.textFontFamily
+                        }
+                        Text {
+                            text: I18n.tr("Seleziona una tonalità vivace o digita un codice HEX")
+                            color: "#7e889b"
+                            font.pixelSize: 11
+                            font.family: root.textFontFamily
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 10
+
+                    Repeater {
+                        model: [
+                            { name: "Blu", hex: "#0a84ff" },
+                            { name: "Viola", hex: "#bf5af2" },
+                            { name: "Rosa", hex: "#ff375f" },
+                            { name: "Verde", hex: "#30d158" },
+                            { name: "Arancione", hex: "#ff9f0a" },
+                            { name: "Azzurro", hex: "#64d2ff" },
+                            { name: "Rosso", hex: "#ff453a" },
+                            { name: "Giallo", hex: "#ffd60a" }
+                        ]
+
+                        Rectangle {
+                            width: 30
+                            height: 30
+                            radius: 15
+                            color: modelData.hex
+                            border.width: (root.config && root.config.customAccentColor === modelData.hex) ? 2 : 1
+                            border.color: (root.config && root.config.customAccentColor === modelData.hex) ? "#ffffff" : Qt.rgba(255, 255, 255, 0.25)
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (root.config) {
+                                        root.config.set("customAccentColor", modelData.hex);
+                                        customColorInput.text = modelData.hex;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 8
+
+                    Rectangle {
+                        width: 140
+                        height: 34
+                        radius: 8
+                        color: "#080a0f"
+                        border.width: 1
+                        border.color: customColorInput.activeFocus ? root.accentColor : Qt.rgba(255, 255, 255, 0.08)
+
+                        TextInput {
+                            id: customColorInput
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 10
+                            verticalAlignment: TextInput.AlignVCenter
+                            text: (root.config && root.config.customAccentColor) ? root.config.customAccentColor : "#0a84ff"
+                            color: "#e2e6ee"
+                            font.pixelSize: 12
+                            font.family: root.iconFontFamily
+                            onEditingFinished: {
+                                if (root.config && text.trim().startsWith("#")) {
+                                    root.config.set("customAccentColor", text.trim());
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

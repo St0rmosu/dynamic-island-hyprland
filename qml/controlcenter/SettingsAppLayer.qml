@@ -115,8 +115,10 @@ FocusScope {
     }
 
     readonly property color effectiveAccent: {
-        if (dynamicConfig && dynamicConfig.customAccentColor !== "" && !dynamicConfig.pywalEnabled)
-            return dynamicConfig.customAccentColor;
+        if (dynamicConfig && !dynamicConfig.pywalEnabled)
+            return (dynamicConfig.customAccentColor !== "") ? dynamicConfig.customAccentColor : "#0a84ff";
+        if (dynamicConfig && dynamicConfig.effectiveAccentColor)
+            return dynamicConfig.effectiveAccentColor;
         if (localIrisColors.irisAccent !== "")
             return localIrisColors.irisAccent;
         if (localWalColors.walAccent !== "")

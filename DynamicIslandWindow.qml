@@ -2,6 +2,7 @@ import IslandBackend
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
+import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
@@ -60,7 +61,21 @@ PanelWindow {
     property bool screenshotFlyAnimationActive: false
     property bool screenshotImageLanded: false
     property bool screenshotCapturing: false
-    readonly property bool isScreenshotModeActive: root.screenshotCapturing
+    readonly property bool isScreenshotModeActive: root.screenshotCapturing || root.screenshotSnippingActive || (islandContainer && (islandContainer.islandState === "screenshot_preview" || islandContainer.islandState === "screenshot_editor"))
+    readonly property bool modalExpandedActive: isScreenshotModeActive || (islandContainer && (
+        islandContainer.islandState === "control_center" ||
+        islandContainer.islandState === "settings_app" ||
+        islandContainer.islandState === "power_menu" ||
+        islandContainer.islandState === "notification_center" ||
+        islandContainer.islandState === "wallpaper_picker" ||
+        islandContainer.islandState === "application_launcher" ||
+        islandContainer.islandState === "clipboard" ||
+        islandContainer.islandState === "file_shelf" ||
+        islandContainer.islandState === "screen_share_picker" ||
+        islandContainer.islandState === "expanded"
+    ))
+    readonly property alias islandContainer: islandContainer
+    readonly property alias hoverCollapseDelayTimer: hoverCollapseDelayTimer
     readonly property var userConfig: UserConfig
     property string awwwWallpaperPath: ""
     readonly property real capsuleWindowHeight: {
@@ -207,12 +222,12 @@ PanelWindow {
     readonly property real satelliteBalanceOffset: (satelliteLeftExtent - satelliteRightExtent) / 2
     property real animatedBalanceOffset: satelliteBalanceOffset
     readonly property real effectiveIslandExclusiveZone: {
-        if (dynamicConfig && dynamicConfig.islandExclusiveZone !== undefined && dynamicConfig.islandExclusiveZone > 0)
+        if (dynamicConfig && dynamicConfig.islandExclusiveZone !== undefined && dynamicConfig.islandExclusiveZone >= 0)
             return dynamicConfig.islandExclusiveZone;
 
         let v = cfgVal("islandExclusiveZone", userConfig ? userConfig.islandExclusiveZone : 48);
         let num = Number(v);
-        return (!isNaN(num) && num > 0) ? num : (root.effectiveIslandHeight + root.effectiveIslandTopMargin);
+        return (!isNaN(num) && num >= 0) ? num : (root.effectiveIslandHeight + root.effectiveIslandTopMargin);
     }
     readonly property real effectiveIslandCornerRadius: {
         if (dynamicConfig && dynamicConfig.islandCornerRadius > 0)
@@ -266,11 +281,11 @@ PanelWindow {
     }
     readonly property bool topGestureInputActive: false
     readonly property bool autoHideRuntimeEnabled: !shellRootController || shellRootController.islandAutoHideRuntimeEnabled === undefined || !!shellRootController.islandAutoHideRuntimeEnabled
-    readonly property bool autoHideEnabled: Boolean(cfgVal("islandAutoHideEnabled", userConfig ? userConfig.islandAutoHideEnabled : false)) && autoHideRuntimeEnabled
+    readonly property bool autoHideEnabled: ((dynamicConfig && dynamicConfig.autoHideEnabled !== undefined) ? dynamicConfig.autoHideEnabled : Boolean(cfgVal("islandAutoHideEnabled", userConfig ? userConfig.islandAutoHideEnabled : false))) && autoHideRuntimeEnabled
     readonly property bool autoHideRestingState: islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics"
     readonly property bool autoHideCanHideNow: autoHideEnabled && autoHideRestingState && !root.overviewVisible && !root.connectivityPromptActive && !root.anyConnectivityDetailMounted
     readonly property bool autoHideMustShow: !autoHideRestingState || root.overviewVisible || root.connectivityPromptActive || root.anyConnectivityDetailMounted
-    readonly property bool autoHideTargetVisible: autoHideMustShow || (!autoHideForcedHidden && (!autoHideEnabled || autoHideVisible))
+    readonly property bool autoHideTargetVisible: !autoHideForcedHidden && (autoHideMustShow || !autoHideEnabled || autoHideVisible)
     readonly property bool autoHideSuppressesTransientReveal: (autoHideEnabled || autoHideForcedHidden) && !autoHideTargetVisible
     property real autoHideProgress: autoHideTargetVisible ? 1 : 0
     readonly property bool exclusiveZoneTargetActive: (!autoHideEnabled && autoHideTargetVisible) || (autoHideRevealSource === "edge" && autoHideTargetVisible) || islandContainer.notificationLayerVisible || islandContainer.reloadLayerVisible
@@ -383,11 +398,6 @@ PanelWindow {
     function showAutoHiddenIsland(source) {
         setAutoHideRevealSource(source);
         autoHideForcedHidden = false;
-        if (!autoHideEnabled) {
-            autoHideHideTimer.stop();
-            autoHideVisible = true;
-            return ;
-        }
         autoHideHideTimer.stop();
         autoHideVisible = true;
     }
@@ -407,7 +417,7 @@ PanelWindow {
             autoHideHideTimer.stop();
             return ;
         }
-        autoHideHideTimer.interval = Math.max(100, Math.min(10000, userConfig.islandAutoHideDelayMs));
+        autoHideHideTimer.interval = (dynamicConfig && dynamicConfig.autoHideDelayMs > 0) ? dynamicConfig.autoHideDelayMs : Math.max(100, Math.min(10000, userConfig.islandAutoHideDelayMs));
         autoHideHideTimer.restart();
     }
 
@@ -415,9 +425,16 @@ PanelWindow {
         if (force === undefined)
             force = false;
 
+        autoHideHideTimer.stop();
+        if (force) {
+            autoHideForcedHidden = true;
+            autoHideRevealSource = "none";
+            autoHideVisible = false;
+            return ;
+        }
+
         if (!autoHideEnabled) {
-            autoHideHideTimer.stop();
-            if (!force && autoHideMustShow)
+            if (autoHideMustShow)
                 return ;
 
             autoHideForcedHidden = true;
@@ -425,32 +442,40 @@ PanelWindow {
             autoHideVisible = false;
             return ;
         }
-        if (!force && (!autoHideCanHideNow || autoHidePointerInside))
+        if (!autoHideCanHideNow || autoHidePointerInside)
             return ;
 
-        autoHideHideTimer.stop();
         autoHideForcedHidden = false;
         autoHideRevealSource = "none";
         autoHideVisible = false;
     }
 
     function toggleAutoHiddenIsland() {
-        if (autoHideTargetVisible)
-            hideAutoHiddenIsland(false);
+        if (autoHideTargetVisible && !autoHideForcedHidden)
+            hideIslandWindow();
         else
-            showAutoHiddenIsland("manual");
+            showIslandWindow();
     }
 
     function showIslandWindow() {
+        autoHideForcedHidden = false;
+        autoHideVisible = true;
+        islandContainer.smartRestoreState();
         showAutoHiddenIsland("manual");
     }
 
     function hideIslandWindow() {
         autoHidePointerInside = false;
-        hideAutoHiddenIsland(false);
+        islandContainer.smartRestoreState();
+        hideAutoHiddenIsland(true);
     }
 
     function toggleIslandWindow() {
+        if (islandContainer && islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics") {
+            islandContainer.hoverExpandedActive = false;
+            islandContainer.smartRestoreState();
+            return;
+        }
         toggleAutoHiddenIsland();
     }
 
@@ -725,8 +750,8 @@ PanelWindow {
             root.shellRootController.screenshotCapturing = true;
         }
 
-        // sleep 0.04 assicura che il compositor Wayland abbia completato il frame nascondendo l'overlay prima dello scatto
-        const captureCmd = `sleep 0.04 && mkdir -p '${dir}' && grim -l 0 -g '${geom}' '${file}' && (wl-copy < '${file}' >/dev/null 2>&1 &)`;
+        // sleep 0.08 assicura che il compositor Wayland abbia completato il frame nascondendo l'overlay prima dello scatto
+        const captureCmd = `sleep 0.08 && mkdir -p '${dir}' && grim -l 0 -g '${geom}' '${file}' && (wl-copy < '${file}' >/dev/null 2>&1 &)`;
         screenshotCaptureProc.command = ["bash", "-c", captureCmd];
         screenshotCaptureProc.running = false;
         screenshotCaptureProc.running = true;
@@ -904,17 +929,18 @@ PanelWindow {
     }
 
     function toggleControlCenterWindow() {
+        islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "control_center") {
             islandContainer.smartRestoreState();
         } else {
             islandContainer.showControlCenter();
             if (controlCenterLoader.item)
                 controlCenterLoader.item.powerViewActive = false;
-
         }
     }
 
     function togglePowerMenuWindow() {
+        islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "power_menu")
             islandContainer.smartRestoreState();
         else
@@ -922,6 +948,7 @@ PanelWindow {
     }
 
     function toggleNotificationCenterWindow() {
+        islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "notification_center")
             islandContainer.smartRestoreState();
         else
@@ -929,6 +956,7 @@ PanelWindow {
     }
 
     function toggleWallpaperPickerWindow() {
+        islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "wallpaper_picker")
             islandContainer.smartRestoreState();
         else
@@ -936,6 +964,7 @@ PanelWindow {
     }
 
     function toggleApplicationLauncherWindow() {
+        islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "application_launcher")
             islandContainer.smartRestoreState();
         else
@@ -943,6 +972,7 @@ PanelWindow {
     }
 
     function toggleClipboardWindow() {
+        islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "clipboard")
             islandContainer.smartRestoreState();
         else
@@ -994,7 +1024,7 @@ PanelWindow {
             islandContainer.showSettingsApp();
 
         if (settingsAppLoader.item) {
-            settingsAppLoader.item.selectedCategoryIndex = 2;
+            settingsAppLoader.item.selectedCategoryIndex = 3;
             settingsAppLoader.item.openFontBrowser(target || "global");
         }
     }
@@ -1229,6 +1259,7 @@ PanelWindow {
         root.refreshWallpaperSources();
     }
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
+    WlrLayershell.namespace: "dynamic-island"
     WlrLayershell.layer: root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.screenshotEditorLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.notificationLayerVisible ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: {
         if (root.screenshotSnippingActive || islandContainer.screenshotEditorLayerVisible)
@@ -1553,6 +1584,7 @@ PanelWindow {
     }
 
     readonly property color themeAccent: {
+        if (dynamicConfig && dynamicConfig.effectiveAccentColor) return dynamicConfig.effectiveAccentColor;
         if (irisColors && irisColors.accentHex !== "") return irisColors.accentHex;
         if (matugenColors && matugenColors.accentHex !== "") return matugenColors.accentHex;
         if (wallustColors && wallustColors.accentHex !== "") return wallustColors.accentHex;
@@ -1891,7 +1923,7 @@ PanelWindow {
     IslandClock {
         id: timeObj
 
-        clockFormat: userConfig.clockFormat
+        clockFormat: (dynamicConfig && dynamicConfig.clockFormat) ? dynamicConfig.clockFormat : userConfig.clockFormat
     }
 
     Loader {
@@ -1969,7 +2001,7 @@ PanelWindow {
         property bool silentRingIsMuted: false
         property bool pendingPowerView: false
         property bool controlCenterHadPointer: false
-        readonly property bool controlCenterPointerInside: Boolean((mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
+        readonly property bool controlCenterPointerInside: Boolean((capsuleMouseArea && capsuleMouseArea.containsMouse) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
         property string discordCallerName: "Discord Call"
         property string discordCallSubtitle: I18n.tr("Chiamata in arrivo...")
         property string discordCallAvatarUrl: ""
@@ -2143,8 +2175,11 @@ PanelWindow {
             case "toggleControlCenter":
                 if (islandState === "control_center")
                     smartRestoreState();
+                else
+                    showControlCenter();
                 return ;
             case "openControlCenter":
+                showControlCenter();
                 return ;
             case "closeControlCenter":
                 if (islandState === "control_center")
@@ -2219,6 +2254,15 @@ PanelWindow {
                 showTimeCapsule();
                 return ;
             case "toggle_island":
+                if (root.autoHideForcedHidden) {
+                    root.autoHideForcedHidden = false;
+                    root.revealAutoHide("manual");
+                } else if (islandState !== "normal" && islandState !== "custom" && islandState !== "lyrics") {
+                    smartRestoreState();
+                } else {
+                    root.autoHideForcedHidden = true;
+                }
+                return ;
             case "restoreRestingCapsule":
                 smartRestoreState();
                 return ;
@@ -2880,18 +2924,22 @@ PanelWindow {
         }
 
         function smartRestoreState() {
-            if (screenShareFifoPath !== "") {
-                Quickshell.execDetached(["bash", "-c", "echo 'cancel' > '" + screenShareFifoPath + "'"]);
-                screenShareFifoPath = "";
+            try {
+                if (screenShareFifoPath !== "") {
+                    Quickshell.execDetached(["bash", "-c", "echo 'cancel' > '" + screenShareFifoPath + "'"]);
+                    screenShareFifoPath = "";
+                }
+                controlCenterAutoCollapseTimer.stop();
+                controlCenterHadPointer = false;
+                pendingPowerView = false;
+                root.closeAllConnectivityDetails();
+                restoreRestingCapsule();
+                if (controlCenterLoader.item)
+                    controlCenterLoader.item.powerViewActive = false;
+            } catch (err) {
+                console.log("[DynamicIsland] Error in smartRestoreState:", err);
+                restoreRestingCapsule(true);
             }
-            controlCenterAutoCollapseTimer.stop();
-            controlCenterHadPointer = false;
-            pendingPowerView = false;
-            root.closeAllConnectivityDetails();
-            restoreRestingCapsule();
-            if (controlCenterLoader.item)
-                controlCenterLoader.item.powerViewActive = false;
-
         }
 
         function showRestingCapsule(nextState) {
@@ -3231,7 +3279,7 @@ PanelWindow {
             }
         }
         onCurrentTrackChanged: {
-            const disableAutoExpand = (localUserConfigFile.parsedData && localUserConfigFile.parsedData.disableAutoExpandOnTrackChange !== undefined) ? Boolean(localUserConfigFile.parsedData.disableAutoExpandOnTrackChange) : (userConfig.disableAutoExpandOnTrackChange !== undefined ? Boolean(userConfig.disableAutoExpandOnTrackChange) : true);
+            const disableAutoExpand = (dynamicConfig && dynamicConfig.disableAutoExpandOnTrackChange !== undefined) ? dynamicConfig.disableAutoExpandOnTrackChange : ((localUserConfigFile.parsedData && localUserConfigFile.parsedData.disableAutoExpandOnTrackChange !== undefined) ? Boolean(localUserConfigFile.parsedData.disableAutoExpandOnTrackChange) : (userConfig.disableAutoExpandOnTrackChange !== undefined ? Boolean(userConfig.disableAutoExpandOnTrackChange) : true));
             if (disableAutoExpand)
                 return ;
 
@@ -3426,7 +3474,12 @@ PanelWindow {
             }
             repeat: false
             onTriggered: {
-                if (capsuleMouseArea.containsMouse || mainCapsuleHoverHandler.hovered || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible))
+                console.log("[DynamicIsland] hoverCollapseDelayTimer TRIGGERED! cmaMouse:", capsuleMouseArea.containsMouse,
+                            "trayHovered:", (trayFloatingIsland && trayFloatingIsland.hovered),
+                            "connMounted:", root.anyConnectivityDetailMounted,
+                            "hoverExpandedActive:", islandContainer.hoverExpandedActive,
+                            "state:", islandContainer.islandState);
+                if ((trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || root.anyConnectivityDetailMounted)
                     return ;
 
                 if (!islandContainer.hoverExpandedActive)
@@ -3447,9 +3500,14 @@ PanelWindow {
             interval: 400
             repeat: false
             onTriggered: {
-                if (islandContainer.islandState === "control_center" && islandContainer.hoverExpandedActive && !islandContainer.controlCenterPointerInside)
+                console.log("[DynamicIsland] controlCenterAutoCollapseTimer TRIGGERED! pointerInside:", islandContainer.controlCenterPointerInside,
+                            "hoverExpandedActive:", islandContainer.hoverExpandedActive);
+                if (islandContainer.islandState === "control_center" && islandContainer.hoverExpandedActive) {
+                    if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) || root.anyConnectivityDetailMounted)
+                        return ;
+                    islandContainer.hoverExpandedActive = false;
                     islandContainer.smartRestoreState();
-
+                }
             }
         }
 
@@ -3575,6 +3633,35 @@ PanelWindow {
             z: 8
         }
 
+        // ── Ombre Satelliti (Workspace & Headphones) ──────────────────────
+        RectangularGlow {
+            id: workspacePillShadow
+            anchors.fill: workspaceFloatingIsland
+            anchors.topMargin: 3
+            anchors.bottomMargin: -3
+            glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 14
+            spread: 0.08
+            color: Qt.rgba(0, 0, 0, 0.40 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            cornerRadius: workspaceFloatingIsland.radius + glowRadius
+            z: 7
+            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
+            opacity: workspaceFloatingIsland.opacity
+        }
+
+        RectangularGlow {
+            id: headphonesPillShadow
+            anchors.fill: headphonesFloatingIsland
+            anchors.topMargin: 3
+            anchors.bottomMargin: -3
+            glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 14
+            spread: 0.08
+            color: Qt.rgba(0, 0, 0, 0.40 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            cornerRadius: headphonesFloatingIsland.radius + glowRadius
+            z: 7
+            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && headphonesFloatingIsland.visible && headphonesFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
+            opacity: headphonesFloatingIsland.opacity
+        }
+
         WorkspaceFloatingIsland {
             id: workspaceFloatingIsland
 
@@ -3653,6 +3740,51 @@ PanelWindow {
             z: 1
             enabled: islandContainer.islandState === "control_center"
             onClicked: islandContainer.smartRestoreState()
+        }
+
+        // ── Ombre Eleganti Dynamic Island (Elevation Drop Shadows) ────────
+        Item {
+            id: capsuleShadowContainer
+            z: 4
+            x: mainCapsule.x
+            y: mainCapsule.y
+            width: mainCapsule.width
+            height: mainCapsule.height
+            scale: mainCapsule.scale
+            transformOrigin: mainCapsule.transformOrigin
+            opacity: mainCapsule.opacity * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0)
+            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && mainCapsule.visible && mainCapsule.opacity > 0.01 && !root.screenshotCapturing
+
+            // 1. Ombra Diffusa Morbida (Ambient Soft Shadow)
+            RectangularGlow {
+                anchors.fill: parent
+                anchors.topMargin: 4
+                anchors.bottomMargin: -4
+                glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? (dynamicConfig.shadowRadius + 4) : 22
+                spread: 0.08
+                color: Qt.rgba(0, 0, 0, 0.42)
+                cornerRadius: mainCapsule.radius + glowRadius
+            }
+
+            // 2. Ombra Ravvicinata di Profondità (Direct Key Shadow)
+            RectangularGlow {
+                anchors.fill: parent
+                anchors.topMargin: 2
+                anchors.bottomMargin: -2
+                glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? Math.round(dynamicConfig.shadowRadius * 0.55) : 10
+                spread: 0.16
+                color: Qt.rgba(0, 0, 0, 0.50)
+                cornerRadius: mainCapsule.radius + glowRadius
+            }
+
+            // 3. Delicato Glow Accento Dinamico (Subtle Iris/Pywal Tinted Rim Glow)
+            RectangularGlow {
+                anchors.fill: parent
+                glowRadius: (dynamicConfig && dynamicConfig.blurRadius > 0) ? Math.max(4, Math.round(dynamicConfig.blurRadius * 0.45)) : 10
+                spread: 0.02
+                color: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.14)
+                cornerRadius: mainCapsule.radius + glowRadius
+            }
         }
 
         // --- UI 渲染：灵动岛主干 ---
@@ -3792,7 +3924,7 @@ PanelWindow {
                     const w = mainCapsule.baseTargetWidth;
                     const contentW = Math.max(200, w - 24);
                     const imgH = Math.max(50, Math.min(220, Math.round(contentW / asp)));
-                    return imgH + 102;
+                    return imgH + 106;
                 }
                 case "screenshot_editor": {
                     const screenH = root.screen ? root.screen.height : 1080;
@@ -3981,6 +4113,9 @@ PanelWindow {
                 id: mainCapsuleHoverHandler
 
                 onHoveredChanged: {
+                    console.log("[DynamicIsland] mainCapsuleHoverHandler hovered:", hovered,
+                                "state:", islandContainer.islandState,
+                                "hoverExpandedActive:", islandContainer.hoverExpandedActive);
                     if (hovered) {
                         if (root.autoHideEnabled) {
                             root.autoHidePointerInside = true;
@@ -4001,6 +4136,15 @@ PanelWindow {
                                 hoverCollapseDelayTimer.restart();
 
                         }
+                    }
+                }
+
+                onPointChanged: {
+                    if (hovered) {
+                        if (hoverCollapseDelayTimer.running)
+                            hoverCollapseDelayTimer.stop();
+                        if (controlCenterAutoCollapseTimer.running)
+                            controlCenterAutoCollapseTimer.stop();
                     }
                 }
             }
@@ -4036,15 +4180,17 @@ PanelWindow {
                     }
                 }
                 onExited: {
-                    if (root.autoHideEnabled && !mainCapsuleHoverHandler.hovered) {
+                    console.log("[DynamicIsland] capsuleMouseArea onExited, hoverExpandedActive:", islandContainer.hoverExpandedActive);
+                    if (root.autoHideEnabled) {
                         root.autoHidePointerInside = false;
                         root.scheduleAutoHide();
                     }
-                    if (root.hoverExpandEnabled && !mainCapsuleHoverHandler.hovered) {
+                    if (root.hoverExpandEnabled) {
                         hoverExpandDelayTimer.stop();
-                        if (islandContainer.hoverExpandedActive)
+                        if (islandContainer.hoverExpandedActive) {
                             hoverCollapseDelayTimer.restart();
-
+                            controlCenterAutoCollapseTimer.restart();
+                        }
                     }
                 }
                 onPressed: (mouse) => {
@@ -4170,7 +4316,7 @@ PanelWindow {
                             return ;
                         }
                         const action = (dynamicConfig && dynamicConfig.primaryClickAction) ? dynamicConfig.primaryClickAction : (userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer" ? userConfig.dynamicIslandPrimaryAction : "");
-                        if (action === "control_center" || action === "toggleControlCenter" || action === "openControlCenter" || action === "none" || action === "") {
+                        if (action === "none" || action === "") {
                             return ;
                         }
                         islandContainer.handleConfiguredClickAction(action);
@@ -4193,6 +4339,45 @@ PanelWindow {
                     if (mouse.button === userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)) {
                         const dblAction = (dynamicConfig && dynamicConfig.doubleClickAction) ? dynamicConfig.doubleClickAction : "toggle_island";
                         islandContainer.handleConfiguredClickAction(dblAction);
+                    }
+                }
+                onWheel: (wheel) => {
+                    wheel.accepted = true;
+                    const stepPercent = (dynamicConfig && dynamicConfig.scrollStep > 0) ? dynamicConfig.scrollStep : 5;
+                    const stepFraction = stepPercent / 100.0;
+
+                    // Vertical scroll handling
+                    if (Math.abs(wheel.angleDelta.y) >= 20) {
+                        const isUp = wheel.angleDelta.y > 0;
+                        const vAction = (dynamicConfig && dynamicConfig.scrollVerticalAction) ? dynamicConfig.scrollVerticalAction : "volume";
+                        if (vAction === "volume") {
+                            let curVol = islandContainer.currentVolume;
+                            let newVol = Math.max(0.0, Math.min(1.0, curVol + (isUp ? stepFraction : -stepFraction)));
+                            SystemServices.setVolume(newVol);
+                            root.showOsdWindow("", newVol, "");
+                        } else if (vAction === "brightness") {
+                            let curBri = islandContainer.currentBrightness;
+                            let newBri = Math.max(0.05, Math.min(1.0, curBri + (isUp ? stepFraction : -stepFraction)));
+                            SystemServices.setBrightness(newBri);
+                            root.showOsdWindow("", newBri, "");
+                        }
+                        return;
+                    }
+
+                    // Horizontal scroll handling
+                    if (Math.abs(wheel.angleDelta.x) >= 20) {
+                        const isRight = wheel.angleDelta.x > 0;
+                        const hAction = (dynamicConfig && dynamicConfig.scrollHorizontalAction) ? dynamicConfig.scrollHorizontalAction : "track";
+                        if (hAction === "track") {
+                            if (isRight) {
+                                mediaController.next();
+                            } else {
+                                mediaController.previous();
+                            }
+                        } else if (hAction === "workspace") {
+                            Quickshell.execDetached(["hyprctl", "dispatch", "workspace", isRight ? "m+1" : "m-1"]);
+                        }
+                        return;
                     }
                 }
 
@@ -5584,6 +5769,14 @@ PanelWindow {
 
         Region {
             intersection: Intersection.Combine
+            x: Math.floor(root.autoHideRevealX)
+            y: 0
+            width: root.autoHideEnabled ? Math.ceil(root.autoHideRevealWidth) : 0
+            height: root.autoHideEnabled ? Math.max(10, Math.ceil(root.autoHideRevealHeight)) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
             x: Math.floor(mainCapsule.x)
             y: Math.floor(mainCapsule.y)
             width: Math.ceil(mainCapsule.width)
@@ -5596,6 +5789,14 @@ PanelWindow {
             y: Math.floor(topAnchorProxy.y)
             width: (topAnchorProxy.visible && topAnchorProxy.width > 0) ? Math.ceil(topAnchorProxy.width) : 0
             height: (topAnchorProxy.visible && topAnchorProxy.width > 0) ? Math.ceil(topAnchorProxy.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: workspaceFloatingIsland ? Math.floor(workspaceFloatingIsland.x) : 0
+            y: workspaceFloatingIsland ? Math.floor(workspaceFloatingIsland.y) : 0
+            width: (workspaceFloatingIsland && workspaceFloatingIsland.visible) ? Math.ceil(workspaceFloatingIsland.width) : 0
+            height: (workspaceFloatingIsland && workspaceFloatingIsland.visible) ? Math.ceil(workspaceFloatingIsland.height) : 0
         }
 
         Region {

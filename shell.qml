@@ -286,7 +286,7 @@ Scope {
         const windows = panelVariants.instances ? panelVariants.instances : [];
         for (let index = 0; index < windows.length; index++) {
             const window = windows[index];
-            if (window && window.autoHideTargetVisible)
+            if (window && window.autoHideTargetVisible && !window.autoHideForcedHidden)
                 return true;
 
         }
@@ -410,6 +410,10 @@ Scope {
         }
 
         function show() {
+            shellRoot.showIslandAll();
+        }
+
+        function showIsland() {
             shellRoot.showIslandAll();
         }
 

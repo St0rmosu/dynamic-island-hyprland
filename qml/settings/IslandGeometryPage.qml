@@ -267,5 +267,38 @@ Flickable {
                 onToggled: function(st) { if (root.config) root.config.set("islandShowWorkspaceOnAutoHide", st); }
             }
         }
+
+        // ── Sezione 4: Comportamento, Media & Mouse ─────────────────────
+        SettingsHeader {
+            text: I18n.tr("Comportamento, Media & Mouse")
+            accentColor: root.accentColor
+            textFontFamily: root.textFontFamily
+        }
+
+        SettingsCard {
+            SettingsSwitch {
+                title: I18n.tr("Disabilita Espansione al Cambio Canzone")
+                description: I18n.tr("Evita che l'isola si apra da sola a schermo ogni volta che inizia un nuovo brano")
+                icon: "\uf001" // music
+                checked: root.config ? root.config.disableAutoExpandOnTrackChange : false
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onToggled: function(st) { if (root.config) root.config.set("disableAutoExpandOnTrackChange", st); }
+            }
+
+            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
+
+            SettingsSwitch {
+                title: I18n.tr("Espandi Isola al Passaggio del Mouse (Hover)")
+                description: I18n.tr("Apre il centro di controllo o il player multimediale quando passi il cursore sopra la barra")
+                icon: "\uf245" // mouse-pointer
+                checked: root.config ? root.config.hoverExpandEnabled : false
+                accentColor: root.accentColor
+                textFontFamily: root.textFontFamily
+                iconFontFamily: root.iconFontFamily
+                onToggled: function(st) { if (root.config) root.config.set("hoverExpandEnabled", st); }
+            }
+        }
     }
 }

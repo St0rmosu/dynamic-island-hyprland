@@ -399,20 +399,20 @@ Item {
     readonly property bool bluetoothAvailable: !!bluetoothAdapter
     readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
     readonly property var bluetoothDeviceValues: bluetoothAdapter ? bluetoothAdapter.devices.values : []
-    readonly property bool wifiSupported: wifiController ? wifiController.supported : false
-    readonly property bool wifiReadOnly: wifiController ? wifiController.readOnly : true
-    readonly property bool wifiAvailable: wifiController ? wifiController.available : false
-    readonly property bool wifiEnabled: wifiController ? wifiController.enabled : false
-    readonly property bool wifiBusy: wifiController ? wifiController.busy : false
-    readonly property bool wifiListRunning: wifiController ? wifiController.scanning : false
-    readonly property string wifiCurrentSsid: wifiController ? wifiController.currentSsid : ""
+    readonly property bool wifiSupported: (wifiController && wifiController.supported !== undefined) ? wifiController.supported : false
+    readonly property bool wifiReadOnly: (wifiController && wifiController.readOnly !== undefined) ? wifiController.readOnly : true
+    readonly property bool wifiAvailable: (wifiController && wifiController.available !== undefined) ? wifiController.available : false
+    readonly property bool wifiEnabled: (wifiController && wifiController.enabled !== undefined) ? wifiController.enabled : false
+    readonly property bool wifiBusy: (wifiController && wifiController.busy !== undefined) ? wifiController.busy : false
+    readonly property bool wifiListRunning: (wifiController && wifiController.scanning !== undefined) ? wifiController.scanning : false
+    readonly property string wifiCurrentSsid: (wifiController && wifiController.currentSsid) || ""
     readonly property string wifiInfoMessage: wifiLocalInfoMessage.length > 0
         ? wifiLocalInfoMessage
-        : (wifiController ? wifiController.infoMessage : "")
+        : ((wifiController && wifiController.infoMessage) || "")
     readonly property string wifiError: wifiLocalError.length > 0
         ? wifiLocalError
-        : (wifiController ? wifiController.errorMessage : "")
-    readonly property string wifiUnsupportedReason: wifiController ? wifiController.unsupportedReason : ""
+        : ((wifiController && wifiController.errorMessage) || "")
+    readonly property string wifiUnsupportedReason: (wifiController && wifiController.unsupportedReason) || ""
     readonly property string wifiAvailabilityMessage: {
         if (wifiUnsupportedReason.length > 0) return wifiUnsupportedReason;
         if (wifiSupported && !wifiAvailable) return "No Wi-Fi device is available.";
@@ -423,16 +423,16 @@ Item {
         ? bluetoothAdapter.state === BluetoothAdapterState.Enabling
             || bluetoothAdapter.state === BluetoothAdapterState.Disabling
         : false
-    readonly property bool bluetoothPairingActive: bluetoothPairingAgent ? bluetoothPairingAgent.requestActive : false
-    readonly property bool bluetoothPairingRequiresInput: bluetoothPairingAgent ? bluetoothPairingAgent.requestRequiresInput : false
-    readonly property bool bluetoothPairingNumericInput: bluetoothPairingAgent ? bluetoothPairingAgent.requestNumericInput : false
-    readonly property bool bluetoothPairingRequiresConfirmation: bluetoothPairingAgent ? bluetoothPairingAgent.requestRequiresConfirmation : false
-    readonly property string bluetoothPairingTitle: bluetoothPairingAgent ? bluetoothPairingAgent.promptTitle : ""
-    readonly property string bluetoothPairingMessage: bluetoothPairingAgent ? bluetoothPairingAgent.promptMessage : ""
-    readonly property string bluetoothPairingDisplayedCode: bluetoothPairingAgent ? bluetoothPairingAgent.displayedCode : ""
+    readonly property bool bluetoothPairingActive: (bluetoothPairingAgent && bluetoothPairingAgent.requestActive !== undefined) ? bluetoothPairingAgent.requestActive : false
+    readonly property bool bluetoothPairingRequiresInput: (bluetoothPairingAgent && bluetoothPairingAgent.requestRequiresInput !== undefined) ? bluetoothPairingAgent.requestRequiresInput : false
+    readonly property bool bluetoothPairingNumericInput: (bluetoothPairingAgent && bluetoothPairingAgent.requestNumericInput !== undefined) ? bluetoothPairingAgent.requestNumericInput : false
+    readonly property bool bluetoothPairingRequiresConfirmation: (bluetoothPairingAgent && bluetoothPairingAgent.requestRequiresConfirmation !== undefined) ? bluetoothPairingAgent.requestRequiresConfirmation : false
+    readonly property string bluetoothPairingTitle: (bluetoothPairingAgent && bluetoothPairingAgent.promptTitle) || ""
+    readonly property string bluetoothPairingMessage: (bluetoothPairingAgent && bluetoothPairingAgent.promptMessage) || ""
+    readonly property string bluetoothPairingDisplayedCode: (bluetoothPairingAgent && bluetoothPairingAgent.displayedCode) || ""
     readonly property bool hasConnectivityPrompt: wifiPendingPasswordSsid.length > 0 || bluetoothPairingActive
     readonly property bool anyConnectivityPanelOpen: wifiPanelOpen || bluetoothPanelOpen || (activeDetailModule !== "")
-    readonly property string wifiStatusText: wifiController ? wifiController.statusText : "Unavailable"
+    readonly property string wifiStatusText: (wifiController && wifiController.statusText) || "Unavailable"
     readonly property string bluetoothStatusText: buildBluetoothStatusText()
     readonly property string bluetoothAvailabilityMessage: bluetoothAvailable ? "" : "No Bluetooth adapter is available."
     readonly property string batteryModeStatusText: buildBatteryModeStatusText()
@@ -686,8 +686,10 @@ Item {
     function clearWifiMessages() {
         wifiLocalInfoMessage = "";
         wifiLocalError = "";
-        if (wifiController)
-            wifiController.clearMessages();
+        try {
+            if (wifiController && typeof wifiController.clearMessages === "function")
+                wifiController.clearMessages();
+        } catch (e) {}
     }
 
     function clearBluetoothMessages() {
@@ -847,20 +849,28 @@ Item {
 
     function requestWifiStateRefresh() {
         if (!showCondition || !wifiController) return;
-        wifiController.refreshState();
+        try {
+            if (typeof wifiController.refreshState === "function")
+                wifiController.refreshState();
+        } catch (e) {}
     }
 
     function requestWifiListRefresh(rescan) {
         if (!showCondition || !wifiController) return;
         if (!wifiSupported || !wifiAvailable || !wifiEnabled) return;
-        wifiController.refreshNetworks(!!rescan);
+        try {
+            if (typeof wifiController.refreshNetworks === "function")
+                wifiController.refreshNetworks(!!rescan);
+        } catch (e) {}
     }
 
     function toggleWifiEnabled() {
         clearWifiPrompt();
         clearWifiMessages();
-        if (wifiController)
-            wifiController.setEnabled(!wifiEnabled);
+        try {
+            if (wifiController && typeof wifiController.setEnabled === "function")
+                wifiController.setEnabled(!wifiEnabled);
+        } catch (e) {}
     }
 
     function disconnectWifi() {
@@ -871,8 +881,10 @@ Item {
 
         clearWifiPrompt();
         clearWifiMessages();
-        if (wifiController)
-            wifiController.disconnectCurrent();
+        try {
+            if (wifiController && typeof wifiController.disconnectCurrent === "function")
+                wifiController.disconnectCurrent();
+        } catch (e) {}
     }
 
     function connectWifiNetwork(network) {
@@ -915,14 +927,18 @@ Item {
         clearWifiMessages();
 
         if (savedConnection) {
-            if (wifiController)
-                wifiController.connectToNetwork(ssid);
+            try {
+                if (wifiController && typeof wifiController.connectToNetwork === "function")
+                    wifiController.connectToNetwork(ssid);
+            } catch (e) {}
             return;
         }
 
         if (!secure) {
-            if (wifiController)
-                wifiController.connectToNetwork(ssid);
+            try {
+                if (wifiController && typeof wifiController.connectToNetwork === "function")
+                    wifiController.connectToNetwork(ssid);
+            } catch (e) {}
             return;
         }
 
@@ -943,8 +959,10 @@ Item {
         const password = wifiPendingPasswordValue;
         clearWifiPrompt();
         clearWifiMessages();
-        if (wifiController)
-            wifiController.connectToNetwork(ssid, password);
+        try {
+            if (wifiController && typeof wifiController.connectToNetwork === "function")
+                wifiController.connectToNetwork(ssid, password);
+        } catch (e) {}
     }
 
     function applyBrightnessSnapshot(value) {
