@@ -22,7 +22,6 @@ case "$MODE" in
         if [ -f "$FILENAME" ]; then
             wl-copy < "$FILENAME" 2>/dev/null
             notify-send -a "Screenshot" -i "$FILENAME" "Screenshot Catturato" "Schermo intero salvato in:\n$FILENAME\ne copiato negli appunti" 2>/dev/null
-            quickshell ipc -p /home/lollo/.config/quickshell/dynamic-island call island showScreenshotPreview "$FILENAME" 2>/dev/null &
         fi
         ;;
 
