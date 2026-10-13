@@ -56,10 +56,6 @@ Rectangle {
     height: compactHeight
     radius: compactHeight / 2
 
-    width: implicitWidth
-    height: compactHeight
-    radius: compactHeight / 2
-
     property var musicPill: null
     property bool _switchingPositionSide: false
 
