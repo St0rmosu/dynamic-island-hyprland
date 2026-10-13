@@ -84,27 +84,28 @@ PanelWindow {
         if (root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.islandState === "screenshot_editor")
             return root.screen ? root.screen.height : 1080;
 
-        var h = Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 16);
+        const shadowPad = Math.max(52, ((dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 20) + 28);
+        var h = Math.ceil(effectiveIslandTopMargin + Math.max(mainCapsule.targetHeight, mainCapsule.height) + shadowPad);
         if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
-            h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + 16));
+            h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + shadowPad));
             if (trayFloatingIsland.menuVisible)
-                h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + 16));
+                h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + shadowPad));
 
         }
         if (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)) {
-            h = Math.max(h, Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + 16));
+            h = Math.max(h, Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + shadowPad));
             if (themeFloatingIsland.y > 0)
-                h = Math.max(h, Math.ceil(themeFloatingIsland.y + themeFloatingIsland.height + 16));
+                h = Math.max(h, Math.ceil(themeFloatingIsland.y + themeFloatingIsland.height + shadowPad));
         }
         return h;
     }
-    readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 12) : 0
-    readonly property real overviewWindowHeight: root.overviewVisible ? Math.ceil(effectiveIslandTopMargin + root.overviewCapsuleHeight + 8) : 0
-    readonly property real musicFloatingIslandHeight: musicFloatingIsland && musicFloatingIsland.visible ? Math.ceil(musicFloatingIsland.y + musicFloatingIsland.height + 12) : 0
-    readonly property real headphonesFloatingIslandHeight: headphonesFloatingIsland && headphonesFloatingIsland.visible ? Math.ceil(headphonesFloatingIsland.y + headphonesFloatingIsland.height + 12) : 0
-    readonly property real callFloatingIslandHeight: callFloatingIsland && callFloatingIsland.visible ? Math.ceil(callFloatingIsland.y + callFloatingIsland.height + 12) : 0
+    readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 20) : 0
+    readonly property real overviewWindowHeight: root.overviewVisible ? Math.ceil(effectiveIslandTopMargin + root.overviewCapsuleHeight + 12) : 0
+    readonly property real musicFloatingIslandHeight: musicFloatingIsland && musicFloatingIsland.visible ? Math.ceil(musicFloatingIsland.y + musicFloatingIsland.height + 40) : 0
+    readonly property real headphonesFloatingIslandHeight: headphonesFloatingIsland && headphonesFloatingIsland.visible ? Math.ceil(headphonesFloatingIsland.y + headphonesFloatingIsland.height + 40) : 0
+    readonly property real callFloatingIslandHeight: callFloatingIsland && callFloatingIsland.visible ? Math.ceil(callFloatingIsland.y + callFloatingIsland.height + 40) : 0
     readonly property real themeFloatingIslandHeight: themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)
-        ? Math.ceil(Math.max(themeFloatingIsland.y + themeFloatingIsland.height + 16, effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + 16))
+        ? Math.ceil(Math.max(themeFloatingIsland.y + themeFloatingIsland.height + 40, effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + 40))
         : 0
     readonly property real requestedWindowHeight: Math.max(root.notificationCenterWindowHeight, root.capsuleWindowHeight, root.connectivityDetailWindowHeight, root.overviewWindowHeight, Math.ceil(root.controlCenterWindowHeight), root.musicFloatingIslandHeight, root.headphonesFloatingIslandHeight, root.callFloatingIslandHeight, root.themeFloatingIslandHeight)
     // Grow the layer surface immediately, but keep the old extent while the
@@ -3675,9 +3676,9 @@ PanelWindow {
             anchors.topMargin: 3
             anchors.bottomMargin: -3
             glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 14
-            spread: 0.08
-            color: Qt.rgba(0, 0, 0, 0.40 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
-            cornerRadius: workspaceFloatingIsland.radius + glowRadius
+            spread: 0.02
+            color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            cornerRadius: Math.min(workspaceFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
             visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing && !root.overviewVisible && root.overviewPhase === "closed" && !root.overviewMounted
             opacity: workspaceFloatingIsland.opacity
@@ -3689,9 +3690,9 @@ PanelWindow {
             anchors.topMargin: 3
             anchors.bottomMargin: -3
             glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 14
-            spread: 0.08
-            color: Qt.rgba(0, 0, 0, 0.40 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
-            cornerRadius: headphonesFloatingIsland.radius + glowRadius
+            spread: 0.02
+            color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            cornerRadius: Math.min(headphonesFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
             visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && headphonesFloatingIsland.visible && headphonesFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
             opacity: headphonesFloatingIsland.opacity
@@ -3791,35 +3792,37 @@ PanelWindow {
             opacity: mainCapsule.opacity * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0)
             visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && mainCapsule.visible && mainCapsule.opacity > 0.01 && !root.screenshotCapturing
 
-            // 1. Ombra Diffusa Morbida (Ambient Soft Shadow)
+            readonly property real safeCornerRadius: Math.min(mainCapsule.radius, Math.min(width, height) / 2)
+
+            // 1. Ombra Diffusa Morbida (Ambient Soft Shadow con decadimento naturale)
             RectangularGlow {
                 anchors.fill: parent
-                anchors.topMargin: 4
-                anchors.bottomMargin: -4
-                glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? (dynamicConfig.shadowRadius + 4) : 22
-                spread: 0.08
-                color: Qt.rgba(0, 0, 0, 0.42)
-                cornerRadius: mainCapsule.radius + glowRadius
+                anchors.topMargin: 5
+                anchors.bottomMargin: -5
+                glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? (dynamicConfig.shadowRadius + 2) : 22
+                spread: 0.0
+                color: Qt.rgba(0, 0, 0, 0.36)
+                cornerRadius: capsuleShadowContainer.safeCornerRadius
             }
 
-            // 2. Ombra Ravvicinata di Profondità (Direct Key Shadow)
+            // 2. Ombra Ravvicinata di Profondità (Direct Key Shadow morbida ed elegante)
             RectangularGlow {
                 anchors.fill: parent
                 anchors.topMargin: 2
                 anchors.bottomMargin: -2
-                glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? Math.round(dynamicConfig.shadowRadius * 0.55) : 10
-                spread: 0.16
-                color: Qt.rgba(0, 0, 0, 0.50)
-                cornerRadius: mainCapsule.radius + glowRadius
+                glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? Math.round(dynamicConfig.shadowRadius * 0.45) : 9
+                spread: 0.04
+                color: Qt.rgba(0, 0, 0, 0.44)
+                cornerRadius: capsuleShadowContainer.safeCornerRadius
             }
 
             // 3. Delicato Glow Accento Dinamico (Subtle Iris/Pywal Tinted Rim Glow)
             RectangularGlow {
                 anchors.fill: parent
-                glowRadius: (dynamicConfig && dynamicConfig.blurRadius > 0) ? Math.max(4, Math.round(dynamicConfig.blurRadius * 0.45)) : 10
-                spread: 0.02
-                color: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.14)
-                cornerRadius: mainCapsule.radius + glowRadius
+                glowRadius: (dynamicConfig && dynamicConfig.blurRadius > 0) ? Math.max(3, Math.round(dynamicConfig.blurRadius * 0.35)) : 7
+                spread: 0.0
+                color: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.12)
+                cornerRadius: capsuleShadowContainer.safeCornerRadius
             }
         }
 
@@ -3902,11 +3905,19 @@ PanelWindow {
                     const screenW = root.screen ? root.screen.width : 1920;
                     return Math.min(screenW - 48, 860);
                 }
-                case "notification":
+                case "notification": {
+                    if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview)) {
+                        const asp = islandContainer.screenshotAspect || 1.77;
+                        if (asp >= 1.6) return 400;
+                        if (asp >= 1.1) return 360;
+                        if (asp >= 0.8) return 320;
+                        return 280;
+                    }
                     if (!notificationLoader.item)
                         return 272;
 
                     return Math.max(notificationLoader.item.minimumWidth, Math.min(root.width - 48, notificationLoader.item.maximumWidth, notificationLoader.item.preferredWidth));
+                }
                 case "reload":
                     return reloadLoader.item ? reloadLoader.item.preferredWidth : 295;
                 case "charging":
@@ -3968,8 +3979,16 @@ PanelWindow {
                     const screenH = root.screen ? root.screen.height : 1080;
                     return Math.min(screenH - 80, 580);
                 }
-                case "notification":
+                case "notification": {
+                    if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview)) {
+                        const asp = Math.max(0.4, Math.min(6.0, islandContainer.screenshotAspect || 1.77));
+                        const w = mainCapsule.baseTargetWidth;
+                        const contentW = Math.max(200, w - 24);
+                        const imgH = Math.max(50, Math.min(220, Math.round(contentW / asp)));
+                        return imgH + 106;
+                    }
                     return notificationLoader.item ? Math.max(56, notificationLoader.item.preferredHeight) : 56;
+                }
                 case "reload":
                     return reloadLoader.item ? reloadLoader.item.preferredHeight : root.effectiveIslandHeight;
                 case "charging":
@@ -4018,7 +4037,7 @@ PanelWindow {
                 case "screenshot_editor":
                     return 26;
                 case "notification":
-                    if (notificationLoader.item && notificationLoader.item.hasScreenshotPreview)
+                    if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview))
                         return 22;
                     return islandContainer.notificationExpanded ? 28 : mainCapsule.targetHeight / 2;
                 case "reload":
