@@ -4159,17 +4159,16 @@ PanelWindow {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                width: isResting ? Math.round(parent.width * batteryFraction) : 0
+                width: Math.round(parent.width * batteryFraction)
                 clip: true
                 z: 3
                 visible: hasBattery && isResting && (batteryCap > 0 || islandContainer.isCharging)
                 opacity: (visible && !isLyricsActive) ? root.autoHideProgress : 0.0
 
                 Behavior on width {
-                    enabled: innerBatteryClip.visible && !innerBatteryClip.isLyricsActive
                     NumberAnimation {
-                        duration: 500
-                        easing.type: Easing.OutCubic
+                        duration: 380
+                        easing.type: Easing.OutQuint
                     }
                 }
                 Behavior on opacity {
@@ -4560,6 +4559,7 @@ PanelWindow {
                         minimumWidth: 220
                         maximumWidth: Math.max(220, (root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920)) - 48)
                         transitionProgress: islandContainer.swipeTransitionProgress
+                        isInteractive: capsuleMouseArea.sideSwipeInteractive
                         recordingActive: islandContainer.screenRecordingActive
                         showSecondaryText: islandContainer.workspaceOriginSide !== "left" && islandContainer.splitOriginSide !== "left"
                         showCondition: true
@@ -4592,6 +4592,7 @@ PanelWindow {
                         minimumWidth: 220
                         maximumWidth: Math.max(600, (root.screen ? root.screen.width : (root.width > 300 ? root.width : 1920)) - 48)
                         transitionProgress: (islandContainer.islandState === "lyrics" || (islandContainer.restingState === "lyrics" && islandContainer.islandState === "lyrics")) ? 1 : (islandContainer.islandState === "normal" ? islandContainer.rightSwipeProgress : 0)
+                        isInteractive: capsuleMouseArea.sideSwipeInteractive
                         recordingActive: islandContainer.screenRecordingActive
                         showSecondaryText: true
                         showCondition: true

@@ -6,6 +6,14 @@ import sys
 import time
 import json
 import threading
+import signal
+import ctypes
+
+try:
+    libc = ctypes.CDLL("libc.so.6")
+    libc.prctl(1, signal.SIGTERM) # PR_SET_PDEATHSIG
+except Exception:
+    pass
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)

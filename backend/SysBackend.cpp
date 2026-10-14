@@ -14,6 +14,11 @@
 #include <QStandardPaths>
 #include <libudev.h>
 
+#if defined(Q_OS_LINUX)
+#include <sys/prctl.h>
+#include <signal.h>
+#endif
+
 namespace {
 constexpr int kCommandTimeoutMs = 500;
 constexpr int kAudioEventDebounceMs = 80;
@@ -52,6 +57,30 @@ SysBackend::SysBackend(QObject *parent)
 
 SysBackend::~SysBackend() {
     stopLyricsBackend();
+    if (m_paSubscriber) {
+        m_paSubscriber->disconnect();
+        if (m_paSubscriber->state() != QProcess::NotRunning) {
+            m_paSubscriber->terminate();
+            if (!m_paSubscriber->waitForFinished(150)) {
+                m_paSubscriber->kill();
+                m_paSubscriber->waitForFinished(200);
+            }
+        }
+    }
+    if (m_volumeQueryProcess) {
+        m_volumeQueryProcess->disconnect();
+        if (m_volumeQueryProcess->state() != QProcess::NotRunning) {
+            m_volumeQueryProcess->kill();
+            m_volumeQueryProcess->waitForFinished(100);
+        }
+    }
+    if (m_defaultSinkQueryProcess) {
+        m_defaultSinkQueryProcess->disconnect();
+        if (m_defaultSinkQueryProcess->state() != QProcess::NotRunning) {
+            m_defaultSinkQueryProcess->kill();
+            m_defaultSinkQueryProcess->waitForFinished(100);
+        }
+    }
     if (m_batteryMonitor) udev_monitor_unref(m_batteryMonitor);
     if (m_udev) udev_unref(m_udev);
 }
@@ -395,6 +424,11 @@ void SysBackend::handleUpowerBatteryChanged() {
 void SysBackend::setupAudio() {
     m_paSubscriber = new QProcess(this);
     m_paSubscriber->setProcessChannelMode(QProcess::MergedChannels);
+#if defined(Q_OS_LINUX)
+    m_paSubscriber->setChildProcessModifier([]() {
+        ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    });
+#endif
     connect(m_paSubscriber, &QProcess::readyReadStandardOutput, this, &SysBackend::handleVolumeEvent);
 
     m_volumeQueryProcess = new QProcess(this);
@@ -565,6 +599,11 @@ void SysBackend::startTimedProcess(QProcess *process, QTimer *timeoutTimer, cons
 
 void SysBackend::setupLyrics() {
     m_lyricsProcess = new QProcess(this);
+#if defined(Q_OS_LINUX)
+    m_lyricsProcess->setChildProcessModifier([]() {
+        ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    });
+#endif
     m_lyricsRestartTimer = new QTimer(this);
     m_lyricsRestartTimer->setSingleShot(true);
     m_lyricsRestartTimer->setInterval(3000);

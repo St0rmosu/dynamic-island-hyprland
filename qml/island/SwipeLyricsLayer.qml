@@ -16,7 +16,15 @@ Item {
     property bool showCondition: false
     property bool showSecondaryText: true
     property bool recordingActive: false
+    property bool isInteractive: false
     property real transitionProgress: 0
+    Behavior on transitionProgress {
+        enabled: !root.isInteractive
+        NumberAnimation {
+            duration: 280
+            easing.type: Easing.OutCubic
+        }
+    }
     property int textPixelSize: userConfig.bodyFontSize
     property int timePixelSize: textPixelSize + 3
     property real minimumWidth: 220
@@ -269,7 +277,7 @@ Item {
     RecordingIndicator {
         id: timeRecordingIndicator
 
-        active: root.recordingActive && root.showSecondaryText && root.timeText !== "" && root.clampedProgress < 0.001
+        active: root.recordingActive && root.showSecondaryText && root.timeText !== ""
         contentOpacity: 1 - root.clampedProgress
         x: root.timeRecordingDotX
         anchors.verticalCenter: parent.verticalCenter

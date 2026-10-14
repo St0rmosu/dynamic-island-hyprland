@@ -21,6 +21,11 @@
 #include <unistd.h>
 #endif
 
+#if defined(Q_OS_LINUX)
+#include <sys/prctl.h>
+#include <signal.h>
+#endif
+
 #include <algorithm>
 #include <cmath>
 #include <memory>
@@ -368,6 +373,11 @@ void SystemServices::startNotificationMonitor() {
 
     m_notificationMonitor = new QProcess(this);
     m_notificationMonitor->setProcessChannelMode(QProcess::MergedChannels);
+#if defined(Q_OS_LINUX)
+    m_notificationMonitor->setChildProcessModifier([]() {
+        ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    });
+#endif
     m_notificationMonitor->setProgram(executable);
     m_notificationMonitor->setArguments({
         QStringLiteral("--session"),
@@ -396,6 +406,11 @@ void SystemServices::startPipeWireMonitor() {
 
     m_pipeWireMonitor = new QProcess(this);
     m_pipeWireMonitor->setProcessChannelMode(QProcess::MergedChannels);
+#if defined(Q_OS_LINUX)
+    m_pipeWireMonitor->setChildProcessModifier([]() {
+        ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    });
+#endif
     m_pipeWireMonitor->setProgram(executable);
     m_pipeWireMonitor->setArguments({QStringLiteral("-p"), QStringLiteral("-a")});
     connect(m_pipeWireMonitor, &QProcess::readyReadStandardOutput, this, &SystemServices::handlePipeWireOutput);
@@ -420,6 +435,11 @@ void SystemServices::startRecordingPortalMonitor() {
 
     m_recordingPortalMonitor = new QProcess(this);
     m_recordingPortalMonitor->setProcessChannelMode(QProcess::MergedChannels);
+#if defined(Q_OS_LINUX)
+    m_recordingPortalMonitor->setChildProcessModifier([]() {
+        ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    });
+#endif
     m_recordingPortalMonitor->setProgram(executable);
     m_recordingPortalMonitor->setArguments({
         QStringLiteral("--session"),
@@ -1222,6 +1242,11 @@ void SystemServices::startCava() {
     m_cavaProcess->setProgram(executable);
     m_cavaProcess->setArguments({QStringLiteral("-p"), QStringLiteral("/dev/stdin")});
     m_cavaProcess->setProcessChannelMode(QProcess::MergedChannels);
+#if defined(Q_OS_LINUX)
+    m_cavaProcess->setChildProcessModifier([]() {
+        ::prctl(PR_SET_PDEATHSIG, SIGTERM);
+    });
+#endif
 
     connect(m_cavaProcess, &QProcess::started, m_cavaProcess, [this]() {
         if (!m_cavaProcess) return;
