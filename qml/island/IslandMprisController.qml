@@ -26,6 +26,11 @@ Item {
 
     onPlayersListChanged: refreshActivePlayer()
 
+    Connections {
+        target: Mpris.players
+        function onValuesChanged() { root.refreshActivePlayer(); }
+    }
+
     Instantiator {
         model: Mpris.players
         delegate: Connections {
@@ -208,37 +213,39 @@ Item {
     }
 
     function findPlayerByDbusName(dbusName) {
-        if (!playersList || !dbusName) return null;
-        for (let index = 0; index < playersList.length; index++) {
-            if (playersList[index].dbusName === dbusName)
-                return playersList[index];
+        const list = (Mpris.players && Mpris.players.values !== undefined) ? Mpris.players.values : playersList;
+        if (!list || !dbusName) return null;
+        for (let index = 0; index < list.length; index++) {
+            if (list[index] && list[index].dbusName === dbusName)
+                return list[index];
         }
         return null;
     }
 
     function resolveActivePlayer() {
-        if (!playersList || playersList.length === 0) return null;
+        const list = (Mpris.players && Mpris.players.values !== undefined) ? Mpris.players.values : playersList;
+        if (!list || list.length === 0) return null;
 
-        for (let index = 0; index < playersList.length; index++) {
-            if (playersList[index].playbackState === MprisPlaybackState.Playing)
-                return playersList[index];
+        for (let index = 0; index < list.length; index++) {
+            if (list[index] && list[index].playbackState === MprisPlaybackState.Playing)
+                return list[index];
         }
 
         const rememberedPlayer = findPlayerByDbusName(lastActivePlayerDbusName);
         if (rememberedPlayer && (playerHasTrackInfo(rememberedPlayer) || rememberedPlayer.canControl))
             return rememberedPlayer;
 
-        for (let index = 0; index < playersList.length; index++) {
-            if (playersList[index].playbackState === MprisPlaybackState.Paused && playerHasTrackInfo(playersList[index]))
-                return playersList[index];
+        for (let index = 0; index < list.length; index++) {
+            if (list[index] && list[index].playbackState === MprisPlaybackState.Paused && playerHasTrackInfo(list[index]))
+                return list[index];
         }
 
-        for (let index = 0; index < playersList.length; index++) {
-            if (playersList[index].canControl)
-                return playersList[index];
+        for (let index = 0; index < list.length; index++) {
+            if (list[index] && list[index].canControl)
+                return list[index];
         }
 
-        return playersList[0];
+        return list[0] || null;
     }
 
     QtObject {

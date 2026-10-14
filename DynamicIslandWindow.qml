@@ -85,27 +85,34 @@ PanelWindow {
             return root.screen ? root.screen.height : 1080;
 
         const shadowPad = Math.max(52, ((dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 20) + 28);
-        var h = Math.ceil(effectiveIslandTopMargin + Math.max(mainCapsule.targetHeight, mainCapsule.height) + shadowPad);
+        var targetH = mainCapsule.targetHeight;
+        if (islandContainer.islandState === "control_center") {
+            targetH = Math.max(targetH, 540);
+        }
+        var h = Math.ceil(effectiveIslandTopMargin + targetH + shadowPad);
         if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
-            h = Math.max(h, Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height + shadowPad));
+            h = Math.max(h, Math.ceil(effectiveIslandTopMargin + targetH + 8 + 38 + shadowPad));
             if (trayFloatingIsland.menuVisible)
                 h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + shadowPad));
-
         }
         if (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)) {
-            h = Math.max(h, Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + shadowPad));
-            if (themeFloatingIsland.y > 0)
-                h = Math.max(h, Math.ceil(themeFloatingIsland.y + themeFloatingIsland.height + shadowPad));
+            h = Math.max(h, Math.ceil(effectiveIslandTopMargin + targetH + 10 + 38 + shadowPad));
         }
         return h;
     }
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 20) : 0
     readonly property real overviewWindowHeight: root.overviewVisible ? Math.ceil(effectiveIslandTopMargin + root.overviewCapsuleHeight + 12) : 0
-    readonly property real musicFloatingIslandHeight: musicFloatingIsland && musicFloatingIsland.visible ? Math.ceil(musicFloatingIsland.y + musicFloatingIsland.height + 40) : 0
-    readonly property real headphonesFloatingIslandHeight: headphonesFloatingIsland && headphonesFloatingIsland.visible ? Math.ceil(headphonesFloatingIsland.y + headphonesFloatingIsland.height + 40) : 0
-    readonly property real callFloatingIslandHeight: callFloatingIsland && callFloatingIsland.visible ? Math.ceil(callFloatingIsland.y + callFloatingIsland.height + 40) : 0
-    readonly property real themeFloatingIslandHeight: themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)
-        ? Math.ceil(Math.max(themeFloatingIsland.y + themeFloatingIsland.height + 40, effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + (themeFloatingIsland.height > 0 ? themeFloatingIsland.height : 38) + 40))
+    readonly property real musicFloatingIslandHeight: (musicFloatingIsland && musicFloatingIsland.visible)
+        ? Math.ceil(effectiveIslandTopMargin + (musicFloatingIsland.isExpanded ? musicFloatingIsland.expandedHeight : musicFloatingIsland.compactHeight) + 40)
+        : 0
+    readonly property real headphonesFloatingIslandHeight: (headphonesFloatingIsland && headphonesFloatingIsland.visible)
+        ? Math.ceil(effectiveIslandTopMargin + (headphonesFloatingIsland.isExpanded ? headphonesFloatingIsland.expandedHeight : headphonesFloatingIsland.compactHeight) + 40)
+        : 0
+    readonly property real callFloatingIslandHeight: (callFloatingIsland && callFloatingIsland.visible)
+        ? Math.ceil(effectiveIslandTopMargin + (callFloatingIsland.isExpanded ? callFloatingIsland.expandedHeight : callFloatingIsland.compactHeight) + 40)
+        : 0
+    readonly property real themeFloatingIslandHeight: (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible))
+        ? Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + 38 + 40)
         : 0
     readonly property real requestedWindowHeight: Math.max(root.notificationCenterWindowHeight, root.capsuleWindowHeight, root.connectivityDetailWindowHeight, root.overviewWindowHeight, Math.ceil(root.controlCenterWindowHeight), root.musicFloatingIslandHeight, root.headphonesFloatingIslandHeight, root.callFloatingIslandHeight, root.themeFloatingIslandHeight)
     // Grow the layer surface immediately, but keep the old extent while the
