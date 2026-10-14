@@ -3669,7 +3669,23 @@ PanelWindow {
             z: 8
         }
 
-        // ── Ombre Satelliti (Workspace & Headphones) ──────────────────────
+        // ── Ombre Satelliti (Music, Workspace & Headphones) ──────────────
+        RectangularGlow {
+            id: musicPillShadow
+            anchors.fill: musicFloatingIsland
+            anchors.topMargin: musicFloatingIsland.isExpanded ? 5 : 3
+            anchors.bottomMargin: musicFloatingIsland.isExpanded ? -5 : -3
+            glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0)
+                ? (musicFloatingIsland.isExpanded ? (dynamicConfig.shadowRadius + 4) : dynamicConfig.shadowRadius)
+                : (musicFloatingIsland.isExpanded ? 22 : 14)
+            spread: musicFloatingIsland.isExpanded ? 0.0 : 0.02
+            color: Qt.rgba(0, 0, 0, (musicFloatingIsland.isExpanded ? 0.42 : 0.38) * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            cornerRadius: Math.min(musicFloatingIsland.radius, Math.min(width, height) / 2)
+            z: 7
+            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && musicFloatingIsland.visible && musicFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
+            opacity: musicFloatingIsland.opacity
+        }
+
         RectangularGlow {
             id: workspacePillShadow
             anchors.fill: workspaceFloatingIsland

@@ -15,7 +15,29 @@ Item {
 
     property string lastActivePlayerDbusName: ""
     property var playersList: Mpris.players.values !== undefined ? Mpris.players.values : Mpris.players
-    property var activePlayer: resolveActivePlayer()
+    property var activePlayer: null
+
+    function refreshActivePlayer() {
+        const next = resolveActivePlayer();
+        if (activePlayer !== next) {
+            activePlayer = next;
+        }
+    }
+
+    onPlayersListChanged: refreshActivePlayer()
+
+    Instantiator {
+        model: Mpris.players
+        delegate: Connections {
+            target: modelData
+            function onPlaybackStateChanged() { root.refreshActivePlayer(); }
+            function onTrackTitleChanged() { root.refreshActivePlayer(); }
+            function onTrackArtUrlChanged() { root.refreshActivePlayer(); }
+            function onMetadataChanged() { root.refreshActivePlayer(); }
+        }
+        onObjectAdded: root.refreshActivePlayer()
+        onObjectRemoved: root.refreshActivePlayer()
+    }
 
     readonly property string lyricsLookupTitle: activePlayer ? (activePlayer.trackTitle || activePlayer.title || "") : ""
     readonly property string lyricsLookupArtist: {
@@ -62,6 +84,7 @@ Item {
     onClientIdChanged: syncLyricsBackend()
 
     Component.onCompleted: {
+        refreshActivePlayer();
         updatePlainLyric();
         syncLyricsBackend();
     }
