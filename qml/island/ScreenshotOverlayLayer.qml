@@ -17,6 +17,23 @@ Item {
     property real islandTopMargin: 8
     property real islandHeight: 40
 
+    // raggio angoli allineato a decoration:rounding di Hyprland (fallback 18)
+    property int windowRadius: 18
+
+    Process {
+        id: roundingProc
+        command: ["hyprctl", "getoption", "decoration:rounding", "-j"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const v = JSON.parse(text).int
+                    if (v >= 0) root.windowRadius = v
+                } catch (e) {}
+            }
+        }
+    }
+
     signal snipRequested(real x, real y, real w, real h, bool isSatty)
     signal dragUpdated(real w, real h)
     signal cancelRequested()
@@ -64,7 +81,7 @@ Item {
             color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.14)
             border.color: root.accentColor
             border.width: 2.5
-            radius: 10
+            radius: root.windowRadius
         }
 
         // Badge con nome applicazione / classe finestra
@@ -123,7 +140,7 @@ Item {
             color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.08)
             border.color: root.accentColor
             border.width: 2
-            radius: 4
+            radius: root.windowRadius
         }
 
         // Badge dimensioni (W × H px)
