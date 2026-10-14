@@ -4131,9 +4131,13 @@ PanelWindow {
 
                 readonly property int batteryCap: islandContainer.batteryCapacity
                 readonly property bool hasBattery: islandContainer.hasBattery && batteryCap > 0
+                readonly property bool isLyricsActive: (islandContainer.islandState === "lyrics"
+                    || islandContainer.restingState === "lyrics"
+                    || root.lyricsActive
+                    || (islandContainer.swipeTransitionProgress > 0.05))
                 readonly property bool isResting: (islandContainer.islandState === "normal"
-                    || islandContainer.islandState === "custom"
-                    || islandContainer.islandState === "lyrics")
+                    || islandContainer.islandState === "custom")
+                    && !isLyricsActive
                     && !root.overviewVisible
                     && !root.isScreenshotModeActive
                     && !root.screenshotCapturing
@@ -4159,9 +4163,10 @@ PanelWindow {
                 clip: true
                 z: 3
                 visible: hasBattery && isResting && (batteryCap > 0 || islandContainer.isCharging)
-                opacity: visible ? root.autoHideProgress : 0.0
+                opacity: (visible && !isLyricsActive) ? root.autoHideProgress : 0.0
 
                 Behavior on width {
+                    enabled: innerBatteryClip.visible && !innerBatteryClip.isLyricsActive
                     NumberAnimation {
                         duration: 500
                         easing.type: Easing.OutCubic
