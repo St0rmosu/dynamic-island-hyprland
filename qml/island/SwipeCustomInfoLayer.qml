@@ -80,6 +80,7 @@ Item {
         font.family: timeFontFamily
         font.pixelSize: root.timePixelSize
         font.weight: Font.Bold
+        font.features: { "tnum": 1 }
         text: timeText
     }
 
@@ -365,6 +366,7 @@ Item {
     RecordingIndicator {
         id: timeRecordingIndicator
 
+        accentColor: root.accentColor
         active: root.recordingActive && root.showSecondaryText && root.timeText !== ""
         contentOpacity: 1 - root.clampedProgress
         x: root.timeRecordingDotX

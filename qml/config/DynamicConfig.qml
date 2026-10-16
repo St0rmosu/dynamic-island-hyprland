@@ -22,6 +22,7 @@ Item {
     property int islandBackgroundOpacity: 92
     property bool lockIslandCenter: true
     property bool enableWorkspacePill: true
+    property bool enableMusicPill: true
     property string workspacePillPosition: "right"
     property bool workspacePillShowAppIcons: true
     property int workspacePillShownCount: 10
@@ -290,6 +291,7 @@ Item {
             if (data.islandBackgroundOpacity !== undefined) root.islandBackgroundOpacity = Number(data.islandBackgroundOpacity) || 92;
             if (data.lockIslandCenter !== undefined) root.lockIslandCenter = Boolean(data.lockIslandCenter);
             if (data.enableWorkspacePill !== undefined) root.enableWorkspacePill = Boolean(data.enableWorkspacePill);
+            if (data.enableMusicPill !== undefined) root.enableMusicPill = Boolean(data.enableMusicPill);
             if (data.workspacePillPosition !== undefined) root.workspacePillPosition = String(data.workspacePillPosition);
             if (data.workspacePillShowAppIcons !== undefined) root.workspacePillShowAppIcons = Boolean(data.workspacePillShowAppIcons);
             if (data.workspacePillShownCount !== undefined) root.workspacePillShownCount = parseInt(data.workspacePillShownCount) || 10;
@@ -466,6 +468,7 @@ Item {
                 islandBackgroundOpacity: root.islandBackgroundOpacity,
                 lockIslandCenter: root.lockIslandCenter,
                 enableWorkspacePill: root.enableWorkspacePill,
+                enableMusicPill: root.enableMusicPill,
                 workspacePillPosition: root.workspacePillPosition,
                 workspacePillShowAppIcons: root.workspacePillShowAppIcons,
                 workspacePillShownCount: root.workspacePillShownCount,

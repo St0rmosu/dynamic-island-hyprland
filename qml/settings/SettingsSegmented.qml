@@ -130,6 +130,9 @@ Item {
                             readonly property bool isSelected: String(root.currentValue) === String(modelData.value)
                             width: btnText.contentWidth + 22
                             height: flick.height
+                            scale: btnMouse.pressed ? 0.92 : (btnMouse.containsMouse ? 1.04 : 1.0)
+
+                            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
 
                             function updateIndicator() {
                                 if (isSelected) {

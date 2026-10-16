@@ -59,6 +59,14 @@ Item {
     // App detection for icon and color tint
     readonly property var appMeta: {
         const s = (appName + " " + summary + " " + body).toLowerCase();
+        if (s.indexOf("schermo") !== -1 || s.indexOf("screen") !== -1 || s.indexOf("trasmissione") !== -1 || s.indexOf("registrazione") !== -1 || s.indexOf("recording") !== -1) {
+            const scColor = (root.iconColor && root.iconColor != "#f4f5f7") ? root.iconColor : root.accentColor;
+            return {
+                icon: (root.iconText !== "" && !root.isImageIcon) ? root.iconText : "\uf0379",
+                color: scColor,
+                bg: Qt.rgba(scColor.r, scColor.g, scColor.b, 0.22)
+            };
+        }
         if (s.indexOf("whatsapp") !== -1)
             return { icon: "\uf232", color: "#25D366", bg: Qt.rgba(37/255, 211/255, 102/255, 0.22) };
         if (s.indexOf("discord") !== -1 || s.indexOf("vesktop") !== -1 || s.indexOf("armcord") !== -1)
@@ -79,10 +87,11 @@ Item {
             return { icon: "\uf1eb", color: "#30d158", bg: Qt.rgba(48/255, 209/255, 88/255, 0.22) };
         if (s.indexOf("bluetooth") !== -1)
             return { icon: "\uf294", color: "#0a84ff", bg: Qt.rgba(10/255, 132/255, 255/255, 0.22) };
+        const fallbackColor = (root.iconColor && root.iconColor != "#f4f5f7") ? root.iconColor : root.accentColor;
         return {
             icon: (root.iconText !== "" && root.iconText !== "" && root.iconText !== "\uf0f3" && !root.isImageIcon) ? root.iconText : "\uf0f3",
-            color: "#64d2ff",
-            bg: Qt.rgba(100/255, 210/255, 255/255, 0.18)
+            color: fallbackColor,
+            bg: Qt.rgba(fallbackColor.r, fallbackColor.g, fallbackColor.b, 0.20)
         };
     }
 

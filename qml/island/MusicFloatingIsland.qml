@@ -17,7 +17,7 @@ Rectangle {
 
     readonly property var activePlayer: mprisController ? mprisController.activePlayer : null
     readonly property bool isPlaying: activePlayer && activePlayer.playbackState === MprisPlaybackState.Playing
-    readonly property bool hasTrack: Boolean(activePlayer && mprisController.currentTrack !== "" && mprisController.currentTrack !== "Unknown")
+    readonly property bool hasTrack: Boolean(activePlayer && (isPlaying || (mprisController && mprisController.currentTrack !== "" && mprisController.currentTrack !== "Unknown")))
     readonly property string trackTitle: mprisController ? mprisController.currentTrack : ""
     readonly property string artistName: mprisController ? mprisController.currentArtist : ""
     readonly property string artUrl: mprisController ? mprisController.currentArtUrl : ""
@@ -26,6 +26,9 @@ Rectangle {
     readonly property string timeTotal: mprisController ? mprisController.timeTotal : "0:00"
 
     property bool isExpanded: false
+
+    property var dynamicConfig: null
+    property bool isEnabled: dynamicConfig ? (dynamicConfig.enableMusicPill !== false) : true
 
     // Dimensioni:
     // A riposo: cerchio perfetto identico alla foto 2 (width = height = islandHeight)
@@ -46,9 +49,11 @@ Rectangle {
     anchors.rightMargin: 7
     anchors.top: targetCapsule ? targetCapsule.top : undefined
 
-    visible: hasTrack && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) && opacity > 0.01
-    opacity: hasTrack && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
-    scale: hasTrack && (!rootWindow || (!rootWindow.isScreenshotModeActive && !rootWindow.modalExpandedActive)) ? 1.0 : 0.82
+    readonly property bool isTargetCapsuleResting: targetCapsule ? (targetCapsule.height <= (rootWindow ? rootWindow.effectiveIslandHeight + 6 : 46)) : true
+
+    visible: isEnabled && hasTrack && (!rootWindow || !rootWindow.isScreenshotModeActive) && opacity > 0.01
+    opacity: isEnabled && hasTrack && (!rootWindow || !rootWindow.isScreenshotModeActive) ? (targetCapsule ? targetCapsule.opacity : 1.0) : 0.0
+    scale: isEnabled && hasTrack && (!rootWindow || !rootWindow.isScreenshotModeActive) ? 1.0 : 0.82
 
     clip: true
     color: "#000000"
@@ -76,6 +81,15 @@ Rectangle {
 
     onHasTrackChanged: {
         if (!hasTrack) isExpanded = false;
+    }
+
+    Connections {
+        target: rootWindow || null
+        function onModalExpandedActiveChanged() {
+            if (rootWindow && rootWindow.modalExpandedActive) {
+                root.isExpanded = false;
+            }
+        }
     }
 
     // ==========================================

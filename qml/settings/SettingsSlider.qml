@@ -30,10 +30,10 @@ Item {
 
         Rectangle {
             visible: root.icon !== ""
-            width: 32
-            height: 32
+            width: 30
+            height: 30
             radius: 8
-            color: Qt.rgba(255, 255, 255, 0.05)
+            color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.16)
             anchors.verticalCenter: parent.verticalCenter
 
             Text {
@@ -41,7 +41,7 @@ Item {
                 text: root.icon
                 color: root.accentColor
                 font.family: root.iconFontFamily
-                font.pixelSize: 14
+                font.pixelSize: 13
             }
         }
 
@@ -80,7 +80,7 @@ Item {
             stepSize: root.stepSize
             value: root.value
             anchors.verticalCenter: parent.verticalCenter
-            width: 140
+            width: 170
 
             onMoved: {
                 root.value = value;
@@ -90,34 +90,34 @@ Item {
             background: Rectangle {
                 x: slider.leftPadding
                 y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                implicitWidth: 140
-                implicitHeight: 6
+                implicitWidth: 170
+                implicitHeight: 4
                 width: slider.availableWidth
-                height: 6
-                radius: 3
-                color: Qt.rgba(255, 255, 255, 0.12)
+                height: 4
+                radius: 2
+                color: Qt.rgba(255, 255, 255, 0.10)
 
                 Rectangle {
                     width: slider.visualPosition * parent.width
                     height: parent.height
                     color: root.accentColor
-                    radius: 3
+                    radius: 2
                 }
             }
 
             handle: Rectangle {
                 x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
                 y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                implicitWidth: 16
-                implicitHeight: 16
-                radius: 8
+                implicitWidth: 14
+                implicitHeight: 14
+                radius: 7
                 color: "#ffffff"
-                border.width: 2
-                border.color: root.accentColor
-                scale: slider.pressed ? 1.2 : (slider.hovered ? 1.1 : 1.0)
+                border.width: 1
+                border.color: Qt.rgba(0, 0, 0, 0.20)
+                scale: slider.pressed ? 1.25 : (slider.hovered ? 1.12 : 1.0)
 
                 Behavior on scale {
-                    NumberAnimation { duration: 120 }
+                    NumberAnimation { duration: 100; easing.type: Easing.OutQuad }
                 }
             }
         }
@@ -159,7 +159,9 @@ Item {
                 ? root.accentColor
                 : (badgeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.18) : "transparent")
             anchors.verticalCenter: parent.verticalCenter
+            scale: badgeMouse.pressed ? 0.94 : (badgeMouse.containsMouse ? 1.03 : 1.0)
 
+            Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
             Behavior on color { ColorAnimation { duration: 120 } }
             Behavior on border.color { ColorAnimation { duration: 120 } }
 
@@ -178,6 +180,7 @@ Item {
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                     font.family: root.textFontFamily
+                    font.features: { "tnum": 1 }
                 }
 
                 TextInput {

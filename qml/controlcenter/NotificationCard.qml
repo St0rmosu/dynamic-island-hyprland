@@ -146,6 +146,15 @@ Rectangle {
                 radius: 13
                 color: clearMouse.pressed ? "#55ff453a" : (clearMouse.containsMouse ? "#26ff453a" : StyleTokens.transparent)
                 anchors.verticalCenter: parent.verticalCenter
+                scale: clearMouse.pressed ? 0.88 : (clearMouse.containsMouse ? 1.08 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: clearMouse.pressed ? 90 : 180
+                        easing.type: clearMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.15
+                    }
+                }
 
                 Behavior on color { ColorAnimation { duration: 120 } }
 

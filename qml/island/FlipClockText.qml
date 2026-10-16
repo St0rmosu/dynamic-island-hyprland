@@ -8,9 +8,27 @@ Item {
     property string fontFamily: "Google Sans Flex"
     property int fontPixelSize: 15
     property int fontWeight: Font.Bold
-    property real fontLetterSpacing: -0.25
+    property real fontLetterSpacing: {
+        const lower = String(root.fontFamily || "").toLowerCase();
+        if (lower.indexOf("sf pro") !== -1 || lower.indexOf("inter") !== -1 || lower.indexOf("helvetica") !== -1)
+            return -0.3;
+        if (lower.indexOf("mono") !== -1 || lower.indexOf("code") !== -1)
+            return 0.0;
+        return -0.15;
+    }
     property int animationDuration: 380
     property bool animReady: false
+
+    TextMetrics {
+        id: digitWidthMetrics
+
+        font.family: root.fontFamily
+        font.pixelSize: root.fontPixelSize
+        font.weight: root.fontWeight
+        font.letterSpacing: root.fontLetterSpacing
+        font.features: { "tnum": 1 }
+        text: "0"
+    }
 
     Component.onCompleted: {
         Qt.callLater(function() {
@@ -35,12 +53,13 @@ Item {
 
                 readonly property int digitIndex: index
                 readonly property string targetChar: (index < root.timeText.length) ? root.timeText.charAt(index) : ""
+                readonly property bool isNumeric: targetChar >= "0" && targetChar <= "9"
                 property string displayedChar: ""
                 property string departingChar: ""
                 property bool initialized: false
                 readonly property real slideDistance: Math.max(14, Math.round(charMetrics.height * 0.9))
 
-                width: Math.max(charMetrics.advanceWidth, 1)
+                width: isNumeric ? Math.max(digitWidthMetrics.advanceWidth, 1) : Math.max(charMetrics.advanceWidth, 1)
                 height: Math.ceil(charMetrics.height + 4)
                 anchors.verticalCenter: parent.verticalCenter
                 clip: true
@@ -78,6 +97,7 @@ Item {
                     font.pixelSize: root.fontPixelSize
                     font.weight: root.fontWeight
                     font.letterSpacing: root.fontLetterSpacing
+                    font.features: { "tnum": 1 }
                     text: digitItem.targetChar !== "" ? digitItem.targetChar : "0"
                 }
 
@@ -87,12 +107,14 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.verticalCenterOffset: 0
+                    horizontalAlignment: Text.AlignHCenter
                     text: digitItem.departingChar
                     color: root.color
                     font.family: root.fontFamily
                     font.pixelSize: root.fontPixelSize
                     font.weight: root.fontWeight
                     font.letterSpacing: root.fontLetterSpacing
+                    font.features: { "tnum": 1 }
                     opacity: 0
                     visible: opacity > 0.01
 
@@ -111,12 +133,14 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.verticalCenterOffset: 0
+                    horizontalAlignment: Text.AlignHCenter
                     text: digitItem.displayedChar
                     color: root.color
                     font.family: root.fontFamily
                     font.pixelSize: root.fontPixelSize
                     font.weight: root.fontWeight
                     font.letterSpacing: root.fontLetterSpacing
+                    font.features: { "tnum": 1 }
                     opacity: 1
 
                     Behavior on color {

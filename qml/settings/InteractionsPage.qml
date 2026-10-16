@@ -29,77 +29,7 @@ Flickable {
         anchors.margins: 24
         spacing: 20
 
-        // ── Sezione 1: Azioni dei Click sull'Isola ─────────────────────
-        SettingsHeader {
-            text: I18n.tr("Azioni del Click del Mouse")
-            accentColor: root.accentColor
-            textFontFamily: root.textFontFamily
-        }
-
-        SettingsCard {
-            SettingsSegmented {
-                title: I18n.tr("Click Sinistro (Principale)")
-                description: I18n.tr("Azione quando premi sull'isola a riposo")
-                model: [
-                    { text: I18n.tr("Control Center"), value: "control_center" },
-                    { text: I18n.tr("Media Player"), value: "player" },
-                    { text: I18n.tr("Appunti"), value: "clipboard" }
-                ]
-                currentValue: root.config ? root.config.primaryClickAction : "control_center"
-                accentColor: root.accentColor
-                textFontFamily: root.textFontFamily
-                onSelected: function(val) { if (root.config) root.config.set("primaryClickAction", val); }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
-
-            SettingsSegmented {
-                title: I18n.tr("Click Destro (Secondario)")
-                description: I18n.tr("Azione al tasto destro del mouse")
-                model: [
-                    { text: I18n.tr("Power Menu"), value: "power_menu" },
-                    { text: I18n.tr("Control Center"), value: "control_center" },
-                    { text: I18n.tr("App Launcher"), value: "apps" }
-                ]
-                currentValue: root.config ? root.config.secondaryClickAction : "power_menu"
-                accentColor: root.accentColor
-                textFontFamily: root.textFontFamily
-                onSelected: function(val) { if (root.config) root.config.set("secondaryClickAction", val); }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
-
-            SettingsSegmented {
-                title: I18n.tr("Click Rotella (Centrale)")
-                description: I18n.tr("Azione alla pressione della rotellina del mouse")
-                model: [
-                    { text: I18n.tr("Appunti"), value: "clipboard" },
-                    { text: I18n.tr("File Shelf"), value: "files" },
-                    { text: I18n.tr("Power Menu"), value: "power_menu" }
-                ]
-                currentValue: root.config ? root.config.middleClickAction : "clipboard"
-                accentColor: root.accentColor
-                textFontFamily: root.textFontFamily
-                onSelected: function(val) { if (root.config) root.config.set("middleClickAction", val); }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
-
-            SettingsSegmented {
-                title: I18n.tr("Doppio Click")
-                description: I18n.tr("Azione rapida al doppio click rapido")
-                model: [
-                    { text: I18n.tr("Nascondi Isola"), value: "toggle_island" },
-                    { text: I18n.tr("Overview"), value: "overview" }
-                ]
-                currentValue: root.config ? root.config.doubleClickAction : "toggle_island"
-                accentColor: root.accentColor
-                textFontFamily: root.textFontFamily
-                onSelected: function(val) { if (root.config) root.config.set("doubleClickAction", val); }
-            }
-        }
-
-        // ── Sezione 2: Scorrimento Rotellina (Scroll) ───────────────────
+        // ── Sezione: Regolazione con la Rotellina del Mouse ─────────────
         SettingsHeader {
             text: I18n.tr("Rotella del Mouse (Scroll sull'Isola)")
             accentColor: root.accentColor
@@ -109,7 +39,7 @@ Flickable {
         SettingsCard {
             SettingsSegmented {
                 title: I18n.tr("Scorrimento Verticale (Su / Giù)")
-                description: I18n.tr("Regola al volo una funzione di sistema")
+                description: I18n.tr("Regola al volo il volume o la luminosità scorrendo sull'isola")
                 model: [
                     { text: I18n.tr("Volume Audio"), value: "volume" },
                     { text: I18n.tr("Luminosità"), value: "brightness" }
@@ -122,24 +52,9 @@ Flickable {
 
             Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
 
-            SettingsSegmented {
-                title: I18n.tr("Scorrimento Orizzontale (Sinistra / Destra)")
-                description: I18n.tr("Spostamento laterale della rotellina")
-                model: [
-                    { text: I18n.tr("Cambia Canzone"), value: "track" },
-                    { text: I18n.tr("Cambia Workspace"), value: "workspace" }
-                ]
-                currentValue: root.config ? root.config.scrollHorizontalAction : "track"
-                accentColor: root.accentColor
-                textFontFamily: root.textFontFamily
-                onSelected: function(val) { if (root.config) root.config.set("scrollHorizontalAction", val); }
-            }
-
-            Rectangle { width: parent.width; height: 1; color: Qt.rgba(255, 255, 255, 0.05) }
-
             SettingsSlider {
                 title: I18n.tr("Passo di Regolazione Volume/Luminosità")
-                description: I18n.tr("Percentuale per ogni scatto della rotellina")
+                description: I18n.tr("Percentuale per ogni scatto della rotellina del mouse")
                 icon: "\uf1de" // sliders
                 from: 1
                 to: 10
@@ -153,7 +68,7 @@ Flickable {
             }
         }
 
-        // ── Sezione 3: Media & Notifiche Brani ──────────────────────────
+        // ── Sezione: Comportamento Media Player ─────────────────────────
         SettingsHeader {
             text: I18n.tr("Comportamento Media Player")
             accentColor: root.accentColor

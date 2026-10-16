@@ -74,13 +74,19 @@ Rectangle {
     // Posizionamento satellite a fianco dell'orologio (privo di conflitti di ancoraggio mutuo)
     x: {
         if (!targetCapsule) return 0;
+        const screenW = (rootWindow && rootWindow.screen && rootWindow.screen.width > 0)
+            ? rootWindow.screen.width
+            : ((targetCapsule.parent && targetCapsule.parent.width > 100) ? targetCapsule.parent.width : 1920);
+        const capWidth = targetCapsule.width > 0 ? targetCapsule.width : (rootWindow ? rootWindow.effectiveIslandWidth : 140);
+        const capX = targetCapsule.x > 0 ? targetCapsule.x : Math.round((screenW - capWidth) / 2);
+
         if (positionSide === "left") {
-            if (musicPill && musicPill.visible && musicPill.opacity > 0.05) {
+            if (musicPill && musicPill.visible && musicPill.opacity > 0.05 && musicPill.x > 0) {
                 return musicPill.x - width - 8;
             }
-            return targetCapsule.x - width - 8;
+            return capX - width - 8;
         } else {
-            return targetCapsule.x + targetCapsule.width + 8;
+            return capX + capWidth + 8;
         }
     }
     y: targetCapsule ? targetCapsule.y : 0
@@ -97,9 +103,11 @@ Rectangle {
     readonly property bool isAutoHidden: rootWindow && rootWindow.autoHideEnabled && !rootWindow.autoHideTargetVisible
     readonly property bool showOnAutoHide: dynamicConfig ? (dynamicConfig.showWorkspaceOnAutoHide !== false) : true
     readonly property bool modalOrSnipping: rootWindow && (rootWindow.isScreenshotModeActive || rootWindow.screenshotSnippingActive || (rootWindow.islandContainer && rootWindow.islandContainer.islandState === "settings_app"))
+    readonly property bool isWindowReady: !rootWindow || (rootWindow.width > 200)
+    readonly property bool hovered: pillHoverArea.containsMouse
 
-    visible: isEnabled && !overviewActive && !modalOrSnipping && opacity > 0.01
-    opacity: isEnabled && !overviewActive && !modalOrSnipping ? ((isAutoHidden && showOnAutoHide) ? 1.0 : (targetCapsule ? targetCapsule.opacity : 1.0)) : 0.0
+    visible: isEnabled && isWindowReady && !overviewActive && !modalOrSnipping && opacity > 0.01
+    opacity: isEnabled && isWindowReady && !overviewActive && !modalOrSnipping ? ((isAutoHidden && showOnAutoHide) ? 1.0 : (targetCapsule ? targetCapsule.opacity : 1.0)) : 0.0
     scale: 1.0
 
     clip: true
@@ -158,6 +166,7 @@ Rectangle {
             "thunar": "system-file-manager",
             "nautilus": "org.gnome.Nautilus",
             "org.gnome.nautilus": "org.gnome.Nautilus",
+            "hyprfm": "org.gnome.Nautilus",
             "dolphin": "system-file-manager",
             "kitty": "kitty",
             "alacritty": "Alacritty",
@@ -441,6 +450,17 @@ Rectangle {
             radius: root.itemSize / 2
             color: root.accentColor
             z: 2
+            scale: {
+                const currentSlot = wsSlotsRepeater.itemAt(root.currentWorkspace - 1);
+                return (currentSlot && currentSlot.isPressed) ? 0.88 : 1.0;
+            }
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: 90
+                    easing.type: Easing.OutQuad
+                }
+            }
 
             visible: root.currentWorkspace >= 1 && root.currentWorkspace <= root.totalWorkspaces
             x: (root.currentWorkspace >= 1 && root.currentWorkspace <= root.totalWorkspaces) 
@@ -458,6 +478,7 @@ Rectangle {
 
         // ── 3. Slot Workspace (Icona App / Bolla / Puntino) ───────────────────────
         Repeater {
+            id: wsSlotsRepeater
             model: root.totalWorkspaces
             delegate: Item {
                 id: wsSlot
@@ -468,12 +489,22 @@ Rectangle {
                 readonly property var appInfo: root.wsAppMap[wsId]
                 readonly property string appIconSource: appInfo ? (appInfo.icon || "") : ""
                 readonly property bool hasAppIcon: root.showAppIcons && appIconSource !== ""
+                readonly property bool isPressed: itemArea.pressed
 
                 x: index * (root.itemSize + root.itemSpacing)
                 y: 0
                 width: root.itemSize
                 height: root.itemSize
                 z: 3
+                scale: itemArea.pressed ? 0.86 : (itemArea.containsMouse ? 1.08 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: itemArea.pressed ? 90 : 180
+                        easing.type: itemArea.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.15
+                    }
+                }
 
                 // Icona dell'Applicazione tonda con tinta dinamica M3/Iris
                 ClippingRectangle {

@@ -21,12 +21,14 @@ Item {
 
     width: 28
     height: 28
-    scale: controlArea.pressed ? 0.8 : 1.0
+    scale: controlArea.pressed ? 0.86 : (controlArea.containsMouse ? 1.08 : 1.0)
     opacity: enabled ? 1.0 : 0.45
 
     Behavior on scale {
         NumberAnimation {
-            duration: 100
+            duration: controlArea.pressed ? 80 : 180
+            easing.type: controlArea.pressed ? Easing.OutQuad : Easing.OutBack
+            easing.overshoot: 1.2
         }
     }
 
@@ -46,6 +48,8 @@ Item {
         anchors.fill: parent
         anchors.margins: -15
         enabled: root.enabled
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
         preventStealing: true
 
         onPressed: function(mouse) {

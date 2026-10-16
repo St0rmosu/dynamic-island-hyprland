@@ -991,6 +991,32 @@ PanelWindow {
         islandContainer.showClipboard();
     }
 
+    function toggleFocusTimeWindow() {
+        islandContainer.hoverExpandedActive = false;
+        if (islandContainer.islandState === "focustime")
+            islandContainer.smartRestoreState();
+        else
+            islandContainer.showFocusTime();
+    }
+
+    function showFocusTimeWindow() {
+        islandContainer.showFocusTime();
+    }
+
+    function setFocusTimeWeekView(weekView) {
+        if (islandContainer.islandState !== "focustime")
+            islandContainer.showFocusTime();
+        if (focustimeLoader.item)
+            focustimeLoader.item.isWeekView = weekView;
+    }
+
+    function setFocusTimeSelectedApp(appClass) {
+        if (islandContainer.islandState !== "focustime")
+            islandContainer.showFocusTime();
+        if (focustimeLoader.item)
+            focustimeLoader.item.selectApp({ class: appClass, name: appClass, icon: "" });
+    }
+
     function toggleSettingsAppWindow() {
         if (shellRootController && shellRootController.toggleSettingsAppWindow)
             shellRootController.toggleSettingsAppWindow();
@@ -1205,6 +1231,13 @@ PanelWindow {
 
     }
 
+    function focusFocusTime() {
+        islandContainer.forceActiveFocus();
+        if (focustimeLoader.item && focustimeLoader.item.grabKeyboardFocus)
+            focustimeLoader.item.grabKeyboardFocus();
+
+    }
+
     function focusPolkit() {
         islandContainer.forceActiveFocus();
         if (polkitLoader.item) {
@@ -1256,7 +1289,7 @@ PanelWindow {
 
     onScreenRecordingActiveChanged: {
         if (screenRecordingActive)
-            islandContainer.showNotificationCapsule(I18n.tr("Schermo"), I18n.tr("Condivisione Schermo"), I18n.tr("Trasmissione video attiva"), "\u{F0379}", "#af52de");
+            islandContainer.showNotificationCapsule(I18n.tr("Schermo"), I18n.tr("Condivisione Schermo"), I18n.tr("Trasmissione video attiva"), "\u{F0379}", root.themeAccent);
 
     }
     color: "transparent"
@@ -1268,12 +1301,12 @@ PanelWindow {
     }
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
     WlrLayershell.namespace: "dynamic-island"
-    WlrLayershell.layer: root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.screenshotEditorLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.notificationLayerVisible ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.screenshotEditorLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.notificationLayerVisible || islandContainer.focustimeLayerVisible ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: {
         if (root.screenshotSnippingActive || islandContainer.screenshotEditorLayerVisible)
             return WlrKeyboardFocus.Exclusive;
 
-        if (islandContainer.screenshotPreviewLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible)
+        if (islandContainer.screenshotPreviewLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.focustimeLayerVisible)
             return WlrKeyboardFocus.Exclusive;
 
         if (islandContainer.fileShelfLayerVisible)
@@ -2008,8 +2041,10 @@ PanelWindow {
         property int batteryAlertCapacity: 100
         property bool silentRingIsMuted: false
         property bool pendingPowerView: false
+        property bool islandHadPointer: false
         property bool controlCenterHadPointer: false
-        readonly property bool controlCenterPointerInside: Boolean((capsuleMouseArea && capsuleMouseArea.containsMouse) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
+        readonly property bool islandPointerInside: Boolean((capsuleMouseArea && capsuleMouseArea.containsMouse) || (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || (wifiConnectivityDetailShell && wifiConnectivityDetailShell.open && wifiConnectivityDetailShell.hovered) || (bluetoothConnectivityDetailShell && bluetoothConnectivityDetailShell.open && bluetoothConnectivityDetailShell.hovered) || (powerConnectivityDetailShell && powerConnectivityDetailShell.open && powerConnectivityDetailShell.hovered))
+        readonly property bool controlCenterPointerInside: islandPointerInside
         property string discordCallerName: "Discord Call"
         property string discordCallSubtitle: I18n.tr("Chiamata in arrivo...")
         property string discordCallAvatarUrl: ""
@@ -2047,7 +2082,7 @@ PanelWindow {
         readonly property bool timerBubbleWanted: (timerActive && timerRemainingSeconds > 0 || timerCompletionAnimating) && !root.overviewVisible && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
         readonly property bool fileShelfBubbleWanted: FileShelf.count > 0 && !root.overviewVisible && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
         readonly property bool fileShelfCanAutoOpen: !root.overviewVisible && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
-        readonly property bool blocksTransientSplit: islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "control_center" || islandState === "power_menu" || islandState === "notification" || islandState === "screenshot_preview" || islandState === "screenshot_snipping" || islandState === "screenshot_editor" || islandState === "reload" || islandState === "wallpaper_picker" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "file_shelf" || islandState === "polkit" || islandState === "charging" || islandState === "silent_ring" || islandState === "discord_call"
+        readonly property bool blocksTransientSplit: islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "control_center" || islandState === "power_menu" || islandState === "notification" || islandState === "screenshot_preview" || islandState === "screenshot_snipping" || islandState === "screenshot_editor" || islandState === "reload" || islandState === "wallpaper_picker" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "file_shelf" || islandState === "polkit" || islandState === "charging" || islandState === "silent_ring" || islandState === "discord_call" || islandState === "focustime"
         readonly property bool splitShowsProgress: islandState === "split" && osdProgress >= 0
         readonly property bool splitShowsText: islandState === "split" && osdProgress < 0 && osdCustomText !== ""
         readonly property bool splitShowsIconOnly: islandState === "split" && osdProgress < 0 && osdCustomText === ""
@@ -2074,6 +2109,7 @@ PanelWindow {
             && !applicationLauncherLayerVisible && !clipboardLayerVisible
             && !settingsAppLayerVisible && !fileShelfLayerVisible
             && !polkitLayerVisible && !screenSharePickerLayerVisible
+            && !focustimeLayerVisible
             && hasCustomLeftItems
             && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0)))
         readonly property bool lyricsSwipeVisible: !root.overviewVisible
@@ -2093,6 +2129,7 @@ PanelWindow {
             && !applicationLauncherLayerVisible && !clipboardLayerVisible
             && !settingsAppLayerVisible && !fileShelfLayerVisible
             && !polkitLayerVisible && !screenSharePickerLayerVisible
+            && !focustimeLayerVisible
             && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0)))
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
@@ -2115,6 +2152,7 @@ PanelWindow {
         readonly property bool fileShelfLayerVisible: !root.overviewVisible && islandState === "file_shelf"
         readonly property bool polkitLayerVisible: !root.overviewVisible && islandState === "polkit"
         readonly property bool screenSharePickerLayerVisible: !root.overviewVisible && islandState === "screen_share_picker"
+        readonly property bool focustimeLayerVisible: !root.overviewVisible && islandState === "focustime"
         property string screenShareFifoPath: ""
         readonly property var activePlayer: mediaController.activePlayer
         readonly property string lyricsDisplayText: mediaController.displayText
@@ -2216,6 +2254,13 @@ PanelWindow {
                     smartRestoreState();
                 else
                     showClipboard();
+                return ;
+            case "focustime":
+            case "toggleFocusTime":
+                if (islandState === "focustime")
+                    smartRestoreState();
+                else
+                    showFocusTime();
                 return ;
             case "apps":
             case "toggleApplicationLauncher":
@@ -2819,7 +2864,7 @@ PanelWindow {
         }
 
         function showReloadCapsule(failed, errorString) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (!failed && (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "focustime"))
                 return ;
 
             abortSideTransientMode();
@@ -2831,11 +2876,12 @@ PanelWindow {
             reloadErrorString = errorString || "";
             islandState = "reload";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-            restartAutoHideTimer(failed ? 8000 : 2500);
+            root.showAutoHiddenIsland("state");
+            restartAutoHideTimer(failed ? 9000 : 4000);
         }
 
         function showChargingCapsule(capacity, isCharging) {
-            if (!hasBattery || root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (!hasBattery || root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "focustime")
                 return ;
 
             abortSideTransientMode();
@@ -2852,7 +2898,7 @@ PanelWindow {
         }
 
         function showLowBatteryCapsule(capacity) {
-            if (!hasBattery || root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (!hasBattery || root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "focustime")
                 return ;
 
             abortSideTransientMode();
@@ -2869,7 +2915,7 @@ PanelWindow {
         }
 
         function showSilentRingCapsule(isMuted) {
-            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (root.overviewVisible || islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "focustime")
                 return ;
 
             abortSideTransientMode();
@@ -2972,7 +3018,9 @@ PanelWindow {
                     Quickshell.execDetached(["bash", "-c", "echo 'cancel' > '" + screenShareFifoPath + "'"]);
                     screenShareFifoPath = "";
                 }
+                hoverCollapseDelayTimer.stop();
                 controlCenterAutoCollapseTimer.stop();
+                islandHadPointer = false;
                 controlCenterHadPointer = false;
                 pendingPowerView = false;
                 root.closeAllConnectivityDetails();
@@ -3072,6 +3120,22 @@ PanelWindow {
             islandState = "clipboard";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             stopAutoHideTimer();
+        }
+
+        function showFocusTime() {
+            cancelSideSwipeSettle();
+            abortSideTransientMode();
+            clearTransientCapsule();
+            islandState = "focustime";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            stopAutoHideTimer();
+        }
+
+        function toggleFocusTime() {
+            if (islandState === "focustime")
+                smartRestoreState();
+            else
+                showFocusTime();
         }
 
         function showSettingsApp() {
@@ -3183,7 +3247,7 @@ PanelWindow {
             if (root.autoHideSuppressesTransientReveal)
                 return ;
 
-            if (islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded")
+            if (islandState === "control_center" || islandState === "notification" || islandState === "discord_call" || islandState === "application_launcher" || islandState === "clipboard" || islandState === "settings_app" || islandState === "wallpaper_picker" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screen_share_picker" || islandState === "power_menu" || islandState === "expanded" || islandState === "bluetooth_expanded" || islandState === "focustime")
                 return ;
 
             clearTransientCapsule();
@@ -3216,19 +3280,38 @@ PanelWindow {
 
         anchors.fill: parent
         focus: root.screenshotSnippingActive || screenshotPreviewLayerVisible || screenshotEditorLayerVisible || controlCenterLayerVisible || wallpaperPickerLayerVisible || applicationLauncherLayerVisible || clipboardLayerVisible || settingsAppLayerVisible || fileShelfLayerVisible || polkitLayerVisible || expandedPlayerKeyboardFocusRequested || (root.monitorFocused && (root.overviewVisible || root.connectivityPromptActive))
+        onIslandPointerInsideChanged: {
+            if (islandPointerInside) {
+                islandHadPointer = true;
+                hoverCollapseDelayTimer.stop();
+                controlCenterAutoCollapseTimer.stop();
+            } else if (islandHadPointer) {
+                if (islandState !== "normal" &&
+                    islandState !== "custom" &&
+                    islandState !== "lyrics" &&
+                    islandState !== "settings_app" &&
+                    islandState !== "screenshot_editor" &&
+                    islandState !== "screenshot_snipping" &&
+                    islandState !== "screenshot_preview") {
+                    hoverCollapseDelayTimer.restart();
+                }
+            }
+        }
         onControlCenterPointerInsideChanged: {
             if (islandState === "control_center") {
                 if (controlCenterPointerInside) {
                     controlCenterHadPointer = true;
                     controlCenterAutoCollapseTimer.stop();
-                } else if (controlCenterHadPointer && hoverExpandedActive) {
+                } else if (controlCenterHadPointer) {
                     controlCenterAutoCollapseTimer.restart();
                 }
             }
         }
         onIslandStateChanged: {
-            console.log("[DynamicIsland] islandState changed to:", islandState, "hoverExpandedActive:", islandContainer.hoverExpandedActive, "pointerInside:", islandContainer.controlCenterPointerInside);
+            console.log("[DynamicIsland] islandState changed to:", islandState, "hoverExpandedActive:", islandContainer.hoverExpandedActive, "pointerInside:", islandContainer.islandPointerInside);
+            hoverCollapseDelayTimer.stop();
             controlCenterAutoCollapseTimer.stop();
+            islandHadPointer = islandPointerInside;
             if (islandState === "control_center")
                 controlCenterHadPointer = controlCenterPointerInside;
             else
@@ -3278,6 +3361,12 @@ PanelWindow {
                     root.closeOverviewEverywhere();
                     event.accepted = true;
                     return;
+                }
+                if (islandContainer.islandState === "focustime" && focustimeLoader.item && focustimeLoader.item.handleEscapeKey) {
+                    if (focustimeLoader.item.handleEscapeKey()) {
+                        event.accepted = true;
+                        return;
+                    }
                 }
                 if (islandContainer.islandState !== "normal") {
                     islandContainer.smartRestoreState();
@@ -3517,23 +3606,37 @@ PanelWindow {
             }
             repeat: false
             onTriggered: {
-                console.log("[DynamicIsland] hoverCollapseDelayTimer TRIGGERED! cmaMouse:", capsuleMouseArea.containsMouse,
+                console.log("[DynamicIsland] hoverCollapseDelayTimer TRIGGERED! cmaMouse:", (capsuleMouseArea && capsuleMouseArea.containsMouse),
+                            "capsuleHovered:", (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered),
+                            "wsHovered:", (workspaceFloatingIsland && workspaceFloatingIsland.hovered),
                             "trayHovered:", (trayFloatingIsland && trayFloatingIsland.hovered),
                             "connMounted:", root.anyConnectivityDetailMounted,
-                            "hoverExpandedActive:", islandContainer.hoverExpandedActive,
                             "state:", islandContainer.islandState);
-                if ((trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.hovered) || (trayFloatingIsland && trayFloatingIsland.visible && trayFloatingIsland.menuVisible) || root.anyConnectivityDetailMounted)
+                if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) ||
+                    (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) ||
+                    (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) ||
+                    root.anyConnectivityDetailMounted ||
+                    (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) ||
+                    (capsuleMouseArea && capsuleMouseArea.containsMouse))
                     return ;
 
-                if (!islandContainer.hoverExpandedActive)
-                    return ;
-
-                if (islandContainer.islandState === "settings_app" || islandContainer.islandState === "clipboard" || islandContainer.islandState === "wallpaper_picker" || islandContainer.islandState === "application_launcher" || islandContainer.islandState === "file_shelf") {
+                if (islandContainer.islandState === "settings_app" ||
+                    islandContainer.islandState === "screenshot_editor" ||
+                    islandContainer.islandState === "screenshot_snipping" ||
+                    islandContainer.islandState === "screenshot_preview") {
                     islandContainer.hoverExpandedActive = false;
                     return ;
                 }
-                islandContainer.hoverExpandedActive = false;
-                islandContainer.smartRestoreState();
+
+                if (islandContainer.islandState !== "normal" &&
+                    islandContainer.islandState !== "custom" &&
+                    islandContainer.islandState !== "lyrics") {
+                    if (islandContainer.islandHadPointer && !islandContainer.islandPointerInside) {
+                        islandContainer.hoverExpandedActive = false;
+                        islandContainer.islandHadPointer = false;
+                        islandContainer.smartRestoreState();
+                    }
+                }
             }
         }
 
@@ -3543,10 +3646,14 @@ PanelWindow {
             interval: 400
             repeat: false
             onTriggered: {
-                console.log("[DynamicIsland] controlCenterAutoCollapseTimer TRIGGERED! pointerInside:", islandContainer.controlCenterPointerInside,
-                            "hoverExpandedActive:", islandContainer.hoverExpandedActive);
-                if (islandContainer.islandState === "control_center" && islandContainer.hoverExpandedActive) {
-                    if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) || root.anyConnectivityDetailMounted)
+                console.log("[DynamicIsland] controlCenterAutoCollapseTimer TRIGGERED! pointerInside:", islandContainer.controlCenterPointerInside);
+                if (islandContainer.islandState === "control_center") {
+                    if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) ||
+                        (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) ||
+                        (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) ||
+                        root.anyConnectivityDetailMounted ||
+                        (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) ||
+                        (capsuleMouseArea && capsuleMouseArea.containsMouse))
                         return ;
                     islandContainer.hoverExpandedActive = false;
                     islandContainer.smartRestoreState();
@@ -3576,7 +3683,13 @@ PanelWindow {
             // In all normal modes (control_center, clipboard, etc.):
             // 1:1 locked with mainCapsule with ZERO delay!
             width: isSettingsApp ? (hasTopNotification ? 290 : 0) : (exitingSettingsApp ? mainCapsule.baseTargetWidth : mainCapsule.width)
-            x: (isSettingsApp || exitingSettingsApp) ? (root.lockIslandCenter ? Math.round((parent.width - width) / 2) : Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2)) : mainCapsule.x
+            x: {
+                if (isSettingsApp || exitingSettingsApp) {
+                    const totalW = (root.screen && root.screen.width > 0) ? root.screen.width : ((parent && parent.width > 100) ? parent.width : 1920);
+                    return root.lockIslandCenter ? Math.round((totalW - width) / 2) : Math.round(totalW * root.effectiveIslandPositionX / 100 - width / 2);
+                }
+                return mainCapsule.x;
+            }
 
             Timer {
                 id: exitSettingsTimer
@@ -3669,6 +3782,7 @@ PanelWindow {
 
             targetCapsule: topAnchorProxy
             rootWindow: root
+            dynamicConfig: root.dynamicConfig
             mprisController: mediaController
             userConfig: root.userConfig
             islandTopMargin: root.effectiveIslandTopMargin
@@ -3689,7 +3803,7 @@ PanelWindow {
             color: Qt.rgba(0, 0, 0, (musicFloatingIsland.isExpanded ? 0.42 : 0.38) * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
             cornerRadius: Math.min(musicFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
-            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && musicFloatingIsland.visible && musicFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
+            visible: musicFloatingIsland.isEnabled && (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && musicFloatingIsland.visible && musicFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
             opacity: musicFloatingIsland.opacity
         }
 
@@ -3703,7 +3817,7 @@ PanelWindow {
             color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
             cornerRadius: Math.min(workspaceFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
-            visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing && !root.overviewVisible && root.overviewPhase === "closed" && !root.overviewMounted
+            visible: workspaceFloatingIsland.isEnabled && (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing && !root.overviewVisible && root.overviewPhase === "closed" && !root.overviewMounted
             opacity: workspaceFloatingIsland.opacity
         }
 
@@ -3794,11 +3908,17 @@ PanelWindow {
         }
 
         MouseArea {
-            id: controlCenterOutsideDismissArea
+            id: expandedModalOutsideDismissArea
 
             anchors.fill: parent
             z: 1
-            enabled: islandContainer.islandState === "control_center"
+            enabled: islandContainer.islandState !== "normal" &&
+                     islandContainer.islandState !== "custom" &&
+                     islandContainer.islandState !== "lyrics" &&
+                     islandContainer.islandState !== "settings_app" &&
+                     islandContainer.islandState !== "screenshot_editor" &&
+                     islandContainer.islandState !== "screenshot_snipping" &&
+                     islandContainer.islandState !== "screenshot_preview"
             onClicked: islandContainer.smartRestoreState()
         }
 
@@ -3860,6 +3980,8 @@ PanelWindow {
                     return 320;
                 if (mainCapsule.isScreenshotPreviewActive)
                     return 290;
+                if (islandContainer.islandState === "reload")
+                    return 340;
                 return 400;
             }
             readonly property bool notificationHistorySurface: islandContainer.islandState === "notification_center"
@@ -3900,6 +4022,8 @@ PanelWindow {
                     return 820;
                 case "clipboard":
                     return 800;
+                case "focustime":
+                    return 860;
                 case "settings_app":
                     return 980;
                 case "polkit":
@@ -3939,10 +4063,15 @@ PanelWindow {
                     if (!notificationLoader.item)
                         return 272;
 
-                    return Math.max(notificationLoader.item.minimumWidth, Math.min(root.width - 48, notificationLoader.item.maximumWidth, notificationLoader.item.preferredWidth));
+                    const screenW = (root.screen && root.screen.width > 0) ? root.screen.width : ((root.width > 300) ? root.width : 1920);
+                    return Math.max(notificationLoader.item.minimumWidth, Math.min(screenW - 48, notificationLoader.item.maximumWidth, notificationLoader.item.preferredWidth));
                 }
-                case "reload":
-                    return reloadLoader.item ? reloadLoader.item.preferredWidth : 295;
+                case "reload": {
+                    if (islandContainer.reloadFailed) {
+                        return (islandContainer.reloadErrorString !== "") ? 510 : 320;
+                    }
+                    return 300;
+                }
                 case "charging":
                     return 260;
                 case "silent_ring":
@@ -3974,6 +4103,8 @@ PanelWindow {
                     return 428;
                 case "clipboard":
                     return 520;
+                case "focustime":
+                    return 580;
                 case "settings_app":
                     return 680;
                 case "polkit":
@@ -4012,8 +4143,12 @@ PanelWindow {
                     }
                     return notificationLoader.item ? Math.max(56, notificationLoader.item.preferredHeight) : 56;
                 }
-                case "reload":
-                    return reloadLoader.item ? reloadLoader.item.preferredHeight : root.effectiveIslandHeight;
+                case "reload": {
+                    if (islandContainer.reloadFailed && islandContainer.reloadErrorString !== "") {
+                        return reloadLoader.item ? reloadLoader.item.preferredHeight : 88;
+                    }
+                    return Math.max(root.effectiveIslandHeight, 42);
+                }
                 case "charging":
                     return 44;
                 case "silent_ring":
@@ -4041,6 +4176,8 @@ PanelWindow {
                 case "application_launcher":
                 case "clipboard":
                     return 34;
+                case "focustime":
+                    return 32;
                 case "settings_app":
                     return 32;
                 case "polkit":
@@ -4063,8 +4200,12 @@ PanelWindow {
                     if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview))
                         return 22;
                     return islandContainer.notificationExpanded ? 28 : mainCapsule.targetHeight / 2;
-                case "reload":
-                    return reloadLoader.item ? reloadLoader.item.preferredRadius : mainCapsule.targetHeight / 2;
+                case "reload": {
+                    if (islandContainer.reloadFailed && islandContainer.reloadErrorString !== "") {
+                        return reloadLoader.item ? reloadLoader.item.preferredRadius : 24;
+                    }
+                    return mainCapsule.targetHeight / 2;
+                }
                 case "charging":
                 case "silent_ring":
                     return 22;
@@ -4087,9 +4228,12 @@ PanelWindow {
             }
 
             z: 5
-            color: root.overviewContentVisible ? root.overviewCapsuleColor : (notificationHistorySurface ? "#080808" : Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100))
+            color: root.overviewContentVisible ? root.overviewCapsuleColor : (notificationHistorySurface ? "#080808" : ((islandContainer.islandState === "focustime" || islandContainer.islandState === "settings_app") ? "#0c0e14" : Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100)))
             y: (islandContainer.islandState === "settings_app" ? Math.round(((root.screen ? root.screen.height : 1080) - targetHeight) / 2) : root.effectiveIslandTopMargin - (1 - root.autoHideProgress) * (targetHeight + root.effectiveIslandTopMargin + 8))
-            x: parent ? (root.lockIslandCenter ? Math.round((parent.width - width) / 2) : Math.round(parent.width * root.effectiveIslandPositionX / 100 - width / 2 + (root.autoBalanceSatellites ? root.animatedBalanceOffset : 0))) : 0
+            x: {
+                const totalW = (root.screen && root.screen.width > 0) ? root.screen.width : ((parent && parent.width > 100) ? parent.width : 1920);
+                return root.lockIslandCenter ? Math.round((totalW - width) / 2) : Math.round(totalW * root.effectiveIslandPositionX / 100 - width / 2 + (root.autoBalanceSatellites ? root.animatedBalanceOffset : 0));
+            }
             clip: true
             width: displayedWidth
             height: targetHeight
@@ -4141,6 +4285,7 @@ PanelWindow {
                     && !root.overviewVisible
                     && !root.isScreenshotModeActive
                     && !root.screenshotCapturing
+                    && mainCapsule.height <= (root.effectiveIslandHeight + 6)
 
                 readonly property real batteryFraction: Math.max(0.0, Math.min(1.0, batteryCap / 100.0))
 
@@ -4185,7 +4330,7 @@ PanelWindow {
                     height: mainCapsule.height
                     radius: mainCapsule.radius
                     color: "transparent"
-                    border.width: 1.5
+                    border.width: 2.5
                     border.color: innerBatteryClip.indicatorColor
                     antialiasing: true
 
@@ -4203,12 +4348,15 @@ PanelWindow {
                                 "state:", islandContainer.islandState,
                                 "hoverExpandedActive:", islandContainer.hoverExpandedActive);
                     if (hovered) {
+                        islandContainer.islandHadPointer = true;
+                        hoverCollapseDelayTimer.stop();
+                        if (controlCenterAutoCollapseTimer.running)
+                            controlCenterAutoCollapseTimer.stop();
                         if (root.autoHideEnabled) {
                             root.autoHidePointerInside = true;
                             root.showAutoHiddenIsland();
                         }
                         if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
-                            hoverCollapseDelayTimer.stop();
                             hoverExpandDelayTimer.restart();
                         }
                     } else {
@@ -4218,9 +4366,16 @@ PanelWindow {
                         }
                         if (root.hoverExpandEnabled) {
                             hoverExpandDelayTimer.stop();
-                            if (islandContainer.hoverExpandedActive)
-                                hoverCollapseDelayTimer.restart();
-
+                        }
+                        if (islandContainer.islandHadPointer &&
+                            islandContainer.islandState !== "normal" &&
+                            islandContainer.islandState !== "custom" &&
+                            islandContainer.islandState !== "lyrics" &&
+                            islandContainer.islandState !== "settings_app" &&
+                            islandContainer.islandState !== "screenshot_editor" &&
+                            islandContainer.islandState !== "screenshot_snipping" &&
+                            islandContainer.islandState !== "screenshot_preview") {
+                            hoverCollapseDelayTimer.restart();
                         }
                     }
                 }
@@ -4254,29 +4409,38 @@ PanelWindow {
                 enabled: !root.overviewVisible && twoFingerTouchArea.touchPoints.length < 2
                 acceptedButtons: root.dynamicIslandAcceptedButtons
                 preventStealing: true
-                hoverEnabled: root.hoverExpandEnabled || root.autoHideEnabled
+                hoverEnabled: true
                 onEntered: {
+                    islandContainer.islandHadPointer = true;
+                    hoverCollapseDelayTimer.stop();
+                    if (controlCenterAutoCollapseTimer.running)
+                        controlCenterAutoCollapseTimer.stop();
                     if (root.autoHideEnabled) {
                         root.autoHidePointerInside = true;
                         root.showAutoHiddenIsland();
                     }
                     if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
-                        hoverCollapseDelayTimer.stop();
                         hoverExpandDelayTimer.restart();
                     }
                 }
                 onExited: {
-                    console.log("[DynamicIsland] capsuleMouseArea onExited, hoverExpandedActive:", islandContainer.hoverExpandedActive);
+                    console.log("[DynamicIsland] capsuleMouseArea onExited, state:", islandContainer.islandState);
                     if (root.autoHideEnabled) {
                         root.autoHidePointerInside = false;
                         root.scheduleAutoHide();
                     }
                     if (root.hoverExpandEnabled) {
                         hoverExpandDelayTimer.stop();
-                        if (islandContainer.hoverExpandedActive) {
-                            hoverCollapseDelayTimer.restart();
-                            controlCenterAutoCollapseTimer.restart();
-                        }
+                    }
+                    if (islandContainer.islandHadPointer &&
+                        islandContainer.islandState !== "normal" &&
+                        islandContainer.islandState !== "custom" &&
+                        islandContainer.islandState !== "lyrics" &&
+                        islandContainer.islandState !== "settings_app" &&
+                        islandContainer.islandState !== "screenshot_editor" &&
+                        islandContainer.islandState !== "screenshot_snipping" &&
+                        islandContainer.islandState !== "screenshot_preview") {
+                        hoverCollapseDelayTimer.restart();
                     }
                 }
                 onPressed: (mouse) => {
@@ -4541,7 +4705,12 @@ PanelWindow {
                 anchors.fill: parent
                 active: islandContainer.customSwipeVisible
                 asynchronous: false
-                visible: active
+                visible: active && opacity > 0.01
+                opacity: (active && mainCapsule.height <= (root.effectiveIslandHeight + 8) && mainCapsule.width <= (islandContainer.customCapsuleWidth + 30)) ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+                }
                 onLoaded: islandContainer.syncCustomCapsuleWidth()
 
                 sourceComponent: Component {
@@ -4576,7 +4745,12 @@ PanelWindow {
                 anchors.fill: parent
                 active: islandContainer.lyricsSwipeVisible || islandContainer.restingState === "lyrics"
                 asynchronous: false
-                visible: islandContainer.lyricsSwipeVisible
+                visible: islandContainer.lyricsSwipeVisible && opacity > 0.01
+                opacity: (islandContainer.lyricsSwipeVisible && mainCapsule.height <= (root.effectiveIslandHeight + 8)) ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+                }
                 onLoaded: islandContainer.syncLyricsCapsuleWidth()
 
                 sourceComponent: Component {
@@ -4915,9 +5089,9 @@ PanelWindow {
                 id: reloadLoader
 
                 anchors.fill: parent
-                active: islandContainer.reloadLayerVisible
+                active: true
                 asynchronous: false
-                visible: active
+                visible: islandContainer.reloadLayerVisible
                 z: 4
 
                 sourceComponent: Component {
@@ -5206,6 +5380,26 @@ PanelWindow {
             }
 
             Loader {
+                id: focustimeLoader
+
+                anchors.fill: parent
+                active: islandContainer.focustimeLayerVisible
+                asynchronous: false
+                visible: islandContainer.focustimeLayerVisible
+                onLoaded: root.focusFocusTime()
+
+                sourceComponent: Component {
+                    FocusTimeLayer {
+                        accentColor: root.themeAccent
+                        iconFontFamily: root.iconFontFamily
+                        textFontFamily: root.textFontFamily
+                        showCondition: islandContainer.focustimeLayerVisible
+                        onCloseRequested: islandContainer.smartRestoreState()
+                    }
+                }
+            }
+
+            Loader {
                 id: settingsAppLoader
 
                 anchors.fill: parent
@@ -5395,7 +5589,7 @@ PanelWindow {
             Behavior on displayedWidth {
                 NumberAnimation {
                     duration: capsuleMouseArea.sideSwipeInteractive ? 0 : mainCapsule.morphDuration
-                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: (mainCapsule.isScreenshotPreviewActive || islandContainer.islandState === "reload") ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -5405,7 +5599,7 @@ PanelWindow {
 
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: (mainCapsule.isScreenshotPreviewActive || islandContainer.islandState === "reload") ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }
@@ -5434,7 +5628,7 @@ PanelWindow {
             Behavior on radius {
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: mainCapsule.isScreenshotPreviewActive ? Easing.OutCubic : Easing.OutQuint
+                    easing.type: (mainCapsule.isScreenshotPreviewActive || islandContainer.islandState === "reload") ? Easing.OutCubic : Easing.OutQuint
                 }
 
             }

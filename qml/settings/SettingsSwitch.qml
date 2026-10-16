@@ -17,8 +17,16 @@ Item {
     width: parent ? parent.width : 500
     height: 48
 
+    Rectangle {
+        anchors.fill: parent
+        radius: 8
+        color: rowMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.035) : "transparent"
+        Behavior on color { ColorAnimation { duration: 120 } }
+    }
+
     Row {
         anchors.left: parent.left
+        anchors.leftMargin: 4
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: switchItem.left
         anchors.rightMargin: 16
@@ -26,10 +34,10 @@ Item {
 
         Rectangle {
             visible: root.icon !== ""
-            width: 32
-            height: 32
+            width: 30
+            height: 30
             radius: 8
-            color: Qt.rgba(255, 255, 255, 0.05)
+            color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.16)
             anchors.verticalCenter: parent.verticalCenter
 
             Text {
@@ -37,7 +45,7 @@ Item {
                 text: root.icon
                 color: root.accentColor
                 font.family: root.iconFontFamily
-                font.pixelSize: 14
+                font.pixelSize: 13
             }
         }
 
@@ -66,11 +74,17 @@ Item {
     Rectangle {
         id: switchItem
         anchors.right: parent.right
+        anchors.rightMargin: 4
         anchors.verticalCenter: parent.verticalCenter
         width: 44
         height: 24
         radius: 12
         color: root.checked ? root.accentColor : Qt.rgba(255, 255, 255, 0.12)
+        scale: rowMouse.pressed ? 0.94 : (rowMouse.containsMouse ? 1.02 : 1.0)
+
+        Behavior on scale {
+            NumberAnimation { duration: 90; easing.type: Easing.OutQuad }
+        }
 
         Behavior on color {
             ColorAnimation { duration: 160 }
@@ -78,25 +92,31 @@ Item {
 
         Rectangle {
             id: thumb
-            width: 18
+            width: rowMouse.pressed ? 22 : 18
             height: 18
             radius: 9
             color: "#ffffff"
             anchors.verticalCenter: parent.verticalCenter
-            x: root.checked ? parent.width - width - 3 : 3
+            x: root.checked ? (parent.width - width - 3) : 3
+
+            Behavior on width {
+                NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+            }
 
             Behavior on x {
-                NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+                NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.1 }
             }
         }
+    }
 
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                root.checked = !root.checked;
-                root.toggled(root.checked);
-            }
+    MouseArea {
+        id: rowMouse
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onClicked: {
+            root.checked = !root.checked;
+            root.toggled(root.checked);
         }
     }
 }

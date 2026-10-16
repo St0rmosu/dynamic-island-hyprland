@@ -1755,6 +1755,7 @@ Item {
                     font.family: controlCenter.heroFontFamily
                     font.weight: Font.Bold
                     font.letterSpacing: -0.45
+                    font.features: { "tnum": 1 }
 
                     Behavior on color {
                         ColorAnimation { duration: 300 }
@@ -1852,6 +1853,15 @@ Item {
                         anchors.fill: parent
                         radius: 13
                         color: settingsGearMouse.containsMouse ? "#26ffffff" : "#10ffffff"
+                        scale: settingsGearMouse.pressed ? 0.88 : (settingsGearMouse.containsMouse ? 1.06 : 1.0)
+
+                        Behavior on scale {
+                            NumberAnimation {
+                                duration: settingsGearMouse.pressed ? 90 : 180
+                                easing.type: settingsGearMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                                easing.overshoot: 1.15
+                            }
+                        }
 
                         Behavior on color {
                             ColorAnimation { duration: 150 }
@@ -1899,6 +1909,15 @@ Item {
                 height: width
                 radius: width / 2
                 clip: true
+                scale: tileMouse.pressed ? 0.94 : (tileMouse.containsMouse ? 1.02 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: tileMouse.pressed ? 90 : 180
+                        easing.type: tileMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.15
+                    }
+                }
 
                 readonly property string modId: (tileContainer.parent && tileContainer.parent.slotModel) ? tileContainer.parent.slotModel.id : (moduleSlot ? moduleSlot.modelData.id : "")
                 readonly property bool isModuleActive: {
@@ -1971,11 +1990,7 @@ Item {
                     font.family: controlCenter.iconFontFamily
                     font.pixelSize: 26
                     color: tileRoot.isModuleActive ? tileRoot.activeColor : StyleTokens.textSecondary
-                    scale: tileMouse.pressed ? 0.90 : (tileMouse.containsMouse ? 1.10 : 1.0)
 
-                    Behavior on scale {
-                        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-                    }
                     Behavior on color {
                         ColorAnimation { duration: 140 }
                     }
@@ -2064,6 +2079,14 @@ Item {
                 height: isCompact ? 18 : 20
                 radius: height / 2
                 color: controlCenter.wifiEnabled ? StyleTokens.success : StyleTokens.switchOff
+                scale: wifiToggleArea.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 90
+                        easing.type: Easing.OutQuad
+                    }
+                }
 
                 Behavior on color {
                     ColorAnimation {
@@ -2120,6 +2143,15 @@ Item {
                 anchors.rightMargin: 12
                 anchors.bottomMargin: Math.min(10, Math.max(6, (parent.height - 56) / 3))
                 height: Math.min(30, Math.max(22, parent.height - 46))
+                scale: wifiDetailMouse.pressed ? 0.96 : (wifiDetailMouse.containsMouse ? 1.01 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: wifiDetailMouse.pressed ? 90 : 180
+                        easing.type: wifiDetailMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.12
+                    }
+                }
 
                 Column {
                     anchors.left: parent.left
@@ -2161,7 +2193,9 @@ Item {
                 }
 
                 MouseArea {
+                    id: wifiDetailMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: controlCenter.toggleConnectivityOverlay("wifi")
                 }
@@ -2219,6 +2253,14 @@ Item {
                 height: isCompact ? 18 : 20
                 radius: height / 2
                 color: controlCenter.bluetoothEnabled ? StyleTokens.success : StyleTokens.switchOff
+                scale: bluetoothToggleArea.pressed ? 0.90 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 90
+                        easing.type: Easing.OutQuad
+                    }
+                }
 
                 Behavior on color {
                     ColorAnimation {
@@ -2275,6 +2317,15 @@ Item {
                 anchors.rightMargin: 12
                 anchors.bottomMargin: Math.min(10, Math.max(6, (parent.height - 56) / 3))
                 height: Math.min(30, Math.max(22, parent.height - 46))
+                scale: bluetoothDetailMouse.pressed ? 0.96 : (bluetoothDetailMouse.containsMouse ? 1.01 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: bluetoothDetailMouse.pressed ? 90 : 180
+                        easing.type: bluetoothDetailMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.12
+                    }
+                }
 
                 Column {
                     anchors.left: parent.left
@@ -2316,7 +2367,9 @@ Item {
                 }
 
                 MouseArea {
+                    id: bluetoothDetailMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: controlCenter.toggleConnectivityOverlay("bluetooth")
                 }
@@ -2845,6 +2898,15 @@ Item {
                 radius: 18
                 color: StyleTokens.clearBlack
                 clip: true
+                scale: barSwitcherMouse.pressed ? 0.96 : (barSwitcherMouse.containsMouse ? 1.01 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: barSwitcherMouse.pressed ? 90 : 180
+                        easing.type: barSwitcherMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.15
+                    }
+                }
 
                 MatteSurface {
                     anchors.fill: parent
@@ -2920,6 +2982,15 @@ Item {
                 radius: 18
                 color: StyleTokens.clearBlack
                 clip: true
+                scale: clipboardCardMouse.pressed ? 0.96 : (clipboardCardMouse.containsMouse ? 1.01 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: clipboardCardMouse.pressed ? 90 : 180
+                        easing.type: clipboardCardMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.15
+                    }
+                }
 
                 MatteSurface {
                     anchors.fill: parent
@@ -3222,6 +3293,15 @@ Item {
                     color: backBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
                     border.width: 1
                     border.color: backBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.18) : Qt.rgba(255, 255, 255, 0.10)
+                    scale: backBtnMouse.pressed ? 0.92 : (backBtnMouse.containsMouse ? 1.03 : 1.0)
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: backBtnMouse.pressed ? 90 : 180
+                            easing.type: backBtnMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.15
+                        }
+                    }
 
                     Row {
                         id: backRow

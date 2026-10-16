@@ -412,6 +412,17 @@ Item {
                                         color: hoveredDrag ? "#360d131a" : StyleTokens.workspaceOverlay
                                     }
 
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: wsCell.wsValue
+                                        font.pixelSize: Math.round(root.workspaceImplicitHeight * 0.44)
+                                        font.weight: Font.DemiBold
+                                        font.family: root.heroFontFamily !== "" ? root.heroFontFamily : (root.textFontFamily !== "" ? root.textFontFamily : "SF Pro Display")
+                                        color: "#40ffffff"
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                    }
+
                                     Item {
                                         anchors.fill: parent
                                         Repeater {

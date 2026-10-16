@@ -39,6 +39,7 @@ Item {
             font.family: heroFontFamily
             font.weight: Font.Bold
             font.letterSpacing: -0.35
+            font.features: { "tnum": 1 }
             wrapMode: Text.NoWrap
 
             Behavior on color {

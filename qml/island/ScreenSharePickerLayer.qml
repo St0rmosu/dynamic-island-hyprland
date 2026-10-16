@@ -48,13 +48,13 @@ FocusScope {
         }
     }
 
-    property color accentColor: irisColors.accentHex !== "" ? irisColors.accentHex : "#86a0b3"
+    property color accentColor: irisColors.accentHex !== "" ? irisColors.accentHex : StyleTokens.accent
     readonly property color screenColor: irisColors.blueHex !== "" ? irisColors.blueHex : accentColor
-    readonly property color windowColor: irisColors.purpleHex !== "" ? irisColors.purpleHex : "#d49ec5"
-    readonly property color regionColor: irisColors.greenHex !== "" ? irisColors.greenHex : "#bbd69e"
-    readonly property color textPrimary: irisColors.fgHex !== "" ? irisColors.fgHex : "#cdc6b2"
-    readonly property color textSecondary: irisColors.dimHex !== "" ? irisColors.dimHex : "#80766a"
-    readonly property color cardSurface: irisColors.surfaceHex !== "" ? irisColors.surfaceHex : "#675a4c"
+    readonly property color windowColor: irisColors.purpleHex !== "" ? irisColors.purpleHex : accentColor
+    readonly property color regionColor: irisColors.greenHex !== "" ? irisColors.greenHex : accentColor
+    readonly property color textPrimary: irisColors.fgHex !== "" ? irisColors.fgHex : StyleTokens.textPrimary
+    readonly property color textSecondary: irisColors.dimHex !== "" ? irisColors.dimHex : StyleTokens.textSecondary
+    readonly property color cardSurface: irisColors.surfaceHex !== "" ? irisColors.surfaceHex : StyleTokens.module
 
     property string iconFontFamily: "Font Awesome 6 Free, JetBrainsMono Nerd Font, sans-serif"
     property string textFontFamily: "Inter, sans-serif"

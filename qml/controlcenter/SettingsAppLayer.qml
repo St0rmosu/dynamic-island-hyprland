@@ -10,6 +10,8 @@ FocusScope {
     id: root
 
     signal closeRequested()
+    signal startMoveRequested()
+    signal toggleMaximizeRequested()
 
     implicitWidth: 980
     implicitHeight: 680
@@ -38,6 +40,8 @@ FocusScope {
     property color borderSubtle: Qt.rgba(255, 255, 255, 0.08)
     property real cornerRadius: 20
     property bool isEmbeddedInWindow: false
+
+    property string searchQuery: ""
 
     readonly property string homeDir: Quickshell.env("HOME") || "/home/" + (Quickshell.env("USER") || "user")
 
@@ -137,31 +141,71 @@ FocusScope {
         return [
             {
                 title: I18n.tr("Isola & Geometria"),
-                icon: "\uf108"
+                subtitle: I18n.tr("Forma, dimensioni della capsula, notch e margini dello schermo"),
+                icon: "\uf108",
+                keywords: ["isola", "geometria", "notch", "larghezza", "altezza", "raggio", "margine", "curvatura", "bar", "island"]
             },
             {
                 title: I18n.tr("Control Center & Studio"),
-                icon: "\uf462"
+                subtitle: I18n.tr("Disponi, ridimensiona e configura i controlli del pannello rapido"),
+                icon: "\uf462",
+                keywords: ["control", "center", "studio", "widget", "audio", "volume", "luminosita", "bluetooth", "wifi", "rete", "media"]
             },
             {
                 title: I18n.tr("Aspetto, Sfondi & Font"),
-                icon: "\uf1fc"
+                subtitle: I18n.tr("Tipografia dell'orologio, colori dinamici Pywal/Iris e sfondi"),
+                icon: "\uf1fc",
+                keywords: ["aspetto", "sfondi", "font", "orologio", "tipografia", "pywal", "iris", "colori", "sfondo", "transizione", "wallpaper"]
+            },
+            {
+                title: I18n.tr("Interazioni & Movimento"),
+                subtitle: I18n.tr("Regolazione volume con la rotellina e comportamento media player"),
+                icon: "\uf0e7",
+                keywords: ["interazioni", "movimento", "rotellina", "wheel", "volume", "luminosita", "scroll", "media"]
             },
             {
                 title: I18n.tr("Scorciatoie da Tastiera"),
-                icon: "\uf11c"
+                subtitle: I18n.tr("Combinazioni di tasti Hyprland e comandi rapidi per la shell"),
+                icon: "\uf11c",
+                keywords: ["scorciatoie", "tasti", "hyprland", "bind", "keybind", "super", "tastiera", "shortcuts"]
             }
         ];
+    }
+
+    readonly property var filteredPages: {
+        var q = root.searchQuery.toLowerCase().trim();
+        var all = root.navigationPages;
+        if (q === "") {
+            var list = [];
+            for (var i = 0; i < all.length; i++) {
+                list.push({ pageIndex: i, item: all[i] });
+            }
+            return list;
+        }
+        var matches = [];
+        for (var j = 0; j < all.length; j++) {
+            var p = all[j];
+            var matched = p.title.toLowerCase().indexOf(q) !== -1 ||
+                          p.subtitle.toLowerCase().indexOf(q) !== -1;
+            if (!matched && p.keywords) {
+                for (var k = 0; k < p.keywords.length; k++) {
+                    if (p.keywords[k].toLowerCase().indexOf(q) !== -1) {
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (matched) {
+                matches.push({ pageIndex: j, item: p });
+            }
+        }
+        return matches;
     }
 
     // ── Layout Principale a Due Colonne ────────────────────────────────
     Rectangle {
         anchors.fill: parent
-        radius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
-        bottomLeftRadius: root.cornerRadius
-        bottomRightRadius: root.cornerRadius
-        topLeftRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
-        topRightRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
+        radius: root.cornerRadius
         color: root.bgDark
         border.width: root.isEmbeddedInWindow ? 0 : 1
         border.color: root.borderSubtle
@@ -176,79 +220,192 @@ FocusScope {
                 width: 275
                 height: parent.height
                 color: root.bgSidebar
-                topLeftRadius: root.isEmbeddedInWindow ? 0 : root.cornerRadius
-                bottomLeftRadius: root.cornerRadius
-                topRightRadius: 0
-                bottomRightRadius: 0
+                radius: 0
                 border.width: 1
                 border.color: Qt.rgba(255, 255, 255, 0.05)
 
                 Column {
                     anchors.top: parent.top
-                    anchors.topMargin: 24
+                    anchors.topMargin: 16
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
-                    spacing: 8
+                    spacing: 12
 
-                    Repeater {
-                        model: root.navigationPages
+                    // ── Pillola di Ricerca Impostazioni (Stile Video 1:37) ──
+                    Rectangle {
+                        width: parent.width
+                        height: 36
+                        radius: 10
+                        color: searchTextInput.activeFocus ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(255, 255, 255, 0.05)
+                        border.width: 1
+                        border.color: searchTextInput.activeFocus ? root.effectiveAccent : Qt.rgba(255, 255, 255, 0.08)
 
-                        Rectangle {
-                            readonly property bool isSelected: root.selectedCategoryIndex === index
-                            width: parent.width
-                            height: 44
-                            radius: 12
-                            color: isSelected
-                                ? Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.22)
-                                : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.05) : "transparent")
-                            border.width: isSelected ? 1 : 0
-                            border.color: root.effectiveAccent
+                        Behavior on border.color { ColorAnimation { duration: 140 } }
+                        Behavior on color { ColorAnimation { duration: 140 } }
 
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                        Row {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 8
+                            spacing: 8
 
-                            Row {
-                                id: itemRow
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-                                spacing: 10
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "\uf002" // search icon
+                                font.family: root.iconFontFamily
+                                font.pixelSize: 12
+                                color: searchTextInput.activeFocus ? root.effectiveAccent : "#7e889b"
+                                Behavior on color { ColorAnimation { duration: 140 } }
+                            }
+
+                            TextInput {
+                                id: searchTextInput
+                                width: parent.width - 44
+                                anchors.verticalCenter: parent.verticalCenter
+                                font.pixelSize: 12
+                                font.family: root.textFontFamily
+                                color: "#ffffff"
+                                selectByMouse: true
+                                clip: true
 
                                 Text {
-                                    id: itemIconText
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.icon
-                                    font.family: root.iconFontFamily
-                                    font.pixelSize: 15
-                                    color: isSelected ? root.effectiveAccent : "#8c94a6"
+                                    anchors.fill: parent
+                                    visible: parent.text === "" && !parent.activeFocus
+                                    text: I18n.tr("Cerca impostazioni...")
+                                    color: "#6e7787"
+                                    font.pixelSize: 12
+                                    font.family: root.textFontFamily
                                 }
 
-                                Text {
-                                    id: itemTitleText
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: itemRow.width - itemIconText.width - itemRow.spacing
-                                    text: modelData.title
-                                    elide: Text.ElideRight
-                                    color: isSelected ? "#ffffff" : "#c2c7d4"
-                                    font.pixelSize: 12
-                                    font.weight: isSelected ? Font.DemiBold : Font.Normal
-                                    font.family: root.textFontFamily
+                                onTextChanged: {
+                                    root.searchQuery = text;
+                                    if (root.filteredPages.length > 0) {
+                                        var found = false;
+                                        for (var i = 0; i < root.filteredPages.length; i++) {
+                                            if (root.filteredPages[i].pageIndex === root.selectedCategoryIndex) {
+                                                found = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!found) {
+                                            root.selectedCategoryIndex = root.filteredPages[0].pageIndex;
+                                        }
+                                    }
                                 }
                             }
 
-                            MouseArea {
-                                id: itemMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.selectedCategoryIndex = index
+                            // Tasto cancella ricerca
+                            Rectangle {
+                                width: 16
+                                height: 16
+                                radius: 8
+                                color: Qt.rgba(255, 255, 255, 0.12)
+                                visible: root.searchQuery !== ""
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    font.pixelSize: 8
+                                    color: "#d8dce6"
+                                    font.weight: Font.Bold
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        searchTextInput.text = "";
+                                        root.searchQuery = "";
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── Lista Categorie ──
+                    Column {
+                        width: parent.width
+                        spacing: 4
+
+                        Repeater {
+                            model: root.filteredPages
+
+                            Rectangle {
+                                readonly property int pIndex: modelData.pageIndex
+                                readonly property var pItem: modelData.item
+                                readonly property bool isSelected: root.selectedCategoryIndex === pIndex
+
+                                width: parent.width
+                                height: 42
+                                radius: 10
+                                color: isSelected
+                                    ? Qt.rgba(255, 255, 255, 0.09)
+                                    : (itemMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.04) : "transparent")
+                                border.width: isSelected ? 1 : 0
+                                border.color: Qt.rgba(255, 255, 255, 0.08)
+                                scale: itemMouse.pressed ? 0.98 : 1.0
+
+                                Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+
+                                // Indicatore sinistro verticale per la voce attiva
+                                Rectangle {
+                                    width: 3
+                                    height: 18
+                                    radius: 1.5
+                                    color: root.effectiveAccent
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: isSelected
+                                    opacity: isSelected ? 1.0 : 0.0
+                                    Behavior on opacity { NumberAnimation { duration: 140 } }
+                                }
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 10
+                                    spacing: 12
+
+                                    // Icona sezione: usa sempre il colore d'accento dinamico quando attiva
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: pItem.icon
+                                        font.family: root.iconFontFamily
+                                        font.pixelSize: 14
+                                        color: isSelected ? root.effectiveAccent : (itemMouse.containsMouse ? "#ffffff" : "#7e889b")
+                                        Behavior on color { ColorAnimation { duration: 120 } }
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: parent.width - 32
+                                        text: pItem.title
+                                        elide: Text.ElideRight
+                                        color: isSelected ? "#ffffff" : (itemMouse.containsMouse ? "#e2e6f0" : "#9fa8b8")
+                                        font.pixelSize: 13
+                                        font.weight: isSelected ? Font.DemiBold : Font.Normal
+                                        font.family: root.textFontFamily
+                                    }
+                                }
+
+                                MouseArea {
+                                    id: itemMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.selectedCategoryIndex = pIndex
+                                }
                             }
                         }
                     }
                 }
 
-                // Pulsante Aggiorna Shell in basso nella Sidebar
+                // ── Pulsante Aggiorna Shell in fondo alla Sidebar ──
                 Rectangle {
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: 16
@@ -258,9 +415,18 @@ FocusScope {
                     anchors.rightMargin: 14
                     height: 38
                     radius: 10
-                    color: updateHover.containsMouse ? Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.20) : Qt.rgba(255, 255, 255, 0.04)
+                    color: updateHover.containsMouse ? Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.16) : Qt.rgba(255, 255, 255, 0.04)
                     border.width: 1
                     border.color: updateHover.containsMouse ? root.effectiveAccent : Qt.rgba(255, 255, 255, 0.08)
+                    scale: updateHover.pressed ? 0.94 : (updateHover.containsMouse ? 1.02 : 1.0)
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: updateHover.pressed ? 90 : 180
+                            easing.type: updateHover.pressed ? Easing.OutQuad : Easing.OutBack
+                            easing.overshoot: 1.15
+                        }
+                    }
 
                     Behavior on color { ColorAnimation { duration: 120 } }
                     Behavior on border.color { ColorAnimation { duration: 120 } }
@@ -308,50 +474,117 @@ FocusScope {
                 Column {
                     anchors.fill: parent
 
-                    // Header Pagina con Titolo e Tasto Chiusura [ ✕ ]
+                    // ── Barra Superiore di Navigazione (< > e Chiudi) ──
                     Rectangle {
                         width: parent.width
-                        height: 60
+                        height: 48
                         color: "transparent"
-                        border.width: 0
 
+                        // Area per spostare la finestra nativamente trascinando
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.LeftButton
+                            onPressed: root.startMoveRequested()
+                            onDoubleClicked: root.toggleMaximizeRequested()
+                        }
+
+                        // Frecce di navigazione Indietro / Avanti (come a 1:37 nel video)
                         Row {
                             anchors.left: parent.left
-                            anchors.leftMargin: 24
+                            anchors.leftMargin: 20
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: 10
+                            spacing: 8
 
-                            Text {
-                                text: root.navigationPages[root.selectedCategoryIndex].title
-                                color: "#f2f4f8"
-                                font.pixelSize: 17
-                                font.weight: Font.Bold
-                                font.family: root.textFontFamily
-                                anchors.verticalCenter: parent.verticalCenter
+                            // Tasto < (Indietro)
+                            Rectangle {
+                                width: 28
+                                height: 28
+                                radius: 7
+                                color: navBackMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.05)
+                                border.width: 1
+                                border.color: Qt.rgba(255, 255, 255, 0.07)
+                                opacity: root.selectedCategoryIndex > 0 ? 1.0 : 0.35
+                                scale: navBackMouse.pressed ? 0.90 : 1.0
+
+                                Behavior on scale { NumberAnimation { duration: 90 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "‹"
+                                    font.pixelSize: 18
+                                    font.weight: Font.Bold
+                                    color: "#ffffff"
+                                }
+
+                                MouseArea {
+                                    id: navBackMouse
+                                    anchors.fill: parent
+                                    cursorShape: root.selectedCategoryIndex > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (root.selectedCategoryIndex > 0)
+                                            root.selectedCategoryIndex--;
+                                    }
+                                }
+                            }
+
+                            // Tasto > (Avanti)
+                            Rectangle {
+                                width: 28
+                                height: 28
+                                radius: 7
+                                color: navForwardMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.10) : Qt.rgba(255, 255, 255, 0.05)
+                                border.width: 1
+                                border.color: Qt.rgba(255, 255, 255, 0.07)
+                                opacity: root.selectedCategoryIndex < (root.navigationPages.length - 1) ? 1.0 : 0.35
+                                scale: navForwardMouse.pressed ? 0.90 : 1.0
+
+                                Behavior on scale { NumberAnimation { duration: 90 } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "›"
+                                    font.pixelSize: 18
+                                    font.weight: Font.Bold
+                                    color: "#ffffff"
+                                }
+
+                                MouseArea {
+                                    id: navForwardMouse
+                                    anchors.fill: parent
+                                    cursorShape: root.selectedCategoryIndex < (root.navigationPages.length - 1) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (root.selectedCategoryIndex < (root.navigationPages.length - 1))
+                                            root.selectedCategoryIndex++;
+                                    }
+                                }
                             }
                         }
 
-                        // Controlli Header (Selettore Rapido Lingua + Chiudi)
+                        // Controlli Header a destra (Lingua + Chiudi Finestra)
                         Row {
                             anchors.right: parent.right
-                            anchors.rightMargin: 24
+                            anchors.rightMargin: 20
                             anchors.verticalCenter: parent.verticalCenter
                             spacing: 12
 
-                            // Pillola Rapida Selezione Lingua (Auto | EN | IT)
+                            // Pillola Selezione Lingua (Auto | EN | IT)
                             Rectangle {
-                                height: 30
-                                radius: 8
-                                color: Qt.rgba(255, 255, 255, 0.06)
+                                height: 28
+                                radius: 7
+                                color: Qt.rgba(255, 255, 255, 0.05)
                                 border.width: 1
-                                border.color: Qt.rgba(255, 255, 255, 0.08)
+                                border.color: Qt.rgba(255, 255, 255, 0.07)
                                 width: langPillRow.implicitWidth + 6
                                 anchors.verticalCenter: parent.verticalCenter
 
                                 Row {
                                     id: langPillRow
                                     anchors.centerIn: parent
-                                    spacing: 3
+                                    spacing: 2
 
                                     Repeater {
                                         model: [
@@ -365,20 +598,20 @@ FocusScope {
                                                 var cur = (root.dynamicConfig && root.dynamicConfig.language) ? root.dynamicConfig.language : "auto";
                                                 return cur === modelData.value;
                                             }
-                                            width: lText.contentWidth + 14
+                                            width: lText.contentWidth + 12
                                             height: 22
-                                            radius: 6
+                                            radius: 5
                                             color: isSelected ? root.effectiveAccent : (lMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent")
-                                            border.width: isSelected ? 1 : 0
-                                            border.color: isSelected ? Qt.rgba(255, 255, 255, 0.25) : "transparent"
+                                            scale: lMouse.pressed ? 0.92 : 1.0
 
+                                            Behavior on scale { NumberAnimation { duration: 90 } }
                                             Behavior on color { ColorAnimation { duration: 120 } }
 
                                             Text {
                                                 id: lText
                                                 anchors.centerIn: parent
                                                 text: modelData.label
-                                                font.pixelSize: 11
+                                                font.pixelSize: 10
                                                 font.weight: isSelected ? Font.Bold : Font.Normal
                                                 font.family: root.textFontFamily
                                                 color: isSelected ? "#ffffff" : "#a2a8b8"
@@ -403,19 +636,22 @@ FocusScope {
                                 }
                             }
 
-                            // Pulsante Chiudi [ ✕ ] (visibile solo se non integrato nella finestra nativa con barra del titolo)
+                            // Tasto Chiudi Finestra [ ✕ ]
                             Rectangle {
-                                width: 32
-                                height: 32
-                                radius: 16
+                                width: 28
+                                height: 28
+                                radius: 14
                                 color: closeMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
-                                visible: !root.isEmbeddedInWindow
+                                scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.06 : 1.0)
+
+                                Behavior on scale { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+                                Behavior on color { ColorAnimation { duration: 120 } }
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: "✕"
                                     color: "#d8dce6"
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     font.weight: Font.Bold
                                 }
 
@@ -428,7 +664,59 @@ FocusScope {
                                 }
                             }
                         }
+                    }
 
+                    // ── HERO HEADER CENTRALE (Fedele al minuto 1:37 del video) ──
+                    Rectangle {
+                        id: heroHeaderBox
+                        width: parent.width
+                        height: 120
+                        color: "transparent"
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 8
+
+                            // Badge Circolare con Colore d'Accento Dinamico
+                            Rectangle {
+                                width: 52
+                                height: 52
+                                radius: 26
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.16)
+                                border.width: 1
+                                border.color: Qt.rgba(root.effectiveAccent.r, root.effectiveAccent.g, root.effectiveAccent.b, 0.35)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: root.navigationPages[root.selectedCategoryIndex].icon
+                                    font.family: root.iconFontFamily
+                                    font.pixelSize: 22
+                                    color: root.effectiveAccent
+                                }
+                            }
+
+                            // Titolo Sezione Grande
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.navigationPages[root.selectedCategoryIndex].title
+                                color: "#ffffff"
+                                font.pixelSize: 18
+                                font.weight: Font.Bold
+                                font.family: root.textFontFamily
+                            }
+
+                            // Sottotitolo Descrittivo
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.navigationPages[root.selectedCategoryIndex].subtitle
+                                color: "#8a94a6"
+                                font.pixelSize: 11
+                                font.family: root.textFontFamily
+                            }
+                        }
+
+                        // Linea divisoria sottile inferiore
                         Rectangle {
                             anchors.bottom: parent.bottom
                             width: parent.width
@@ -437,14 +725,14 @@ FocusScope {
                         }
                     }
 
-                    // Stack View delle 5 Pagine
+                    // ── Stack View delle Pagine di Impostazioni ──
                     StackLayout {
                         id: pagesStack
                         width: parent.width
-                        height: parent.height - 60
+                        height: parent.height - 48 - 120
                         currentIndex: root.selectedCategoryIndex
 
-                        // Pagina 1: Isola & Geometria
+                        // Pagina 0: Isola & Geometria
                         IslandGeometryPage {
                             config: root.dynamicConfig
                             accentColor: root.effectiveAccent
@@ -452,7 +740,7 @@ FocusScope {
                             iconFontFamily: root.iconFontFamily
                         }
 
-                        // Pagina 2: Control Center & Studio Canvas (Visual 2D Editor!)
+                        // Pagina 1: Control Center & Studio Canvas (Visual 2D Editor)
                         ControlCenterStudioPage {
                             config: root.dynamicConfig
                             accentColor: root.effectiveAccent
@@ -471,7 +759,7 @@ FocusScope {
                             }
                         }
 
-                        // Pagina 4: Aspetto, Sfondi & Font
+                        // Pagina 2: Aspetto, Sfondi & Font
                         AppearanceFontPage {
                             config: root.dynamicConfig
                             accentColor: root.effectiveAccent
@@ -479,6 +767,14 @@ FocusScope {
                             heroFontFamily: root.heroFontFamily
                             iconFontFamily: root.iconFontFamily
                             onOpenFontBrowser: function(target) { root.openFontBrowser(target); }
+                        }
+
+                        // Pagina 3: Interazioni & Movimento
+                        InteractionsPage {
+                            config: root.dynamicConfig
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            iconFontFamily: root.iconFontFamily
                         }
 
                         // Pagina 4: Scorciatoie Hyprland
@@ -552,7 +848,7 @@ FocusScope {
         id: fontBrowserModal
         visible: root.fontBrowserVisible
         anchors.fill: parent
-        radius: 32
+        radius: root.cornerRadius
         color: Qt.rgba(10/255, 12/255, 17/255, 0.96)
         z: 999
 
@@ -619,20 +915,21 @@ FocusScope {
                     text: (root.fontBrowserTarget === "icon")
                         ? I18n.tr("Cerca font per icone (es. Nerd Font, Material, Symbols)...")
                         : I18n.tr("Cerca font di sistema (es. Google Sans, Inter, JetBrains)...")
-                    color: Qt.rgba(255, 255, 255, 0.35)
+                    color: "#7e889b"
                     font.pixelSize: 13
                     font.family: root.textFontFamily
+                    verticalAlignment: Text.AlignVCenter
                 }
 
                 TextInput {
                     id: fontInput
                     anchors.fill: parent
                     anchors.margins: 10
-                    text: root.fontBrowserQuery
                     color: "#ffffff"
                     font.pixelSize: 13
                     font.family: root.textFontFamily
-                    clip: true
+                    verticalAlignment: TextInput.AlignVCenter
+                    selectByMouse: true
                     onTextChanged: {
                         root.fontBrowserQuery = text;
                         root.updateFilteredFonts();
@@ -640,67 +937,60 @@ FocusScope {
                 }
             }
 
-            // Lista Font con Preview
-            ListView {
+            // GridView con elenco font
+            GridView {
                 width: parent.width
-                height: parent.height - 120
+                height: parent.height - 110
                 clip: true
+                cellWidth: width / 3
+                cellHeight: 70
                 model: root.filteredFonts
 
                 delegate: Rectangle {
-                    width: parent.width
-                    height: 46
-                    radius: 8
-                    color: fontRowMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : "transparent"
+                    width: GridView.view.cellWidth - 10
+                    height: 60
+                    radius: 10
+                    color: fontCardMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.09) : Qt.rgba(255, 255, 255, 0.04)
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.07)
 
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
-                        spacing: 16
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
 
                         Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
                             text: modelData
                             color: "#ffffff"
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
                             font.family: root.textFontFamily
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 250
                             elide: Text.ElideRight
+                            width: parent.parent.width - 16
+                            horizontalAlignment: Text.AlignHCenter
                         }
 
                         Text {
-                            text: (root.fontBrowserTarget === "icon")
-                                ? "                "
-                                : "Pack my box with five dozen liquor jugs 1234567890"
-                            color: "#8c94a6"
-                            font.pixelSize: (root.fontBrowserTarget === "icon") ? 15 : 13
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: (root.fontBrowserTarget === "icon") ? "\uf001 \uf015 \uf013 \uf0e7 \uf11c" : "12:34 Aa Bb Cc"
+                            color: root.effectiveAccent
+                            font.pixelSize: 14
                             font.family: modelData
-                            anchors.verticalCenter: parent.verticalCenter
-                            elide: Text.ElideRight
-                            width: parent.width - 280
                         }
                     }
 
                     MouseArea {
-                        id: fontRowMouse
+                        id: fontCardMouse
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (root.fontBrowserTarget === "icon") {
-                                root.iconFontFamily = modelData;
-                                if (root.dynamicConfig) {
+                            if (root.dynamicConfig) {
+                                if (root.fontBrowserTarget === "icon") {
                                     root.dynamicConfig.set("iconFontFamily", modelData);
-                                }
-                            } else {
-                                root.textFontFamily = modelData;
-                                root.heroFontFamily = modelData;
-                                if (root.dynamicConfig) {
+                                } else {
+                                    root.dynamicConfig.set("clockFontFamily", modelData);
                                     root.dynamicConfig.set("textFontFamily", modelData);
-                                    root.dynamicConfig.set("heroFontFamily", modelData);
-                                    root.dynamicConfig.set("timeFontFamily", modelData);
                                 }
                             }
                             root.fontBrowserVisible = false;

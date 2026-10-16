@@ -1,11 +1,12 @@
 import QtQuick
+import IslandBackend
 
 Item {
     id: root
 
     property bool active: false
     property real contentOpacity: 1
-    property color accentColor: "#af52de"
+    property color accentColor: StyleTokens.accent
     property color dotColor: "#ff453a"
     property string iconText: "\u{F0379}"
     property string iconFontFamily: "Font Awesome 6 Free, JetBrainsMono Nerd Font, sans-serif"
@@ -38,9 +39,9 @@ Item {
         implicitWidth: contentRow.implicitWidth + 10
         height: 18
         radius: 9
-        color: Qt.rgba(0.68, 0.32, 0.87, 0.22)
+        color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22)
         border.width: 1
-        border.color: Qt.rgba(0.68, 0.32, 0.87, 0.5)
+        border.color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.5)
 
         Row {
             id: contentRow

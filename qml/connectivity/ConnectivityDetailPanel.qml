@@ -141,6 +141,15 @@ Item {
                 height: 30
                 radius: 15
                 color: backMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.07)
+                scale: backMouse.pressed ? 0.88 : (backMouse.containsMouse ? 1.06 : 1.0)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: backMouse.pressed ? 90 : 180
+                        easing.type: backMouse.pressed ? Easing.OutQuad : Easing.OutBack
+                        easing.overshoot: 1.15
+                    }
+                }
 
                 Behavior on color {
                     ColorAnimation { duration: 120 }

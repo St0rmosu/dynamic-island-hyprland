@@ -839,6 +839,32 @@ Scope {
             });
         }
 
+        function toggleFocusTime() {
+            shellRoot.forFocusedWindow((window) => {
+                return window.toggleFocusTimeWindow();
+            });
+        }
+
+        function showFocusTime() {
+            shellRoot.forFocusedWindow((window) => {
+                return window.showFocusTimeWindow();
+            });
+        }
+
+        function testFocusTimeWeekView(weekView: bool) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window.setFocusTimeWeekView)
+                    window.setFocusTimeWeekView(weekView);
+            });
+        }
+
+        function testFocusTimeApp(appClass: string) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window.setFocusTimeSelectedApp)
+                    window.setFocusTimeSelectedApp(appClass);
+            });
+        }
+
         function toggleLyrics() {
             shellRoot.forFocusedWindow((window) => {
                 return window.toggleLyricsWindow();
