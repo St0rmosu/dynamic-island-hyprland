@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Launcher for Dynamic Island Quickshell component
+# ==============================================================================
+#  🏝️ Dynamic Island Hyprland — Command Line Interface (CLI) & Launcher
+# ==============================================================================
 
 QML_PATH="${DYNAMIC_ISLAND_PATH:-$HOME/.config/quickshell/dynamic-island}"
 export QML_IMPORT_PATH="$HOME/.local/lib/qt6/qml:/usr/lib/qt6/qml:${QML_IMPORT_PATH}"
@@ -8,52 +10,316 @@ export PATH="$HOME/.local/bin:/usr/local/bin:${PATH}"
 export QUICKSHELL_LYRICS_BACKEND="${QUICKSHELL_LYRICS_BACKEND:-$HOME/.local/bin/lyricsmpris}"
 export MALLOC_CONF="${MALLOC_CONF:-narenas:2,background_thread:true,dirty_decay_ms:2000,muzzy_decay_ms:2000}"
 
-case "$1" in
-  --update|update)
-    shift
-    if [ -f "$QML_PATH/install.sh" ]; then
-      exec bash "$QML_PATH/install.sh" update "$@"
-    elif [ -f "$HOME/dynamic-island-hyprland/install.sh" ]; then
-      exec bash "$HOME/dynamic-island-hyprland/install.sh" update "$@"
-    else
-      echo "Errore: install.sh non trovato in $QML_PATH"
-      exit 1
-    fi
-    ;;
-  --quit|--kill|--stop)
-    pkill -u "$(id -u)" -f "quickshell -p $QML_PATH" 2>/dev/null || true
+# Colori e Stili ANSI
+STY_BOLD='\033[1m'
+STY_FAINT='\033[2m'
+STY_GREEN='\033[32m'
+STY_YELLOW='\033[33m'
+STY_BLUE='\033[34m'
+STY_CYAN='\033[36m'
+STY_RED='\033[31m'
+STY_RST='\033[0m'
+
+call_ipc() {
+  local target="${1:-island}"
+  local method="$2"
+  shift 2
+  local qs_pid
+  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+  if [ -n "$qs_pid" ]; then
+    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call "$target" "$method" "$@" >/dev/null 2>&1
+    return $?
+  else
+    echo -e "${STY_YELLOW}⚠️  Dynamic Island non è in esecuzione.${STY_RST}"
+    echo -e "Puoi avviarla con: ${STY_BOLD}${STY_CYAN}dynamic-island -d${STY_RST}"
+    return 1
+  fi
+}
+
+cmd_status() {
+  local qs_pid
+  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+  if [ -n "$qs_pid" ]; then
+    local mem_rss
+    mem_rss=$(ps -p "$qs_pid" -o rss= 2>/dev/null | awk '{printf "%.1f MB", $1/1024}')
+    local uptime_val
+    uptime_val=$(ps -p "$qs_pid" -o etime= 2>/dev/null | tr -d ' ')
+    local lang_val="auto"
+    local cfg_file="$HOME/.config/dynamic-island/userconfig.json"
+    [ -f "$cfg_file" ] && command -v jq >/dev/null 2>&1 && lang_val=$(jq -r '.language // "auto"' "$cfg_file" 2>/dev/null || echo "auto")
+    local wp_val="awww"
+    local wp_file="$HOME/.config/dynamic-island/wallpaper_backend"
+    [ -f "$wp_file" ] && wp_val=$(tr -d ' \n\r' < "$wp_file")
+
+    echo -e "${STY_GREEN}● Dynamic Island: Attiva (In esecuzione)${STY_RST}"
+    echo -e "  • ${STY_BOLD}PID:${STY_RST}          ${qs_pid}"
+    echo -e "  • ${STY_BOLD}Memoria:${STY_RST}      ${mem_rss} (RSS)"
+    echo -e "  • ${STY_BOLD}Tempo attivo:${STY_RST} ${uptime_val}"
+    echo -e "  • ${STY_BOLD}Lingua:${STY_RST}        ${lang_val}"
+    echo -e "  • ${STY_BOLD}Wallpaper:${STY_RST}     ${wp_val}"
+    echo -e "  • ${STY_BOLD}Directory:${STY_RST}     ${QML_PATH}"
+  else
+    echo -e "${STY_RED}○ Dynamic Island: Non attiva (Fermata)${STY_RST}"
+    echo -e "  Per avviarla esegui: ${STY_BOLD}${STY_GREEN}dynamic-island -d${STY_RST}"
+  fi
+}
+
+cmd_stop() {
+  local qs_pid
+  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null || true)
+  if [ -n "$qs_pid" ]; then
+    pkill -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null || true
+    pkill -u "$(id -u)" -x "lyricsmpris" 2>/dev/null || true
+    pkill -u "$(id -u)" -f "notification_monitor.py" 2>/dev/null || true
+    pkill -u "$(id -u)" -f "discord_call_monitor.py" 2>/dev/null || true
     command -v awww >/dev/null 2>&1 && awww clear 2>/dev/null || true
     command -v swww >/dev/null 2>&1 && swww clear 2>/dev/null || true
+    echo -e "${STY_GREEN}✓ Dynamic Island arrestata con successo.${STY_RST}"
+  else
+    echo -e "${STY_YELLOW}ℹ Dynamic Island non era in esecuzione.${STY_RST}"
+  fi
+}
+
+show_help() {
+  echo -e "${STY_CYAN}╭────────────────────────────────────────────────────────────────────────╮${STY_RST}"
+  echo -e "${STY_CYAN}│${STY_RST}   ${STY_BOLD}🏝️  Dynamic Island Hyprland — Command Line Interface (CLI)${STY_RST}          ${STY_CYAN}│${STY_RST}"
+  echo -e "${STY_CYAN}│${STY_RST}       ${STY_FAINT}Fluid iOS-style Dynamic Pill & Control Center for Wayland${STY_RST}        ${STY_CYAN}│${STY_RST}"
+  echo -e "${STY_CYAN}╰────────────────────────────────────────────────────────────────────────╯${STY_RST}"
+  echo ""
+  echo -e "${STY_BOLD}${STY_CYAN}Uso:${STY_RST} dynamic-island [COMANDO | OPZIONE]"
+  echo ""
+  echo -e "${STY_BOLD}Gestione Demone & Ciclo di Vita:${STY_RST}"
+  echo -e "  ${STY_GREEN}-d, --daemonize${STY_RST}             Avvia la Dynamic Island in background (autostart)"
+  echo -e "  ${STY_GREEN}-f, --foreground${STY_RST}            Avvia in primo piano mostrando i log a terminale"
+  echo -e "  ${STY_GREEN}--reload, reload${STY_RST}            Ricarica e riavvia a caldo l'intera shell"
+  echo -e "  ${STY_GREEN}--stop, stop, --kill${STY_RST}        Arresta il demone Dynamic Island e i processi associati"
+  echo -e "  ${STY_GREEN}--status, status${STY_RST}            Verifica se la shell è attiva (PID, memoria, uptime)"
+  echo -e "  ${STY_GREEN}--update, update${STY_RST}            Aggiorna la repository da GitHub e ricompila se serve"
+  echo -e "  ${STY_GREEN}--installer${STY_RST}                 Avvia l'installer & Setup Wizard TUI interattivo"
+  echo ""
+  echo -e "${STY_BOLD}Pannelli & Funzionalità Rapide:${STY_RST}"
+  echo -e "  ${STY_CYAN}--toggle, toggle${STY_RST}            Alterna la visibilità della Dynamic Island"
+  echo -e "  ${STY_CYAN}--open, open, --show${STY_RST}        Espande / rivela la Dynamic Island"
+  echo -e "  ${STY_CYAN}--hide, hide${STY_RST}                Collassa la pillola nella barra"
+  echo -e "  ${STY_CYAN}--control-center, cc${STY_RST}        Apre / chiude il Centro di Controllo (iOS-style)"
+  echo -e "  ${STY_CYAN}--settings, settings${STY_RST}        Apre / chiude la finestra Impostazioni completa"
+  echo -e "  ${STY_CYAN}--overview, overview${STY_RST}        Apre / chiude la panoramica dei workspace (Overview)"
+  echo -e "  ${STY_CYAN}--clipboard, clipboard${STY_RST}      Apre / chiude il gestore della cronologia appunti"
+  echo -e "  ${STY_CYAN}--notifications, nc${STY_RST}         Apre / chiude il Centro Notifiche"
+  echo -e "  ${STY_CYAN}--wallpaper, wallpaper${STY_RST}      Apre / chiude il selettore visivo degli sfondi"
+  echo -e "  ${STY_CYAN}--launcher, launcher${STY_RST}        Apre / chiude l'Application Launcher"
+  echo -e "  ${STY_CYAN}--file-shelf, file-shelf${STY_RST}    Apre / chiude il cassetto file per drag & drop"
+  echo -e "  ${STY_CYAN}--focus-time, focus-time${STY_RST}    Apre / chiude la schermata Tempo di Utilizzo"
+  echo -e "  ${STY_CYAN}--lyrics, lyrics${STY_RST}            Apre / chiude la visualizzazione testi sincronizzati"
+  echo -e "  ${STY_CYAN}--player, player${STY_RST}            Apre / chiude il widget multimediale espanso"
+  echo -e "  ${STY_CYAN}--power-menu, power-menu${STY_RST}    Apre / chiude il menu di spegnimento e sessione"
+  echo -e "  ${STY_CYAN}--screenshot, screenshot${STY_RST}    Avvia lo strumento di cattura screenshot ritagliata"
+  echo -e "  ${STY_CYAN}--clock, clock${STY_RST}              Mostra il widget orologio"
+  echo -e "  ${STY_CYAN}--timer, timer${STY_RST}              Mostra il widget timer"
+  echo ""
+  echo -e "${STY_BOLD}Configurazione & Personalizzazione:${STY_RST}"
+  echo -e "  ${STY_YELLOW}--lang [code]${STY_RST}               Imposta la lingua (en, it, es, de, fr, auto) o menu TUI"
+  echo -e "  ${STY_YELLOW}--wallpaper-backend [app]${STY_RST}   Imposta motore sfondi (awww, swww, hyprpaper...) o TUI"
+  echo -e "  ${STY_YELLOW}--autohide [on|off]${STY_RST}         Abilita o disabilita il nascondimento automatico"
+  echo ""
+  echo -e "${STY_BOLD}Altro:${STY_RST}"
+  echo -e "  ${STY_FAINT}-v, --version, version${STY_RST}      Mostra la versione corrente e commit git"
+  echo -e "  ${STY_FAINT}-h, --help, help${STY_RST}            Mostra questa guida completa"
+}
+
+case "${1:-}" in
+  -h|--help|help)
+    show_help
+    exit 0
+    ;;
+  -v|--version|version)
+    git_dir=""
+    [ -d "$QML_PATH/.git" ] && git_dir="$QML_PATH"
+    [ -z "$git_dir" ] && [ -d "$HOME/Progetti/dynamic-island-hyprland/.git" ] && git_dir="$HOME/Progetti/dynamic-island-hyprland"
+    commit_hash="release"
+    [ -n "$git_dir" ] && commit_hash=$(git -C "$git_dir" rev-parse --short HEAD 2>/dev/null || echo "release")
+    echo -e "${STY_BOLD}${STY_CYAN}Dynamic Island Hyprland${STY_RST} ${STY_GREEN}v2.5.0${STY_RST} (${commit_hash})"
+    echo -e "Qt 6 + Quickshell Desktop Environment Component"
+    echo -e "Path: ${QML_PATH}"
+    exit 0
+    ;;
+  --status|status)
+    cmd_status
+    exit 0
+    ;;
+  --stop|--kill|--quit|stop|kill)
+    cmd_stop
+    exit 0
+    ;;
+  --reload|--restart|reload|restart)
+    echo -e "${STY_CYAN}==>${STY_RST} Riavvio della Dynamic Island in corso..."
+    pkill -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null || true
+    sleep 0.3
+    shift
+    exec /usr/bin/quickshell -p "$QML_PATH" -d "$@"
+    ;;
+  -d|--daemonize)
+    shift
+    qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+    if [ -n "$qs_pid" ]; then
+      echo -e "${STY_YELLOW}ℹ Dynamic Island è già in esecuzione (PID ${qs_pid}).${STY_RST}"
+      echo -e "  Usa ${STY_CYAN}dynamic-island --reload${STY_RST} per riavviarla."
+      exit 0
+    fi
+    exec /usr/bin/quickshell -p "$QML_PATH" -d "$@"
+    ;;
+  -f|--foreground)
+    shift
+    exec /usr/bin/quickshell -p "$QML_PATH" "$@"
+    ;;
+  --toggle|toggle)
+    call_ipc "island" "toggle"
+    exit 0
+    ;;
+  --open|--show|open|show)
+    call_ipc "island" "reveal"
+    exit 0
+    ;;
+  --hide|hide)
+    call_ipc "island" "hide"
+    exit 0
+    ;;
+  --control-center|control-center|cc|--cc)
+    call_ipc "island" "toggleControlCenter"
     exit 0
     ;;
   --settings|settings)
-    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island toggleSettingsApp >/dev/null 2>&1 || true
+    call_ipc "island" "toggleSettingsApp"
     exit 0
     ;;
-  --reload|--restart)
-    pkill -u "$(id -u)" -f "quickshell -p $QML_PATH" 2>/dev/null || true
-    sleep 0.3
-    shift
+  --overview|overview)
+    call_ipc "overview" "toggle"
+    exit 0
     ;;
-  --toggle)
-    if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
-      /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island toggle >/dev/null 2>&1 || true
-      exit 0
-    fi
+  --clipboard|clipboard)
+    call_ipc "island" "toggleClipboard"
+    exit 0
+    ;;
+  --notifications|notifications|nc|--nc)
+    call_ipc "island" "toggleNotificationCenter"
+    exit 0
+    ;;
+  --wallpaper|wallpaper)
+    call_ipc "island" "toggleWallpaperPicker"
+    exit 0
+    ;;
+  --launcher|launcher)
+    call_ipc "island" "toggleApplicationLauncher"
+    exit 0
+    ;;
+  --file-shelf|file-shelf)
+    call_ipc "island" "toggleFileShelf"
+    exit 0
+    ;;
+  --focus-time|focus-time)
+    call_ipc "island" "toggleFocusTime"
+    exit 0
+    ;;
+  --lyrics|lyrics)
+    call_ipc "island" "toggleLyrics"
+    exit 0
+    ;;
+  --player|player)
+    call_ipc "island" "togglePlayer"
+    exit 0
+    ;;
+  --power-menu|power-menu)
+    call_ipc "island" "togglePowerMenu"
+    exit 0
+    ;;
+  --screenshot|screenshot)
+    call_ipc "island" "startScreenshot"
+    exit 0
+    ;;
+  --clock|clock)
+    call_ipc "island" "showClock"
+    exit 0
+    ;;
+  --timer|timer)
+    call_ipc "island" "showTimer"
+    exit 0
+    ;;
+  --autohide)
     shift
+    case "${1:-}" in
+      off|disable|0|false)
+        call_ipc "island" "disableAutoHide"
+        ;;
+      *)
+        call_ipc "island" "enableAutoHide"
+        ;;
+    esac
+    exit 0
+    ;;
+  --lang|lang)
+    shift
+    lang_script="$QML_PATH/scripts/set-language.sh"
+    [ ! -f "$lang_script" ] && lang_script="$HOME/Progetti/dynamic-island-hyprland/scripts/set-language.sh"
+    if [ -f "$lang_script" ]; then
+      if [ -n "${1:-}" ]; then
+        exec bash "$lang_script" --lang "$1"
+      else
+        exec bash "$lang_script"
+      fi
+    else
+      echo -e "${STY_RED}Errore: scripts/set-language.sh non trovato.${STY_RST}"
+      exit 1
+    fi
+    ;;
+  --wallpaper-backend|wallpaper-backend)
+    shift
+    wp_script="$QML_PATH/scripts/set-wallpaper-backend.sh"
+    [ ! -f "$wp_script" ] && wp_script="$HOME/Progetti/dynamic-island-hyprland/scripts/set-wallpaper-backend.sh"
+    if [ -f "$wp_script" ]; then
+      if [ -n "${1:-}" ]; then
+        exec bash "$wp_script" --backend "$1"
+      else
+        exec bash "$wp_script"
+      fi
+    else
+      echo -e "${STY_RED}Errore: scripts/set-wallpaper-backend.sh non trovato.${STY_RST}"
+      exit 1
+    fi
+    ;;
+  --installer|installer)
+    shift
+    inst_script="$QML_PATH/install.sh"
+    [ ! -f "$inst_script" ] && inst_script="$HOME/Progetti/dynamic-island-hyprland/install.sh"
+    if [ -f "$inst_script" ]; then
+      exec bash "$inst_script" "$@"
+    else
+      echo -e "${STY_RED}Errore: install.sh non trovato.${STY_RST}"
+      exit 1
+    fi
+    ;;
+  --update|update)
+    shift
+    inst_script="$QML_PATH/install.sh"
+    [ ! -f "$inst_script" ] && inst_script="$HOME/Progetti/dynamic-island-hyprland/install.sh"
+    if [ -f "$inst_script" ]; then
+      exec bash "$inst_script" update "$@"
+    else
+      echo -e "${STY_RED}Errore: install.sh non trovato.${STY_RST}"
+      exit 1
+    fi
+    ;;
+  "")
+    qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+    if [ -n "$qs_pid" ]; then
+      call_ipc "island" "reveal"
+      exit 0
+    else
+      exec /usr/bin/quickshell -p "$QML_PATH" -d
+    fi
+    ;;
+  *)
+    echo -e "${STY_RED}Comando o opzione sconosciuta: '$1'${STY_RST}\n"
+    show_help
+    exit 1
     ;;
 esac
-
-if [[ "${SYSTEMD_EXEC_PID:-}" != "$$" ]] && [[ "$1" != "-d" ]] && [[ "$1" != "--force" ]]; then
-  if pgrep -u "$(id -u)" -f "quickshell -p $QML_PATH" >/dev/null; then
-    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island reveal >/dev/null 2>&1 || \
-    /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call island open >/dev/null 2>&1 || true
-    exit 0
-  fi
-fi
-
-if [[ " $* " != *" -d "* ]] && [[ " $* " != *" --daemonize "* ]]; then
-  exec /usr/bin/quickshell -p "$QML_PATH" -d "$@"
-else
-  exec /usr/bin/quickshell -p "$QML_PATH" "$@"
-fi
