@@ -79,33 +79,146 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [ -z "${TARGET_LANG}" ]; then
-    echo -e "${STY_CYAN}╔════════════════════════════════════════════════════════════════╗${STY_RST}"
-    echo -e "${STY_CYAN}║     🌍 Dynamic Island — Selettore Lingua / Language Selector    ║${STY_RST}"
-    echo -e "${STY_CYAN}╚════════════════════════════════════════════════════════════════╝${STY_RST}"
-    echo -e "Lingua attualmente attiva: ${STY_BOLD}${CURRENT_LANG}${STY_RST}\n"
-    echo "Scegli la lingua per l'interfaccia:"
-    echo "  1) English (Default)"
-    echo "  2) Italiano"
-    echo "  3) Español"
-    echo "  4) Deutsch"
-    echo "  5) Français"
-    echo "  6) System (Auto-detect)"
-    echo ""
-    read -r -p "Scelta / Selection [1-6, default: ${CURRENT_LANG}]: " USER_CHOICE
+# ── TUI Selector Engine (Zero dependencies, Pure Bash) ────────────────────────
+tui_get_tty() {
+    if [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        echo "/dev/tty"
+    elif [ -t 0 ] && [ -t 1 ]; then
+        echo "/dev/tty"
+    else
+        echo ""
+    fi
+}
 
-    case "${USER_CHOICE,,}" in
-        1|en|english) TARGET_LANG="en" ;;
-        2|it|italian|italiano) TARGET_LANG="it" ;;
-        3|es|spanish|espanol|español) TARGET_LANG="es" ;;
-        4|de|german|deutsch) TARGET_LANG="de" ;;
-        5|fr|french|francais|français) TARGET_LANG="fr" ;;
-        6|auto|system) TARGET_LANG="auto" ;;
-        "") TARGET_LANG="${CURRENT_LANG:-en}" ;;
-        *)
-            echo -e "${STY_YELLOW}Scelta non valida, mantenuta la lingua attuale: ${CURRENT_LANG}${STY_RST}"
-            TARGET_LANG="${CURRENT_LANG:-en}"
-            ;;
+tui_select() {
+    local prompt="$1"
+    local default_idx="${2:-0}"
+    shift 2
+    local options=("$@")
+    local count=${#options[@]}
+    local selected="$default_idx"
+
+    local tty_dev
+    tty_dev=$(tui_get_tty)
+
+    if [ -z "$tty_dev" ]; then
+        TUI_RESULT="$selected"
+        echo -e "  \033[1;32m✔\033[0m \033[1;37m${prompt}\033[0m \033[1;36m${options[selected]}\033[0m"
+        return 0
+    fi
+
+    local old_stty
+    old_stty=$(stty -g < "$tty_dev" 2>/dev/null || true)
+    cleanup_tui() {
+        [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+        printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+    }
+    trap cleanup_tui EXIT INT TERM
+
+    stty -echo -icanon min 1 time 0 < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25l" > "$tty_dev"
+
+    echo -e "  \033[1;36m? \033[1;37m${prompt}\033[0m \033[2m(↑/↓ o j/k per navigare, Invio per confermare)\033[0m" > "$tty_dev"
+    for i in "${!options[@]}"; do
+        if [ "$i" -eq "$selected" ]; then
+            echo -e "    \033[1;36m➜ ◉ \033[1;37m${options[i]}\033[0m\033[K" > "$tty_dev"
+        else
+            echo -e "      \033[2m○ ${options[i]}\033[0m\033[K" > "$tty_dev"
+        fi
+    done
+
+    while true; do
+        local char=""
+        IFS= read -rs -n 1 char < "$tty_dev"
+        if [[ "$char" == $'\x1b' ]]; then
+            local seq=""
+            IFS= read -rs -n 2 -t 0.05 seq < "$tty_dev" || true
+            if [[ "$seq" == "[A" ]]; then char="UP"; fi
+            if [[ "$seq" == "[B" ]]; then char="DOWN"; fi
+            if [[ "$seq" == "" ]]; then char="ENTER"; fi
+        elif [[ "$char" == "" ]]; then
+            char="ENTER"
+        elif [[ "$char" == "k" || "$char" == "K" ]]; then
+            char="UP"
+        elif [[ "$char" == "j" || "$char" == "J" ]]; then
+            char="DOWN"
+        elif [[ "$char" =~ ^[1-9]$ ]]; then
+            local num_val=$((char - 1))
+            if [ "$num_val" -lt "$count" ]; then
+                selected="$num_val"
+                char="ENTER"
+            fi
+        fi
+
+        case "$char" in
+            UP)
+                [ "$selected" -gt 0 ] && selected=$((selected - 1)) || selected=$((count - 1))
+                ;;
+            DOWN)
+                [ "$selected" -lt $((count - 1)) ] && selected=$((selected + 1)) || selected=0
+                ;;
+            ENTER)
+                break
+                ;;
+        esac
+
+        printf "\033[%dA\r" "$count" > "$tty_dev"
+        for i in "${!options[@]}"; do
+            if [ "$i" -eq "$selected" ]; then
+                echo -e "    \033[1;36m➜ ◉ \033[1;37m${options[i]}\033[0m\033[K" > "$tty_dev"
+            else
+                echo -e "      \033[2m○ ${options[i]}\033[0m\033[K" > "$tty_dev"
+            fi
+        done
+    done
+
+    cleanup_tui
+    trap - EXIT INT TERM
+
+    # Collapse cleanly
+    printf "\033[%dA\r" "$((count + 1))" > "$tty_dev"
+    echo -e "  \033[1;32m✔\033[0m \033[1;37m${prompt}\033[0m \033[1;36m${options[selected]}\033[0m\033[K" > "$tty_dev"
+    for ((i=0; i<count; i++)); do
+        printf "\033[2K\r" > "$tty_dev"
+    done
+    printf "\033[%dM" "$count" > "$tty_dev"
+
+    TUI_RESULT="$selected"
+    return 0
+}
+
+if [ -z "${TARGET_LANG}" ]; then
+    echo -e "${STY_CYAN}╭────────────────────────────────────────────────────────────────╮${STY_RST}"
+    echo -e "${STY_CYAN}│${STY_RST}     ${STY_BOLD}🌍 Dynamic Island — Selettore Lingua / Language Selector${STY_RST}   ${STY_CYAN}│${STY_RST}"
+    echo -e "${STY_CYAN}╰────────────────────────────────────────────────────────────────╯${STY_RST}"
+    echo -e "  ${STY_FAINT}Lingua attualmente attiva:${STY_RST} ${STY_BOLD}${CURRENT_LANG}${STY_RST}\n"
+
+    DEF_IDX=0
+    case "${CURRENT_LANG,,}" in
+        it*) DEF_IDX=1 ;;
+        es*) DEF_IDX=2 ;;
+        de*) DEF_IDX=3 ;;
+        fr*) DEF_IDX=4 ;;
+        auto*) DEF_IDX=5 ;;
+        *) DEF_IDX=0 ;;
+    esac
+
+    tui_select "Scegli la lingua per l'interfaccia:" "$DEF_IDX" \
+        "English (Default)" \
+        "Italiano" \
+        "Español" \
+        "Deutsch" \
+        "Français" \
+        "System (Auto-detect)"
+
+    case "${TUI_RESULT:-0}" in
+        0) TARGET_LANG="en" ;;
+        1) TARGET_LANG="it" ;;
+        2) TARGET_LANG="es" ;;
+        3) TARGET_LANG="de" ;;
+        4) TARGET_LANG="fr" ;;
+        5) TARGET_LANG="auto" ;;
+        *) TARGET_LANG="en" ;;
     esac
 fi
 

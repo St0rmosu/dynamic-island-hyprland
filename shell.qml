@@ -80,24 +80,44 @@ Scope {
         });
     }
 
-    SettingsAppWindow {
-        id: settingsAppWindow
-        dynamicConfig: shellRoot.dynamicConfig
+    Loader {
+        id: settingsAppWindowLoader
+        active: false
+        sourceComponent: Component {
+            SettingsAppWindow {
+                dynamicConfig: shellRoot.dynamicConfig
+            }
+        }
     }
+    readonly property var settingsAppWindow: settingsAppWindowLoader.item
 
     function openSettingsAppWindow() {
-        if (settingsAppWindow) {
-            settingsAppWindow.visible = true;
-            if (settingsAppWindow.minimized)
-                settingsAppWindow.minimized = false;
+        if (!settingsAppWindowLoader.active)
+            settingsAppWindowLoader.active = true;
+        const win = settingsAppWindowLoader.item;
+        if (win) {
+            win.visible = true;
+            if (win.minimized)
+                win.minimized = false;
         }
     }
 
     function toggleSettingsAppWindow() {
-        if (settingsAppWindow) {
-            settingsAppWindow.visible = !settingsAppWindow.visible;
-            if (settingsAppWindow.visible && settingsAppWindow.minimized)
-                settingsAppWindow.minimized = false;
+        if (!settingsAppWindowLoader.active) {
+            settingsAppWindowLoader.active = true;
+            const win = settingsAppWindowLoader.item;
+            if (win) {
+                win.visible = true;
+                if (win.minimized)
+                    win.minimized = false;
+            }
+            return;
+        }
+        const win = settingsAppWindowLoader.item;
+        if (win) {
+            win.visible = !win.visible;
+            if (win.visible && win.minimized)
+                win.minimized = false;
         }
     }
 

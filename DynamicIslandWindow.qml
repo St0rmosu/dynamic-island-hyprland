@@ -27,7 +27,7 @@ PanelWindow {
     readonly property bool overviewPreparing: overviewPhase === "preparing"
     readonly property bool overviewVisible: overviewPhase === "preparing" || overviewPhase === "opening" || overviewPhase === "open"
     readonly property bool overviewMounted: overviewPhase !== "closed" || overviewPreloading
-    readonly property bool overviewLoaderActive: !compositorIsNiri
+    readonly property bool overviewLoaderActive: overviewMounted && !compositorIsNiri
     readonly property bool overviewDataReady: overviewLoader.item ? !!overviewLoader.item.overviewDataReady : true
     readonly property bool overviewWallpaperReady: true
     readonly property bool overviewVisualReady: overviewLoader.status === Loader.Ready
@@ -4829,9 +4829,9 @@ PanelWindow {
                 id: workspaceLayerLoader
 
                 anchors.fill: parent
-                active: !root.overviewVisible
+                active: !root.overviewVisible && islandContainer.islandState === "long_capsule"
                 asynchronous: false
-                visible: active && islandContainer.islandState === "long_capsule"
+                visible: active
                 z: 4
 
                 sourceComponent: Component {

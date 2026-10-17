@@ -159,13 +159,312 @@ run_quiet() {
     fi
 }
 
+# ── 6.1 TUI Engine (Zero Dipendenze Esterne, Pure Bash) ─────────────────────────
+tui_get_tty() {
+    if [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        echo "/dev/tty"
+    elif [ -t 0 ] && [ -t 1 ]; then
+        echo "/dev/tty"
+    else
+        echo ""
+    fi
+}
+
+tui_confirm() {
+    local prompt="$1"
+    local default_yes="${2:-true}"
+    local tty_dev
+    tty_dev=$(tui_get_tty)
+
+    if [ -z "$tty_dev" ] || [ "${INTERACTIVE:-true}" = false ]; then
+        if [ "$default_yes" = true ]; then
+            echo -e "  ${STY_GREEN}✔${STY_RST} ${prompt} ${STY_FAINT}[Sì]${STY_RST}"
+            return 0
+        else
+            echo -e "  ${STY_YELLOW}ℹ${STY_RST} ${prompt} ${STY_FAINT}[No]${STY_RST}"
+            return 1
+        fi
+    fi
+
+    local selected=0
+    [ "$default_yes" != true ] && selected=1
+
+    local old_stty
+    old_stty=$(stty -g < "$tty_dev" 2>/dev/null || true)
+    cleanup_confirm() {
+        [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+        printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+        sudo_stop_keepalive
+    }
+    trap cleanup_confirm EXIT INT TERM
+
+    stty -echo -icanon min 1 time 0 < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25l" > "$tty_dev"
+
+    render_confirm() {
+        if [ "$selected" -eq 0 ]; then
+            echo -en "\r  \033[1;36m? \033[1;37m${prompt}\033[0m   \033[1;30;46m  Sì  \033[0m  \033[2m  No  \033[0m\033[K" > "$tty_dev"
+        else
+            echo -en "\r  \033[1;36m? \033[1;37m${prompt}\033[0m   \033[2m  Sì  \033[0m  \033[1;30;46m  No  \033[0m\033[K" > "$tty_dev"
+        fi
+    }
+
+    render_confirm
+
+    while true; do
+        local char=""
+        IFS= read -rs -n 1 char < "$tty_dev"
+        if [[ "$char" == $'\x1b' ]]; then
+            local seq=""
+            IFS= read -rs -n 2 -t 0.05 seq < "$tty_dev" || true
+            if [[ "$seq" == "[C" || "$seq" == "[D" ]]; then char="TOGGLE"; fi
+        elif [[ "$char" == "" ]]; then
+            char="ENTER"
+        elif [[ "$char" == $'\t' || "$char" == " " || "$char" == "h" || "$char" == "l" ]]; then
+            char="TOGGLE"
+        elif [[ "$char" == "y" || "$char" == "Y" || "$char" == "s" || "$char" == "S" ]]; then
+            selected=0; break
+        elif [[ "$char" == "n" || "$char" == "N" ]]; then
+            selected=1; break
+        fi
+
+        case "$char" in
+            TOGGLE)
+                selected=$(( 1 - selected ))
+                render_confirm
+                ;;
+            ENTER)
+                break
+                ;;
+        esac
+    done
+
+    [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+    trap sudo_stop_keepalive EXIT INT TERM
+
+    if [ "$selected" -eq 0 ]; then
+        echo -e "\r  \033[1;32m✔\033[0m \033[1;37m${prompt}\033[0m \033[1;32m[Sì]\033[0m\033[K" > "$tty_dev"
+        return 0
+    else
+        echo -e "\r  \033[1;33mℹ\033[0m \033[1;37m${prompt}\033[0m \033[1;33m[No]\033[0m\033[K" > "$tty_dev"
+        return 1
+    fi
+}
+
+tui_select() {
+    local prompt="$1"
+    local default_idx="${2:-0}"
+    shift 2
+    local options=("$@")
+    local count=${#options[@]}
+    local selected="$default_idx"
+
+    local tty_dev
+    tty_dev=$(tui_get_tty)
+
+    if [ -z "$tty_dev" ] || [ "${INTERACTIVE:-true}" = false ]; then
+        TUI_RESULT="$selected"
+        echo -e "  \033[1;32m✔\033[0m \033[1;37m${prompt}\033[0m \033[1;36m${options[selected]}\033[0m"
+        return 0
+    fi
+
+    local old_stty
+    old_stty=$(stty -g < "$tty_dev" 2>/dev/null || true)
+    cleanup_select() {
+        [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+        printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+        sudo_stop_keepalive
+    }
+    trap cleanup_select EXIT INT TERM
+
+    stty -echo -icanon min 1 time 0 < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25l" > "$tty_dev"
+
+    echo -e "  \033[1;36m? \033[1;37m${prompt}\033[0m \033[2m(↑/↓ o j/k per navigare, Invio per confermare)\033[0m" > "$tty_dev"
+    for i in "${!options[@]}"; do
+        if [ "$i" -eq "$selected" ]; then
+            echo -e "    \033[1;36m➜ ◉ \033[1;37m${options[i]}\033[0m\033[K" > "$tty_dev"
+        else
+            echo -e "      \033[2m○ ${options[i]}\033[0m\033[K" > "$tty_dev"
+        fi
+    done
+
+    while true; do
+        local char=""
+        IFS= read -rs -n 1 char < "$tty_dev"
+        if [[ "$char" == $'\x1b' ]]; then
+            local seq=""
+            IFS= read -rs -n 2 -t 0.05 seq < "$tty_dev" || true
+            if [[ "$seq" == "[A" ]]; then char="UP"; fi
+            if [[ "$seq" == "[B" ]]; then char="DOWN"; fi
+            if [[ "$seq" == "" ]]; then char="ENTER"; fi
+        elif [[ "$char" == "" ]]; then
+            char="ENTER"
+        elif [[ "$char" == "k" || "$char" == "K" ]]; then
+            char="UP"
+        elif [[ "$char" == "j" || "$char" == "J" ]]; then
+            char="DOWN"
+        elif [[ "$char" =~ ^[1-9]$ ]]; then
+            local num_val=$((char - 1))
+            if [ "$num_val" -lt "$count" ]; then
+                selected="$num_val"
+                char="ENTER"
+            fi
+        fi
+
+        case "$char" in
+            UP)
+                [ "$selected" -gt 0 ] && selected=$((selected - 1)) || selected=$((count - 1))
+                ;;
+            DOWN)
+                [ "$selected" -lt $((count - 1)) ] && selected=$((selected + 1)) || selected=0
+                ;;
+            ENTER)
+                break
+                ;;
+        esac
+
+        printf "\033[%dA\r" "$count" > "$tty_dev"
+        for i in "${!options[@]}"; do
+            if [ "$i" -eq "$selected" ]; then
+                echo -e "    \033[1;36m➜ ◉ \033[1;37m${options[i]}\033[0m\033[K" > "$tty_dev"
+            else
+                echo -e "      \033[2m○ ${options[i]}\033[0m\033[K" > "$tty_dev"
+            fi
+        done
+    done
+
+    [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+    trap sudo_stop_keepalive EXIT INT TERM
+
+    # Collapse cleanly
+    printf "\033[%dA\r" "$((count + 1))" > "$tty_dev"
+    echo -e "  \033[1;32m✔\033[0m \033[1;37m${prompt}\033[0m \033[1;36m${options[selected]}\033[0m\033[K" > "$tty_dev"
+    for ((i=0; i<count; i++)); do
+        printf "\033[2K\r" > "$tty_dev"
+    done
+    printf "\033[%dM" "$count" > "$tty_dev"
+
+    TUI_RESULT="$selected"
+    return 0
+}
+
+tui_menu() {
+    local title="$1"
+    shift
+    local options=("$@")
+    local count=${#options[@]}
+    local selected=0
+
+    local tty_dev
+    tty_dev=$(tui_get_tty)
+
+    if [ -z "$tty_dev" ] || [ "${INTERACTIVE:-true}" = false ]; then
+        TUI_RESULT=0
+        return 0
+    fi
+
+    local old_stty
+    old_stty=$(stty -g < "$tty_dev" 2>/dev/null || true)
+    cleanup_menu() {
+        [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+        printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+        sudo_stop_keepalive
+    }
+    trap cleanup_menu EXIT INT TERM
+
+    stty -echo -icanon min 1 time 0 < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25l" > "$tty_dev"
+
+    echo -e "\033[1;36m╭────────────────────────────────────────────────────────────────╮\033[0m" > "$tty_dev"
+    printf "\033[1;36m│\033[0m   \033[1;37m%-60s\033[0m \033[1;36m│\033[0m\n" "${title}" > "$tty_dev"
+    echo -e "\033[1;36m╰────────────────────────────────────────────────────────────────╯\033[0m" > "$tty_dev"
+    echo -e "  \033[2mUsa ↑/↓ o j/k per navigare, Invio per selezionare, q per uscire:\033[0m" > "$tty_dev"
+
+    for i in "${!options[@]}"; do
+        if [ "$i" -eq "$selected" ]; then
+            echo -e "    \033[1;36m➜ ◉ \033[1;37m${options[i]}\033[0m\033[K" > "$tty_dev"
+        else
+            echo -e "      \033[2m○ ${options[i]}\033[0m\033[K" > "$tty_dev"
+        fi
+    done
+
+    while true; do
+        local char=""
+        IFS= read -rs -n 1 char < "$tty_dev"
+        if [[ "$char" == $'\x1b' ]]; then
+            local seq=""
+            IFS= read -rs -n 2 -t 0.05 seq < "$tty_dev" || true
+            if [[ "$seq" == "[A" ]]; then char="UP"; fi
+            if [[ "$seq" == "[B" ]]; then char="DOWN"; fi
+            if [[ "$seq" == "" ]]; then
+                selected=$((count - 1))
+                char="ENTER"
+            fi
+        elif [[ "$char" == "" ]]; then
+            char="ENTER"
+        elif [[ "$char" == "k" || "$char" == "K" ]]; then
+            char="UP"
+        elif [[ "$char" == "j" || "$char" == "J" ]]; then
+            char="DOWN"
+        elif [[ "$char" == "q" || "$char" == "Q" ]]; then
+            selected=$((count - 1))
+            char="ENTER"
+        elif [[ "$char" =~ ^[1-9]$ ]]; then
+            local num_val=$((char - 1))
+            if [ "$num_val" -lt "$count" ]; then
+                selected="$num_val"
+                char="ENTER"
+            fi
+        fi
+
+        case "$char" in
+            UP)
+                [ "$selected" -gt 0 ] && selected=$((selected - 1)) || selected=$((count - 1))
+                ;;
+            DOWN)
+                [ "$selected" -lt $((count - 1)) ] && selected=$((selected + 1)) || selected=0
+                ;;
+            ENTER)
+                break
+                ;;
+        esac
+
+        printf "\033[%dA\r" "$count" > "$tty_dev"
+        for i in "${!options[@]}"; do
+            if [ "$i" -eq "$selected" ]; then
+                echo -e "    \033[1;36m➜ ◉ \033[1;37m${options[i]}\033[0m\033[K" > "$tty_dev"
+            else
+                echo -e "      \033[2m○ ${options[i]}\033[0m\033[K" > "$tty_dev"
+            fi
+        done
+    done
+
+    [ -n "$old_stty" ] && stty "$old_stty" < "$tty_dev" 2>/dev/null || true
+    printf "\033[?25h" > "$tty_dev" 2>/dev/null || true
+    trap sudo_stop_keepalive EXIT INT TERM
+
+    # Collapse
+    printf "\033[%dA\r" "$count" > "$tty_dev"
+    echo -e "  \033[1;32m✔\033[0m \033[1;37mAzione scelta:\033[0m \033[1;36m${options[selected]}\033[0m\033[K" > "$tty_dev"
+    for ((i=1; i<count; i++)); do
+        printf "\033[2K\r" > "$tty_dev"
+    done
+    printf "\033[%dM" "$((count - 1))" > "$tty_dev"
+
+    TUI_RESULT="$selected"
+    return 0
+}
+
 # ── 7. Banner Introduttivo ───────────────────────────────────────────────────
 print_banner() {
     clear 2>/dev/null || true
-    echo -e "${STY_CYAN}╔════════════════════════════════════════════════════════════════╗${STY_RST}"
-    echo -e "${STY_CYAN}║     🏝️  Dynamic Island Hyprland — Installer & Setup            ║${STY_RST}"
-    echo -e "${STY_CYAN}║         Fluid iOS-style Dynamic Pill & Control Center          ║${STY_RST}"
-    echo -e "${STY_CYAN}╚════════════════════════════════════════════════════════════════╝${STY_RST}"
+    echo -e "${STY_CYAN}╭────────────────────────────────────────────────────────────────╮${STY_RST}"
+    echo -e "${STY_CYAN}│${STY_RST}     ${STY_BOLD}🏝️  Dynamic Island Hyprland — Installer & Setup Engine${STY_RST}     ${STY_CYAN}│${STY_RST}"
+    echo -e "${STY_CYAN}│${STY_RST}         ${STY_FAINT}Fluid iOS-style Dynamic Pill & Control Center${STY_RST}          ${STY_CYAN}│${STY_RST}"
+    echo -e "${STY_CYAN}╰────────────────────────────────────────────────────────────────╯${STY_RST}"
     echo -e "  ${STY_FAINT}Prefisso di installazione:${STY_RST} ${PREFIX}"
     echo -e "  ${STY_FAINT}Directory di lavoro:${STY_RST}       ${SCRIPT_DIR}"
     echo -e "  ${STY_FAINT}Log di compilazione:${STY_RST}       ${BUILD_LOG}"
@@ -193,8 +492,9 @@ ensure_aur_helper() {
     echo -e "${STY_YELLOW}⚠️  Nessun gestore AUR (yay o paru) rilevato sul sistema.${STY_RST}"
     local DO_INSTALL=true
     if [ "${INTERACTIVE}" = true ]; then
-        read -r -p "Vuoi che installi 'yay' automaticamente da AUR? [Y/n] " confirm
-        [[ "${confirm,,}" =~ ^[Nn] ]] && DO_INSTALL=false
+        if ! tui_confirm "Vuoi che installi 'yay' automaticamente da AUR?" true; then
+            DO_INSTALL=false
+        fi
     fi
 
     if [ "${DO_INSTALL}" = true ]; then
@@ -268,8 +568,9 @@ cmd_deps() {
 
     local PROCEED=true
     if [ "${INTERACTIVE}" = true ]; then
-        read -r -p "Procedere con l'installazione dei pacchetti mancanti? [Y/n] " ans
-        [[ "${ans,,}" =~ ^[Nn] ]] && PROCEED=false
+        if ! tui_confirm "Procedere con l'installazione dei pacchetti mancanti?" true; then
+            PROCEED=false
+        fi
     fi
 
     if [ "${PROCEED}" = true ]; then
@@ -407,14 +708,12 @@ cmd_biometrics() {
             none|no)        HAS_FP=false; HAS_FACE=false ;;
         esac
     elif [ "${INTERACTIVE}" = true ]; then
-        echo "Seleziona i metodi biometrici da abilitare su Dynamic Island:"
-        echo "  1) Solo Lettore di Impronte Digitali (fprintd)"
-        echo "  2) Solo Windows Hello Face ID (Telecamera IR / Howdy)"
-        echo "  3) Entrambi (Impronta + Face ID con selettore dinamico)"
-        echo "  4) Nessuno (Usa solo la password tradizionale)"
-        echo ""
-        read -r -p "Scelta [1-4, default: 4]: " BIO_INPUT
-        case "${BIO_INPUT}" in
+        tui_select "Seleziona i metodi biometrici da abilitare su Dynamic Island:" 0 \
+            "Nessuno (Usa solo la password tradizionale)" \
+            "Solo Lettore di Impronte Digitali (fprintd)" \
+            "Solo Windows Hello Face ID (Telecamera IR / Howdy)" \
+            "Entrambi (Impronta + Face ID con selettore dinamico)"
+        case "${TUI_RESULT:-0}" in
             1) HAS_FP=true ;;
             2) HAS_FACE=true ;;
             3) HAS_FP=true; HAS_FACE=true ;;
@@ -533,6 +832,12 @@ cmd_autostart() {
             if [ -f "${MOD_DIR}/rules.lua" ] && ! grep -q "dynamic-island-no-screen-share" "${MOD_DIR}/rules.lua"; then
                 cat << 'EOF' >> "${MOD_DIR}/rules.lua"
 
+-- dynamic-island: disabilita animazioni del compositor per rendering istantaneo a frame 0
+hl.layer_rule({
+	name = "dynamic-island-no-anim",
+	match = { namespace = "dynamic-island" },
+	no_anim = true,
+})
 -- dynamic-island: escludi dalla condivisione schermo (privacy durante streaming)
 hl.layer_rule({
 	name = "dynamic-island-no-screen-share",
@@ -556,6 +861,11 @@ EOF
 hl.on("hyprland.start", function()
     hl.exec_cmd("${AUTOSTART_CMD}")
 end)
+hl.layer_rule({
+    name = "dynamic-island-no-anim",
+    match = { namespace = "dynamic-island" },
+    no_anim = true,
+})
 EOF
                 echo -e "  ${STY_GREEN}✓${STY_RST} Aggiunto autostart a hyprland.lua"
             fi
@@ -570,6 +880,7 @@ EOF
             cat << EOF > "${CONF_D_FILE}"
 # Dynamic Island Hyprland configuration
 exec-once = ${AUTOSTART_CMD}
+layerrule = noanim, dynamic-island
 layerrule = no_screen_share, dynamic-island
 layerrule = no_screen_share, quickshell
 EOF
@@ -582,6 +893,7 @@ EOF
 
 # Autostart Dynamic Island & Privacy Masking
 exec-once = ${AUTOSTART_CMD}
+layerrule = noanim, dynamic-island
 layerrule = no_screen_share, dynamic-island
 layerrule = no_screen_share, quickshell
 EOF
@@ -617,8 +929,10 @@ cmd_uninstall() {
     echo -e "${STY_BOLD}${STY_RED}==> Disinstallazione Dynamic Island${STY_RST}"
     prevent_sudo_or_root
 
-    read -r -p "Sei sicuro di voler disinstallare Dynamic Island? [y/N] " confirm
-    [[ ! "${confirm,,}" =~ ^[Yy] ]] && { echo "Disinstallazione annullata."; exit 0; }
+    if ! tui_confirm "Sei sicuro di voler disinstallare Dynamic Island?" false; then
+        echo "Disinstallazione annullata."
+        exit 0
+    fi
 
     # Arresta istanze attive
     pkill -f "quickshell.*dynamic-island" >/dev/null 2>&1 || true
@@ -632,8 +946,7 @@ cmd_uninstall() {
     echo -e "  ${STY_GREEN}✓${STY_RST} Binari e moduli rimossi da ${PREFIX}"
 
     # Chiedi per file di configurazione
-    read -r -p "Vuoi rimuovere anche la configurazione utente (~/.config/dynamic-island)? [y/N] " rm_cfg
-    if [[ "${rm_cfg,,}" =~ ^[Yy] ]]; then
+    if tui_confirm "Vuoi rimuovere anche la configurazione utente (~/.config/dynamic-island)?" false; then
         rm -rf "$HOME/.config/dynamic-island"
         echo -e "  ${STY_GREEN}✓${STY_RST} Configurazione rimossa."
     fi
@@ -764,12 +1077,110 @@ cmd_update() {
     echo -e "${STY_GREEN}╚════════════════════════════════════════════════════════════════╝${STY_RST}\n"
 }
 
-# ── 18. Guida / Help Globale ──────────────────────────────────────────────────
+print_install_success() {
+    echo -e "${STY_CYAN}╭────────────────────────────────────────────────────────────────╮${STY_RST}"
+    echo -e "${STY_CYAN}│${STY_RST}     ${STY_BOLD}🎉 Dynamic Island installata e pronta all'uso!${STY_RST}             ${STY_CYAN}│${STY_RST}"
+    echo -e "${STY_CYAN}╰────────────────────────────────────────────────────────────────╯${STY_RST}"
+    echo -e "  • ${STY_BOLD}Modulo Qt6:${STY_RST}          ${PREFIX}/lib/qt6/qml/IslandBackend"
+    echo -e "  • ${STY_BOLD}Daemon testi:${STY_RST}        ${PREFIX}/bin/lyricsmpris"
+    echo -e "  • ${STY_BOLD}Launcher:${STY_RST}            ${PREFIX}/bin/dynamic-island"
+    echo -e "  • ${STY_BOLD}Configurazione:${STY_RST}      $HOME/.config/dynamic-island/userconfig.json"
+    echo -e "  • ${STY_BOLD}Hyprland Autostart:${STY_RST}  Configurato (layerrule noanim & privacy)"
+    echo -e "  • ${STY_BOLD}Privacy Screenshare:${STY_RST} Regole no_screen_share applicate"
+    echo ""
+    echo -e "Puoi avviare subito la Dynamic Island lanciando:"
+    echo -e "  ${STY_BOLD}${STY_GREEN}dynamic-island -d${STY_RST}"
+    echo ""
+}
+
+# ── 18. Procedura Guidata TUI Completa (Setup Wizard) ─────────────────────────
+cmd_wizard() {
+    while true; do
+        print_banner
+        tui_menu "🏝️  Dynamic Island Hyprland — Setup Wizard" \
+            "🚀 Installazione Completa (Consigliata)" \
+            "🔄 Aggiorna Shell & Ricompila da GitHub" \
+            "🎨 Configura Wallpaper Engine" \
+            "🌍 Configura Lingua Interfaccia" \
+            "🔐 Configura Autenticazione Biometrica" \
+            "🛠️  Verifica e Installa solo Dipendenze" \
+            "⚙️  Compila e Installa solo Backend C++" \
+            "🖥️  Configura Autostart Hyprland & Privacy" \
+            "🗑️  Disinstalla Dynamic Island" \
+            "❌ Esci dal Setup"
+
+        local action_idx="${TUI_RESULT:-0}"
+        case "$action_idx" in
+            0) # Installazione completa
+                echo ""
+                cmd_deps
+                cmd_build
+                cmd_deploy
+                cmd_lang
+                cmd_biometrics
+                cmd_wallpaper
+                cmd_autostart
+                print_install_success
+                break
+                ;;
+            1) # Update
+                echo ""
+                cmd_update
+                break
+                ;;
+            2) # Wallpaper
+                echo ""
+                cmd_wallpaper
+                ;;
+            3) # Lang
+                echo ""
+                cmd_lang
+                ;;
+            4) # Biometrics
+                echo ""
+                cmd_biometrics
+                ;;
+            5) # Deps
+                echo ""
+                cmd_deps
+                ;;
+            6) # Build
+                echo ""
+                cmd_build
+                cmd_deploy
+                ;;
+            7) # Autostart
+                echo ""
+                cmd_autostart
+                ;;
+            8) # Uninstall
+                echo ""
+                cmd_uninstall
+                break
+                ;;
+            9|*) # Esci
+                echo -e "\n${STY_CYAN}Arrivederci!${STY_RST}\n"
+                break
+                ;;
+        esac
+
+        if [ "$action_idx" -ge 2 ] && [ "$action_idx" -le 7 ]; then
+            echo ""
+            if ! tui_confirm "Operazione completata. Desideri tornare al menu principale?" true; then
+                echo -e "\n${STY_GREEN}Configurazione terminata con successo!${STY_RST}\n"
+                break
+            fi
+        fi
+    done
+}
+
+# ── 19. Guida / Help Globale ──────────────────────────────────────────────────
 show_help() {
     echo -e "${STY_BOLD}${STY_CYAN}Uso:${STY_RST} $0 [SOTTOCAMANDO] [OPZIONI]"
     echo ""
     echo -e "${STY_BOLD}Sottocomandi disponibili:${STY_RST}"
-    echo -e "  ${STY_GREEN}install${STY_RST}        (Predefinito) Esegue l'installazione completa end-to-end"
+    echo -e "  ${STY_GREEN}wizard${STY_RST}         (Predefinito interattivo) Procedura guidata con interfaccia TUI"
+    echo -e "  ${STY_GREEN}install${STY_RST}        Esegue l'installazione completa end-to-end"
     echo -e "  ${STY_GREEN}update${STY_RST}         Aggiorna la shell da GitHub, ricompila solo se necessario e ricarica"
     echo -e "  ${STY_GREEN}deps${STY_RST}           Verifica e installa solo le dipendenze di sistema e AUR"
     echo -e "  ${STY_GREEN}build${STY_RST}          Compila e installa solo il backend C++ e lyricsmpris"
@@ -792,13 +1203,16 @@ show_help() {
     echo -e "  bash <(curl -sSL https://raw.githubusercontent.com/St0rmosu/dynamic-island-hyprland/main/install.sh)"
 }
 
-# ── 19. Routing Argomenti e Dispatcher ───────────────────────────────────────
+# ── 20. Routing Argomenti e Dispatcher ───────────────────────────────────────
 prevent_sudo_or_root
 
 SUBCOMMAND="install"
+HAS_EXPLICIT_SUBCOMMAND=false
+
 case "${1:-}" in
-    install|update|deps|build|lang|language|biometrics|wallpaper|autostart|uninstall)
+    wizard|install|update|deps|build|lang|language|biometrics|wallpaper|autostart|uninstall)
         SUBCOMMAND="$1"
+        HAS_EXPLICIT_SUBCOMMAND=true
         shift
         ;;
     -h|--help|help)
@@ -845,8 +1259,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── 19. Esecuzione del Sottocomando Richiesto ─────────────────────────────────
+# Se nessun sottocomando è specificato e siamo in modalità interattiva su terminale,
+# avvia la procedura guidata interattiva TUI
+if [ "${HAS_EXPLICIT_SUBCOMMAND}" = false ] && [ "${INTERACTIVE}" = true ]; then
+    local_tty=$(tui_get_tty)
+    if [ -n "${local_tty}" ]; then
+        SUBCOMMAND="wizard"
+    fi
+fi
+
+# ── 21. Esecuzione del Sottocomando Richiesto ─────────────────────────────────
 case "${SUBCOMMAND}" in
+    wizard)
+        cmd_wizard
+        ;;
     update)
         cmd_update
         ;;
@@ -882,19 +1308,6 @@ case "${SUBCOMMAND}" in
         cmd_biometrics
         cmd_wallpaper
         cmd_autostart
-
-        echo -e "${STY_CYAN}╔════════════════════════════════════════════════════════════════╗${STY_RST}"
-        echo -e "${STY_CYAN}║     🎉 Dynamic Island installata e pronta all'uso!             ║${STY_RST}"
-        echo -e "${STY_CYAN}╚════════════════════════════════════════════════════════════════╝${STY_RST}"
-        echo -e "  • ${STY_BOLD}Modulo Qt6:${STY_RST}          ${PREFIX}/lib/qt6/qml/IslandBackend"
-        echo -e "  • ${STY_BOLD}Daemon testi:${STY_RST}        ${PREFIX}/bin/lyricsmpris"
-        echo -e "  • ${STY_BOLD}Launcher:${STY_RST}            ${PREFIX}/bin/dynamic-island"
-        echo -e "  • ${STY_BOLD}Configurazione:${STY_RST}      $HOME/.config/dynamic-island/userconfig.json"
-        echo -e "  • ${STY_BOLD}Hyprland Autostart:${STY_RST}  Configurato"
-        echo -e "  • ${STY_BOLD}Privacy Screenshare:${STY_RST} Regole no_screen_share applicate"
-        echo ""
-        echo -e "Puoi avviare subito la Dynamic Island lanciando:"
-        echo -e "  ${STY_BOLD}${STY_GREEN}dynamic-island -d${STY_RST}"
-        echo ""
+        print_install_success
         ;;
 esac
