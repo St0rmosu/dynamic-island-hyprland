@@ -317,8 +317,9 @@ PanelWindow {
     property bool powerConnectivityDetailMounted: false
     readonly property bool anyConnectivityDetailMounted: wifiConnectivityDetailMounted || bluetoothConnectivityDetailMounted || powerConnectivityDetailMounted
     readonly property real connectivityDetailHeight: 404
+    property bool controlCenterMounted: false
     readonly property real controlCenterMaximumExtraHeight: controlCenterLoader.item ? controlCenterLoader.item.controlCenterMaximumExtraHeight : 120
-    readonly property real controlCenterWindowHeight: islandContainer.controlCenterLayerVisible ? root.effectiveIslandTopMargin + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 450) + 60 : 0
+    readonly property real controlCenterWindowHeight: islandContainer.controlCenterLayerVisible ? root.effectiveIslandTopMargin + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 540) + 60 : 0
     readonly property real notificationCenterWindowHeight: islandContainer.notificationCenterLayerVisible ? root.effectiveIslandTopMargin + (notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 400) + 6 : 0
     readonly property real connectivityDetailGap: 16
     readonly property int connectivityDetailAnimationDuration: 360
@@ -936,7 +937,16 @@ PanelWindow {
         islandContainer.showExpandedTimerPage();
     }
 
+    function showControlCenterWindow() {
+        root.controlCenterMounted = true;
+        islandContainer.hoverExpandedActive = false;
+        islandContainer.showControlCenter();
+        if (controlCenterLoader.item)
+            controlCenterLoader.item.powerViewActive = false;
+    }
+
     function toggleControlCenterWindow() {
+        root.controlCenterMounted = true;
         islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "control_center") {
             islandContainer.smartRestoreState();
@@ -1950,6 +1960,14 @@ PanelWindow {
         interval: root.connectivityDetailAnimationDuration
         repeat: false
         onTriggered: root.powerConnectivityDetailMounted = false
+    }
+
+    Timer {
+        id: controlCenterPrewarmTimer
+        interval: 1500
+        running: !root.controlCenterMounted
+        repeat: false
+        onTriggered: root.controlCenterMounted = true
     }
 
     OverviewWallpaperCacheController {
@@ -3077,6 +3095,7 @@ PanelWindow {
         }
 
         function showControlCenter() {
+            root.controlCenterMounted = true;
             cancelSideSwipeSettle();
             abortSideTransientMode();
             clearTransientCapsule();
@@ -4012,7 +4031,7 @@ PanelWindow {
                 case "power_menu":
                     return 420;
                 case "control_center":
-                    return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 420;
+                    return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 380;
                 case "notification_center":
                     return 410;
                 case "wallpaper_picker":
@@ -4093,7 +4112,7 @@ PanelWindow {
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
                         return 470;
 
-                    return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 420;
+                    return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 540;
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
                 case "wallpaper_picker":
@@ -5187,9 +5206,9 @@ PanelWindow {
                 id: controlCenterLoader
 
                 anchors.fill: parent
-                active: islandContainer.controlCenterLayerVisible
+                active: root.controlCenterMounted || islandContainer.controlCenterLayerVisible
                 asynchronous: false
-                visible: active
+                visible: islandContainer.controlCenterLayerVisible
 
                 sourceComponent: Component {
                     ControlCenterLayer {

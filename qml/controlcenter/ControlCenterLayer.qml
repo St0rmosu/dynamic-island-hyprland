@@ -1291,7 +1291,6 @@ Item {
     onVolumeLevelChanged: syncVolumeFromLevel(volumeLevel)
     onShowConditionChanged: {
         if (showCondition) {
-            localConfigFile.reload();
             syncLevelsFromProps();
             displayedBrightness = localBrightness;
             displayedVolume = localVolume;
