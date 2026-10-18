@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import IslandBackend
 
 Item {
     id: root
@@ -172,7 +173,7 @@ Item {
             }
 
             Text {
-                text: "Modifica Screenshot"
+                text: I18n.tr("Modifica Screenshot")
                 color: root.textColor
                 font.family: root.textFontFamily
                 font.pixelSize: 12
@@ -560,7 +561,7 @@ Item {
                     }
 
                     Text {
-                        text: "Apri in Satty"
+                        text: I18n.tr("Apri in Satty")
                         color: maSattyExt.containsMouse ? root.textColor : root.dimColor
                         font.family: root.textFontFamily
                         font.pixelSize: 11
@@ -602,7 +603,7 @@ Item {
                     }
 
                     Text {
-                        text: "Invia a..."
+                        text: I18n.tr("Invia a...")
                         color: root.shareMenuOpen ? "#000000" : root.textColor
                         font.family: root.textFontFamily
                         font.pixelSize: 11
@@ -641,7 +642,7 @@ Item {
                     }
 
                     Text {
-                        text: "Copia negli appunti"
+                        text: I18n.tr("Copia negli appunti")
                         color: "#000000"
                         font.family: root.textFontFamily
                         font.pixelSize: 11
@@ -710,7 +711,7 @@ Item {
                         }
 
                         Text {
-                            text: modelData.name
+                            text: I18n.tr(modelData.name)
                             color: root.textColor
                             font.family: root.textFontFamily
                             font.pixelSize: 11

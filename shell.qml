@@ -207,7 +207,7 @@ Scope {
             const rawIcon = String(icon || "").trim();
             const imgPath = (match && match[0]) ? match[0] : ((rawIcon.startsWith("/") || rawIcon.startsWith("file://")) ? rawIcon : "");
             const pathToSend = imgPath || icon || "";
-            shellRoot.showNotificationAll(app || "Screenshot", summary || "Screenshot catturato", body || "Copiato negli appunti", pathToSend, customColor || "#ff9f0a");
+            shellRoot.showNotificationAll(app || "Screenshot", summary || I18n.tr("Screenshot catturato"), body || I18n.tr("Copiato negli appunti"), pathToSend, customColor || "#ff9f0a");
             return ;
         }
 
@@ -218,7 +218,7 @@ Scope {
             }
             if (lowerSummary.indexOf("call") !== -1 || lowerSummary.indexOf("chiamat") !== -1 || lowerBody.indexOf("call") !== -1 || lowerBody.indexOf("chiamat") !== -1 || lowerSummary.indexOf("incoming") !== -1 || lowerBody.indexOf("incoming") !== -1) {
                 const caller = summary || "Discord";
-                const sub = body || "Chiamata in arrivo...";
+                const sub = body || I18n.tr("Chiamata in arrivo...");
                 shellRoot.showDiscordCallAll(caller, sub, "");
                 avatarResolverProc.pendingCaller = caller;
                 avatarResolverProc.pendingSubtitle = sub;

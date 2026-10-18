@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import IslandBackend
 
 Item {
     id: root
@@ -17,8 +18,8 @@ Item {
     property color irisGreen: "#58b654"
     property color irisYellow: "#b7a558"
     property color irisRed: "#d0bf92"
-    property string titleText: "Screenshot Catturato"
-    property string subtitleText: "Copiato negli appunti"
+    property string titleText: I18n.tr("Screenshot catturato")
+    property string subtitleText: I18n.tr("Copiato negli appunti")
     property bool showCondition: false
     property bool imageLanded: true
     property real screenshotAspect: 1.77
@@ -325,7 +326,7 @@ Item {
                         }
 
                         Text {
-                            text: "Modifica"
+                            text: I18n.tr("Modifica")
                             color: root.textColor
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
@@ -425,7 +426,7 @@ Item {
                     }
 
                     Text {
-                        text: "Modifica"
+                        text: I18n.tr("Modifica")
                         color: maEditBtn.containsMouse ? "#000000" : root.textColor
                         font.pixelSize: 11
                         font.weight: Font.DemiBold
@@ -465,7 +466,7 @@ Item {
                     }
 
                     Text {
-                        text: "Invia a..."
+                        text: I18n.tr("Invia a...")
                         color: root.shareMenuOpen ? "#000000" : root.textColor
                         font.pixelSize: 11
                         font.family: root.textFontFamily
@@ -532,7 +533,7 @@ Item {
                         }
 
                         Text {
-                            text: modelData.name
+                            text: I18n.tr(modelData.name)
                             color: root.textColor
                             font.family: root.textFontFamily
                             font.pixelSize: 11

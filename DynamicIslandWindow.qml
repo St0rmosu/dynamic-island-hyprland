@@ -57,7 +57,7 @@ PanelWindow {
     property string autoHideRevealSource: "none"
     property bool screenshotSnippingActive: false
     property bool screenshotSnippingSattyMode: false
-    property string screenshotSnippingStatusText: "Clicca finestra o trascina"
+    property string screenshotSnippingStatusText: I18n.tr("Clicca finestra o trascina")
     property bool screenshotFlyAnimationActive: false
     property bool screenshotImageLanded: false
     property bool screenshotCapturing: false
@@ -661,7 +661,7 @@ PanelWindow {
         }
         root.screenshotSnippingActive = true;
         root.screenshotSnippingSattyMode = false;
-        root.screenshotSnippingStatusText = "Clicca finestra o trascina";
+        root.screenshotSnippingStatusText = I18n.tr("Clicca finestra o trascina");
         if (root.shellRootController && root.shellRootController.notifySnipStarted) {
             root.shellRootController.notifySnipStarted();
         }
@@ -2804,8 +2804,8 @@ PanelWindow {
         function recordScreenshotNotification(filePath, summaryText) {
             if (notificationHistoryModel) {
                 const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "Screenshot";
-                const summary = summaryText || "Screenshot catturato";
-                const body = fileName + " • Copiato negli appunti";
+                const summary = summaryText || I18n.tr("Screenshot catturato");
+                const body = fileName + " • " + I18n.tr("Copiato negli appunti");
                 if (notificationHistoryModel.count > 0) {
                     const first = notificationHistoryModel.get(0);
                     if (first && (first.appName === "Screenshot" || String(first.summary).indexOf("Screenshot") !== -1)) {
@@ -2828,8 +2828,8 @@ PanelWindow {
         function showScreenshotPreviewCapsule(filePath) {
             screenshotPreviewPath = filePath || "";
             const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "";
-            const bodyText = fileName !== "" ? (fileName + " • Copiato negli appunti") : "Copiato negli appunti";
-            showNotificationCapsule("Screenshot", "Screenshot catturato", bodyText, filePath, "#ff9f0a");
+            const bodyText = fileName !== "" ? (fileName + " • " + I18n.tr("Copiato negli appunti")) : I18n.tr("Copiato negli appunti");
+            showNotificationCapsule("Screenshot", I18n.tr("Screenshot catturato"), bodyText, filePath, "#ff9f0a");
         }
 
         function showScreenshotSnippingCapsule() {
@@ -3468,7 +3468,7 @@ PanelWindow {
             id: wifiConnectionTracker
 
             onWifiDisconnected: function(ssid) {
-                islandContainer.showNotificationCapsule("Wi-Fi", "Wi-Fi disconnesso", ssid ? ("da " + ssid) : "", "", "#ff9f0a");
+                islandContainer.showNotificationCapsule("Wi-Fi", I18n.tr("Wi-Fi disconnesso"), ssid ? (I18n.tr("da") + " " + ssid) : "", "", "#ff9f0a");
             }
         }
 
@@ -5065,7 +5065,7 @@ PanelWindow {
                         customColorPalette: root.irisColorPalette
                         onCloseRequested: islandContainer.smartRestoreState()
                         onOpenSattyRequested: islandContainer.openScreenshotInSatty()
-                        onScreenshotSaved: (path) => islandContainer.recordScreenshotNotification(path, "Screenshot modificato")
+                        onScreenshotSaved: (path) => islandContainer.recordScreenshotNotification(path, I18n.tr("Screenshot modificato"))
                     }
                 }
             }

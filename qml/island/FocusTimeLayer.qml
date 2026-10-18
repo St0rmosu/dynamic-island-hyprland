@@ -1039,7 +1039,7 @@ FocusScope {
 
                                             Text {
                                                 anchors.horizontalCenter: parent.horizontalCenter
-                                                text: model.dayName
+                                                text: I18n.tr(model.dayName)
                                                 color: model.isTarget ? "#ffffff" : "#6e7787"
                                                 font.pixelSize: 10
                                                 font.weight: model.isTarget ? Font.Bold : Font.Normal
@@ -1469,7 +1469,7 @@ FocusScope {
                                         Text {
                                             width: 44
                                             anchors.verticalCenter: parent.verticalCenter
-                                            text: ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"][dayIdx]
+                                            text: I18n.tr(["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"][dayIdx])
                                             font.family: root.textFontFamily
                                             font.pixelSize: 10
                                             font.weight: Font.DemiBold

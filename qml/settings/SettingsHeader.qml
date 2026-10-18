@@ -1,4 +1,5 @@
 import QtQuick
+import IslandBackend
 
 Row {
     id: root
@@ -19,7 +20,7 @@ Row {
     }
 
     Text {
-        text: root.text.toUpperCase()
+        text: I18n.tr(root.text).toUpperCase()
         color: "#9aa3b5"
         font.pixelSize: 11
         font.weight: Font.Bold

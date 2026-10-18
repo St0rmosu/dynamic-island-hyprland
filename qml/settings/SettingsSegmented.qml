@@ -1,4 +1,5 @@
 import QtQuick
+import IslandBackend
 
 Item {
     id: root
@@ -33,7 +34,7 @@ Item {
 
         Text {
             id: titleText
-            text: root.title
+            text: I18n.tr(root.title)
             color: "#f2f4f8"
             font.pixelSize: 13
             font.weight: Font.Medium
@@ -45,7 +46,7 @@ Item {
         Text {
             id: descText
             visible: root.description !== ""
-            text: root.description
+            text: I18n.tr(root.description)
             color: "#7e889b"
             font.pixelSize: 11
             font.family: root.textFontFamily
@@ -167,7 +168,7 @@ Item {
                             Text {
                                 id: btnText
                                 anchors.centerIn: parent
-                                text: modelData.text
+                                text: I18n.tr(modelData.text)
                                 font.pixelSize: 11
                                 font.weight: btnItem.isSelected ? Font.DemiBold : Font.Normal
                                 font.family: root.textFontFamily

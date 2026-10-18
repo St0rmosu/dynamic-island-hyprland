@@ -1598,7 +1598,7 @@ Item {
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: studioRoot.dragGhostColSpan > 1 || studioRoot.dragGhostH > 100
-                            text: studioRoot.dragGhostName
+                            text: I18n.tr(studioRoot.dragGhostName)
                             font.family: studioRoot.textFontFamily
                             font.pixelSize: 11
                             font.weight: Font.DemiBold

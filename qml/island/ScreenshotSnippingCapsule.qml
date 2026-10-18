@@ -1,10 +1,11 @@
 import QtQuick
 import QtQuick.Layouts
+import IslandBackend
 
 Item {
     id: root
 
-    property string statusText: "Clicca finestra o trascina"
+    property string statusText: I18n.tr("Clicca finestra o trascina")
     property bool sattyDirectMode: false
     property string textFontFamily: "Google Sans Flex"
     property string iconFontFamily: "JetBrainsMono Nerd Font"
@@ -56,7 +57,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.right: parent.right
-                text: root.isDraggingArea ? root.statusText : (root.sattyDirectMode ? "Modifica diretta" : "Cattura schermo")
+                text: root.isDraggingArea ? root.statusText : (root.sattyDirectMode ? I18n.tr("Modifica diretta") : I18n.tr("Cattura schermo"))
                 color: root.isDraggingArea || root.sattyDirectMode ? root.accentColor : root.textColor
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
