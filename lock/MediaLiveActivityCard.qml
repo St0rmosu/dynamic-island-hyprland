@@ -24,13 +24,13 @@ Rectangle {
     readonly property string artist: isPreview ? "The Weeknd ft. Daft Punk" : (activePlayer ? activePlayer.trackArtists.join(", ") : "")
     readonly property string artUrl: isPreview ? "" : (activePlayer ? activePlayer.trackImageUrl : "")
 
-    implicitWidth: 380
-    implicitHeight: 88
+    implicitWidth: 350
+    implicitHeight: 82
     radius: AppleTokens.radiusLg
 
-    color: AppleTokens.surfaceGlassDark
+    color: Qt.rgba(0.07, 0.07, 0.1, 0.82)
     border.width: 1
-    border.color: AppleTokens.hairlineDark
+    border.color: Qt.rgba(1.0, 1.0, 1.0, 0.18)
 
     visible: hasMedia
     opacity: hasMedia ? 1.0 : 0.0
@@ -41,7 +41,7 @@ Rectangle {
     layer.enabled: true
     layer.effect: MultiEffect {
         shadowEnabled: true
-        shadowColor: Qt.rgba(0, 0, 0, 0.4)
+        shadowColor: Qt.rgba(0, 0, 0, 0.45)
         shadowBlur: 0.5
         shadowVerticalOffset: 3
     }
@@ -49,14 +49,16 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         anchors.margins: 14
-        spacing: 14
+        spacing: 12
 
-        // 52x52 Album Artwork (rounded 8px)
+        // 50x50 Album Artwork (rounded 8px)
         Rectangle {
-            width: 52
-            height: 52
+            width: 50
+            height: 50
             radius: AppleTokens.radiusSm
             color: AppleTokens.surfaceTile1
+            border.width: 1
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.12)
             clip: true
 
             Image {
@@ -72,26 +74,26 @@ Rectangle {
                 text: "󰎈"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 22
-                color: AppleTokens.inkMuted48
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
             }
         }
 
         // Info & Scrubber & Controls
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 4
+            spacing: 5
 
             RowLayout {
                 Layout.fillWidth: true
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: 1
 
                     Text {
                         text: root.title
                         font.family: AppleTokens.textFont
-                        font.pixelSize: 15
+                        font.pixelSize: 14
                         font.weight: Font.DemiBold
                         font.letterSpacing: AppleTokens.letterSpacingBody
                         color: AppleTokens.bodyOnDark
@@ -102,10 +104,10 @@ Rectangle {
                     Text {
                         text: root.artist
                         font.family: AppleTokens.textFont
-                        font.pixelSize: 13
+                        font.pixelSize: 12
                         font.weight: Font.Normal
                         font.letterSpacing: AppleTokens.letterSpacingBody
-                        color: AppleTokens.inkMuted48
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.6)
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -120,7 +122,7 @@ Rectangle {
                     Text {
                         text: "󰒮"
                         font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 16
+                        font.pixelSize: 15
                         color: prevMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
                         scale: prevMouse.pressed ? AppleTokens.pressScale : 1.0
 
@@ -136,7 +138,7 @@ Rectangle {
                     Text {
                         text: root.isPlaying ? "󰏤" : "󰐊"
                         font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 20
+                        font.pixelSize: 19
                         color: playMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
                         scale: playMouse.pressed ? AppleTokens.pressScale : 1.0
 
@@ -156,7 +158,7 @@ Rectangle {
                     Text {
                         text: "󰒭"
                         font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 16
+                        font.pixelSize: 15
                         color: nextMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
                         scale: nextMouse.pressed ? AppleTokens.pressScale : 1.0
 

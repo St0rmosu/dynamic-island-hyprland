@@ -13,8 +13,8 @@ Item {
 
     signal submitRequested(string password)
 
-    implicitWidth: 320
-    implicitHeight: 74 // 44px pill + 30px label below
+    implicitWidth: 300
+    implicitHeight: 74
 
     Rectangle {
         id: pillBox
@@ -24,20 +24,20 @@ Item {
         height: 44
         radius: height / 2
 
-        color: AppleTokens.surfaceGlassInput
+        color: Qt.rgba(0.07, 0.07, 0.1, 0.82)
         border.width: root.hasFocusState ? 2 : 1
         border.color: {
             if (root.isError) return AppleTokens.errorRed;
             if (root.hasFocusState) return AppleTokens.primaryFocus;
-            return AppleTokens.hairlineDark;
+            return Qt.rgba(1.0, 1.0, 1.0, 0.22);
         }
 
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.3)
-            shadowBlur: 0.4
-            shadowVerticalOffset: 2
+            shadowColor: Qt.rgba(0, 0, 0, 0.5)
+            shadowBlur: 0.5
+            shadowVerticalOffset: 3
         }
 
         RowLayout {
@@ -51,7 +51,7 @@ Item {
                 text: "󰌾"
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 15
-                color: root.isError ? AppleTokens.errorRed : AppleTokens.inkMuted48
+                color: root.isError ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.6)
                 Layout.alignment: Qt.AlignVCenter
             }
 
@@ -68,10 +68,10 @@ Item {
                     visible: root.buffer.length === 0
                     text: "Inserisci password..."
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 15
+                    font.pixelSize: 14
                     font.weight: Font.Normal
                     font.letterSpacing: AppleTokens.letterSpacingBody
-                    color: AppleTokens.inkMuted48
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.52)
                 }
 
                 // Animated Dots
@@ -156,14 +156,22 @@ Item {
     // Caption / Error Label
     Text {
         anchors.top: pillBox.bottom
-        anchors.topMargin: 8
+        anchors.topMargin: 9
         anchors.horizontalCenter: parent.horizontalCenter
         text: root.isError ? (root.errorMessage || "Password non corretta. Riprova.") : "Premi Invio o tocca il sensore d'impronta"
         font.family: AppleTokens.textFont
         font.pixelSize: 13
         font.weight: Font.Normal
         font.letterSpacing: AppleTokens.letterSpacingBody
-        color: root.isError ? AppleTokens.errorRed : AppleTokens.inkMuted48
+        color: root.isError ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.72)
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.7)
+            shadowBlur: 0.3
+            shadowVerticalOffset: 1
+        }
 
         Behavior on color {
             ColorAnimation { duration: 180 }

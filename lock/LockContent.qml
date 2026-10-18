@@ -48,8 +48,8 @@ Item {
 
     readonly property string timeString: Qt.formatTime(root.now, "hh:mm")
     readonly property string dateString: {
-        let s = Qt.formatDate(root.now, "dddd, d MMMM");
-        return s.toUpperCase();
+        let s = Qt.formatDate(root.now, "dddd d MMMM");
+        return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
     // Wallpaper Path Resolver
@@ -115,13 +115,13 @@ Item {
         }
     }
 
-    // 1. Solid opaque base (prevents any window leakage)
+    // 1. Solid opaque base
     Rectangle {
         anchors.fill: parent
-        color: "#0a0a0c"
+        color: "#050507"
     }
 
-    // 2. Wallpaper Layer with Apple Museum MultiEffect Blur
+    // 2. Wallpaper Layer: Sharp photography with smooth focus-pull blur on typing
     Image {
         id: bgWallpaper
         anchors.fill: parent
@@ -130,197 +130,138 @@ Item {
         visible: status === Image.Ready
         asynchronous: true
 
-        layer.enabled: true
+        readonly property real targetBlur: pamAuth.buffer.length > 0 ? 0.45 : 0.0
+        property real currentBlur: targetBlur
+        Behavior on currentBlur {
+            NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
+        }
+
+        layer.enabled: currentBlur > 0.01
         layer.effect: MultiEffect {
             autoPaddingEnabled: false
             blurEnabled: true
-            blur: 0.9
-            blurMax: 64
-            saturation: 0.3
+            blur: bgWallpaper.currentBlur
+            blurMax: 32
+            saturation: 0.15
         }
     }
 
-    // 3. Dark Museum Tint Overlay
+    // 3. Cinematic Vignette (Soft top/bottom gradients for 100% legibility)
     Rectangle {
         anchors.fill: parent
-        color: AppleTokens.surfaceBlack
-        opacity: 0.42
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
+            GradientStop { position: 0.25; color: Qt.rgba(0, 0, 0, 0.15) }
+            GradientStop { position: 0.7; color: Qt.rgba(0, 0, 0, 0.2) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.55) }
+        }
     }
 
-    // 4. Dynamic Island Top Capsule (iOS Lockscreen style)
+    // 4. Dynamic Island Top Capsule (iOS / macOS status)
     DynamicIslandLockCapsule {
         id: islandCapsule
         anchors.top: parent.top
-        anchors.topMargin: 28
+        anchors.topMargin: 20
         anchors.horizontalCenter: parent.horizontalCenter
+        z: 20
+    }
+
+    // 5. Center Hero Column (macOS Sequoia Desktop Layout)
+    ColumnLayout {
+        anchors.centerIn: parent
+        anchors.verticalCenterOffset: -24
+        spacing: 20
         z: 10
-    }
 
-    // 5. Main Center Column (iOS 18 Layout)
-    Item {
-        anchors.fill: parent
-        anchors.topMargin: 70
-        anchors.bottomMargin: 90
-
+        // Clock & Date Group
         ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 24
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 2
 
-            // --- iOS Hero Date & Clock ---
-            ColumnLayout {
+            // Date above Clock
+            Text {
+                text: root.dateString
+                font.family: AppleTokens.textFont
+                font.pixelSize: 16
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.4
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
                 Layout.alignment: Qt.AlignHCenter
-                spacing: 2
 
-                // Date above Clock (Authentic iOS)
-                Text {
-                    text: root.dateString
-                    font.family: AppleTokens.textFont
-                    font.pixelSize: 15
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 1.0
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.82)
-                    Layout.alignment: Qt.AlignHCenter
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                        shadowBlur: 0.3
-                        shadowVerticalOffset: 1
-                    }
-                }
-
-                // Massive Hero Time Digits
-                Text {
-                    text: root.timeString
-                    font.family: AppleTokens.displayFont
-                    font.pixelSize: 108
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: -2.5
-                    color: AppleTokens.bodyOnDark
-                    Layout.alignment: Qt.AlignHCenter
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.55)
-                        shadowBlur: 0.5
-                        shadowVerticalOffset: 4
-                    }
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
+                    shadowBlur: 0.4
+                    shadowVerticalOffset: 1
                 }
             }
 
-            // --- Media Live Activity Card ---
-            MediaLiveActivityCard {
-                id: mediaCard
-                isPreview: root.isPreview
+            // Hero Clock Digits
+            Text {
+                text: root.timeString
+                font.family: AppleTokens.displayFont
+                font.pixelSize: 88
+                font.weight: Font.DemiBold
+                font.letterSpacing: -2.2
+                color: AppleTokens.bodyOnDark
                 Layout.alignment: Qt.AlignHCenter
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
+                    shadowBlur: 0.5
+                    shadowVerticalOffset: 3
+                }
             }
+        }
 
-            // --- Password Input Pill ({component.search-input} style) ---
-            PasswordPillInput {
-                id: pwdInput
-                buffer: pamAuth.buffer
-                isError: pamAuth.isError
-                errorMessage: pamAuth.errorMessage
-                authenticating: pamAuth.authenticating
-                Layout.alignment: Qt.AlignHCenter
+        // Spacing between Clock and User
+        Item {
+            height: 8
+            width: 1
+        }
 
-                onSubmitRequested: function(pwd) {
-                    if (root.isPreview) {
-                        islandCapsule.lockState = "unlocked";
-                        unlockTimer.start();
-                    } else {
-                        islandCapsule.lockState = "verifying";
-                        pamAuth.submitPassword(pwd);
-                    }
+        // User Identity Card (Avatar + Name + Password Pill)
+        UserIdentityCard {
+            id: userCard
+            buffer: pamAuth.buffer
+            isError: pamAuth.isError
+            errorMessage: pamAuth.errorMessage
+            authenticating: pamAuth.authenticating
+            Layout.alignment: Qt.AlignHCenter
+
+            onSubmitRequested: function(pwd) {
+                if (root.isPreview) {
+                    islandCapsule.lockState = "unlocked";
+                    unlockTimer.start();
+                } else {
+                    islandCapsule.lockState = "verifying";
+                    pamAuth.submitPassword(pwd);
                 }
             }
         }
     }
 
-    // 6. Bottom Quick Action Circular Buttons (Flashlight & Screen Off)
-    Rectangle {
-        id: leftActionBtn
+    // 6. Bottom-Left: Concentric Media Live Activity
+    MediaLiveActivityCard {
+        id: mediaCard
+        isPreview: root.isPreview
         anchors.left: parent.left
-        anchors.leftMargin: 52
+        anchors.leftMargin: 36
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 44
-        width: 50
-        height: 50
-        radius: 25
-        color: AppleTokens.surfaceGlassInput
-        border.width: 1
-        border.color: AppleTokens.hairlineDark
-
-        scale: leftBtnMouse.pressed ? AppleTokens.pressScale : 1.0
-        Behavior on scale { NumberAnimation { duration: 100 } }
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.4)
-            shadowBlur: 0.4
-            shadowVerticalOffset: 2
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "󰌵"
-            font.family: "JetBrainsMono Nerd Font"
-            font.pixelSize: 21
-            color: AppleTokens.bodyOnDark
-        }
-
-        MouseArea {
-            id: leftBtnMouse
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                Quickshell.execDetached(["sh", "-c", "pkill -USR1 gammastep || pkill -USR1 wlsunset || hyprsunset --toggle || true"]);
-            }
-        }
+        anchors.bottomMargin: 32
+        z: 15
     }
 
-    Rectangle {
-        id: rightActionBtn
+    // 7. Bottom-Right: System & Battery Complication Card
+    SystemComplicationCard {
+        id: systemCard
         anchors.right: parent.right
-        anchors.rightMargin: 52
+        anchors.rightMargin: 36
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 44
-        width: 50
-        height: 50
-        radius: 25
-        color: AppleTokens.surfaceGlassInput
-        border.width: 1
-        border.color: AppleTokens.hairlineDark
-
-        scale: rightBtnMouse.pressed ? AppleTokens.pressScale : 1.0
-        Behavior on scale { NumberAnimation { duration: 100 } }
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.4)
-            shadowBlur: 0.4
-            shadowVerticalOffset: 2
-        }
-
-        Text {
-            anchors.centerIn: parent
-            text: "󰍹"
-            font.family: "JetBrainsMono Nerd Font"
-            font.pixelSize: 20
-            color: AppleTokens.bodyOnDark
-        }
-
-        MouseArea {
-            id: rightBtnMouse
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                Quickshell.execDetached(["hyprctl", "dispatch", "dpms", "off"]);
-            }
-        }
+        anchors.bottomMargin: 32
+        z: 15
     }
 }
