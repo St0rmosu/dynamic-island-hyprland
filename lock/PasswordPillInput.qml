@@ -13,47 +13,38 @@ Item {
 
     signal submitRequested(string password)
 
-    implicitWidth: 300
-    implicitHeight: 74
+    implicitWidth: 210
+    implicitHeight: 56 // 32px pill + 24px label below
 
     Rectangle {
         id: pillBox
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         width: parent.width
-        height: 44
+        height: 32
         radius: height / 2
 
-        color: Qt.rgba(0.07, 0.07, 0.1, 0.82)
-        border.width: root.hasFocusState ? 2 : 1
+        color: Qt.rgba(0.0, 0.0, 0.0, 0.4)
+        border.width: 1
         border.color: {
             if (root.isError) return AppleTokens.errorRed;
-            if (root.hasFocusState) return AppleTokens.primaryFocus;
+            if (root.hasFocusState) return Qt.rgba(1.0, 1.0, 1.0, 0.45);
             return Qt.rgba(1.0, 1.0, 1.0, 0.22);
         }
 
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.5)
-            shadowBlur: 0.5
-            shadowVerticalOffset: 3
+            shadowColor: Qt.rgba(0, 0, 0, 0.4)
+            shadowBlur: 0.3
+            shadowVerticalOffset: 2
         }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 6
-            spacing: 10
-
-            // Leading glyph
-            Text {
-                text: "󰌾"
-                font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 15
-                color: root.isError ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.6)
-                Layout.alignment: Qt.AlignVCenter
-            }
+            anchors.leftMargin: 12
+            anchors.rightMargin: 4
+            spacing: 8
 
             // Password dots or placeholder
             Item {
@@ -61,33 +52,32 @@ Item {
                 Layout.fillHeight: true
                 clip: true
 
-                // Placeholder
+                // Placeholder (MacBook exact)
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
                     visible: root.buffer.length === 0
-                    text: "Inserisci password..."
+                    text: "Inserisci la password"
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 14
+                    font.pixelSize: 12
                     font.weight: Font.Normal
-                    font.letterSpacing: AppleTokens.letterSpacingBody
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.52)
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
                 }
 
                 // Animated Dots
                 Row {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.left: parent.left
-                    spacing: 7
+                    spacing: 6
                     visible: root.buffer.length > 0
 
                     Repeater {
                         model: root.buffer.length
 
                         Rectangle {
-                            width: 8
-                            height: 8
-                            radius: 4
+                            width: 6
+                            height: 6
+                            radius: 3
                             color: root.isError ? AppleTokens.errorRed : AppleTokens.bodyOnDark
 
                             scale: 0
@@ -99,7 +89,7 @@ Item {
                                 id: dotAnim
                                 from: 0.2
                                 to: 1.0
-                                duration: 160
+                                duration: 140
                                 easing.type: Easing.OutBack
                             }
                         }
@@ -107,13 +97,13 @@ Item {
                 }
             }
 
-            // Action Blue Submit Button
+            // Arrow Submit Button (MacBook circular icon)
             Rectangle {
                 id: submitBtn
-                width: 32
-                height: 32
-                radius: height / 2
-                color: AppleTokens.primaryOnDark // #2997ff
+                width: 24
+                height: 24
+                radius: 12
+                color: root.buffer.length > 0 ? Qt.rgba(1.0, 1.0, 1.0, 0.25) : "transparent"
                 visible: root.buffer.length > 0 || root.authenticating
 
                 scale: btnMouse.pressed ? AppleTokens.pressScale : 1.0
@@ -125,8 +115,8 @@ Item {
                     anchors.centerIn: parent
                     text: root.authenticating ? "󰑮" : "➔"
                     font.family: root.authenticating ? "JetBrainsMono Nerd Font" : AppleTokens.textFont
-                    font.pixelSize: root.authenticating ? 14 : 15
-                    font.weight: Font.DemiBold
+                    font.pixelSize: root.authenticating ? 12 : 13
+                    font.weight: Font.Normal
                     color: AppleTokens.bodyOnDark
 
                     RotationAnimation on rotation {
@@ -153,17 +143,16 @@ Item {
         }
     }
 
-    // Caption / Error Label
+    // Subtitle / Error message (MacBook Touch ID hint)
     Text {
         anchors.top: pillBox.bottom
-        anchors.topMargin: 9
+        anchors.topMargin: 8
         anchors.horizontalCenter: parent.horizontalCenter
-        text: root.isError ? (root.errorMessage || "Password non corretta. Riprova.") : "Premi Invio o tocca il sensore d'impronta"
+        text: root.isError ? (root.errorMessage || "Password non corretta.") : "Usa Touch ID o inserisci la password"
         font.family: AppleTokens.textFont
-        font.pixelSize: 13
+        font.pixelSize: 11
         font.weight: Font.Normal
-        font.letterSpacing: AppleTokens.letterSpacingBody
-        color: root.isError ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.72)
+        color: root.isError ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.65)
 
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -171,10 +160,6 @@ Item {
             shadowColor: Qt.rgba(0, 0, 0, 0.7)
             shadowBlur: 0.3
             shadowVerticalOffset: 1
-        }
-
-        Behavior on color {
-            ColorAnimation { duration: 180 }
         }
     }
 }

@@ -52,6 +52,24 @@ Item {
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
+    // Battery info for top-right macOS menu bar
+    property int batteryLevel: 45
+    property string batteryStatus: "Discharging"
+    FileView {
+        path: "/sys/class/power_supply/BAT1/capacity"
+        onLoaded: {
+            let val = parseInt(text().trim());
+            if (!isNaN(val)) root.batteryLevel = val;
+        }
+    }
+    FileView {
+        path: "/sys/class/power_supply/BAT1/status"
+        onLoaded: {
+            let s = text().trim();
+            if (s.length > 0) root.batteryStatus = s;
+        }
+    }
+
     // Wallpaper Path Resolver
     property string wallpaperPath: ""
     FileView {
@@ -121,7 +139,7 @@ Item {
         color: "#050507"
     }
 
-    // 2. Wallpaper Layer: Sharp photography with smooth focus-pull blur on typing
+    // 2. Wallpaper Layer: 100% sharp, pure Apple photography presentation
     Image {
         id: bgWallpaper
         anchors.fill: parent
@@ -129,139 +147,155 @@ Item {
         fillMode: Image.PreserveAspectCrop
         visible: status === Image.Ready
         asynchronous: true
-
-        readonly property real targetBlur: pamAuth.buffer.length > 0 ? 0.45 : 0.0
-        property real currentBlur: targetBlur
-        Behavior on currentBlur {
-            NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
-        }
-
-        layer.enabled: currentBlur > 0.01
-        layer.effect: MultiEffect {
-            autoPaddingEnabled: false
-            blurEnabled: true
-            blur: bgWallpaper.currentBlur
-            blurMax: 32
-            saturation: 0.15
-        }
     }
 
-    // 3. Cinematic Vignette (Soft top/bottom gradients for 100% legibility)
+    // 3. Subtle macOS Scrim Gradients (Top & Bottom)
     Rectangle {
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 120
         gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
-            GradientStop { position: 0.25; color: Qt.rgba(0, 0, 0, 0.15) }
-            GradientStop { position: 0.7; color: Qt.rgba(0, 0, 0, 0.2) }
-            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.55) }
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.4) }
+            GradientStop { position: 1.0; color: "transparent" }
         }
     }
 
-    // 4. Dynamic Island Top Capsule (iOS / macOS status)
-    DynamicIslandLockCapsule {
-        id: islandCapsule
-        anchors.top: parent.top
-        anchors.topMargin: 20
-        anchors.horizontalCenter: parent.horizontalCenter
-        z: 20
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 200
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.5) }
+        }
     }
 
-    // 5. Center Hero Column (macOS Sequoia Desktop Layout)
+    // 4. macOS Top Bar
+    Item {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 38
+        z: 20
+
+        // Top-Center: Discreet Dynamic Island Capsule
+        DynamicIslandLockCapsule {
+            id: islandCapsule
+            anchors.centerIn: parent
+        }
+
+        // Top-Right: macOS Menu Bar Status
+        Row {
+            anchors.right: parent.right
+            anchors.rightMargin: 24
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 14
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.batteryLevel + "%"
+                font.family: AppleTokens.textFont
+                font.pixelSize: 12
+                font.weight: Font.Normal
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.batteryStatus === "Charging" ? "󰂄" : "󰂀"
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 16
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "󰖩"
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 15
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "IT"
+                font.family: AppleTokens.textFont
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
+            }
+        }
+    }
+
+    // 5. Upper Third: MacBook Clock & Date
     ColumnLayout {
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: -24
-        spacing: 20
+        anchors.top: parent.top
+        anchors.topMargin: 120
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: 4
         z: 10
 
-        // Clock & Date Group
-        ColumnLayout {
+        // Time (SF Pro Display, Light 300, 80px)
+        Text {
+            text: root.timeString
+            font.family: AppleTokens.displayFont
+            font.pixelSize: 82
+            font.weight: Font.Light
+            font.letterSpacing: -1.5
+            color: AppleTokens.bodyOnDark
             Layout.alignment: Qt.AlignHCenter
-            spacing: 2
 
-            // Date above Clock
-            Text {
-                text: root.dateString
-                font.family: AppleTokens.textFont
-                font.pixelSize: 16
-                font.weight: Font.DemiBold
-                font.letterSpacing: 0.4
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.88)
-                Layout.alignment: Qt.AlignHCenter
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 1
-                }
-            }
-
-            // Hero Clock Digits
-            Text {
-                text: root.timeString
-                font.family: AppleTokens.displayFont
-                font.pixelSize: 88
-                font.weight: Font.DemiBold
-                font.letterSpacing: -2.2
-                color: AppleTokens.bodyOnDark
-                Layout.alignment: Qt.AlignHCenter
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.5
-                    shadowVerticalOffset: 3
-                }
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                shadowBlur: 0.5
+                shadowVerticalOffset: 2
             }
         }
 
-        // Spacing between Clock and User
-        Item {
-            height: 8
-            width: 1
-        }
-
-        // User Identity Card (Avatar + Name + Password Pill)
-        UserIdentityCard {
-            id: userCard
-            buffer: pamAuth.buffer
-            isError: pamAuth.isError
-            errorMessage: pamAuth.errorMessage
-            authenticating: pamAuth.authenticating
+        // Date (SF Pro Text, Normal, 17px)
+        Text {
+            text: root.dateString
+            font.family: AppleTokens.textFont
+            font.pixelSize: 17
+            font.weight: Font.Normal
+            font.letterSpacing: 0.2
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.9)
             Layout.alignment: Qt.AlignHCenter
 
-            onSubmitRequested: function(pwd) {
-                if (root.isPreview) {
-                    islandCapsule.lockState = "unlocked";
-                    unlockTimer.start();
-                } else {
-                    islandCapsule.lockState = "verifying";
-                    pamAuth.submitPassword(pwd);
-                }
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                shadowBlur: 0.4
+                shadowVerticalOffset: 1
             }
         }
     }
 
-    // 6. Bottom-Left: Concentric Media Live Activity
-    MediaLiveActivityCard {
-        id: mediaCard
-        isPreview: root.isPreview
-        anchors.left: parent.left
-        anchors.leftMargin: 36
+    // 6. Lower Third: MacBook User Login (Avatar + Name + Compact Pill)
+    UserIdentityCard {
+        id: userCard
+        buffer: pamAuth.buffer
+        isError: pamAuth.isError
+        errorMessage: pamAuth.errorMessage
+        authenticating: pamAuth.authenticating
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 32
-        z: 15
-    }
+        anchors.bottomMargin: 110
+        anchors.horizontalCenter: parent.horizontalCenter
+        z: 10
 
-    // 7. Bottom-Right: System & Battery Complication Card
-    SystemComplicationCard {
-        id: systemCard
-        anchors.right: parent.right
-        anchors.rightMargin: 36
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 32
-        z: 15
+        onSubmitRequested: function(pwd) {
+            if (root.isPreview) {
+                islandCapsule.lockState = "unlocked";
+                unlockTimer.start();
+            } else {
+                islandCapsule.lockState = "verifying";
+                pamAuth.submitPassword(pwd);
+            }
+        }
     }
 }

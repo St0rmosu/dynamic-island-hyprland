@@ -15,17 +15,17 @@ ColumnLayout {
 
     signal submitRequested(string password)
 
-    spacing: 14
+    spacing: 10
     Layout.alignment: Qt.AlignHCenter
 
-    // 1. Circular Avatar (88x88)
+    // 1. MacBook Circular Avatar (68x68)
     Item {
         id: avatarWrapper
         Layout.alignment: Qt.AlignHCenter
-        width: 88
-        height: 88
+        width: 68
+        height: 68
 
-        // Fallback placeholder circle
+        // Fallback circle
         Rectangle {
             anchors.fill: parent
             radius: width / 2
@@ -39,11 +39,11 @@ ColumnLayout {
             visible: pfpImg.status !== Image.Ready
             text: ""
             font.family: "JetBrainsMono Nerd Font"
-            font.pixelSize: 32
+            font.pixelSize: 26
             color: Qt.rgba(1.0, 1.0, 1.0, 0.5)
         }
 
-        // Mask shape with layer.enabled
+        // Circular mask with layer.enabled
         Rectangle {
             id: maskShape
             anchors.fill: parent
@@ -53,7 +53,7 @@ ColumnLayout {
             visible: false
         }
 
-        // Profile image masked into a perfect circle
+        // Profile picture
         Image {
             id: pfpImg
             anchors.fill: parent
@@ -70,45 +70,44 @@ ColumnLayout {
             }
         }
 
-        // Frosted Glass Border Ring
+        // Thin Hairline Border
         Rectangle {
             anchors.fill: parent
             radius: width / 2
             color: "transparent"
-            border.width: 2
-            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.4)
+            border.width: 1.5
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
             z: 5
 
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                shadowBlur: 0.5
-                shadowVerticalOffset: 3
+                shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                shadowBlur: 0.4
+                shadowVerticalOffset: 2
             }
         }
     }
 
-    // 2. User Name
+    // 2. User Name (MacBook exact size 15-16px)
     Text {
         text: root.userName
         font.family: AppleTokens.displayFont
-        font.pixelSize: 21
+        font.pixelSize: 16
         font.weight: Font.DemiBold
-        font.letterSpacing: AppleTokens.letterSpacingBody
         color: AppleTokens.bodyOnDark
         Layout.alignment: Qt.AlignHCenter
 
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.7)
-            shadowBlur: 0.4
-            shadowVerticalOffset: 2
+            shadowColor: Qt.rgba(0, 0, 0, 0.6)
+            shadowBlur: 0.3
+            shadowVerticalOffset: 1
         }
     }
 
-    // 3. Password Input Pill
+    // 3. Compact Password Input Pill
     PasswordPillInput {
         id: pwdInput
         Layout.alignment: Qt.AlignHCenter
