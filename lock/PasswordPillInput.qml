@@ -113,9 +113,9 @@ Item {
 
                 Text {
                     anchors.centerIn: parent
-                    text: root.authenticating ? "󰑮" : "➔"
-                    font.family: root.authenticating ? "JetBrainsMono Nerd Font" : AppleTokens.textFont
-                    font.pixelSize: root.authenticating ? 12 : 13
+                    text: root.authenticating ? "󰑮" : "󰅂"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: root.authenticating ? 12 : 15
                     font.weight: Font.Normal
                     color: AppleTokens.bodyOnDark
 

@@ -78,23 +78,6 @@ ColumnLayout {
                 }
             }
 
-            // Lightning Bolt if Charging
-            Text {
-                text: "⚡"
-                visible: root.isCharging
-                font.family: AppleTokens.textFont
-                font.pixelSize: 13
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 1
-                }
-            }
-
             // Percentage
             Text {
                 text: root.batteryLevel + "%"

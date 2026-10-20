@@ -160,9 +160,9 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "➔"
-                        font.family: AppleTokens.textFont
-                        font.pixelSize: 14
+                        text: "󰅂"
+                        font.family: "JetBrainsMono Nerd Font"
+                        font.pixelSize: 15
                         font.weight: Font.Bold
                         color: AppleTokens.bodyOnDark
                     }

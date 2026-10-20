@@ -129,87 +129,128 @@ ColumnLayout {
     spacing: 16
     Layout.alignment: Qt.AlignHCenter
 
-    // 1. Hero Album Art Card (Exact iPadOS floating card)
-    Rectangle {
+    // Re-sync artwork state whenever activePlayer changes track
+    Connections {
+        target: root.activePlayer
+        ignoreUnknownSignals: true
+        function onTrackArtUrlChanged() { root.cachedArtFailed = false; }
+        function onMetadataChanged() { root.cachedArtFailed = false; }
+        function onTrackTitleChanged() { root.cachedArtFailed = false; }
+    }
+
+    // 1. Hero Album Art Card (Apple squircle rounded floating card)
+    Item {
         id: albumArtCard
         Layout.alignment: Qt.AlignHCenter
         width: 500
         height: 500
-        radius: 28
-        color: AppleTokens.surfaceTile1
-        border.width: 1.5
-        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.32)
-        clip: true
 
+        // Soft signature Apple drop-shadow
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.62)
-            shadowBlur: 0.72
+            shadowColor: Qt.rgba(0, 0, 0, 0.58)
+            shadowBlur: 0.68
             shadowVerticalOffset: 12
         }
 
-        // Underlying previous artwork for seamless crossfade between tracks
-        Image {
-            id: prevArtImage
+        // Masked content wrapper (ensures images strictly respect radius 28)
+        Item {
+            id: cardContent
             anchors.fill: parent
-            fillMode: Image.PreserveAspectCrop
-            visible: opacity > 0.001 && source !== ""
-            opacity: status === Image.Ready ? 1.0 : 0.0
-        }
-
-        // Active track artwork fading in smoothly over previous artwork
-        Image {
-            id: artImage
-            anchors.fill: parent
-            source: root.artUrl
-            fillMode: Image.PreserveAspectCrop
-            visible: opacity > 0.001
-            opacity: status === Image.Ready ? 1.0 : 0.0
-            Behavior on opacity {
-                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: roundedMask
             }
 
-            onStatusChanged: {
-                if (status === Image.Ready) {
-                    prevArtTimer.restart();
-                } else if (status === Image.Error && !root.cachedArtFailed && root.directArtUrl !== "" && (root.artUrl.startsWith("file:///tmp/lock_art_") || root.artUrl === "file:///tmp/lock_cached_art.jpg")) {
-                    root.cachedArtFailed = true;
+            Item {
+                id: roundedMask
+                anchors.fill: parent
+                layer.enabled: true
+                visible: false
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 28
+                    color: "black"
+                }
+            }
+
+            // Fallback placeholder when no art
+            Rectangle {
+                anchors.fill: parent
+                visible: opacity > 0.001
+                opacity: (artImage.status === Image.Ready || prevArtImage.status === Image.Ready) ? 0.0 : 1.0
+                Behavior on opacity {
+                    NumberAnimation { duration: 340; easing.type: Easing.InOutQuad }
+                }
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#3a2b3c" }
+                    GradientStop { position: 1.0; color: "#1a1622" }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "󰎈"
+                    font.family: "JetBrainsMono Nerd Font"
+                    font.pixelSize: 96
+                    color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
+                }
+            }
+
+            // Underlying previous artwork for seamless crossfade between tracks
+            Image {
+                id: prevArtImage
+                anchors.fill: parent
+                fillMode: Image.PreserveAspectCrop
+                visible: opacity > 0.001 && source !== ""
+                opacity: status === Image.Ready ? 1.0 : 0.0
+            }
+
+            // Active track artwork fading in smoothly over previous artwork
+            Image {
+                id: artImage
+                anchors.fill: parent
+                source: root.artUrl
+                fillMode: Image.PreserveAspectCrop
+                visible: opacity > 0.001
+                opacity: status === Image.Ready ? 1.0 : 0.0
+                Behavior on opacity {
+                    NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
+                }
+
+                onStatusChanged: {
+                    if (status === Image.Ready) {
+                        if (prevArtImage.source === "" || prevArtImage.status !== Image.Ready) {
+                            prevArtImage.source = artImage.source;
+                        } else {
+                            prevArtTimer.restart();
+                        }
+                    } else if (status === Image.Error && !root.cachedArtFailed && root.directArtUrl !== "" && (root.artUrl.startsWith("file:///tmp/lock_art_") || root.artUrl === "file:///tmp/lock_cached_art.jpg")) {
+                        root.cachedArtFailed = true;
+                    }
+                }
+            }
+
+            Timer {
+                id: prevArtTimer
+                interval: 380
+                repeat: false
+                onTriggered: {
+                    if (artImage.status === Image.Ready) {
+                        prevArtImage.source = artImage.source;
+                    }
                 }
             }
         }
 
-        Timer {
-            id: prevArtTimer
-            interval: 380
-            repeat: false
-            onTriggered: {
-                if (artImage.status === Image.Ready) {
-                    prevArtImage.source = artImage.source;
-                }
-            }
-        }
-
-        // Fallback placeholder when no art
+        // Apple signature hairline border matching radius 28
         Rectangle {
             anchors.fill: parent
-            visible: opacity > 0.001
-            opacity: (artImage.status === Image.Ready || prevArtImage.status === Image.Ready) ? 0.0 : 1.0
-            Behavior on opacity {
-                NumberAnimation { duration: 340; easing.type: Easing.InOutQuad }
-            }
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#3a2b3c" }
-                GradientStop { position: 1.0; color: "#1a1622" }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: "󰎈"
-                font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 96
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
-            }
+            radius: 28
+            color: "transparent"
+            border.width: 1.5
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.28)
         }
     }
 

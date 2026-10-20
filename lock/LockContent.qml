@@ -253,12 +253,26 @@ Item {
 
     // MPRIS Active Player Tracker (reactive property binding for 0ms frame 0 evaluation)
     property var lastValidPlayer: null
+    property int mprisPulse: 0
+
+    // High-frequency 200ms reactive pulse so lockscreen instantly responds to music starting or changing
+    Timer {
+        interval: 200
+        running: true
+        repeat: true
+        onTriggered: {
+            root.mprisPulse++;
+            root.refreshActivePlayer();
+        }
+    }
+
     property var activePlayer: {
+        let _p = root.mprisPulse; // Re-evaluate on pulse
         let candidate = null;
         if (Mpris.players && Mpris.players.values) {
             for (let i = 0; i < Mpris.players.values.length; i++) {
                 let p = Mpris.players.values[i];
-                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || "").length > 0) {
+                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || p.title || "").length > 0) {
                     candidate = p;
                     break;
                 }
@@ -266,7 +280,7 @@ Item {
             if (!candidate) {
                 for (let j = 0; j < Mpris.players.values.length; j++) {
                     let p2 = Mpris.players.values[j];
-                    if (p2 && (p2.trackTitle || "").length > 0) {
+                    if (p2 && (p2.trackTitle || p2.title || "").length > 0) {
                         candidate = p2;
                         break;
                     }
@@ -277,7 +291,7 @@ Item {
             root.lastValidPlayer = candidate;
             return candidate;
         }
-        if (root.isMediaPlaying && root.lastValidPlayer) {
+        if (root.lastValidPlayer) {
             return root.lastValidPlayer;
         }
         return null;
@@ -288,7 +302,7 @@ Item {
         if (Mpris.players && Mpris.players.values) {
             for (let i = 0; i < Mpris.players.values.length; i++) {
                 let p = Mpris.players.values[i];
-                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || "").length > 0) {
+                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || p.title || "").length > 0) {
                     candidate = p;
                     break;
                 }
@@ -296,7 +310,7 @@ Item {
             if (!candidate) {
                 for (let j = 0; j < Mpris.players.values.length; j++) {
                     let p2 = Mpris.players.values[j];
-                    if (p2 && (p2.trackTitle || "").length > 0) {
+                    if (p2 && (p2.trackTitle || p2.title || "").length > 0) {
                         candidate = p2;
                         break;
                     }
@@ -305,9 +319,7 @@ Item {
         }
         if (candidate) {
             root.lastValidPlayer = candidate;
-            root.activePlayer = candidate;
-        } else if (!root.isMediaPlaying) {
-            root.activePlayer = null;
+            if (root.activePlayer !== candidate) root.activePlayer = candidate;
         }
     }
 
@@ -316,11 +328,13 @@ Item {
         function onValuesChanged() { root.refreshActivePlayer(); }
     }
 
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        onTriggered: root.refreshActivePlayer()
+    Connections {
+        target: root.activePlayer
+        ignoreUnknownSignals: true
+        function onPlaybackStateChanged() { root.refreshActivePlayer(); }
+        function onTrackTitleChanged() { root.refreshActivePlayer(); }
+        function onTrackArtUrlChanged() { root.refreshActivePlayer(); }
+        function onMetadataChanged() { root.refreshActivePlayer(); }
     }
 
     // Instantaneous raw media activity
@@ -328,9 +342,10 @@ Item {
         if (!root.enableMediaMode) return false;
         if (root.isPreview && root.previewMediaPlaying) return true;
         if (!root.activePlayer) return false;
-        if (root.activePlayer.playbackState === MprisPlaybackState.Playing) return true;
-        if (root.activePlayer.playbackState === MprisPlaybackState.Paused && (root.activePlayer.trackTitle || "").length > 0) return true;
-        return false;
+        let isPlaying = root.activePlayer.playbackState === MprisPlaybackState.Playing;
+        let isPaused = root.activePlayer.playbackState === MprisPlaybackState.Paused;
+        let hasTitle = (root.activePlayer.trackTitle || root.activePlayer.title || "").length > 0;
+        return isPlaying || (isPaused && hasTitle);
     }
 
     // Debounced media mode: bridges gap between tracks so screen never flashes wallpaper when track ends
@@ -338,7 +353,7 @@ Item {
 
     Timer {
         id: mediaGraceTimer
-        interval: 1400 // 1.4s grace period to prevent collapsing media mode between songs
+        interval: 2500 // 2.5s grace period to prevent collapsing media mode between songs
         repeat: false
         onTriggered: {
             if (!root.rawMediaActive) {
@@ -485,7 +500,11 @@ Item {
 
             onStatusChanged: {
                 if (status === Image.Ready) {
-                    bgPrevArtTimer.restart();
+                    if (bgPrevAmbientArt.source === "" || bgPrevAmbientArt.status !== Image.Ready) {
+                        bgPrevAmbientArt.source = bgAmbientAlbumArt.source;
+                    } else {
+                        bgPrevArtTimer.restart();
+                    }
                 }
             }
 
