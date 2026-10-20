@@ -33,6 +33,7 @@ QtObject {
     // --- Typography from DESIGN.md ---
     readonly property string displayFont: "SF Pro Display"
     readonly property string textFont: "SF Pro Text"
+    readonly property string roundedFont: "SF Pro Rounded"
     readonly property real letterSpacingDisplay: -0.374
     readonly property real letterSpacingBody: -0.374
 

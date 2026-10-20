@@ -29,6 +29,7 @@ Variants {
             id: content
             anchors.fill: parent
             isPreview: true
+            previewMediaPlaying: false
 
             onUnlockRequested: {
                 console.log("Preview unlocked successfully!");
@@ -36,31 +37,65 @@ Variants {
             }
         }
 
-        // Floating Close Button for Safe Preview
-        Rectangle {
-            anchors.top: parent.top
+        // Floating Control Bar for Safe Preview Testing
+        Row {
+            anchors.bottom: parent.bottom
             anchors.right: parent.right
             anchors.margins: 20
-            width: 36
-            height: 36
-            radius: 18
-            color: AppleTokens.surfaceGlassInput
-            border.width: 1
-            border.color: AppleTokens.hairlineDark
+            spacing: 12
             z: 100
 
-            Text {
-                anchors.centerIn: parent
-                text: "✕"
-                font.family: AppleTokens.textFont
-                font.pixelSize: 14
-                color: AppleTokens.bodyOnDark
+            // Toggle Music Mode Button
+            Rectangle {
+                width: toggleText.implicitWidth + 24
+                height: 36
+                radius: 18
+                color: content.previewMediaPlaying ? AppleTokens.primaryFocus : Qt.rgba(0.12, 0.12, 0.14, 0.8)
+                border.width: 1
+                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
+
+                Text {
+                    id: toggleText
+                    anchors.centerIn: parent
+                    text: content.previewMediaPlaying ? "󰓇 Modalità Spotify Attiva" : "󰓇 Simula Spotify (iPadOS)"
+                    font.family: AppleTokens.textFont
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    color: AppleTokens.bodyOnDark
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        content.previewMediaPlaying = !content.previewMediaPlaying;
+                        content.forceActiveFocus();
+                    }
+                }
             }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Qt.quit()
+            // Floating Close Button
+            Rectangle {
+                width: 36
+                height: 36
+                radius: 18
+                color: Qt.rgba(0.12, 0.12, 0.14, 0.8)
+                border.width: 1
+                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "✕"
+                    font.family: AppleTokens.textFont
+                    font.pixelSize: 14
+                    color: AppleTokens.bodyOnDark
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Qt.quit()
+                }
             }
         }
     }
