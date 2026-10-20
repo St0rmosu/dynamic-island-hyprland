@@ -253,20 +253,28 @@ Item {
         return "";
     }
 
-    // MPRIS Active Player Tracker (reactive property binding for 0ms frame 0 evaluation)
+    // MPRIS Active Player Tracker (Exact Island event-driven pattern for 0ms latency)
     property var lastValidPlayer: null
     property int mprisPulse: 0
 
-    // High-frequency 200ms reactive pulse so lockscreen instantly responds to music starting or changing
-    Timer {
-        interval: 200
-        running: true
-        repeat: true
-        onTriggered: root.mprisPulse++
+    // Direct event listener on all MPRIS players - identical to Dynamic Island's IslandMprisController
+    Instantiator {
+        model: Mpris.players
+        delegate: Connections {
+            required property var modelData
+            target: modelData
+            ignoreUnknownSignals: true
+            function onPlaybackStateChanged() { root.mprisPulse++; }
+            function onTrackTitleChanged() { root.mprisPulse++; }
+            function onTrackArtUrlChanged() { root.mprisPulse++; }
+            function onMetadataChanged() { root.mprisPulse++; }
+        }
+        onObjectAdded: root.mprisPulse++
+        onObjectRemoved: root.mprisPulse++
     }
 
     readonly property var activePlayer: {
-        let _p = root.mprisPulse; // Re-evaluate on pulse
+        let _p = root.mprisPulse; // Re-evaluate instantly on event
         if (Mpris.players && Mpris.players.values) {
             for (let i = 0; i < Mpris.players.values.length; i++) {
                 let p = Mpris.players.values[i];
@@ -292,15 +300,6 @@ Item {
     Connections {
         target: Mpris.players
         function onValuesChanged() { root.mprisPulse++; }
-    }
-
-    Connections {
-        target: root.activePlayer
-        ignoreUnknownSignals: true
-        function onPlaybackStateChanged() { root.mprisPulse++; }
-        function onTrackTitleChanged() { root.mprisPulse++; }
-        function onTrackArtUrlChanged() { root.mprisPulse++; }
-        function onMetadataChanged() { root.mprisPulse++; }
     }
 
     // Direct active artwork URL (reactive to active player and track transitions)
@@ -453,6 +452,8 @@ Item {
             id: bgPrevAmbientArt
             anchors.fill: parent
             fillMode: Image.PreserveAspectCrop
+            sourceSize: Qt.size(240, 240)
+            asynchronous: true
             visible: opacity > 0.001 && source !== ""
             opacity: root.isMediaPlaying ? 1.0 : 0.0
 
@@ -472,6 +473,8 @@ Item {
             anchors.fill: parent
             source: root.currentArtUrl
             fillMode: Image.PreserveAspectCrop
+            sourceSize: Qt.size(240, 240)
+            asynchronous: true
             visible: opacity > 0.001
             opacity: (root.isMediaPlaying && status === Image.Ready) ? 1.0 : 0.0
             Behavior on opacity {

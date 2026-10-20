@@ -216,6 +216,8 @@ ColumnLayout {
                 id: prevArtImage
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
+                sourceSize: Qt.size(500, 500)
+                asynchronous: true
                 visible: opacity > 0.001 && source !== ""
                 opacity: status === Image.Ready ? 1.0 : 0.0
             }
@@ -226,6 +228,8 @@ ColumnLayout {
                 anchors.fill: parent
                 source: root.artUrl
                 fillMode: Image.PreserveAspectCrop
+                sourceSize: Qt.size(500, 500)
+                asynchronous: true
                 visible: opacity > 0.001
                 opacity: status === Image.Ready ? 1.0 : 0.0
                 Behavior on opacity {

@@ -10,7 +10,30 @@ Scope {
     id: root
 
     // ── Background MPRIS Album Art Pre-Cacher (keeps image warm in Qt Quick cache) ──
+    property int mprisPulse: 0
+
+    Instantiator {
+        model: Mpris.players
+        delegate: Connections {
+            required property var modelData
+            target: modelData
+            ignoreUnknownSignals: true
+            function onPlaybackStateChanged() { root.mprisPulse++; }
+            function onTrackTitleChanged() { root.mprisPulse++; }
+            function onTrackArtUrlChanged() { root.mprisPulse++; }
+            function onMetadataChanged() { root.mprisPulse++; }
+        }
+        onObjectAdded: root.mprisPulse++
+        onObjectRemoved: root.mprisPulse++
+    }
+
+    Connections {
+        target: Mpris.players
+        function onValuesChanged() { root.mprisPulse++; }
+    }
+
     property string activeArtUrl: {
+        let _p = root.mprisPulse;
         if (!Mpris.players || !Mpris.players.values) return "";
         for (let i = 0; i < Mpris.players.values.length; i++) {
             let p = Mpris.players.values[i];
@@ -27,6 +50,8 @@ Scope {
         id: bgArtPreloader
         visible: false
         source: root.activeArtUrl
+        sourceSize: Qt.size(500, 500)
+        asynchronous: true
     }
 
     WlSessionLock {
