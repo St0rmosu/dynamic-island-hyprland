@@ -40,6 +40,11 @@ Item {
     signal unlockRequested()
 
     focus: true
+    onActiveFocusChanged: {
+        if (!activeFocus) {
+            forceActiveFocus();
+        }
+    }
 
     readonly property var currentIdentity: root.isMediaPlaying ? identityMedia : identityNormal
 
@@ -222,6 +227,12 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: "#050507"
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: false
+            onClicked: root.forceActiveFocus()
+        }
     }
 
     // 2. Wallpaper Layer: Sharp iPadOS Wallpaper

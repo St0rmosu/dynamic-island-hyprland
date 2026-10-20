@@ -48,6 +48,14 @@ Item {
                 return AppleTokens.hairlineDark;
             }
 
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                hoverEnabled: false
+                cursorShape: Qt.IBeamCursor
+                onClicked: root.forceActiveFocus()
+            }
+
             Behavior on width {
                 NumberAnimation {
                     duration: AppleTokens.animDurationNormal
