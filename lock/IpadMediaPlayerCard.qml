@@ -20,22 +20,28 @@ ColumnLayout {
     }
 
     readonly property string title: {
-        if (activePlayer && (activePlayer.trackTitle || "").length > 0) return activePlayer.trackTitle;
+        if (activePlayer && (activePlayer.trackTitle || activePlayer.title || "").length > 0) {
+            return activePlayer.trackTitle || activePlayer.title;
+        }
         if (isPreview && previewMediaPlaying) return "Nevermind";
         return "";
     }
 
     readonly property string artist: {
-        if (activePlayer && activePlayer.trackArtists && activePlayer.trackArtists.length > 0) {
-            return activePlayer.trackArtists.join(", ");
+        if (activePlayer) {
+            let a = activePlayer.trackArtists !== undefined ? activePlayer.trackArtists : activePlayer.artist;
+            if (!a && activePlayer.metadata) a = activePlayer.metadata["xesam:artist"];
+            if (a) return Array.isArray(a) ? a.join(", ") : String(a);
         }
         if (isPreview && previewMediaPlaying) return "Phoneboy, Justin Magnaye";
         return "";
     }
 
     readonly property string artUrl: {
-        if (activePlayer && activePlayer.trackImageUrl && activePlayer.trackImageUrl.length > 0) {
-            return activePlayer.trackImageUrl;
+        if (activePlayer) {
+            let url = activePlayer.trackArtUrl || activePlayer.artUrl;
+            if (!url && activePlayer.metadata) url = activePlayer.metadata["mpris:artUrl"];
+            if (url && String(url).length > 0) return String(url);
         }
         if (isPreview && previewMediaPlaying) {
             return "file:///home/lollo/Progetti/dynamic-island-hyprland/lock/assets/sample_album_art.png";

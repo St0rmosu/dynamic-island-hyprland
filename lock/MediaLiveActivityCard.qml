@@ -21,8 +21,22 @@ Rectangle {
     readonly property bool hasMedia: isPreview || (activePlayer !== null && activePlayer.trackTitle !== "")
     readonly property bool isPlaying: isPreview ? true : (activePlayer && activePlayer.playbackState === MprisPlaybackState.Playing)
     readonly property string title: isPreview ? "Starboy" : (activePlayer ? activePlayer.trackTitle : "")
-    readonly property string artist: isPreview ? "The Weeknd ft. Daft Punk" : (activePlayer ? activePlayer.trackArtists.join(", ") : "")
-    readonly property string artUrl: isPreview ? "" : (activePlayer ? activePlayer.trackImageUrl : "")
+    readonly property string artist: {
+        if (activePlayer) {
+            let a = activePlayer.trackArtists !== undefined ? activePlayer.trackArtists : activePlayer.artist;
+            if (!a && activePlayer.metadata) a = activePlayer.metadata["xesam:artist"];
+            if (a) return Array.isArray(a) ? a.join(", ") : String(a);
+        }
+        return isPreview ? "The Weeknd ft. Daft Punk" : "";
+    }
+    readonly property string artUrl: {
+        if (activePlayer) {
+            let url = activePlayer.trackArtUrl || activePlayer.artUrl;
+            if (!url && activePlayer.metadata) url = activePlayer.metadata["mpris:artUrl"];
+            if (url && String(url).length > 0) return String(url);
+        }
+        return isPreview ? "" : "";
+    }
 
     implicitWidth: 350
     implicitHeight: 82

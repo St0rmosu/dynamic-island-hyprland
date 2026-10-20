@@ -252,29 +252,58 @@ Item {
     }
 
     // MPRIS Active Player Tracker
-    readonly property var activePlayer: {
+    property var activePlayer: null
+
+    function refreshActivePlayer() {
+        let candidate = null;
         if (Mpris.players && Mpris.players.values) {
             for (let i = 0; i < Mpris.players.values.length; i++) {
                 let p = Mpris.players.values[i];
-                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || "").length > 0) return p;
+                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || "").length > 0) {
+                    candidate = p;
+                    break;
+                }
             }
-            for (let j = 0; j < Mpris.players.values.length; j++) {
-                let p2 = Mpris.players.values[j];
-                if (p2 && (p2.trackTitle || "").length > 0) return p2;
+            if (!candidate) {
+                for (let j = 0; j < Mpris.players.values.length; j++) {
+                    let p2 = Mpris.players.values[j];
+                    if (p2 && (p2.trackTitle || "").length > 0) {
+                        candidate = p2;
+                        break;
+                    }
+                }
             }
         }
-        return null;
+        if (root.activePlayer !== candidate) {
+            root.activePlayer = candidate;
+        }
+    }
+
+    Connections {
+        target: Mpris.players
+        function onValuesChanged() { root.refreshActivePlayer(); }
+    }
+
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: root.refreshActivePlayer()
     }
 
     // Mode determination: Media Playing (Screenshot 2) vs Normal Idle (Screenshot 1)
     readonly property bool isMediaPlaying: {
         if (!root.enableMediaMode) return false;
         if (root.isPreview && root.previewMediaPlaying) return true;
-        return root.activePlayer !== null && root.activePlayer.playbackState === MprisPlaybackState.Playing;
+        if (!root.activePlayer) return false;
+        if (root.activePlayer.playbackState === MprisPlaybackState.Playing) return true;
+        if (root.activePlayer.playbackState === MprisPlaybackState.Paused && (root.activePlayer.trackTitle || "").length > 0) return true;
+        return false;
     }
 
     Component.onCompleted: {
         forceActiveFocus();
+        refreshActivePlayer();
         if (root.wallpaperPath === "") {
             root.wallpaperPath = Quickshell.env("HOME") + "/Sfondi/Eragny's Garden.jpg";
         }
