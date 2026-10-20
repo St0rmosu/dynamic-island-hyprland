@@ -11,7 +11,15 @@ WlSessionLockSurface {
 
     color: "transparent"
 
+    Connections {
+        target: root.lock
+        function onRequestUnlock(): void {
+            content.triggerUnlock();
+        }
+    }
+
     LockContent {
+        id: content
         anchors.fill: parent
         onUnlockRequested: {
             root.lock.locked = false;

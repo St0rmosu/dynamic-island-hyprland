@@ -41,12 +41,18 @@ Item {
 
     focus: true
     onActiveFocusChanged: {
-        if (!activeFocus) {
+        if (!activeFocus && !unlockAnim.running) {
             forceActiveFocus();
         }
     }
 
     readonly property var currentIdentity: root.isMediaPlaying ? identityMedia : identityNormal
+
+    function triggerUnlock(): void {
+        if (unlockAnim.running) return;
+        if (root.currentIdentity) root.currentIdentity.lockState = "unlocked";
+        unlockAnim.start();
+    }
 
     // PAM Authentication Backend
     PamAuth {
@@ -54,8 +60,7 @@ Item {
         enabled: !root.isPreview
 
         onAuthenticated: {
-            if (root.currentIdentity) root.currentIdentity.lockState = "unlocked";
-            unlockTimer.start();
+            root.triggerUnlock();
         }
 
         onFailed: {
@@ -66,12 +71,116 @@ Item {
         }
     }
 
-    Timer {
-        id: unlockTimer
-        interval: 380
-        repeat: false
-        onTriggered: {
-            root.unlockRequested();
+    // ── Apple iPadOS Fluid Transitions: Entrance (Lock) and Exit (Unlock) ──
+
+    // 1. Lock Entrance Animation (Desktop -> Lock Screen)
+    ParallelAnimation {
+        id: initLockAnim
+        running: true
+
+        NumberAnimation {
+            target: backgroundWrapper
+            property: "opacity"
+            from: 0.0
+            to: 1.0
+            duration: 360
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: backgroundWrapper
+            property: "scale"
+            from: 1.04
+            to: 1.0
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: contentWrapper
+            property: "opacity"
+            from: 0.0
+            to: 1.0
+            duration: 380
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: contentWrapper
+            property: "y"
+            from: 32
+            to: 0
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: contentWrapper
+            property: "scale"
+            from: 0.96
+            to: 1.0
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    // 2. Unlock Exit Animation (Lock Screen -> Desktop)
+    SequentialAnimation {
+        id: unlockAnim
+
+        // Brief confirmation pause so user sees "Sbloccato" on dynamic island
+        PauseAnimation {
+            duration: 240
+        }
+
+        ParallelAnimation {
+            // Content glides smoothly upwards and fades (signature iOS swipe-up physics)
+            NumberAnimation {
+                target: contentWrapper
+                property: "opacity"
+                to: 0.0
+                duration: 320
+                easing.type: Easing.InOutCubic
+            }
+
+            NumberAnimation {
+                target: contentWrapper
+                property: "y"
+                to: -70
+                duration: 320
+                easing.type: Easing.InOutCubic
+            }
+
+            NumberAnimation {
+                target: contentWrapper
+                property: "scale"
+                to: 0.95
+                duration: 320
+                easing.type: Easing.InOutCubic
+            }
+
+            // Wallpaper scales slightly and dissolves into the underlying desktop
+            NumberAnimation {
+                target: backgroundWrapper
+                property: "opacity"
+                to: 0.0
+                duration: 340
+                easing.type: Easing.InOutCubic
+            }
+
+            NumberAnimation {
+                target: backgroundWrapper
+                property: "scale"
+                to: 1.05
+                duration: 340
+                easing.type: Easing.InOutCubic
+            }
+        }
+
+        ScriptAction {
+            script: {
+                root.unlockRequested();
+            }
         }
     }
 
@@ -173,6 +282,11 @@ Item {
 
     // Keyboard capture: Keystrokes feed directly into pamAuth and Dynamic Island
     Keys.onPressed: function(event) {
+        if (unlockAnim.running) {
+            event.accepted = true;
+            return;
+        }
+
         if (pamAuth.authenticating) return;
 
         // Preview mode toggle
@@ -190,8 +304,7 @@ Item {
 
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
             if (root.isPreview) {
-                if (root.currentIdentity) root.currentIdentity.lockState = "unlocked";
-                unlockTimer.start();
+                root.triggerUnlock();
             } else {
                 if (root.currentIdentity) root.currentIdentity.lockState = "verifying";
                 pamAuth.submitPassword();
@@ -223,302 +336,316 @@ Item {
         }
     }
 
-    // 1. Solid opaque base
-    Rectangle {
+    // ──────────────────────────────────────────────────────────────────────────
+    // A. BACKGROUND WRAPPER (Wallpaper, Ambient glow, Scrims)
+    // ──────────────────────────────────────────────────────────────────────────
+    Item {
+        id: backgroundWrapper
         anchors.fill: parent
-        color: "#050507"
+        transformOrigin: Item.Center
 
-        MouseArea {
+        // 1. Solid opaque base
+        Rectangle {
             anchors.fill: parent
-            hoverEnabled: false
-            onClicked: root.forceActiveFocus()
-        }
-    }
+            color: "#050507"
 
-    // 2. Wallpaper Layer: Sharp iPadOS Wallpaper
-    Image {
-        id: bgWallpaper
-        anchors.fill: parent
-        source: root.wallpaperPath !== "" ? "file://" + root.wallpaperPath : ""
-        fillMode: Image.PreserveAspectCrop
-        visible: status === Image.Ready
-        asynchronous: true
-    }
-
-    // 3. Ambient Album Art Blurred Layer (Screenshot 2: smooth diffuse atmospheric glow)
-    Image {
-        id: bgAmbientAlbumArt
-        anchors.fill: parent
-        source: mediaItem.artUrl
-        sourceSize: Qt.size(16, 16)
-        fillMode: Image.PreserveAspectCrop
-        visible: status === Image.Ready
-        asynchronous: true
-
-        opacity: root.isMediaPlaying ? 1.0 : 0.0
-        Behavior on opacity {
-            NumberAnimation { duration: 420; easing.type: Easing.InOutQuad }
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: false
+                onClicked: root.forceActiveFocus()
+            }
         }
 
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            blurEnabled: true
-            blur: 1.0
-            blurMax: 64
-            saturation: 0.3
-            brightness: -0.18
-        }
-    }
-
-    // Atmospheric warm tint scrim over ambient art
-    Rectangle {
-        anchors.fill: parent
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0.06, 0.04, 0.07, 0.55) }
-            GradientStop { position: 0.5; color: Qt.rgba(0.06, 0.04, 0.07, 0.35) }
-            GradientStop { position: 1.0; color: Qt.rgba(0.06, 0.04, 0.07, 0.65) }
-        }
-        opacity: root.isMediaPlaying ? 1.0 : 0.0
-        Behavior on opacity {
-            NumberAnimation { duration: 420 }
-        }
-    }
-
-    // Subtle iPad Scrim Gradients for 100% readability
-    Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 140
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    Rectangle {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 180
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.45) }
-        }
-    }
-
-    // 4. Left Column: iPad Complications Stack (Battery/Pencil, Quick Apps, Connectivity)
-    IpadComplicationsStack {
-        id: complicationsStack
-        anchors.left: parent.left
-        anchors.leftMargin: 56
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: -10
-        batteryLevel: root.batteryLevel
-        batteryStatus: root.batteryStatus
-        visible: root.showComplications
-        z: 20
-    }
-
-    // Optional Top-Right Status (hidden by default as requested by user)
-    RowLayout {
-        anchors.right: parent.right
-        anchors.rightMargin: 32
-        anchors.top: parent.top
-        anchors.topMargin: 24
-        spacing: 10
-        visible: root.showTopStatus
-        z: 30
-
-        Text {
-            text: "󰖩"
-            font.family: "JetBrainsMono Nerd Font"
-            font.pixelSize: 16
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+        // 2. Wallpaper Layer: Sharp iPadOS Wallpaper
+        Image {
+            id: bgWallpaper
+            anchors.fill: parent
+            source: root.wallpaperPath !== "" ? "file://" + root.wallpaperPath : ""
+            fillMode: Image.PreserveAspectCrop
+            visible: status === Image.Ready
+            asynchronous: true
         }
 
-        Text {
-            text: root.batteryLevel + "%"
-            font.family: AppleTokens.roundedFont
-            font.pixelSize: 13
-            font.weight: Font.Bold
-            color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-        }
-    }
+        // 3. Ambient Album Art Blurred Layer (Screenshot 2: smooth diffuse atmospheric glow)
+        Image {
+            id: bgAmbientAlbumArt
+            anchors.fill: parent
+            source: mediaItem.artUrl
+            sourceSize: Qt.size(16, 16)
+            fillMode: Image.PreserveAspectCrop
+            visible: status === Image.Ready
+            asynchronous: true
 
-    // 5. Center Hero Presentation: Smooth Crossfade between Normal (Screenshot 1) & Media (Screenshot 2)
-
-    // MODE A: Normal iPad Lockscreen (Screenshot 1: Date + Giant Clock + Avatar & Password Pill BELOW)
-    ColumnLayout {
-        id: normalClockGroup
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: -15
-        spacing: 4
-        z: 15
-
-        visible: opacity > 0.001
-        opacity: root.isMediaPlaying ? 0.0 : 1.0
-        Behavior on opacity {
-            NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
-        }
-
-        // Date (SF Pro Rounded Bold 28px: "Mar 20 ott")
-        Text {
-            text: root.ipadDateString
-            font.family: AppleTokens.roundedFont
-            font.pixelSize: 28
-            font.weight: Font.Bold
-            font.letterSpacing: -0.2
-            color: AppleTokens.bodyOnDark
-            Layout.alignment: Qt.AlignHCenter
+            opacity: root.isMediaPlaying ? 1.0 : 0.0
+            Behavior on opacity {
+                NumberAnimation { duration: 420; easing.type: Easing.InOutQuad }
+            }
 
             layer.enabled: true
             layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                shadowBlur: 0.5
-                shadowVerticalOffset: 2
+                blurEnabled: true
+                blur: 1.0
+                blurMax: 64
+                saturation: 0.3
+                brightness: -0.18
             }
         }
 
-        // Clock (SF Pro Rounded Bold 156px: "19:10")
-        Text {
-            text: root.timeString
-            font.family: AppleTokens.roundedFont
-            font.pixelSize: 156
-            font.weight: Font.Bold
-            font.letterSpacing: -2.5
-            color: AppleTokens.bodyOnDark
-            Layout.alignment: Qt.AlignHCenter
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, 0.45)
-                shadowBlur: 0.6
-                shadowVerticalOffset: 4
+        // Atmospheric warm tint scrim over ambient art
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0.06, 0.04, 0.07, 0.55) }
+                GradientStop { position: 0.5; color: Qt.rgba(0.06, 0.04, 0.07, 0.35) }
+                GradientStop { position: 1.0; color: Qt.rgba(0.06, 0.04, 0.07, 0.65) }
+            }
+            opacity: root.isMediaPlaying ? 1.0 : 0.0
+            Behavior on opacity {
+                NumberAnimation { duration: 420 }
             }
         }
 
-        // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE CLOCK!)
-        IdentityPasswordGroup {
-            id: identityNormal
-            buffer: pamAuth.buffer
-            authenticating: pamAuth.authenticating
-            isError: pamAuth.isError
-            errorMessage: pamAuth.errorMessage
-            showProfilePhoto: root.showProfilePhoto
-            avatarPath: root.avatarPath
-            avatarSize: 84
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 24
+        // Subtle iPad Scrim Gradients for 100% readability
+        Rectangle {
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 140
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
+                GradientStop { position: 1.0; color: "transparent" }
+            }
+        }
 
-            onSubmitRequested: function(pwd) {
-                if (root.isPreview) {
-                    identityNormal.lockState = "unlocked";
-                    unlockTimer.start();
-                } else {
-                    identityNormal.lockState = "verifying";
-                    pamAuth.submitPassword(pwd);
-                }
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 180
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.45) }
             }
         }
     }
 
-    // 5B. Foreground Cutout Image for Depth Effect (renders in FRONT of the clock!)
-    Image {
-        id: depthCutoutImage
+    // ──────────────────────────────────────────────────────────────────────────
+    // B. FOREGROUND CONTENT WRAPPER (Widgets, Clock, Media Card, Dynamic Island)
+    // ──────────────────────────────────────────────────────────────────────────
+    Item {
+        id: contentWrapper
         anchors.fill: parent
-        source: root.depthCutoutPath !== "" ? "file://" + root.depthCutoutPath : ""
-        fillMode: Image.PreserveAspectCrop
-        visible: root.depthEffectEnabled && status === Image.Ready && !root.isMediaPlaying
-        z: 16
-        asynchronous: true
-    }
+        transformOrigin: Item.Center
 
-    // MODE B: Media Playing iPad Lockscreen (Screenshot 2: Compact Clock + Hero Album Art + Frosted Player Card + Avatar & Password Pill BELOW)
-    ColumnLayout {
-        id: mediaLockGroup
-        anchors.centerIn: parent
-        anchors.verticalCenterOffset: 0
-        spacing: 10
-        z: 15
-
-        visible: opacity > 0.001
-        opacity: root.isMediaPlaying ? 1.0 : 0.0
-        Behavior on opacity {
-            NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
+        // 4. Left Column: iPad Complications Stack (Battery/Pencil, Quick Apps, Connectivity)
+        IpadComplicationsStack {
+            id: complicationsStack
+            anchors.left: parent.left
+            anchors.leftMargin: 56
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenterOffset: -10
+            batteryLevel: root.batteryLevel
+            batteryStatus: root.batteryStatus
+            visible: root.showComplications
+            z: 20
         }
 
-        // Compact Clock & Date Header (Screenshot 2: "19:10   Mar 20 ott")
+        // Optional Top-Right Status (hidden by default as requested by user)
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 16
+            anchors.right: parent.right
+            anchors.rightMargin: 32
+            anchors.top: parent.top
+            anchors.topMargin: 24
+            spacing: 10
+            visible: root.showTopStatus
+            z: 30
 
             Text {
-                text: root.timeString
-                font.family: AppleTokens.roundedFont
-                font.pixelSize: 26
-                font.weight: Font.Bold
-                font.letterSpacing: -0.2
-                color: AppleTokens.bodyOnDark
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 1
-                }
+                text: "󰖩"
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 16
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
             }
 
+            Text {
+                text: root.batteryLevel + "%"
+                font.family: AppleTokens.roundedFont
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+            }
+        }
+
+        // MODE A: Normal Idle iPad Lockscreen (Screenshot 1: Centered Giant Clock + Date + Avatar & Password Pill BELOW)
+        ColumnLayout {
+            id: normalClockGroup
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: 0
+            spacing: -10
+            z: 10
+
+            visible: opacity > 0.001
+            opacity: !root.isMediaPlaying ? 1.0 : 0.0
+            Behavior on opacity {
+                NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
+            }
+
+            // Date (SF Pro Rounded Bold 28px: "Mar 20 ott")
             Text {
                 text: root.ipadDateString
                 font.family: AppleTokens.roundedFont
-                font.pixelSize: 26
+                font.pixelSize: 28
                 font.weight: Font.Bold
                 font.letterSpacing: -0.2
                 color: AppleTokens.bodyOnDark
+                Layout.alignment: Qt.AlignHCenter
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.55)
+                    shadowBlur: 0.5
+                    shadowVerticalOffset: 2
+                }
+            }
+
+            // Clock (SF Pro Rounded Bold 156px: "19:10")
+            Text {
+                text: root.timeString
+                font.family: AppleTokens.roundedFont
+                font.pixelSize: 156
+                font.weight: Font.Bold
+                font.letterSpacing: -2.5
+                color: AppleTokens.bodyOnDark
+                Layout.alignment: Qt.AlignHCenter
 
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     shadowEnabled: true
                     shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 1
+                    shadowBlur: 0.6
+                    shadowVerticalOffset: 4
+                }
+            }
+
+            // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE CLOCK!)
+            IdentityPasswordGroup {
+                id: identityNormal
+                buffer: pamAuth.buffer
+                authenticating: pamAuth.authenticating
+                isError: pamAuth.isError
+                errorMessage: pamAuth.errorMessage
+                showProfilePhoto: root.showProfilePhoto
+                avatarPath: root.avatarPath
+                avatarSize: 84
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 24
+
+                onSubmitRequested: function(pwd) {
+                    if (root.isPreview) {
+                        root.triggerUnlock();
+                    } else {
+                        identityNormal.lockState = "verifying";
+                        pamAuth.submitPassword(pwd);
+                    }
                 }
             }
         }
 
-        // Hero Album Art + iPadOS Media Player Card
-        IpadMediaPlayerCard {
-            id: mediaItem
-            activePlayer: root.activePlayer
-            isPreview: root.isPreview
-            previewMediaPlaying: root.previewMediaPlaying
-            Layout.alignment: Qt.AlignHCenter
+        // 5B. Foreground Cutout Image for Depth Effect (renders in FRONT of the clock!)
+        Image {
+            id: depthCutoutImage
+            anchors.fill: parent
+            source: root.depthCutoutPath !== "" ? "file://" + root.depthCutoutPath : ""
+            fillMode: Image.PreserveAspectCrop
+            visible: root.depthEffectEnabled && status === Image.Ready
+            asynchronous: true
+            z: 12
         }
 
-        // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE MEDIA PLAYER!)
-        IdentityPasswordGroup {
-            id: identityMedia
-            buffer: pamAuth.buffer
-            authenticating: pamAuth.authenticating
-            isError: pamAuth.isError
-            errorMessage: pamAuth.errorMessage
-            showProfilePhoto: root.showProfilePhoto
-            avatarPath: root.avatarPath
-            avatarSize: 68
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 8
+        // MODE B: Media Playing iPad Lockscreen (Screenshot 2: Compact Clock + Hero Album Art + Frosted Player Card + Avatar & Password Pill BELOW)
+        ColumnLayout {
+            id: mediaLockGroup
+            anchors.centerIn: parent
+            anchors.verticalCenterOffset: 0
+            spacing: 10
+            z: 15
 
-            onSubmitRequested: function(pwd) {
-                if (root.isPreview) {
-                    identityMedia.lockState = "unlocked";
-                    unlockTimer.start();
-                } else {
-                    identityMedia.lockState = "verifying";
-                    pamAuth.submitPassword(pwd);
+            visible: opacity > 0.001
+            opacity: root.isMediaPlaying ? 1.0 : 0.0
+            Behavior on opacity {
+                NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
+            }
+
+            // Compact Clock & Date Header (Screenshot 2: "19:10   Mar 20 ott")
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                spacing: 16
+
+                Text {
+                    text: root.timeString
+                    font.family: AppleTokens.roundedFont
+                    font.pixelSize: 26
+                    font.weight: Font.Bold
+                    font.letterSpacing: -0.2
+                    color: AppleTokens.bodyOnDark
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.6)
+                        shadowBlur: 0.4
+                        shadowVerticalOffset: 1
+                    }
+                }
+
+                Text {
+                    text: root.ipadDateString
+                    font.family: AppleTokens.roundedFont
+                    font.pixelSize: 26
+                    font.weight: Font.Bold
+                    font.letterSpacing: -0.2
+                    color: AppleTokens.bodyOnDark
+
+                    layer.enabled: true
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.rgba(0, 0, 0, 0.6)
+                        shadowBlur: 0.4
+                        shadowVerticalOffset: 1
+                    }
+                }
+            }
+
+            // Hero Album Art + iPadOS Media Player Card
+            IpadMediaPlayerCard {
+                id: mediaItem
+                activePlayer: root.activePlayer
+                isPreview: root.isPreview
+                previewMediaPlaying: root.previewMediaPlaying
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE MEDIA PLAYER!)
+            IdentityPasswordGroup {
+                id: identityMedia
+                buffer: pamAuth.buffer
+                authenticating: pamAuth.authenticating
+                isError: pamAuth.isError
+                errorMessage: pamAuth.errorMessage
+                showProfilePhoto: root.showProfilePhoto
+                avatarPath: root.avatarPath
+                avatarSize: 68
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 8
+
+                onSubmitRequested: function(pwd) {
+                    if (root.isPreview) {
+                        root.triggerUnlock();
+                    } else {
+                        identityMedia.lockState = "verifying";
+                        pamAuth.submitPassword(pwd);
+                    }
                 }
             }
         }

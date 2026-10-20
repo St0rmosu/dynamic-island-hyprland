@@ -94,7 +94,7 @@ Variants {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Qt.quit()
+                    onClicked: content.triggerUnlock()
                 }
             }
         }

@@ -11,6 +11,8 @@ Scope {
     WlSessionLock {
         id: sessionLock
 
+        signal requestUnlock()
+
         LockSurface {
             lock: sessionLock
         }
@@ -28,7 +30,9 @@ Scope {
         }
 
         function unlock(): void {
-            sessionLock.locked = false;
+            if (sessionLock.locked) {
+                sessionLock.requestUnlock();
+            }
         }
 
         function isLocked(): bool {
