@@ -87,9 +87,10 @@ Item {
     }
 
     // Battery info
-    property int batteryLevel: 62
+    property int batteryLevel: 50
     property string batteryStatus: "Discharging"
     FileView {
+        id: batCapFile
         path: "/sys/class/power_supply/BAT1/capacity"
         onLoaded: {
             let val = parseInt(text().trim());
@@ -97,10 +98,21 @@ Item {
         }
     }
     FileView {
+        id: batStatFile
         path: "/sys/class/power_supply/BAT1/status"
         onLoaded: {
             let s = text().trim();
             if (s.length > 0) root.batteryStatus = s;
+        }
+    }
+
+    Timer {
+        interval: 6000
+        running: true
+        repeat: true
+        onTriggered: {
+            batCapFile.reload();
+            batStatFile.reload();
         }
     }
 

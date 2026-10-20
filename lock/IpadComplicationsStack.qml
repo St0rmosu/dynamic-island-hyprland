@@ -10,19 +10,20 @@ ColumnLayout {
     id: root
 
     property int batteryLevel: 100
-    property string batteryStatus: "Full"
-    property string deviceName: "Apple Pencil Pro"
+    property string batteryStatus: "Discharging"
+    readonly property bool isCharging: batteryStatus === "Charging" || batteryStatus === "Full"
+    property string deviceName: "Batteria"
     property string connectionStatus: "Disconnesso"
     property string connectionSub: "Connessione rapida"
     property bool isConnected: false
 
-    spacing: 22
+    spacing: 24
     Layout.alignment: Qt.AlignLeft
 
-    // Read wifi status
+    // Read Wi-Fi SSID and connection status via nmcli
     Process {
         id: wifiProc
-        command: ["sh", "-c", "nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^sì:' | cut -d: -f2 | head -n 1"]
+        command: ["sh", "-c", "nmcli -t -f active,ssid dev wifi 2>/dev/null | grep -E '^(sì|yes):' | cut -d: -f2 | head -n 1"]
         running: true
         stdout: SplitParser {
             onRead: data => {
@@ -47,19 +48,26 @@ ColumnLayout {
         onTriggered: wifiProc.running = true
     }
 
-    // 1. Stylus / Battery Complication (Exact iPadOS style)
+    // 1. Laptop / System Battery Complication (iPadOS Style)
     ColumnLayout {
         spacing: 5
 
         RowLayout {
             spacing: 6
 
-            // Stylus / Pencil icon
+            // Battery Icon (adaptive based on charge level & charging status)
             Text {
-                text: "󰏫"
+                text: {
+                    if (root.isCharging) return "󰂄";
+                    if (root.batteryLevel >= 90) return "󰁹";
+                    if (root.batteryLevel >= 75) return "󰂁";
+                    if (root.batteryLevel >= 50) return "󰁿";
+                    if (root.batteryLevel >= 25) return "󰁽";
+                    return "󰁻";
+                }
                 font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 15
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+                font.pixelSize: 16
+                color: root.batteryLevel <= 20 && !root.isCharging ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.95)
 
                 layer.enabled: true
                 layer.effect: MultiEffect {
@@ -70,9 +78,10 @@ ColumnLayout {
                 }
             }
 
-            // Lightning Bolt
+            // Lightning Bolt if Charging
             Text {
                 text: "⚡"
+                visible: root.isCharging
                 font.family: AppleTokens.textFont
                 font.pixelSize: 13
                 color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
@@ -104,9 +113,9 @@ ColumnLayout {
             }
         }
 
-        // Device / Pencil Label
+        // Battery Label ("In carica" or "Batteria")
         Text {
-            text: root.deviceName
+            text: root.isCharging ? "In carica" : "Batteria"
             font.family: AppleTokens.textFont
             font.pixelSize: 13
             font.weight: Font.DemiBold
@@ -141,108 +150,12 @@ ColumnLayout {
                 width: Math.max(0, Math.min(barTrack.width, barTrack.width * (root.batteryLevel / 100)))
                 height: barTrack.height
                 radius: barTrack.radius
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+                color: root.batteryLevel <= 20 && !root.isCharging ? AppleTokens.errorRed : Qt.rgba(1.0, 1.0, 1.0, 0.95)
             }
         }
     }
 
-    // 2. Circular Quick Actions Row (Notion & Spotify)
-    RowLayout {
-        spacing: 16
-
-        // Notion Circle
-        Rectangle {
-            id: notionCircle
-            width: 54
-            height: 54
-            radius: 27
-            color: Qt.rgba(0.12, 0.12, 0.14, 0.55)
-            border.width: 1
-            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.22)
-
-            scale: notionMouse.pressed ? AppleTokens.pressScale : 1.0
-            Behavior on scale { NumberAnimation { duration: 120 } }
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, 0.45)
-                shadowBlur: 0.5
-                shadowVerticalOffset: 2
-            }
-
-            Image {
-                anchors.centerIn: parent
-                width: 26
-                height: 26
-                source: "file:///usr/share/icons/hicolor/256x256/apps/notion.png"
-                fillMode: Image.PreserveAspectFit
-                visible: status === Image.Ready
-            }
-
-            Text {
-                anchors.centerIn: parent
-                visible: !notionCircle.children[0].visible
-                text: "N"
-                font.family: AppleTokens.displayFont
-                font.pixelSize: 22
-                font.weight: Font.Bold
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-            }
-
-            MouseArea {
-                id: notionMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    Quickshell.execDetached(["sh", "-c", "notion-app || notion || flatpak run notion || true"]);
-                }
-            }
-        }
-
-        // Spotify Circle
-        Rectangle {
-            id: spotifyCircle
-            width: 54
-            height: 54
-            radius: 27
-            color: Qt.rgba(0.12, 0.12, 0.14, 0.55)
-            border.width: 1
-            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.22)
-
-            scale: spotifyMouse.pressed ? AppleTokens.pressScale : 1.0
-            Behavior on scale { NumberAnimation { duration: 120 } }
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, 0.45)
-                shadowBlur: 0.5
-                shadowVerticalOffset: 2
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: "󰓇"
-                font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 30
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-            }
-
-            MouseArea {
-                id: spotifyMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    Quickshell.execDetached(["sh", "-c", "spotify || flatpak run com.spotify.Client || true"]);
-                }
-            }
-        }
-    }
-
-    // 3. Connectivity Status Complication
+    // 2. Connectivity Status Complication (Wi-Fi)
     RowLayout {
         spacing: 10
 
