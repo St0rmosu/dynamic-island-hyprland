@@ -251,8 +251,29 @@ Item {
         return "";
     }
 
-    // MPRIS Active Player Tracker
-    property var activePlayer: null
+    // MPRIS Active Player Tracker (reactive property binding for 0ms frame 0 evaluation)
+    property var activePlayer: {
+        let candidate = null;
+        if (Mpris.players && Mpris.players.values) {
+            for (let i = 0; i < Mpris.players.values.length; i++) {
+                let p = Mpris.players.values[i];
+                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || "").length > 0) {
+                    candidate = p;
+                    break;
+                }
+            }
+            if (!candidate) {
+                for (let j = 0; j < Mpris.players.values.length; j++) {
+                    let p2 = Mpris.players.values[j];
+                    if (p2 && (p2.trackTitle || "").length > 0) {
+                        candidate = p2;
+                        break;
+                    }
+                }
+            }
+        }
+        return candidate;
+    }
 
     function refreshActivePlayer() {
         let candidate = null;
@@ -391,23 +412,23 @@ Item {
             anchors.fill: parent
             source: root.wallpaperPath !== "" ? "file://" + root.wallpaperPath : ""
             fillMode: Image.PreserveAspectCrop
-            visible: status === Image.Ready
-            asynchronous: true
+            visible: opacity > 0.001
+            opacity: (root.isMediaPlaying && bgAmbientAlbumArt.status === Image.Ready) ? 0.0 : 1.0
+            Behavior on opacity {
+                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
+            }
         }
 
-        // 3. Ambient Album Art Blurred Layer (Screenshot 2: smooth diffuse atmospheric glow)
+        // 3. Ambient Album Art Blurred Layer (diffuse atmospheric glow in lockstep with hero art)
         Image {
             id: bgAmbientAlbumArt
             anchors.fill: parent
             source: mediaItem.artUrl
-            sourceSize: Qt.size(16, 16)
             fillMode: Image.PreserveAspectCrop
-            visible: status === Image.Ready
-            asynchronous: true
-
-            opacity: root.isMediaPlaying ? 1.0 : 0.0
+            visible: opacity > 0.001
+            opacity: (root.isMediaPlaying && status === Image.Ready) ? 1.0 : 0.0
             Behavior on opacity {
-                NumberAnimation { duration: 420; easing.type: Easing.InOutQuad }
+                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
             }
 
             layer.enabled: true
@@ -428,9 +449,10 @@ Item {
                 GradientStop { position: 0.5; color: Qt.rgba(0.06, 0.04, 0.07, 0.35) }
                 GradientStop { position: 1.0; color: Qt.rgba(0.06, 0.04, 0.07, 0.65) }
             }
-            opacity: root.isMediaPlaying ? 1.0 : 0.0
+            visible: opacity > 0.001
+            opacity: (root.isMediaPlaying && bgAmbientAlbumArt.status === Image.Ready) ? 1.0 : 0.0
             Behavior on opacity {
-                NumberAnimation { duration: 420 }
+                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
             }
         }
 

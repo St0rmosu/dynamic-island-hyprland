@@ -37,7 +37,16 @@ ColumnLayout {
         return "";
     }
 
-    readonly property string artUrl: {
+    function getArtCachePath(url) {
+        if (!url || typeof url !== "string") return "/tmp/lock_cached_art.jpg";
+        let parts = url.split("/");
+        let last = parts[parts.length - 1];
+        let safeName = last.replace(/[^a-zA-Z0-9_\.-]/g, "_");
+        if (!safeName || safeName.length < 3) return "/tmp/lock_cached_art.jpg";
+        return "/tmp/lock_art_" + safeName + ".jpg";
+    }
+
+    readonly property string directArtUrl: {
         if (activePlayer) {
             let url = activePlayer.trackArtUrl || activePlayer.artUrl;
             if (!url && activePlayer.metadata) url = activePlayer.metadata["mpris:artUrl"];
@@ -47,6 +56,22 @@ ColumnLayout {
             return "file:///home/lollo/Progetti/dynamic-island-hyprland/lock/assets/sample_album_art.png";
         }
         return "";
+    }
+
+    property bool cachedArtFailed: false
+
+    readonly property string artUrl: {
+        if (directArtUrl.startsWith("http://") || directArtUrl.startsWith("https://")) {
+            if (cachedArtFailed) {
+                return directArtUrl;
+            }
+            return "file://" + getArtCachePath(directArtUrl);
+        }
+        return directArtUrl;
+    }
+
+    onDirectArtUrlChanged: {
+        cachedArtFailed = false;
     }
 
     // Positions in seconds
@@ -114,14 +139,27 @@ ColumnLayout {
             anchors.fill: parent
             source: root.artUrl
             fillMode: Image.PreserveAspectCrop
-            visible: status === Image.Ready
-            asynchronous: true
+            visible: opacity > 0.001
+            opacity: status === Image.Ready ? 1.0 : 0.0
+            Behavior on opacity {
+                NumberAnimation { duration: 340; easing.type: Easing.InOutQuad }
+            }
+
+            onStatusChanged: {
+                if (status === Image.Error && !root.cachedArtFailed && root.directArtUrl !== "" && (root.artUrl.startsWith("file:///tmp/lock_art_") || root.artUrl === "file:///tmp/lock_cached_art.jpg")) {
+                    root.cachedArtFailed = true;
+                }
+            }
         }
 
         // Fallback placeholder when no art
         Rectangle {
             anchors.fill: parent
-            visible: artImage.status !== Image.Ready
+            visible: opacity > 0.001
+            opacity: artImage.status === Image.Ready ? 0.0 : 1.0
+            Behavior on opacity {
+                NumberAnimation { duration: 340; easing.type: Easing.InOutQuad }
+            }
             gradient: Gradient {
                 GradientStop { position: 0.0; color: "#3a2b3c" }
                 GradientStop { position: 1.0; color: "#1a1622" }

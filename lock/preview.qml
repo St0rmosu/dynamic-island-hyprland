@@ -29,7 +29,7 @@ Variants {
             id: content
             anchors.fill: parent
             isPreview: true
-            previewMediaPlaying: false
+            previewMediaPlaying: true
 
             onUnlockRequested: {
                 console.log("Preview unlocked successfully!");
