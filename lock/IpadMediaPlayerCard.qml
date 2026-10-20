@@ -52,16 +52,7 @@ ColumnLayout {
         return root.lastValidArtist;
     }
 
-    function getArtCachePath(url) {
-        if (!url || typeof url !== "string") return "/tmp/lock_cached_art.jpg";
-        let parts = url.split("/");
-        let last = parts[parts.length - 1];
-        let safeName = last.replace(/[^a-zA-Z0-9_\.-]/g, "_");
-        if (!safeName || safeName.length < 3) return "/tmp/lock_cached_art.jpg";
-        return "/tmp/lock_art_" + safeName + ".jpg";
-    }
-
-    readonly property string directArtUrl: {
+    property string artUrl: {
         if (activePlayer) {
             let url = activePlayer.trackArtUrl || activePlayer.artUrl;
             if (!url && activePlayer.metadata) url = activePlayer.metadata["mpris:artUrl"];
@@ -71,22 +62,6 @@ ColumnLayout {
             return "file:///home/lollo/Progetti/dynamic-island-hyprland/lock/assets/sample_album_art.png";
         }
         return "";
-    }
-
-    property bool cachedArtFailed: false
-
-    readonly property string artUrl: {
-        if (directArtUrl.startsWith("http://") || directArtUrl.startsWith("https://")) {
-            if (cachedArtFailed) {
-                return directArtUrl;
-            }
-            return "file://" + getArtCachePath(directArtUrl);
-        }
-        return directArtUrl;
-    }
-
-    onDirectArtUrlChanged: {
-        cachedArtFailed = false;
     }
 
     // Positions in seconds
@@ -128,15 +103,6 @@ ColumnLayout {
 
     spacing: 16
     Layout.alignment: Qt.AlignHCenter
-
-    // Re-sync artwork state whenever activePlayer changes track
-    Connections {
-        target: root.activePlayer
-        ignoreUnknownSignals: true
-        function onTrackArtUrlChanged() { root.cachedArtFailed = false; }
-        function onMetadataChanged() { root.cachedArtFailed = false; }
-        function onTrackTitleChanged() { root.cachedArtFailed = false; }
-    }
 
     // 1. Hero Album Art Card (Apple squircle rounded floating card)
     Item {
@@ -226,8 +192,6 @@ ColumnLayout {
                         } else {
                             prevArtTimer.restart();
                         }
-                    } else if (status === Image.Error && !root.cachedArtFailed && root.directArtUrl !== "" && (root.artUrl.startsWith("file:///tmp/lock_art_") || root.artUrl === "file:///tmp/lock_cached_art.jpg")) {
-                        root.cachedArtFailed = true;
                     }
                 }
             }
@@ -494,7 +458,11 @@ ColumnLayout {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 if (root.activePlayer && root.activePlayer.canControl) {
-                                    root.activePlayer.playPause();
+                                    if (typeof root.activePlayer.togglePlaying === "function") {
+                                        root.activePlayer.togglePlaying();
+                                    } else if (typeof root.activePlayer.playPause === "function") {
+                                        root.activePlayer.playPause();
+                                    }
                                 } else if (root.isPreview) {
                                     root.previewMediaPlaying = !root.previewMediaPlaying;
                                 }

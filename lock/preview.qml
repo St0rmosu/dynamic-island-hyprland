@@ -85,8 +85,8 @@ Variants {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "✕"
-                    font.family: AppleTokens.textFont
+                    text: "󰅖"
+                    font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
                     color: AppleTokens.bodyOnDark
                 }

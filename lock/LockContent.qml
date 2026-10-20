@@ -260,36 +260,26 @@ Item {
         interval: 200
         running: true
         repeat: true
-        onTriggered: {
-            root.mprisPulse++;
-            root.refreshActivePlayer();
-        }
+        onTriggered: root.mprisPulse++
     }
 
-    property var activePlayer: {
+    readonly property var activePlayer: {
         let _p = root.mprisPulse; // Re-evaluate on pulse
-        let candidate = null;
         if (Mpris.players && Mpris.players.values) {
             for (let i = 0; i < Mpris.players.values.length; i++) {
                 let p = Mpris.players.values[i];
                 if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || p.title || "").length > 0) {
-                    candidate = p;
-                    break;
+                    root.lastValidPlayer = p;
+                    return p;
                 }
             }
-            if (!candidate) {
-                for (let j = 0; j < Mpris.players.values.length; j++) {
-                    let p2 = Mpris.players.values[j];
-                    if (p2 && (p2.trackTitle || p2.title || "").length > 0) {
-                        candidate = p2;
-                        break;
-                    }
+            for (let j = 0; j < Mpris.players.values.length; j++) {
+                let p2 = Mpris.players.values[j];
+                if (p2 && (p2.trackTitle || p2.title || "").length > 0) {
+                    root.lastValidPlayer = p2;
+                    return p2;
                 }
             }
-        }
-        if (candidate) {
-            root.lastValidPlayer = candidate;
-            return candidate;
         }
         if (root.lastValidPlayer) {
             return root.lastValidPlayer;
@@ -297,44 +287,32 @@ Item {
         return null;
     }
 
-    function refreshActivePlayer() {
-        let candidate = null;
-        if (Mpris.players && Mpris.players.values) {
-            for (let i = 0; i < Mpris.players.values.length; i++) {
-                let p = Mpris.players.values[i];
-                if (p && p.playbackState === MprisPlaybackState.Playing && (p.trackTitle || p.title || "").length > 0) {
-                    candidate = p;
-                    break;
-                }
-            }
-            if (!candidate) {
-                for (let j = 0; j < Mpris.players.values.length; j++) {
-                    let p2 = Mpris.players.values[j];
-                    if (p2 && (p2.trackTitle || p2.title || "").length > 0) {
-                        candidate = p2;
-                        break;
-                    }
-                }
-            }
-        }
-        if (candidate) {
-            root.lastValidPlayer = candidate;
-            if (root.activePlayer !== candidate) root.activePlayer = candidate;
-        }
-    }
-
     Connections {
         target: Mpris.players
-        function onValuesChanged() { root.refreshActivePlayer(); }
+        function onValuesChanged() { root.mprisPulse++; }
     }
 
     Connections {
         target: root.activePlayer
         ignoreUnknownSignals: true
-        function onPlaybackStateChanged() { root.refreshActivePlayer(); }
-        function onTrackTitleChanged() { root.refreshActivePlayer(); }
-        function onTrackArtUrlChanged() { root.refreshActivePlayer(); }
-        function onMetadataChanged() { root.refreshActivePlayer(); }
+        function onPlaybackStateChanged() { root.mprisPulse++; }
+        function onTrackTitleChanged() { root.mprisPulse++; }
+        function onTrackArtUrlChanged() { root.mprisPulse++; }
+        function onMetadataChanged() { root.mprisPulse++; }
+    }
+
+    // Direct active artwork URL (reactive to active player and track transitions)
+    readonly property string currentArtUrl: {
+        let _p = root.mprisPulse;
+        if (root.activePlayer) {
+            let url = root.activePlayer.trackArtUrl || root.activePlayer.artUrl;
+            if (!url && root.activePlayer.metadata) url = root.activePlayer.metadata["mpris:artUrl"];
+            if (url && String(url).length > 0) return String(url);
+        }
+        if (root.isPreview && root.previewMediaPlaying) {
+            return "file:///home/lollo/Progetti/dynamic-island-hyprland/lock/assets/sample_album_art.png";
+        }
+        return "";
     }
 
     // Instantaneous raw media activity
@@ -373,7 +351,7 @@ Item {
 
     Component.onCompleted: {
         forceActiveFocus();
-        refreshActivePlayer();
+        root.mprisPulse++;
         if (root.wallpaperPath === "") {
             root.wallpaperPath = Quickshell.env("HOME") + "/Sfondi/Eragny's Garden.jpg";
         }
@@ -490,7 +468,7 @@ Item {
         Image {
             id: bgAmbientAlbumArt
             anchors.fill: parent
-            source: mediaItem.artUrl
+            source: root.currentArtUrl
             fillMode: Image.PreserveAspectCrop
             visible: opacity > 0.001
             opacity: (root.isMediaPlaying && status === Image.Ready) ? 1.0 : 0.0
@@ -760,6 +738,7 @@ Item {
             IpadMediaPlayerCard {
                 id: mediaItem
                 activePlayer: root.activePlayer
+                artUrl: root.currentArtUrl
                 isPreview: root.isPreview
                 previewMediaPlaying: root.previewMediaPlaying
                 Layout.alignment: Qt.AlignHCenter
