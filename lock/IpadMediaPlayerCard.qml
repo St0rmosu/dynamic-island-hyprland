@@ -19,22 +19,37 @@ ColumnLayout {
         return activePlayer && activePlayer.playbackState === MprisPlaybackState.Playing;
     }
 
+    property string lastValidTitle: ""
+    property string lastValidArtist: ""
+
     readonly property string title: {
+        let t = "";
         if (activePlayer && (activePlayer.trackTitle || activePlayer.title || "").length > 0) {
-            return activePlayer.trackTitle || activePlayer.title;
+            t = activePlayer.trackTitle || activePlayer.title;
+        } else if (isPreview && previewMediaPlaying) {
+            t = "Nevermind";
         }
-        if (isPreview && previewMediaPlaying) return "Nevermind";
-        return "";
+        if (t !== "") {
+            root.lastValidTitle = t;
+            return t;
+        }
+        return root.lastValidTitle;
     }
 
     readonly property string artist: {
+        let a = "";
         if (activePlayer) {
-            let a = activePlayer.trackArtists !== undefined ? activePlayer.trackArtists : activePlayer.artist;
-            if (!a && activePlayer.metadata) a = activePlayer.metadata["xesam:artist"];
-            if (a) return Array.isArray(a) ? a.join(", ") : String(a);
+            let art = activePlayer.trackArtists !== undefined ? activePlayer.trackArtists : activePlayer.artist;
+            if (!art && activePlayer.metadata) art = activePlayer.metadata["xesam:artist"];
+            if (art) a = Array.isArray(art) ? art.join(", ") : String(art);
+        } else if (isPreview && previewMediaPlaying) {
+            a = "Phoneboy, Justin Magnaye";
         }
-        if (isPreview && previewMediaPlaying) return "Phoneboy, Justin Magnaye";
-        return "";
+        if (a !== "") {
+            root.lastValidArtist = a;
+            return a;
+        }
+        return root.lastValidArtist;
     }
 
     function getArtCachePath(url) {
@@ -134,6 +149,16 @@ ColumnLayout {
             shadowVerticalOffset: 12
         }
 
+        // Underlying previous artwork for seamless crossfade between tracks
+        Image {
+            id: prevArtImage
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            visible: opacity > 0.001 && source !== ""
+            opacity: status === Image.Ready ? 1.0 : 0.0
+        }
+
+        // Active track artwork fading in smoothly over previous artwork
         Image {
             id: artImage
             anchors.fill: parent
@@ -142,12 +167,25 @@ ColumnLayout {
             visible: opacity > 0.001
             opacity: status === Image.Ready ? 1.0 : 0.0
             Behavior on opacity {
-                NumberAnimation { duration: 340; easing.type: Easing.InOutQuad }
+                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
             }
 
             onStatusChanged: {
-                if (status === Image.Error && !root.cachedArtFailed && root.directArtUrl !== "" && (root.artUrl.startsWith("file:///tmp/lock_art_") || root.artUrl === "file:///tmp/lock_cached_art.jpg")) {
+                if (status === Image.Ready) {
+                    prevArtTimer.restart();
+                } else if (status === Image.Error && !root.cachedArtFailed && root.directArtUrl !== "" && (root.artUrl.startsWith("file:///tmp/lock_art_") || root.artUrl === "file:///tmp/lock_cached_art.jpg")) {
                     root.cachedArtFailed = true;
+                }
+            }
+        }
+
+        Timer {
+            id: prevArtTimer
+            interval: 380
+            repeat: false
+            onTriggered: {
+                if (artImage.status === Image.Ready) {
+                    prevArtImage.source = artImage.source;
                 }
             }
         }
@@ -156,7 +194,7 @@ ColumnLayout {
         Rectangle {
             anchors.fill: parent
             visible: opacity > 0.001
-            opacity: artImage.status === Image.Ready ? 0.0 : 1.0
+            opacity: (artImage.status === Image.Ready || prevArtImage.status === Image.Ready) ? 0.0 : 1.0
             Behavior on opacity {
                 NumberAnimation { duration: 340; easing.type: Easing.InOutQuad }
             }

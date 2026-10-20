@@ -252,6 +252,7 @@ Item {
     }
 
     // MPRIS Active Player Tracker (reactive property binding for 0ms frame 0 evaluation)
+    property var lastValidPlayer: null
     property var activePlayer: {
         let candidate = null;
         if (Mpris.players && Mpris.players.values) {
@@ -272,7 +273,14 @@ Item {
                 }
             }
         }
-        return candidate;
+        if (candidate) {
+            root.lastValidPlayer = candidate;
+            return candidate;
+        }
+        if (root.isMediaPlaying && root.lastValidPlayer) {
+            return root.lastValidPlayer;
+        }
+        return null;
     }
 
     function refreshActivePlayer() {
@@ -295,8 +303,11 @@ Item {
                 }
             }
         }
-        if (root.activePlayer !== candidate) {
+        if (candidate) {
+            root.lastValidPlayer = candidate;
             root.activePlayer = candidate;
+        } else if (!root.isMediaPlaying) {
+            root.activePlayer = null;
         }
     }
 
@@ -312,14 +323,37 @@ Item {
         onTriggered: root.refreshActivePlayer()
     }
 
-    // Mode determination: Media Playing (Screenshot 2) vs Normal Idle (Screenshot 1)
-    readonly property bool isMediaPlaying: {
+    // Instantaneous raw media activity
+    readonly property bool rawMediaActive: {
         if (!root.enableMediaMode) return false;
         if (root.isPreview && root.previewMediaPlaying) return true;
         if (!root.activePlayer) return false;
         if (root.activePlayer.playbackState === MprisPlaybackState.Playing) return true;
         if (root.activePlayer.playbackState === MprisPlaybackState.Paused && (root.activePlayer.trackTitle || "").length > 0) return true;
         return false;
+    }
+
+    // Debounced media mode: bridges gap between tracks so screen never flashes wallpaper when track ends
+    property bool isMediaPlaying: rawMediaActive
+
+    Timer {
+        id: mediaGraceTimer
+        interval: 1400 // 1.4s grace period to prevent collapsing media mode between songs
+        repeat: false
+        onTriggered: {
+            if (!root.rawMediaActive) {
+                root.isMediaPlaying = false;
+            }
+        }
+    }
+
+    onRawMediaActiveChanged: {
+        if (rawMediaActive) {
+            mediaGraceTimer.stop();
+            root.isMediaPlaying = true;
+        } else {
+            mediaGraceTimer.restart();
+        }
     }
 
     Component.onCompleted: {
@@ -406,20 +440,38 @@ Item {
             }
         }
 
-        // 2. Wallpaper Layer: Sharp iPadOS Wallpaper
+        // 2. Wallpaper Layer: Sharp iPadOS Wallpaper (only visible when not playing media)
         Image {
             id: bgWallpaper
             anchors.fill: parent
             source: root.wallpaperPath !== "" ? "file://" + root.wallpaperPath : ""
             fillMode: Image.PreserveAspectCrop
             visible: opacity > 0.001
-            opacity: (root.isMediaPlaying && bgAmbientAlbumArt.status === Image.Ready) ? 0.0 : 1.0
+            opacity: root.isMediaPlaying ? 0.0 : 1.0
             Behavior on opacity {
-                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
+                NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
             }
         }
 
-        // 3. Ambient Album Art Blurred Layer (diffuse atmospheric glow in lockstep with hero art)
+        // 3A. Previous Ambient Album Art (maintains diffuse atmospheric glow during track transitions)
+        Image {
+            id: bgPrevAmbientArt
+            anchors.fill: parent
+            fillMode: Image.PreserveAspectCrop
+            visible: opacity > 0.001 && source !== ""
+            opacity: root.isMediaPlaying ? 1.0 : 0.0
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blur: 1.0
+                blurMax: 64
+                saturation: 0.3
+                brightness: -0.18
+            }
+        }
+
+        // 3B. Active Ambient Album Art Blurred Layer
         Image {
             id: bgAmbientAlbumArt
             anchors.fill: parent
@@ -428,7 +480,13 @@ Item {
             visible: opacity > 0.001
             opacity: (root.isMediaPlaying && status === Image.Ready) ? 1.0 : 0.0
             Behavior on opacity {
-                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
+                NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
+            }
+
+            onStatusChanged: {
+                if (status === Image.Ready) {
+                    bgPrevArtTimer.restart();
+                }
             }
 
             layer.enabled: true
@@ -441,6 +499,17 @@ Item {
             }
         }
 
+        Timer {
+            id: bgPrevArtTimer
+            interval: 400
+            repeat: false
+            onTriggered: {
+                if (bgAmbientAlbumArt.status === Image.Ready) {
+                    bgPrevAmbientArt.source = bgAmbientAlbumArt.source;
+                }
+            }
+        }
+
         // Atmospheric warm tint scrim over ambient art
         Rectangle {
             anchors.fill: parent
@@ -450,9 +519,9 @@ Item {
                 GradientStop { position: 1.0; color: Qt.rgba(0.06, 0.04, 0.07, 0.65) }
             }
             visible: opacity > 0.001
-            opacity: (root.isMediaPlaying && bgAmbientAlbumArt.status === Image.Ready) ? 1.0 : 0.0
+            opacity: root.isMediaPlaying ? 1.0 : 0.0
             Behavior on opacity {
-                NumberAnimation { duration: 360; easing.type: Easing.InOutQuad }
+                NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
             }
         }
 

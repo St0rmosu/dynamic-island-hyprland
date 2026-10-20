@@ -26,31 +26,39 @@ Scope {
         running: false
     }
 
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        onTriggered: {
-            if (Mpris.players && Mpris.players.values) {
-                for (let i = 0; i < Mpris.players.values.length; i++) {
-                    let p = Mpris.players.values[i];
-                    if (p && (p.playbackState === MprisPlaybackState.Playing || p.playbackState === MprisPlaybackState.Paused)) {
-                        let url = p.trackArtUrl || p.artUrl;
-                        if (!url && p.metadata) url = p.metadata["mpris:artUrl"];
-                        if (url && (String(url).startsWith("http://") || String(url).startsWith("https://"))) {
-                            let strUrl = String(url);
-                            if (strUrl !== root.lastDownloadedArtUrl) {
-                                root.lastDownloadedArtUrl = strUrl;
-                                let targetFile = root.getArtCachePath(strUrl);
-                                bgArtProc.command = ["sh", "-c", "curl -sL '" + strUrl + "' -o '" + targetFile + "' && cp -f '" + targetFile + "' /tmp/lock_cached_art.jpg"];
-                                bgArtProc.running = true;
-                            }
-                        }
-                        break;
+    function checkAndDownloadArt(): void {
+        if (!Mpris.players || !Mpris.players.values) return;
+        for (let i = 0; i < Mpris.players.values.length; i++) {
+            let p = Mpris.players.values[i];
+            if (p && (p.playbackState === MprisPlaybackState.Playing || p.playbackState === MprisPlaybackState.Paused)) {
+                let url = p.trackArtUrl || p.artUrl;
+                if (!url && p.metadata) url = p.metadata["mpris:artUrl"];
+                if (url && (String(url).startsWith("http://") || String(url).startsWith("https://"))) {
+                    let strUrl = String(url);
+                    if (strUrl !== root.lastDownloadedArtUrl) {
+                        root.lastDownloadedArtUrl = strUrl;
+                        let targetFile = root.getArtCachePath(strUrl);
+                        bgArtProc.command = ["sh", "-c", "curl -sL '" + strUrl + "' -o '" + targetFile + "' && cp -f '" + targetFile + "' /tmp/lock_cached_art.jpg"];
+                        bgArtProc.running = true;
                     }
                 }
+                break;
             }
         }
+    }
+
+    Connections {
+        target: Mpris.players
+        function onValuesChanged(): void {
+            root.checkAndDownloadArt();
+        }
+    }
+
+    Timer {
+        interval: 300
+        running: true
+        repeat: true
+        onTriggered: root.checkAndDownloadArt()
     }
 
     WlSessionLock {
