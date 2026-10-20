@@ -168,6 +168,12 @@ FocusScope {
                 subtitle: I18n.tr("Combinazioni di tasti Hyprland e comandi rapidi per la shell"),
                 icon: "\uf11c",
                 keywords: ["scorciatoie", "tasti", "hyprland", "bind", "keybind", "super", "tastiera", "shortcuts"]
+            },
+            {
+                title: I18n.tr("Schermata di Blocco"),
+                subtitle: I18n.tr("Personalizza stile iPadOS, foto profilo, effetto profondità e widget"),
+                icon: "\uf023",
+                keywords: ["lock", "blocco", "schermata", "ipad", "profondita", "depth", "avatar", "profilo", "password", "spotify"]
             }
         ];
     }
@@ -779,6 +785,14 @@ FocusScope {
 
                         // Pagina 4: Scorciatoie Hyprland
                         ShortcutsPage {
+                            config: root.dynamicConfig
+                            accentColor: root.effectiveAccent
+                            textFontFamily: root.textFontFamily
+                            iconFontFamily: root.iconFontFamily
+                        }
+
+                        // Pagina 5: Schermata di Blocco
+                        LockScreenSettingsPage {
                             config: root.dynamicConfig
                             accentColor: root.effectiveAccent
                             textFontFamily: root.textFontFamily

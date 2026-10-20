@@ -44,6 +44,13 @@ Item {
     property int hoverCollapseDelayMs: 300
     property bool disableAutoExpandOnTrackChange: false
 
+    // ── 1B. Schermata di Blocco (Lock Screen) ────────────────────────
+    property bool lockDepthEffect: false
+    property bool lockShowProfilePhoto: true
+    property bool lockShowTopStatus: false
+    property bool lockShowComplications: true
+    property bool lockEnableMediaMode: true
+
     // ── 2. Interazioni & Mouse ─────────────────────────────────────────
     property string primaryClickAction: "control_center"
     property string secondaryClickAction: "power_menu"
@@ -362,6 +369,13 @@ Item {
             }
             if (data.clockFormat !== undefined) root.clockFormat = String(data.clockFormat);
 
+            // Lock Screen settings
+            if (data.lockDepthEffect !== undefined) root.lockDepthEffect = Boolean(data.lockDepthEffect);
+            if (data.lockShowProfilePhoto !== undefined) root.lockShowProfilePhoto = Boolean(data.lockShowProfilePhoto);
+            if (data.lockShowTopStatus !== undefined) root.lockShowTopStatus = Boolean(data.lockShowTopStatus);
+            if (data.lockShowComplications !== undefined) root.lockShowComplications = Boolean(data.lockShowComplications);
+            if (data.lockEnableMediaMode !== undefined) root.lockEnableMediaMode = Boolean(data.lockEnableMediaMode);
+
             // Shortcuts
             if (Array.isArray(data.customShortcuts) && data.customShortcuts.length > 0) {
                 root.customShortcuts = data.customShortcuts;
@@ -513,6 +527,12 @@ Item {
                 enableQuickshellWallpaper: root.enableQuickshellWallpaper,
                 clockFormat: root.clockFormat,
                 customShortcuts: root.customShortcuts,
+
+                lockDepthEffect: root.lockDepthEffect,
+                lockShowProfilePhoto: root.lockShowProfilePhoto,
+                lockShowTopStatus: root.lockShowTopStatus,
+                lockShowComplications: root.lockShowComplications,
+                lockEnableMediaMode: root.lockEnableMediaMode,
 
                 textFontFamily: root.textFontFamily,
                 heroFontFamily: root.heroFontFamily,

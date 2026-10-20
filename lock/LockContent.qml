@@ -13,7 +13,29 @@ Item {
     property alias pam: pamAuth
     property bool isPreview: false
     property bool previewMediaPlaying: false
-    property bool showPasswordInput: false
+
+    // Configurable options
+    property bool showTopStatus: false
+    property bool showProfilePhoto: true
+    property bool showComplications: true
+    property bool enableMediaMode: true
+    property bool depthEffectEnabled: false
+    property string avatarPath: Quickshell.env("HOME") + "/Immagineprofilo/lollo.png"
+
+    FileView {
+        id: userConfigFile
+        path: Quickshell.env("HOME") + "/.config/dynamic-island/userconfig.json"
+        onLoaded: {
+            try {
+                let data = JSON.parse(text().trim());
+                if (data.lockDepthEffect !== undefined) root.depthEffectEnabled = Boolean(data.lockDepthEffect);
+                if (data.lockShowProfilePhoto !== undefined) root.showProfilePhoto = Boolean(data.lockShowProfilePhoto);
+                if (data.lockShowTopStatus !== undefined) root.showTopStatus = Boolean(data.lockShowTopStatus);
+                if (data.lockShowComplications !== undefined) root.showComplications = Boolean(data.lockShowComplications);
+                if (data.lockEnableMediaMode !== undefined) root.enableMediaMode = Boolean(data.lockEnableMediaMode);
+            } catch(e) {}
+        }
+    }
 
     signal unlockRequested()
 
@@ -89,6 +111,16 @@ Item {
         }
     }
 
+    // Foreground cutout for Depth Effect (e.g. wall_depth.png or Eragny's Garden_depth.png)
+    readonly property string depthCutoutPath: {
+        if (!root.depthEffectEnabled || root.wallpaperPath === "") return "";
+        let dotIdx = root.wallpaperPath.lastIndexOf(".");
+        if (dotIdx > 0) {
+            return root.wallpaperPath.slice(0, dotIdx) + "_depth.png";
+        }
+        return "";
+    }
+
     // MPRIS Active Player Tracker
     readonly property var activePlayer: {
         if (Mpris.players && Mpris.players.values) {
@@ -106,6 +138,7 @@ Item {
 
     // Mode determination: Media Playing (Screenshot 2) vs Normal Idle (Screenshot 1)
     readonly property bool isMediaPlaying: {
+        if (!root.enableMediaMode) return false;
         if (root.isPreview && root.previewMediaPlaying) return true;
         return root.activePlayer !== null && root.activePlayer.playbackState === MprisPlaybackState.Playing;
     }
@@ -117,11 +150,11 @@ Item {
         }
     }
 
-    // Keyboard capture
+    // Keyboard capture: Keystrokes feed directly into pamAuth and Dynamic Island!
     Keys.onPressed: function(event) {
         if (pamAuth.authenticating) return;
 
-        // Preview toggles
+        // Preview mode toggle
         if (root.isPreview && (event.key === Qt.Key_M || event.key === Qt.Key_Tab)) {
             root.previewMediaPlaying = !root.previewMediaPlaying;
             event.accepted = true;
@@ -130,7 +163,6 @@ Item {
 
         if (event.key === Qt.Key_Escape) {
             pamAuth.clear();
-            root.showPasswordInput = false;
             event.accepted = true;
             return;
         }
@@ -160,9 +192,8 @@ Item {
             return;
         }
 
-        // Printable characters
+        // Printable text feeds directly into Dynamic Island password buffer
         if (event.text && event.text.length > 0 && event.text.charCodeAt(0) >= 32) {
-            root.showPasswordInput = true;
             pamAuth.appendChar(event.text);
             if (islandCapsule.lockState === "failed") {
                 islandCapsule.lockState = "locked";
@@ -187,7 +218,7 @@ Item {
         asynchronous: true
     }
 
-    // 3. Ambient Album Art Blurred Layer (Screenshot 2: smooth atmospheric glow matching album art)
+    // 3. Ambient Album Art Blurred Layer (Screenshot 2: smooth diffuse atmospheric glow)
     Image {
         id: bgAmbientAlbumArt
         anchors.fill: parent
@@ -249,152 +280,7 @@ Item {
         }
     }
 
-    // 4. iPadOS Top Bar
-    Item {
-        id: topBar
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 48
-        z: 30
-
-        // Top-Left: "Tocca per sbloccare"
-        Item {
-            anchors.left: parent.left
-            anchors.leftMargin: 32
-            anchors.verticalCenter: parent.verticalCenter
-            width: unlockText.implicitWidth
-            height: unlockText.implicitHeight
-
-            Text {
-                id: unlockText
-                anchors.centerIn: parent
-                text: "Tocca per sbloccare"
-                font.family: AppleTokens.textFont
-                font.pixelSize: 14
-                font.weight: Font.Normal
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.9)
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 1
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    root.showPasswordInput = !root.showPasswordInput;
-                    root.forceActiveFocus();
-                }
-            }
-        }
-
-        // Top-Center: Apple Dynamic Island Capsule
-        DynamicIslandLockCapsule {
-            id: islandCapsule
-            anchors.centerIn: parent
-        }
-
-        // Top-Right: iPad Status (Wi-Fi + Battery Level & Capsule Pill)
-        RowLayout {
-            anchors.right: parent.right
-            anchors.rightMargin: 32
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: 10
-
-            // Wi-Fi Icon
-            Text {
-                text: "󰖩"
-                font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 16
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 1
-                }
-            }
-
-            // iPad Battery Group (Percentage + Capsule Pill)
-            RowLayout {
-                spacing: 6
-
-                Text {
-                    text: root.batteryLevel + ""
-                    font.family: AppleTokens.roundedFont
-                    font.pixelSize: 13
-                    font.weight: Font.Bold
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                        shadowBlur: 0.4
-                        shadowVerticalOffset: 1
-                    }
-                }
-
-                // Apple Battery Capsule Pill
-                Item {
-                    width: 27
-                    height: 13
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        width: 24
-                        radius: 3.5
-                        color: "transparent"
-                        border.width: 1.2
-                        border.color: Qt.rgba(1.0, 1.0, 1.0, 0.65)
-
-                        // Inner fill level
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            anchors.margins: 1.5
-                            width: Math.max(2, (parent.width - 3) * (root.batteryLevel / 100))
-                            radius: 2
-                            color: root.batteryStatus === "Charging" ? AppleTokens.successGreen : (root.batteryLevel < 20 ? AppleTokens.errorRed : AppleTokens.bodyOnDark)
-                        }
-
-                        // Charging bolt inside battery if charging
-                        Text {
-                            anchors.centerIn: parent
-                            visible: root.batteryStatus === "Charging"
-                            text: "⚡"
-                            font.family: AppleTokens.textFont
-                            font.pixelSize: 8
-                            color: AppleTokens.bodyOnDark
-                        }
-                    }
-
-                    // Battery Terminal Nipple
-                    Rectangle {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 2
-                        height: 5
-                        radius: 1
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.6)
-                    }
-                }
-            }
-        }
-    }
-
-    // 5. Left Column: iPad Complications Stack (Battery/Pencil, Quick Apps, Connectivity)
+    // 4. Left Column: iPad Complications Stack (Battery/Pencil, Quick Apps, Connectivity)
     IpadComplicationsStack {
         id: complicationsStack
         anchors.left: parent.left
@@ -403,7 +289,136 @@ Item {
         anchors.verticalCenterOffset: -10
         batteryLevel: root.batteryLevel
         batteryStatus: root.batteryStatus
+        visible: root.showComplications
         z: 20
+    }
+
+    // 5. Top Center Hero: Profile Photo (Avatar) + Dynamic Island Password Capsule
+    ColumnLayout {
+        id: topCenterIdentityGroup
+        anchors.top: parent.top
+        anchors.topMargin: 20
+        anchors.horizontalCenter: parent.horizontalCenter
+        spacing: 10
+        z: 30
+
+        // Profile Picture Avatar (62x62 with subtle frosted ring)
+        Item {
+            id: avatarWrapper
+            Layout.alignment: Qt.AlignHCenter
+            width: 62
+            height: 62
+            visible: root.showProfilePhoto
+
+            // Fallback circular base
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: Qt.rgba(0.12, 0.12, 0.14, 0.8)
+                border.width: 1.5
+                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: pfpImg.status !== Image.Ready
+                text: ""
+                font.family: "JetBrainsMono Nerd Font"
+                font.pixelSize: 26
+                color: Qt.rgba(1.0, 1.0, 1.0, 0.6)
+            }
+
+            // Circular Mask
+            Rectangle {
+                id: maskShape
+                anchors.fill: parent
+                radius: width / 2
+                color: "black"
+                layer.enabled: true
+                visible: false
+            }
+
+            // User Profile Image
+            Image {
+                id: pfpImg
+                anchors.fill: parent
+                source: root.avatarPath !== "" ? "file://" + root.avatarPath : ""
+                fillMode: Image.PreserveAspectCrop
+                visible: status === Image.Ready
+                asynchronous: true
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: maskShape
+                    maskSpreadAtMin: 1
+                    maskThresholdMin: 0.5
+                }
+            }
+
+            // Outer Hairline Ring & Drop Shadow
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: "transparent"
+                border.width: 1.5
+                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: Qt.rgba(0, 0, 0, 0.55)
+                    shadowBlur: 0.4
+                    shadowVerticalOffset: 2
+                }
+            }
+        }
+
+        // Dynamic Island Capsule (Expands directly as Password Input when typing!)
+        DynamicIslandLockCapsule {
+            id: islandCapsule
+            Layout.alignment: Qt.AlignHCenter
+            buffer: pamAuth.buffer
+            authenticating: pamAuth.authenticating
+            isError: pamAuth.isError
+            errorMessage: pamAuth.errorMessage
+
+            onSubmitRequested: function(pwd) {
+                if (root.isPreview) {
+                    islandCapsule.lockState = "unlocked";
+                    unlockTimer.start();
+                } else {
+                    islandCapsule.lockState = "verifying";
+                    pamAuth.submitPassword(pwd);
+                }
+            }
+        }
+    }
+
+    // Optional Top-Right Status (hidden by default as requested by user)
+    RowLayout {
+        anchors.right: parent.right
+        anchors.rightMargin: 32
+        anchors.top: parent.top
+        anchors.topMargin: 24
+        spacing: 10
+        visible: root.showTopStatus
+        z: 30
+
+        Text {
+            text: "󰖩"
+            font.family: "JetBrainsMono Nerd Font"
+            font.pixelSize: 16
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+        }
+
+        Text {
+            text: root.batteryLevel + "%"
+            font.family: AppleTokens.roundedFont
+            font.pixelSize: 13
+            font.weight: Font.Bold
+            color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
+        }
     }
 
     // 6. Center Hero Presentation: Smooth Crossfade between Normal (Screenshot 1) & Media (Screenshot 2)
@@ -412,7 +427,7 @@ Item {
     ColumnLayout {
         id: normalClockGroup
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: -40
+        anchors.verticalCenterOffset: 10
         spacing: 2
         z: 15
 
@@ -422,7 +437,7 @@ Item {
             NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
         }
 
-        // Date (SF Pro Rounded Bold 24px: "Mar 20 ott")
+        // Date (SF Pro Rounded Bold 25px: "Mar 20 ott")
         Text {
             text: root.ipadDateString
             font.family: AppleTokens.roundedFont
@@ -441,11 +456,11 @@ Item {
             }
         }
 
-        // Clock (SF Pro Rounded Bold 142px: "01:19")
+        // Clock (SF Pro Rounded Bold 144px: "01:19")
         Text {
             text: root.timeString
             font.family: AppleTokens.roundedFont
-            font.pixelSize: 142
+            font.pixelSize: 144
             font.weight: Font.Bold
             font.letterSpacing: -2.5
             color: AppleTokens.bodyOnDark
@@ -459,43 +474,24 @@ Item {
                 shadowVerticalOffset: 4
             }
         }
+    }
 
-        // Password Input Pill (Centered under normal clock)
-        Item {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 16
-            width: pwdInputNormal.implicitWidth
-            height: pwdInputNormal.implicitHeight
-            visible: opacity > 0.001
-            opacity: (root.showPasswordInput || pamAuth.buffer.length > 0 || pamAuth.authenticating || pamAuth.isError) ? 1.0 : 0.0
-            Behavior on opacity { NumberAnimation { duration: 250 } }
-
-            PasswordPillInput {
-                id: pwdInputNormal
-                buffer: pamAuth.buffer
-                isError: pamAuth.isError
-                errorMessage: pamAuth.errorMessage
-                authenticating: pamAuth.authenticating
-                anchors.centerIn: parent
-
-                onSubmitRequested: function(pwd) {
-                    if (root.isPreview) {
-                        islandCapsule.lockState = "unlocked";
-                        unlockTimer.start();
-                    } else {
-                        islandCapsule.lockState = "verifying";
-                        pamAuth.submitPassword(pwd);
-                    }
-                }
-            }
-        }
+    // 6B. Foreground Cutout Image for Depth Effect (renders in FRONT of the clock!)
+    Image {
+        id: depthCutoutImage
+        anchors.fill: parent
+        source: root.depthCutoutPath !== "" ? "file://" + root.depthCutoutPath : ""
+        fillMode: Image.PreserveAspectCrop
+        visible: root.depthEffectEnabled && status === Image.Ready && !root.isMediaPlaying
+        z: 16
+        asynchronous: true
     }
 
     // MODE B: Media Playing iPad Lockscreen (Screenshot 2: Compact Clock + Large Album Art + Frosted Player Card)
     ColumnLayout {
         id: mediaLockGroup
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: -12
+        anchors.verticalCenterOffset: 48
         spacing: 12
         z: 15
 
@@ -552,57 +548,6 @@ Item {
             isPreview: root.isPreview
             previewMediaPlaying: root.previewMediaPlaying
             Layout.alignment: Qt.AlignHCenter
-        }
-
-        // Password Input Pill (Visible when typing in media mode)
-        Item {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 8
-            width: pwdInputMedia.implicitWidth
-            height: pwdInputMedia.implicitHeight
-            visible: opacity > 0.001
-            opacity: (root.showPasswordInput || pamAuth.buffer.length > 0 || pamAuth.authenticating || pamAuth.isError) ? 1.0 : 0.0
-            Behavior on opacity { NumberAnimation { duration: 250 } }
-
-            PasswordPillInput {
-                id: pwdInputMedia
-                buffer: pamAuth.buffer
-                isError: pamAuth.isError
-                errorMessage: pamAuth.errorMessage
-                authenticating: pamAuth.authenticating
-                anchors.centerIn: parent
-
-                onSubmitRequested: function(pwd) {
-                    if (root.isPreview) {
-                        islandCapsule.lockState = "unlocked";
-                        unlockTimer.start();
-                    } else {
-                        islandCapsule.lockState = "verifying";
-                        pamAuth.submitPassword(pwd);
-                    }
-                }
-            }
-        }
-    }
-
-    // 7. Apple Home Bar Indicator (Bottom Center horizontal pill)
-    Rectangle {
-        id: homeBar
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 14
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: 140
-        height: 5
-        radius: 2.5
-        color: Qt.rgba(1.0, 1.0, 1.0, 0.7)
-        z: 30
-
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.4)
-            shadowBlur: 0.3
-            shadowVerticalOffset: 1
         }
     }
 }
