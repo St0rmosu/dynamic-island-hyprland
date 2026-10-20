@@ -111,6 +111,85 @@ ColumnLayout {
         return "";
     }
 
+    property string displayedTitle: title
+    property string displayedArtist: artist
+
+    onTitleChanged: {
+        if (root.displayedTitle !== "" && root.displayedTitle !== root.title) {
+            trackChangeAnim.restart();
+        } else {
+            root.displayedTitle = root.title;
+            root.displayedArtist = root.artist;
+        }
+    }
+
+    SequentialAnimation {
+        id: trackChangeAnim
+
+        ParallelAnimation {
+            // 1. Text fades & glides up slightly
+            NumberAnimation {
+                target: textAnimWrapper
+                property: "opacity"
+                to: 0.0
+                duration: 120
+                easing.type: Easing.OutQuad
+            }
+            NumberAnimation {
+                target: textAnimWrapper
+                property: "y"
+                to: -8
+                duration: 120
+                easing.type: Easing.OutQuad
+            }
+
+            // 2. Album art spring compress (tactile Apple physical bounce)
+            NumberAnimation {
+                target: albumArtCard
+                property: "scale"
+                to: 0.93
+                duration: 140
+                easing.type: Easing.OutQuad
+            }
+        }
+
+        ScriptAction {
+            script: {
+                root.displayedTitle = root.title;
+                root.displayedArtist = root.artist;
+                textAnimWrapper.y = 8;
+            }
+        }
+
+        ParallelAnimation {
+            // 1. Text glides in from bottom and fades in
+            NumberAnimation {
+                target: textAnimWrapper
+                property: "opacity"
+                to: 1.0
+                duration: 260
+                easing.type: Easing.OutCubic
+            }
+            NumberAnimation {
+                target: textAnimWrapper
+                property: "y"
+                to: 0
+                duration: 260
+                easing.type: Easing.OutCubic
+            }
+
+            // 2. Album art springs back with signature Apple fluid bounce
+            NumberAnimation {
+                target: albumArtCard
+                property: "scale"
+                to: 1.0
+                duration: 440
+                easing.type: Easing.OutBack
+                easing.overshoot: 1.18
+            }
+        }
+    }
+
     // Positions in seconds
     property real currentPosSec: 24
     property real totalLengthSec: 210
@@ -157,6 +236,7 @@ ColumnLayout {
         Layout.alignment: Qt.AlignHCenter
         width: 500
         height: 500
+        transformOrigin: Item.Center
 
         // Soft signature Apple drop-shadow
         layer.enabled: true
@@ -300,50 +380,72 @@ ColumnLayout {
             anchors.rightMargin: 24
             spacing: 6
 
-            // Top Header: Centered Track Title + Explicit tag & Right-aligned Equalizer
+            // Top Header: Animated Title & Artist + Right-aligned Equalizer
             Item {
                 Layout.fillWidth: true
-                height: 24
+                height: 44
 
-                // Centered Title & Explicit Badge
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 8
+                // Text Animation Wrapper (fades and slides smoothly on song switch)
+                Item {
+                    id: textAnimWrapper
+                    anchors.fill: parent
 
-                    Text {
-                        text: root.title
-                        font.family: AppleTokens.textFont
-                        font.pixelSize: 17
-                        font.weight: Font.Bold
-                        color: AppleTokens.bodyOnDark
-                        elide: Text.ElideRight
-                        maximumLineCount: 1
-                    }
-
-                    // Explicit badge [E]
-                    Rectangle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 16
-                        height: 16
-                        radius: 3.5
-                        color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
-                        visible: root.title.length > 0
+                    // Centered Title & Explicit Badge
+                    Row {
+                        anchors.top: parent.top
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 8
+                        height: 22
 
                         Text {
-                            anchors.centerIn: parent
-                            text: "E"
+                            text: root.displayedTitle
                             font.family: AppleTokens.textFont
-                            font.pixelSize: 11
+                            font.pixelSize: 17
                             font.weight: Font.Bold
                             color: AppleTokens.bodyOnDark
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
                         }
+
+                        // Explicit badge [E]
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 16
+                            height: 16
+                            radius: 3.5
+                            color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
+                            visible: root.displayedTitle.length > 0
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "E"
+                                font.family: AppleTokens.textFont
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                color: AppleTokens.bodyOnDark
+                            }
+                        }
+                    }
+
+                    // Centered Artist Name
+                    Text {
+                        anchors.bottom: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: root.displayedArtist
+                        font.family: AppleTokens.textFont
+                        font.pixelSize: 14
+                        font.weight: Font.Normal
+                        color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
+                        elide: Text.ElideRight
+                        maximumLineCount: 1
                     }
                 }
 
                 // Animated Equalizer Sound Waves (iPadOS Live Activity style in top right)
                 Row {
                     anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: 2
                     spacing: 3.5
 
                     Repeater {
@@ -384,19 +486,6 @@ ColumnLayout {
                         }
                     }
                 }
-            }
-
-            // Centered Artist Name
-            Text {
-                text: root.artist
-                font.family: AppleTokens.textFont
-                font.pixelSize: 15
-                font.weight: Font.Normal
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
-                elide: Text.ElideRight
-                Layout.alignment: Qt.AlignHCenter
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
             }
 
             // Scrubber Bar Row
