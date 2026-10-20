@@ -15,7 +15,7 @@ ColumnLayout {
 
     property bool showProfilePhoto: true
     property string avatarPath: ""
-    property int avatarSize: 56
+    property int avatarSize: 76
 
     signal submitRequested(string password)
 
@@ -23,7 +23,7 @@ ColumnLayout {
         islandCapsule.triggerShake();
     }
 
-    spacing: 9
+    spacing: 12
     Layout.alignment: Qt.AlignHCenter
 
     // 1. Circular User Profile Picture Avatar

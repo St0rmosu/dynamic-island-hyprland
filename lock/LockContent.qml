@@ -339,11 +339,11 @@ Item {
             NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
         }
 
-        // Date (SF Pro Rounded Bold 25px: "Mar 20 ott")
+        // Date (SF Pro Rounded Bold 28px: "Mar 20 ott")
         Text {
             text: root.ipadDateString
             font.family: AppleTokens.roundedFont
-            font.pixelSize: 25
+            font.pixelSize: 28
             font.weight: Font.Bold
             font.letterSpacing: -0.2
             color: AppleTokens.bodyOnDark
@@ -358,11 +358,11 @@ Item {
             }
         }
 
-        // Clock (SF Pro Rounded Bold 144px: "19:10")
+        // Clock (SF Pro Rounded Bold 156px: "19:10")
         Text {
             text: root.timeString
             font.family: AppleTokens.roundedFont
-            font.pixelSize: 144
+            font.pixelSize: 156
             font.weight: Font.Bold
             font.letterSpacing: -2.5
             color: AppleTokens.bodyOnDark
@@ -386,9 +386,9 @@ Item {
             errorMessage: pamAuth.errorMessage
             showProfilePhoto: root.showProfilePhoto
             avatarPath: root.avatarPath
-            avatarSize: 58
+            avatarSize: 84
             Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 20
+            Layout.topMargin: 24
 
             onSubmitRequested: function(pwd) {
                 if (root.isPreview) {
@@ -435,7 +435,7 @@ Item {
             Text {
                 text: root.timeString
                 font.family: AppleTokens.roundedFont
-                font.pixelSize: 20
+                font.pixelSize: 26
                 font.weight: Font.Bold
                 font.letterSpacing: -0.2
                 color: AppleTokens.bodyOnDark
@@ -452,7 +452,7 @@ Item {
             Text {
                 text: root.ipadDateString
                 font.family: AppleTokens.roundedFont
-                font.pixelSize: 20
+                font.pixelSize: 26
                 font.weight: Font.Bold
                 font.letterSpacing: -0.2
                 color: AppleTokens.bodyOnDark
@@ -485,9 +485,9 @@ Item {
             errorMessage: pamAuth.errorMessage
             showProfilePhoto: root.showProfilePhoto
             avatarPath: root.avatarPath
-            avatarSize: 48
+            avatarSize: 72
             Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 10
+            Layout.topMargin: 12
 
             onSubmitRequested: function(pwd) {
                 if (root.isPreview) {

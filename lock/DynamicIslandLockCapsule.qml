@@ -30,17 +30,17 @@ Item {
             id: capsuleBg
             anchors.centerIn: parent
             width: {
-                if (root.lockState === "unlocked") return 160;
-                if (root.lockState === "verifying" || root.authenticating) return 160;
-                if (root.lockState === "failed" || root.isError) return 180;
-                if (root.isTyping) return Math.min(290, Math.max(180, 110 + root.buffer.length * 13));
-                return 120;
+                if (root.lockState === "unlocked") return 180;
+                if (root.lockState === "verifying" || root.authenticating) return 180;
+                if (root.lockState === "failed" || root.isError) return 204;
+                if (root.isTyping) return Math.min(340, Math.max(210, 130 + root.buffer.length * 15));
+                return 146;
             }
-            height: 38
+            height: 46
             radius: height / 2
             color: AppleTokens.surfaceBlack
 
-            border.width: 1
+            border.width: 1.2
             border.color: {
                 if (root.lockState === "failed" || root.isError) return AppleTokens.errorRed;
                 if (root.lockState === "unlocked") return AppleTokens.successGreen;
@@ -63,28 +63,28 @@ Item {
             layer.enabled: true
             layer.effect: MultiEffect {
                 shadowEnabled: true
-                shadowColor: Qt.rgba(0, 0, 0, 0.5)
-                shadowBlur: 0.6
-                shadowVerticalOffset: 3
+                shadowColor: Qt.rgba(0, 0, 0, 0.55)
+                shadowBlur: 0.65
+                shadowVerticalOffset: 4
             }
 
             // 1. Idle Locked State: Padlock + "Bloccato"
             RowLayout {
                 anchors.centerIn: parent
-                spacing: 7
+                spacing: 9
                 visible: !root.isTyping && !root.authenticating && root.lockState !== "verifying" && root.lockState !== "failed" && !root.isError && root.lockState !== "unlocked"
 
                 Text {
                     text: "󰌾"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 15
+                    font.pixelSize: 18
                     color: AppleTokens.bodyOnDark
                 }
 
                 Text {
                     text: "Bloccato"
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     font.weight: Font.DemiBold
                     font.letterSpacing: AppleTokens.letterSpacingBody
                     color: AppleTokens.bodyOnDark
@@ -94,15 +94,15 @@ Item {
             // 2. Typing State: Lock Icon + Password Dots + Submit Arrow
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 8
-                spacing: 8
+                anchors.leftMargin: 16
+                anchors.rightMargin: 10
+                spacing: 10
                 visible: root.isTyping
 
                 Text {
                     text: "󰌾"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 14
+                    font.pixelSize: 16
                     color: Qt.rgba(1.0, 1.0, 1.0, 0.6)
                 }
 
@@ -115,15 +115,15 @@ Item {
                     Row {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
-                        spacing: 6
+                        spacing: 7
 
                         Repeater {
                             model: root.buffer.length
 
                             Rectangle {
-                                width: 7
-                                height: 7
-                                radius: 3.5
+                                width: 9
+                                height: 9
+                                radius: 4.5
                                 color: AppleTokens.bodyOnDark
 
                                 scale: 0
@@ -143,9 +143,9 @@ Item {
 
                 // Submit Arrow Button
                 Rectangle {
-                    width: 24
-                    height: 24
-                    radius: 12
+                    width: 28
+                    height: 28
+                    radius: 14
                     color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
                     scale: btnMouse.pressed ? AppleTokens.pressScale : 1.0
                     Behavior on scale { NumberAnimation { duration: 90 } }
@@ -154,7 +154,7 @@ Item {
                         anchors.centerIn: parent
                         text: "➔"
                         font.family: AppleTokens.textFont
-                        font.pixelSize: 13
+                        font.pixelSize: 14
                         font.weight: Font.Bold
                         color: AppleTokens.bodyOnDark
                     }
@@ -176,13 +176,13 @@ Item {
             // 3. Verifying / Authenticating State
             RowLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 9
                 visible: root.authenticating || root.lockState === "verifying"
 
                 Text {
                     text: "󰑮"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 15
+                    font.pixelSize: 18
                     color: AppleTokens.bodyOnDark
 
                     RotationAnimation on rotation {
@@ -197,7 +197,7 @@ Item {
                 Text {
                     text: "Verifico..."
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     font.weight: Font.DemiBold
                     color: AppleTokens.bodyOnDark
                 }
@@ -206,20 +206,20 @@ Item {
             // 4. Failed State (Shake + Error)
             RowLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 9
                 visible: (root.lockState === "failed" || root.isError) && !root.authenticating
 
                 Text {
                     text: "󰌾"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 15
+                    font.pixelSize: 18
                     color: AppleTokens.errorRed
                 }
 
                 Text {
                     text: "Password errata"
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     font.weight: Font.DemiBold
                     color: AppleTokens.errorRed
                 }
@@ -228,20 +228,20 @@ Item {
             // 5. Unlocked State (Success Green)
             RowLayout {
                 anchors.centerIn: parent
-                spacing: 8
+                spacing: 9
                 visible: root.lockState === "unlocked"
 
                 Text {
                     text: "󰌿"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 16
+                    font.pixelSize: 19
                     color: AppleTokens.successGreen
                 }
 
                 Text {
                     text: "Sbloccato"
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 13
+                    font.pixelSize: 15
                     font.weight: Font.DemiBold
                     color: AppleTokens.successGreen
                 }
