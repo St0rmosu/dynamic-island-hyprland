@@ -83,13 +83,13 @@ ColumnLayout {
     spacing: 18
     Layout.alignment: Qt.AlignHCenter
 
-    // 1. Hero Album Art Card (Exact iPadOS 440x440 floating card)
+    // 1. Hero Album Art Card (Exact iPadOS floating card)
     Rectangle {
         id: albumArtCard
         Layout.alignment: Qt.AlignHCenter
-        width: 440
-        height: 440
-        radius: 26
+        width: 370
+        height: 370
+        radius: 24
         color: AppleTokens.surfaceTile1
         border.width: 1.5
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.32)

@@ -41,19 +41,23 @@ Item {
 
     focus: true
 
+    readonly property var currentIdentity: root.isMediaPlaying ? identityMedia : identityNormal
+
     // PAM Authentication Backend
     PamAuth {
         id: pamAuth
         enabled: !root.isPreview
 
         onAuthenticated: {
-            islandCapsule.lockState = "unlocked";
+            if (root.currentIdentity) root.currentIdentity.lockState = "unlocked";
             unlockTimer.start();
         }
 
         onFailed: {
-            islandCapsule.lockState = "failed";
-            islandCapsule.triggerShake();
+            if (root.currentIdentity) {
+                root.currentIdentity.lockState = "failed";
+                root.currentIdentity.triggerShake();
+            }
         }
     }
 
@@ -66,7 +70,7 @@ Item {
         }
     }
 
-    // Time & Date Formatter (Exact iPadOS "Mar 20 ott" & "01:19")
+    // Time & Date Formatter (Exact iPadOS "Mar 20 ott" & "19:10")
     property var now: new Date()
     Timer {
         interval: 1000
@@ -111,7 +115,7 @@ Item {
         }
     }
 
-    // Foreground cutout for Depth Effect (e.g. wall_depth.png or Eragny's Garden_depth.png)
+    // Foreground cutout for Depth Effect
     readonly property string depthCutoutPath: {
         if (!root.depthEffectEnabled || root.wallpaperPath === "") return "";
         let dotIdx = root.wallpaperPath.lastIndexOf(".");
@@ -150,7 +154,7 @@ Item {
         }
     }
 
-    // Keyboard capture: Keystrokes feed directly into pamAuth and Dynamic Island!
+    // Keyboard capture: Keystrokes feed directly into pamAuth and Dynamic Island
     Keys.onPressed: function(event) {
         if (pamAuth.authenticating) return;
 
@@ -169,10 +173,10 @@ Item {
 
         if (event.key === Qt.Key_Enter || event.key === Qt.Key_Return) {
             if (root.isPreview) {
-                islandCapsule.lockState = "unlocked";
+                if (root.currentIdentity) root.currentIdentity.lockState = "unlocked";
                 unlockTimer.start();
             } else {
-                islandCapsule.lockState = "verifying";
+                if (root.currentIdentity) root.currentIdentity.lockState = "verifying";
                 pamAuth.submitPassword();
             }
             event.accepted = true;
@@ -185,8 +189,8 @@ Item {
             } else {
                 pamAuth.backspace();
             }
-            if (islandCapsule.lockState === "failed") {
-                islandCapsule.lockState = "locked";
+            if (root.currentIdentity && root.currentIdentity.lockState === "failed") {
+                root.currentIdentity.lockState = "locked";
             }
             event.accepted = true;
             return;
@@ -195,8 +199,8 @@ Item {
         // Printable text feeds directly into Dynamic Island password buffer
         if (event.text && event.text.length > 0 && event.text.charCodeAt(0) >= 32) {
             pamAuth.appendChar(event.text);
-            if (islandCapsule.lockState === "failed") {
-                islandCapsule.lockState = "locked";
+            if (root.currentIdentity && root.currentIdentity.lockState === "failed") {
+                root.currentIdentity.lockState = "locked";
             }
             event.accepted = true;
         }
@@ -293,108 +297,6 @@ Item {
         z: 20
     }
 
-    // 5. Top Center Hero: Profile Photo (Avatar) + Dynamic Island Password Capsule
-    ColumnLayout {
-        id: topCenterIdentityGroup
-        anchors.top: parent.top
-        anchors.topMargin: 20
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: 10
-        z: 30
-
-        // Profile Picture Avatar (62x62 with subtle frosted ring)
-        Item {
-            id: avatarWrapper
-            Layout.alignment: Qt.AlignHCenter
-            width: 62
-            height: 62
-            visible: root.showProfilePhoto
-
-            // Fallback circular base
-            Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                color: Qt.rgba(0.12, 0.12, 0.14, 0.8)
-                border.width: 1.5
-                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
-            }
-
-            Text {
-                anchors.centerIn: parent
-                visible: pfpImg.status !== Image.Ready
-                text: ""
-                font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 26
-                color: Qt.rgba(1.0, 1.0, 1.0, 0.6)
-            }
-
-            // Circular Mask
-            Rectangle {
-                id: maskShape
-                anchors.fill: parent
-                radius: width / 2
-                color: "black"
-                layer.enabled: true
-                visible: false
-            }
-
-            // User Profile Image
-            Image {
-                id: pfpImg
-                anchors.fill: parent
-                source: root.avatarPath !== "" ? "file://" + root.avatarPath : ""
-                fillMode: Image.PreserveAspectCrop
-                visible: status === Image.Ready
-                asynchronous: true
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    maskEnabled: true
-                    maskSource: maskShape
-                    maskSpreadAtMin: 1
-                    maskThresholdMin: 0.5
-                }
-            }
-
-            // Outer Hairline Ring & Drop Shadow
-            Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                color: "transparent"
-                border.width: 1.5
-                border.color: Qt.rgba(1.0, 1.0, 1.0, 0.45)
-
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.55)
-                    shadowBlur: 0.4
-                    shadowVerticalOffset: 2
-                }
-            }
-        }
-
-        // Dynamic Island Capsule (Expands directly as Password Input when typing!)
-        DynamicIslandLockCapsule {
-            id: islandCapsule
-            Layout.alignment: Qt.AlignHCenter
-            buffer: pamAuth.buffer
-            authenticating: pamAuth.authenticating
-            isError: pamAuth.isError
-            errorMessage: pamAuth.errorMessage
-
-            onSubmitRequested: function(pwd) {
-                if (root.isPreview) {
-                    islandCapsule.lockState = "unlocked";
-                    unlockTimer.start();
-                } else {
-                    islandCapsule.lockState = "verifying";
-                    pamAuth.submitPassword(pwd);
-                }
-            }
-        }
-    }
-
     // Optional Top-Right Status (hidden by default as requested by user)
     RowLayout {
         anchors.right: parent.right
@@ -421,14 +323,14 @@ Item {
         }
     }
 
-    // 6. Center Hero Presentation: Smooth Crossfade between Normal (Screenshot 1) & Media (Screenshot 2)
+    // 5. Center Hero Presentation: Smooth Crossfade between Normal (Screenshot 1) & Media (Screenshot 2)
 
-    // MODE A: Normal iPad Lockscreen (Screenshot 1: Date + Giant 140px Clock)
+    // MODE A: Normal iPad Lockscreen (Screenshot 1: Date + Giant Clock + Avatar & Password Pill BELOW)
     ColumnLayout {
         id: normalClockGroup
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: 10
-        spacing: 2
+        anchors.verticalCenterOffset: -15
+        spacing: 4
         z: 15
 
         visible: opacity > 0.001
@@ -456,7 +358,7 @@ Item {
             }
         }
 
-        // Clock (SF Pro Rounded Bold 144px: "01:19")
+        // Clock (SF Pro Rounded Bold 144px: "19:10")
         Text {
             text: root.timeString
             font.family: AppleTokens.roundedFont
@@ -474,9 +376,33 @@ Item {
                 shadowVerticalOffset: 4
             }
         }
+
+        // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE CLOCK!)
+        IdentityPasswordGroup {
+            id: identityNormal
+            buffer: pamAuth.buffer
+            authenticating: pamAuth.authenticating
+            isError: pamAuth.isError
+            errorMessage: pamAuth.errorMessage
+            showProfilePhoto: root.showProfilePhoto
+            avatarPath: root.avatarPath
+            avatarSize: 58
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: 20
+
+            onSubmitRequested: function(pwd) {
+                if (root.isPreview) {
+                    identityNormal.lockState = "unlocked";
+                    unlockTimer.start();
+                } else {
+                    identityNormal.lockState = "verifying";
+                    pamAuth.submitPassword(pwd);
+                }
+            }
+        }
     }
 
-    // 6B. Foreground Cutout Image for Depth Effect (renders in FRONT of the clock!)
+    // 5B. Foreground Cutout Image for Depth Effect (renders in FRONT of the clock!)
     Image {
         id: depthCutoutImage
         anchors.fill: parent
@@ -487,11 +413,11 @@ Item {
         asynchronous: true
     }
 
-    // MODE B: Media Playing iPad Lockscreen (Screenshot 2: Compact Clock + Large Album Art + Frosted Player Card)
+    // MODE B: Media Playing iPad Lockscreen (Screenshot 2: Compact Clock + Hero Album Art + Frosted Player Card + Avatar & Password Pill BELOW)
     ColumnLayout {
         id: mediaLockGroup
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: 48
+        anchors.verticalCenterOffset: 0
         spacing: 12
         z: 15
 
@@ -501,7 +427,7 @@ Item {
             NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
         }
 
-        // Compact Clock & Date Header (Screenshot 2: "01:23   Mar 20 ott")
+        // Compact Clock & Date Header (Screenshot 2: "19:10   Mar 20 ott")
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 16
@@ -548,6 +474,30 @@ Item {
             isPreview: root.isPreview
             previewMediaPlaying: root.previewMediaPlaying
             Layout.alignment: Qt.AlignHCenter
+        }
+
+        // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE MEDIA PLAYER!)
+        IdentityPasswordGroup {
+            id: identityMedia
+            buffer: pamAuth.buffer
+            authenticating: pamAuth.authenticating
+            isError: pamAuth.isError
+            errorMessage: pamAuth.errorMessage
+            showProfilePhoto: root.showProfilePhoto
+            avatarPath: root.avatarPath
+            avatarSize: 48
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: 10
+
+            onSubmitRequested: function(pwd) {
+                if (root.isPreview) {
+                    identityMedia.lockState = "unlocked";
+                    unlockTimer.start();
+                } else {
+                    identityMedia.lockState = "verifying";
+                    pamAuth.submitPassword(pwd);
+                }
+            }
         }
     }
 }
