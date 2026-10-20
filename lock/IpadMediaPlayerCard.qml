@@ -80,16 +80,16 @@ ColumnLayout {
         }
     }
 
-    spacing: 18
+    spacing: 16
     Layout.alignment: Qt.AlignHCenter
 
     // 1. Hero Album Art Card (Exact iPadOS floating card)
     Rectangle {
         id: albumArtCard
         Layout.alignment: Qt.AlignHCenter
-        width: 390
-        height: 390
-        radius: 26
+        width: 500
+        height: 500
+        radius: 28
         color: AppleTokens.surfaceTile1
         border.width: 1.5
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.32)
@@ -98,9 +98,9 @@ ColumnLayout {
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.58)
-            shadowBlur: 0.65
-            shadowVerticalOffset: 10
+            shadowColor: Qt.rgba(0, 0, 0, 0.62)
+            shadowBlur: 0.72
+            shadowVerticalOffset: 12
         }
 
         Image {
@@ -125,7 +125,7 @@ ColumnLayout {
                 anchors.centerIn: parent
                 text: "󰎈"
                 font.family: "JetBrainsMono Nerd Font"
-                font.pixelSize: 84
+                font.pixelSize: 96
                 color: Qt.rgba(1.0, 1.0, 1.0, 0.35)
             }
         }
@@ -136,8 +136,8 @@ ColumnLayout {
         id: mediaPillCard
         Layout.alignment: Qt.AlignHCenter
         width: 500
-        height: 132
-        radius: 24
+        height: 144
+        radius: 26
         color: Qt.rgba(0.22, 0.19, 0.23, 0.58)
         border.width: 1
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.18)
@@ -145,18 +145,18 @@ ColumnLayout {
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.45)
-            shadowBlur: 0.55
-            shadowVerticalOffset: 5
+            shadowColor: Qt.rgba(0, 0, 0, 0.48)
+            shadowBlur: 0.58
+            shadowVerticalOffset: 6
         }
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.topMargin: 14
-            anchors.bottomMargin: 14
-            anchors.leftMargin: 22
-            anchors.rightMargin: 22
-            spacing: 5
+            anchors.topMargin: 15
+            anchors.bottomMargin: 15
+            anchors.leftMargin: 24
+            anchors.rightMargin: 24
+            spacing: 6
 
             // Top Header: Centered Track Title + Explicit tag & Right-aligned Equalizer
             Item {
@@ -166,12 +166,12 @@ ColumnLayout {
                 // Centered Title & Explicit Badge
                 Row {
                     anchors.centerIn: parent
-                    spacing: 7
+                    spacing: 8
 
                     Text {
                         text: root.title
                         font.family: AppleTokens.textFont
-                        font.pixelSize: 16
+                        font.pixelSize: 17
                         font.weight: Font.Bold
                         color: AppleTokens.bodyOnDark
                         elide: Text.ElideRight
@@ -181,9 +181,9 @@ ColumnLayout {
                     // Explicit badge [E]
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 15
-                        height: 15
-                        radius: 3
+                        width: 16
+                        height: 16
+                        radius: 3.5
                         color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
                         visible: root.title.length > 0
 
@@ -191,7 +191,7 @@ ColumnLayout {
                             anchors.centerIn: parent
                             text: "E"
                             font.family: AppleTokens.textFont
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             font.weight: Font.Bold
                             color: AppleTokens.bodyOnDark
                         }
@@ -202,7 +202,7 @@ ColumnLayout {
                 Row {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 3
+                    spacing: 3.5
 
                     Repeater {
                         model: [0, 1, 2, 3]
@@ -210,9 +210,9 @@ ColumnLayout {
                         Rectangle {
                             id: eqBar
                             required property int index
-                            width: 3.5
+                            width: 4
                             height: 6
-                            radius: 1.75
+                            radius: 2
                             color: Qt.rgba(1.0, 1.0, 1.0, 0.85)
                             anchors.bottom: parent.bottom
 
@@ -222,18 +222,18 @@ ColumnLayout {
 
                                 NumberAnimation {
                                     from: 4
-                                    to: (eqBar.index % 2 === 0) ? 15 : 10
+                                    to: (eqBar.index % 2 === 0) ? 17 : 11
                                     duration: 280 + eqBar.index * 70
                                     easing.type: Easing.InOutSine
                                 }
                                 NumberAnimation {
-                                    from: (eqBar.index % 2 === 0) ? 15 : 10
-                                    to: (eqBar.index === 1) ? 16 : 6
+                                    from: (eqBar.index % 2 === 0) ? 17 : 11
+                                    to: (eqBar.index === 1) ? 18 : 7
                                     duration: 320 + eqBar.index * 60
                                     easing.type: Easing.InOutSine
                                 }
                                 NumberAnimation {
-                                    from: (eqBar.index === 1) ? 16 : 6
+                                    from: (eqBar.index === 1) ? 18 : 7
                                     to: 4
                                     duration: 260
                                     easing.type: Easing.InOutSine
@@ -248,7 +248,7 @@ ColumnLayout {
             Text {
                 text: root.artist
                 font.family: AppleTokens.textFont
-                font.pixelSize: 14
+                font.pixelSize: 15
                 font.weight: Font.Normal
                 color: Qt.rgba(1.0, 1.0, 1.0, 0.70)
                 elide: Text.ElideRight
@@ -260,13 +260,13 @@ ColumnLayout {
             // Scrubber Bar Row
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 9
+                spacing: 10
 
                 // Current time elapsed
                 Text {
                     text: root.formatTime(root.currentPosSec)
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 12
+                    font.pixelSize: 13
                     font.weight: Font.Normal
                     color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
                 }
@@ -275,7 +275,7 @@ ColumnLayout {
                 Item {
                     id: scrubberTrack
                     Layout.fillWidth: true
-                    height: 14
+                    height: 16
 
                     readonly property real progress: root.totalLengthSec > 0 ? Math.max(0, Math.min(1.0, root.currentPosSec / root.totalLengthSec)) : 0
 
@@ -284,8 +284,8 @@ ColumnLayout {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        height: 4
-                        radius: 2
+                        height: 4.5
+                        radius: 2.25
                         color: Qt.rgba(1.0, 1.0, 1.0, 0.22)
 
                         // Filled bar
@@ -293,8 +293,8 @@ ColumnLayout {
                             anchors.left: parent.left
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
-                            width: Math.max(4, parent.width * scrubberTrack.progress)
-                            radius: 2
+                            width: Math.max(4.5, parent.width * scrubberTrack.progress)
+                            radius: 2.25
                             color: Qt.rgba(1.0, 1.0, 1.0, 0.95)
                         }
                     }
@@ -319,7 +319,7 @@ ColumnLayout {
                 Text {
                     text: "-" + root.formatTime(Math.max(0, root.totalLengthSec - root.currentPosSec))
                     font.family: AppleTokens.textFont
-                    font.pixelSize: 12
+                    font.pixelSize: 13
                     font.weight: Font.Normal
                     color: Qt.rgba(1.0, 1.0, 1.0, 0.55)
                 }
@@ -328,19 +328,19 @@ ColumnLayout {
             // Controls Row (Prev, Play/Pause, Next + AirPlay)
             Item {
                 Layout.fillWidth: true
-                height: 36
+                height: 38
 
                 // Centered Playback Controls
                 Row {
                     anchors.centerIn: parent
-                    spacing: 34
+                    spacing: 36
 
                     // Prev (⏮)
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "󰒮"
                         font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 22
+                        font.pixelSize: 24
                         color: prevMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
                         scale: prevMouse.pressed ? AppleTokens.pressScale : 1.0
 
@@ -361,7 +361,7 @@ ColumnLayout {
                         anchors.verticalCenter: parent.verticalCenter
                         text: root.isPlaying ? "󰏤" : "󰐊"
                         font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 28
+                        font.pixelSize: 30
                         color: playMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
                         scale: playMouse.pressed ? AppleTokens.pressScale : 1.0
 
@@ -384,7 +384,7 @@ ColumnLayout {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "󰒭"
                         font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 22
+                        font.pixelSize: 24
                         color: nextMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
                         scale: nextMouse.pressed ? AppleTokens.pressScale : 1.0
 
@@ -407,7 +407,7 @@ ColumnLayout {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "󰡀"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 20
+                    font.pixelSize: 22
                     color: Qt.rgba(1.0, 1.0, 1.0, 0.75)
                 }
             }

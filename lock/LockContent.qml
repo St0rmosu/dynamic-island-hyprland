@@ -418,7 +418,7 @@ Item {
         id: mediaLockGroup
         anchors.centerIn: parent
         anchors.verticalCenterOffset: 0
-        spacing: 12
+        spacing: 10
         z: 15
 
         visible: opacity > 0.001
@@ -485,9 +485,9 @@ Item {
             errorMessage: pamAuth.errorMessage
             showProfilePhoto: root.showProfilePhoto
             avatarPath: root.avatarPath
-            avatarSize: 72
+            avatarSize: 68
             Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 12
+            Layout.topMargin: 8
 
             onSubmitRequested: function(pwd) {
                 if (root.isPreview) {
