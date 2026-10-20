@@ -19,6 +19,7 @@ Item {
     property bool showProfilePhoto: true
     property bool showComplications: true
     property bool enableMediaMode: true
+    property bool showMediaButtons: true
     property bool depthEffectEnabled: false
     property string avatarPath: Quickshell.env("HOME") + "/Immagineprofilo/lollo.png"
 
@@ -33,6 +34,7 @@ Item {
                 if (data.lockShowTopStatus !== undefined) root.showTopStatus = Boolean(data.lockShowTopStatus);
                 if (data.lockShowComplications !== undefined) root.showComplications = Boolean(data.lockShowComplications);
                 if (data.lockEnableMediaMode !== undefined) root.enableMediaMode = Boolean(data.lockEnableMediaMode);
+                if (data.lockShowMediaButtons !== undefined) root.showMediaButtons = Boolean(data.lockShowMediaButtons);
             } catch(e) {}
         }
     }
@@ -739,6 +741,7 @@ Item {
                 id: mediaItem
                 activePlayer: root.activePlayer
                 artUrl: root.currentArtUrl
+                showMediaButtons: root.showMediaButtons
                 isPreview: root.isPreview
                 previewMediaPlaying: root.previewMediaPlaying
                 Layout.alignment: Qt.AlignHCenter

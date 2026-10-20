@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Mpris
 
 ColumnLayout {
@@ -12,6 +13,52 @@ ColumnLayout {
     property var activePlayer: null
     property bool isPreview: false
     property bool previewMediaPlaying: false
+    property bool showMediaButtons: true
+
+    Process {
+        id: mprisCmd
+        running: false
+    }
+
+    function cmdPlayPause() {
+        if (root.activePlayer) {
+            if (typeof root.activePlayer.togglePlaying === "function") {
+                root.activePlayer.togglePlaying();
+            } else if (typeof root.activePlayer.playPause === "function") {
+                root.activePlayer.playPause();
+            }
+        }
+        if (root.isPreview) {
+            root.previewMediaPlaying = !root.previewMediaPlaying;
+        }
+        mprisCmd.command = ["playerctl", "play-pause"];
+        mprisCmd.running = true;
+    }
+
+    function cmdNext() {
+        if (root.activePlayer && typeof root.activePlayer.next === "function") {
+            root.activePlayer.next();
+        }
+        mprisCmd.command = ["playerctl", "next"];
+        mprisCmd.running = true;
+    }
+
+    function cmdPrevious() {
+        if (root.activePlayer && typeof root.activePlayer.previous === "function") {
+            root.activePlayer.previous();
+        }
+        mprisCmd.command = ["playerctl", "previous"];
+        mprisCmd.running = true;
+    }
+
+    function cmdSeek(newSec) {
+        root.currentPosSec = newSec;
+        if (root.activePlayer && root.activePlayer.canSeek) {
+            root.activePlayer.position = newSec;
+        }
+        mprisCmd.command = ["playerctl", "position", String(Math.floor(newSec))];
+        mprisCmd.running = true;
+    }
 
     readonly property bool hasMedia: (activePlayer !== null && (activePlayer.trackTitle || "").length > 0) || (isPreview && previewMediaPlaying)
     readonly property bool isPlaying: {
@@ -223,11 +270,15 @@ ColumnLayout {
         id: mediaPillCard
         Layout.alignment: Qt.AlignHCenter
         width: 500
-        height: 144
+        height: root.showMediaButtons ? 144 : 96
         radius: 26
         color: Qt.rgba(0.22, 0.19, 0.23, 0.58)
         border.width: 1
         border.color: Qt.rgba(1.0, 1.0, 1.0, 0.18)
+
+        Behavior on height {
+            NumberAnimation { duration: 250; easing.type: Easing.OutCubic }
+        }
 
         layer.enabled: true
         layer.effect: MultiEffect {
@@ -392,11 +443,7 @@ ColumnLayout {
                         onClicked: mouse => {
                             if (root.totalLengthSec > 0) {
                                 let ratio = Math.max(0, Math.min(1, mouse.x / width));
-                                let newSec = ratio * root.totalLengthSec;
-                                root.currentPosSec = newSec;
-                                if (root.activePlayer && root.activePlayer.canSeek) {
-                                    root.activePlayer.position = newSec;
-                                }
+                                root.cmdSeek(ratio * root.totalLengthSec);
                             }
                         }
                     }
@@ -415,79 +462,108 @@ ColumnLayout {
             // Controls Row (Prev, Play/Pause, Next + AirPlay)
             Item {
                 Layout.fillWidth: true
-                height: 38
+                height: root.showMediaButtons ? 38 : 0
+                visible: root.showMediaButtons
+                clip: true
 
-                // Centered Playback Controls
+                // Centered Playback Controls (with Apple-standard 52px generous hitboxes & hover pill highlights)
                 Row {
                     anchors.centerIn: parent
-                    spacing: 36
+                    spacing: 24
 
-                    // Prev (⏮)
-                    Text {
+                    // Prev Button
+                    Item {
+                        width: 52
+                        height: 38
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "󰒮"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 24
-                        color: prevMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
-                        scale: prevMouse.pressed ? AppleTokens.pressScale : 1.0
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 19
+                            color: prevMouse.pressed ? Qt.rgba(1.0, 1.0, 1.0, 0.18) : (prevMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.08) : "transparent")
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰒮"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 24
+                            color: prevMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
+                            scale: prevMouse.pressed ? AppleTokens.pressScale : 1.0
+                            Behavior on scale { NumberAnimation { duration: 80 } }
+                        }
 
                         MouseArea {
                             id: prevMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.activePlayer && root.activePlayer.canGoPrevious) {
-                                    root.activePlayer.previous();
-                                }
-                            }
+                            onClicked: root.cmdPrevious()
                         }
                     }
 
-                    // Play/Pause (⏸ / ▶)
-                    Text {
+                    // Play/Pause Button
+                    Item {
+                        width: 56
+                        height: 38
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.isPlaying ? "󰏤" : "󰐊"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 30
-                        color: playMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
-                        scale: playMouse.pressed ? AppleTokens.pressScale : 1.0
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 19
+                            color: playMouse.pressed ? Qt.rgba(1.0, 1.0, 1.0, 0.22) : (playMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.10) : "transparent")
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.isPlaying ? "󰏤" : "󰐊"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 30
+                            color: playMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
+                            scale: playMouse.pressed ? AppleTokens.pressScale : 1.0
+                            Behavior on scale { NumberAnimation { duration: 80 } }
+                        }
 
                         MouseArea {
                             id: playMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.activePlayer && root.activePlayer.canControl) {
-                                    if (typeof root.activePlayer.togglePlaying === "function") {
-                                        root.activePlayer.togglePlaying();
-                                    } else if (typeof root.activePlayer.playPause === "function") {
-                                        root.activePlayer.playPause();
-                                    }
-                                } else if (root.isPreview) {
-                                    root.previewMediaPlaying = !root.previewMediaPlaying;
-                                }
-                            }
+                            onClicked: root.cmdPlayPause()
                         }
                     }
 
-                    // Next (⏭)
-                    Text {
+                    // Next Button
+                    Item {
+                        width: 52
+                        height: 38
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "󰒭"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 24
-                        color: nextMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
-                        scale: nextMouse.pressed ? AppleTokens.pressScale : 1.0
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 19
+                            color: nextMouse.pressed ? Qt.rgba(1.0, 1.0, 1.0, 0.18) : (nextMouse.containsMouse ? Qt.rgba(1.0, 1.0, 1.0, 0.08) : "transparent")
+                            Behavior on color { ColorAnimation { duration: 120 } }
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "󰒭"
+                            font.family: "JetBrainsMono Nerd Font"
+                            font.pixelSize: 24
+                            color: nextMouse.pressed ? AppleTokens.primaryOnDark : AppleTokens.bodyOnDark
+                            scale: nextMouse.pressed ? AppleTokens.pressScale : 1.0
+                            Behavior on scale { NumberAnimation { duration: 80 } }
+                        }
 
                         MouseArea {
                             id: nextMouse
                             anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (root.activePlayer && root.activePlayer.canGoNext) {
-                                    root.activePlayer.next();
-                                }
-                            }
+                            onClicked: root.cmdNext()
                         }
                     }
                 }
