@@ -335,13 +335,9 @@ Item {
     property bool isRippling: false
 
     readonly property real rippleOriginX: root.width / 2
-    readonly property real rippleOriginY: {
-        if (mediaItem) {
-            let pt = mediaItem.mapToItem(root, mediaItem.width / 2, 250);
-            if (pt && pt.y > 0) return pt.y;
-        }
-        return root.height * 0.45;
-    }
+    readonly property real rippleOriginY: (mediaLockGroup && mediaItem && mediaLockGroup.y > 0)
+        ? (mediaLockGroup.y + mediaItem.y + 250)
+        : (root.height * 0.44)
 
     readonly property real rippleCurrentSize: 250 + root.rippleProgress * 3550
 
