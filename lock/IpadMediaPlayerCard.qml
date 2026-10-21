@@ -113,27 +113,60 @@ ColumnLayout {
 
     property string displayedTitle: title
     property string displayedArtist: artist
+    property string lastSeenTitle: ""
+    property string lastSeenArtUrl: ""
+    property bool isReadyForAnimations: false
+
+    Timer {
+        id: lockStartupGraceTimer
+        interval: 850 // Wait for lock entrance to settle so initial song loads statically
+        running: true
+        repeat: false
+        onTriggered: {
+            root.isReadyForAnimations = true;
+            root.lastSeenTitle = root.title;
+            root.lastSeenArtUrl = root.artUrl;
+        }
+    }
 
     signal rippleTriggered()
 
     function triggerSongChangeAnim(): void {
+        if (!root.isReadyForAnimations) return;
         if (!trackChangeAnim.running) {
             trackChangeAnim.restart();
         }
     }
 
     onArtUrlChanged: {
-        if (root.artUrl !== "" && root.displayedTitle !== "") {
+        if (!root.isReadyForAnimations) {
+            root.lastSeenArtUrl = root.artUrl;
+            return;
+        }
+        if (root.lastSeenArtUrl !== "" && root.artUrl !== "" && root.lastSeenArtUrl !== root.artUrl) {
+            root.lastSeenArtUrl = root.artUrl;
             root.triggerSongChangeAnim();
+        } else if (root.artUrl !== "") {
+            root.lastSeenArtUrl = root.artUrl;
         }
     }
 
     onTitleChanged: {
-        if (root.displayedTitle !== "" && root.displayedTitle !== root.title) {
+        if (!root.isReadyForAnimations) {
+            root.displayedTitle = root.title;
+            root.displayedArtist = root.artist;
+            root.lastSeenTitle = root.title;
+            return;
+        }
+        if (root.lastSeenTitle !== "" && root.title !== "" && root.lastSeenTitle !== root.title) {
+            root.lastSeenTitle = root.title;
             root.triggerSongChangeAnim();
         } else {
             root.displayedTitle = root.title;
             root.displayedArtist = root.artist;
+            if (root.title !== "") {
+                root.lastSeenTitle = root.title;
+            }
         }
     }
 

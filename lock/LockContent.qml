@@ -364,12 +364,6 @@ Item {
         rippleAnim.restart();
     }
 
-    onCurrentArtUrlChanged: {
-        if (mediaItem && root.currentArtUrl !== "" && root.isMediaPlaying) {
-            mediaItem.triggerSongChangeAnim();
-        }
-    }
-
     Timer {
         id: mediaGraceTimer
         interval: 2500 // 2.5s grace period to prevent collapsing media mode between songs
