@@ -330,6 +330,50 @@ Item {
     // Debounced media mode: bridges gap between tracks so screen never flashes wallpaper when track ends
     property bool isMediaPlaying: rawMediaActive
 
+    // ── Apple iPadOS Water Droplet Ripple Transition Mechanics ──
+    property real rippleProgress: 1.0
+    property bool isRippling: false
+
+    readonly property real rippleOriginX: root.width / 2
+    readonly property real rippleOriginY: {
+        if (mediaItem) {
+            let pt = mediaItem.mapToItem(root, mediaItem.width / 2, 250);
+            if (pt && pt.y > 0) return pt.y;
+        }
+        return root.height * 0.45;
+    }
+
+    readonly property real rippleCurrentSize: 250 + root.rippleProgress * 3550
+
+    NumberAnimation {
+        id: rippleAnim
+        target: root
+        property: "rippleProgress"
+        from: 0.0
+        to: 1.0
+        duration: 750
+        easing.type: Easing.OutCubic
+
+        onFinished: {
+            root.isRippling = false;
+            if (bgAmbientAlbumArt.status === Image.Ready) {
+                bgPrevAmbientArt.source = bgAmbientAlbumArt.source;
+            }
+        }
+    }
+
+    function startRippleTransition(): void {
+        if (!root.isMediaPlaying) return;
+        root.isRippling = true;
+        rippleAnim.restart();
+    }
+
+    onCurrentArtUrlChanged: {
+        if (mediaItem && root.currentArtUrl !== "" && root.isMediaPlaying) {
+            mediaItem.triggerSongChangeAnim();
+        }
+    }
+
     Timer {
         id: mediaGraceTimer
         interval: 2500 // 2.5s grace period to prevent collapsing media mode between songs
@@ -467,7 +511,7 @@ Item {
             }
         }
 
-        // 3B. Active Ambient Album Art Blurred Layer
+        // 3B. Active Ambient Album Art Blurred Layer (Masked by Water Droplet Ripple)
         Image {
             id: bgAmbientAlbumArt
             anchors.fill: parent
@@ -478,6 +522,7 @@ Item {
             visible: opacity > 0.001
             opacity: (root.isMediaPlaying && status === Image.Ready) ? 1.0 : 0.0
             Behavior on opacity {
+                enabled: !root.isRippling
                 NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
             }
 
@@ -485,8 +530,6 @@ Item {
                 if (status === Image.Ready) {
                     if (bgPrevAmbientArt.source === "" || bgPrevAmbientArt.status !== Image.Ready) {
                         bgPrevAmbientArt.source = bgAmbientAlbumArt.source;
-                    } else {
-                        bgPrevArtTimer.restart();
                     }
                 }
             }
@@ -498,17 +541,26 @@ Item {
                 blurMax: 64
                 saturation: 0.3
                 brightness: -0.18
+                maskEnabled: root.isRippling
+                maskSource: rippleMaskItem
             }
         }
 
-        Timer {
-            id: bgPrevArtTimer
-            interval: 400
-            repeat: false
-            onTriggered: {
-                if (bgAmbientAlbumArt.status === Image.Ready) {
-                    bgPrevAmbientArt.source = bgAmbientAlbumArt.source;
-                }
+        // Feathered Water Droplet Mask Source for bgAmbientAlbumArt
+        // Feathered Water Droplet Mask Source for bgAmbientAlbumArt
+        Item {
+            id: rippleMaskItem
+            anchors.fill: parent
+            layer.enabled: true
+            visible: false
+
+            Image {
+                x: root.rippleOriginX - width / 2
+                y: root.rippleOriginY - height / 2
+                width: root.rippleCurrentSize
+                height: width
+                source: Qt.resolvedUrl("assets/ripple_mask.png")
+                fillMode: Image.Stretch
             }
         }
 
@@ -524,6 +576,46 @@ Item {
             opacity: root.isMediaPlaying ? 1.0 : 0.0
             Behavior on opacity {
                 NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
+            }
+        }
+
+        // Visible Water Droplet Wave Crest 1 (Primary luminous liquid wave ring)
+        Rectangle {
+            visible: root.isRippling && opacity > 0.001
+            x: root.rippleOriginX - width / 2
+            y: root.rippleOriginY - height / 2
+            width: root.rippleCurrentSize * 0.94
+            height: width
+            radius: width / 2
+            color: "transparent"
+            border.width: Math.max(2, 24 * (1.0 - root.rippleProgress))
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.75 * (1.0 - Math.pow(root.rippleProgress, 1.2)))
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blur: 0.7
+                blurMax: 32
+            }
+        }
+
+        // Visible Water Droplet Wave Crest 2 (Trailing liquid refraction echo ring)
+        Rectangle {
+            visible: root.isRippling && opacity > 0.001
+            x: root.rippleOriginX - width / 2
+            y: root.rippleOriginY - height / 2
+            width: Math.max(10, (root.rippleCurrentSize * 0.94) - 110 * (1.0 - root.rippleProgress * 0.3))
+            height: width
+            radius: width / 2
+            color: "transparent"
+            border.width: Math.max(1, 12 * (1.0 - root.rippleProgress))
+            border.color: Qt.rgba(1.0, 1.0, 1.0, 0.45 * (1.0 - Math.pow(root.rippleProgress, 1.1)))
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blur: 0.75
+                blurMax: 24
             }
         }
 
@@ -748,6 +840,10 @@ Item {
                 isPreview: root.isPreview
                 previewMediaPlaying: root.previewMediaPlaying
                 Layout.alignment: Qt.AlignHCenter
+
+                onRippleTriggered: {
+                    root.startRippleTransition();
+                }
             }
 
             // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE MEDIA PLAYER!)

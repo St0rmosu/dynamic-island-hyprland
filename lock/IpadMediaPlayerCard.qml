@@ -114,9 +114,23 @@ ColumnLayout {
     property string displayedTitle: title
     property string displayedArtist: artist
 
+    signal rippleTriggered()
+
+    function triggerSongChangeAnim(): void {
+        if (!trackChangeAnim.running) {
+            trackChangeAnim.restart();
+        }
+    }
+
+    onArtUrlChanged: {
+        if (root.artUrl !== "" && root.displayedTitle !== "") {
+            root.triggerSongChangeAnim();
+        }
+    }
+
     onTitleChanged: {
         if (root.displayedTitle !== "" && root.displayedTitle !== root.title) {
-            trackChangeAnim.restart();
+            root.triggerSongChangeAnim();
         } else {
             root.displayedTitle = root.title;
             root.displayedArtist = root.artist;
@@ -126,66 +140,97 @@ ColumnLayout {
     SequentialAnimation {
         id: trackChangeAnim
 
+        // 1. Tactile Apple Hop ("Saltino"): Card springs up into air
         ParallelAnimation {
-            // 1. Text fades & glides up slightly
+            // Text fades & glides up slightly
             NumberAnimation {
                 target: textAnimWrapper
                 property: "opacity"
                 to: 0.0
-                duration: 120
+                duration: 140
                 easing.type: Easing.OutQuad
             }
             NumberAnimation {
                 target: textAnimWrapper
                 property: "y"
                 to: -8
-                duration: 120
+                duration: 140
                 easing.type: Easing.OutQuad
             }
 
-            // 2. Album art spring compress (tactile Apple physical bounce)
+            // Card hops up & slightly expands
+            NumberAnimation {
+                target: cardTranslate
+                property: "y"
+                from: 0
+                to: -16
+                duration: 150
+                easing.type: Easing.OutCubic
+            }
             NumberAnimation {
                 target: albumArtCard
                 property: "scale"
-                to: 0.93
-                duration: 140
+                from: 1.0
+                to: 1.035
+                duration: 150
                 easing.type: Easing.OutQuad
             }
         }
 
+        // 2. Returns down ("Ritorna giu"): Accelerates back down to impact the surface
+        ParallelAnimation {
+            NumberAnimation {
+                target: cardTranslate
+                property: "y"
+                to: 0
+                duration: 150
+                easing.type: Easing.InQuad
+            }
+            NumberAnimation {
+                target: albumArtCard
+                property: "scale"
+                to: 0.96
+                duration: 150
+                easing.type: Easing.InQuad
+            }
+        }
+
+        // 3. Impact Point: Card lands back down! Liquid surface erupts with water droplet wave!
         ScriptAction {
             script: {
                 root.displayedTitle = root.title;
                 root.displayedArtist = root.artist;
                 textAnimWrapper.y = 8;
+                root.rippleTriggered();
             }
         }
 
+        // 4. Elastic landing rebound & Text glides into place
         ParallelAnimation {
-            // 1. Text glides in from bottom and fades in
+            // Text glides in from bottom and fades in
             NumberAnimation {
                 target: textAnimWrapper
                 property: "opacity"
                 to: 1.0
-                duration: 260
+                duration: 280
                 easing.type: Easing.OutCubic
             }
             NumberAnimation {
                 target: textAnimWrapper
                 property: "y"
                 to: 0
-                duration: 260
+                duration: 280
                 easing.type: Easing.OutCubic
             }
 
-            // 2. Album art springs back with signature Apple fluid bounce
+            // Card rebounds from 0.96 squash to 1.0 with subtle organic physical overshoot
             NumberAnimation {
                 target: albumArtCard
                 property: "scale"
                 to: 1.0
-                duration: 440
+                duration: 380
                 easing.type: Easing.OutBack
-                easing.overshoot: 1.18
+                easing.overshoot: 1.22
             }
         }
     }
@@ -237,6 +282,11 @@ ColumnLayout {
         width: 500
         height: 500
         transformOrigin: Item.Center
+
+        transform: Translate {
+            id: cardTranslate
+            y: 0
+        }
 
         // Soft signature Apple drop-shadow
         layer.enabled: true
