@@ -28,8 +28,10 @@ FocusScope {
     property string wallpaperDir: {
         if (dynamicConfig && dynamicConfig.wallpaperLibrary && dynamicConfig.wallpaperLibrary !== "")
             return dynamicConfig.wallpaperLibrary;
+
         if (userConfig && userConfig.wallpaperLibraryPath && userConfig.wallpaperLibraryPath !== "")
             return userConfig.wallpaperLibraryPath;
+
         return root.homeDir + "/Sfondi";
     }
     property int thumbnailWidth: 640
@@ -65,12 +67,16 @@ FocusScope {
     readonly property real headerGap: 6
     readonly property real labelH: 22
     readonly property real labelGap: 5
+    property real neckTargetWidth: 140
+    property real shoulderY: 48
+    property real cardTargetW: 1100
+    property real cardTargetH: 260
+    readonly property real slotW: (cardTargetW - hPad * 2) / 5
     readonly property real cardW: Math.round(slotW * 1.15)
     readonly property real cardH: Math.round(cardW * 0.58)
     readonly property real spacing: slotW * 1.2
     readonly property real sideScale: 0.78
-    readonly property real slotW: (width - hPad * 2) / 5
-    readonly property real cardAreaH: height - topPad - headerH - headerGap - botPad
+    readonly property real cardAreaH: cardTargetH - topPad - headerH - headerGap - botPad
     readonly property real cardPathY: cardAreaH / 2
 
     signal closeRequested()
@@ -166,13 +172,7 @@ FocusScope {
         thumbnailInFlight = false;
         inFlightThumbnailSourcePath = "";
         inFlightThumbnailCachePath = "";
-        wallpapersLoaded = false;
-        wallpaperIndexByPath = ({
-        });
-        allWallpapers.clear();
-        filteredWallpapers.clear();
-        filteredIndexByPath = ({
-        });
+        // Preserva wallpapersLoaded e le liste durante la transizione di chiusura per evitare il rettangolo nero vuoto
         releasingResources = false;
     }
 
@@ -321,21 +321,17 @@ FocusScope {
 
         latestAppliedWallpaper = filePath;
         wallpaperApplied(filePath);
-        if (dynamicConfig) {
+        if (dynamicConfig)
             dynamicConfig.set("wallpaperPath", filePath);
-        }
+
         closeAfterApply = true;
         var defaultScript = root.homeDir + '/.config/quickshell/dynamic-island/scripts/apply-wallpaper.sh "$1"';
         var cmdPattern = (dynamicConfig && dynamicConfig.wallpaperCustomCommand && dynamicConfig.wallpaperCustomCommand !== "") ? dynamicConfig.wallpaperCustomCommand : defaultScript;
-        if (cmdPattern.indexOf("~/.scripts/apply-wallpaper.sh") !== -1 || cmdPattern.indexOf("/.scripts/apply-wallpaper.sh") !== -1) {
+        if (cmdPattern.indexOf("~/.scripts/apply-wallpaper.sh") !== -1 || cmdPattern.indexOf("/.scripts/apply-wallpaper.sh") !== -1)
             cmdPattern = defaultScript;
-        }
-        var trType = (dynamicConfig && (dynamicConfig.wallpaperTransitionType || dynamicConfig.wallpaperTransition))
-            ? (dynamicConfig.wallpaperTransitionType || dynamicConfig.wallpaperTransition)
-            : "random";
-        var cmdStr = cmdPattern.indexOf("$1") !== -1
-            ? cmdPattern.replace('"$1"', '"' + filePath + '" "' + trType + '"').replace("$1", '"' + filePath + '" "' + trType + '"')
-            : (cmdPattern + ' "' + filePath + '" "' + trType + '"');
+
+        var trType = (dynamicConfig && (dynamicConfig.wallpaperTransitionType || dynamicConfig.wallpaperTransition)) ? (dynamicConfig.wallpaperTransitionType || dynamicConfig.wallpaperTransition) : "random";
+        var cmdStr = cmdPattern.indexOf("$1") !== -1 ? cmdPattern.replace('"$1"', '"' + filePath + '" "' + trType + '"').replace("$1", '"' + filePath + '" "' + trType + '"') : (cmdPattern + ' "' + filePath + '" "' + trType + '"');
         var detachedStarted = false;
         try {
             Quickshell.execDetached(["bash", "-c", cmdStr]);
@@ -360,7 +356,6 @@ FocusScope {
     focus: showCondition
     activeFocusOnTab: true
     anchors.fill: parent
-    opacity: showCondition ? 1 : 0
     onShowConditionChanged: {
         if (showCondition) {
             if (!wallpapersLoaded)
@@ -372,7 +367,11 @@ FocusScope {
             releaseResources();
         }
     }
-    Component.onDestruction: releaseResources()
+    Component.onDestruction: {
+        releaseResources();
+        allWallpapers.clear();
+        filteredWallpapers.clear();
+    }
     Keys.onPressed: (event) => {
         switch (event.key) {
         case Qt.Key_Escape:
@@ -524,332 +523,49 @@ FocusScope {
 
     }
 
-    // ── UI ────────────────────────────────────────────────────────────────────
-    Column {
+    // ── UI (Sileo Liquid Connector Shelf) ────────────────────────────────────
+    SileoBridgeConnector {
+        id: bridge
+
         anchors.fill: parent
-        anchors.topMargin: root.topPad
-        anchors.leftMargin: root.hPad
-        anchors.rightMargin: root.hPad
-        anchors.bottomMargin: root.botPad
-        spacing: 6
+        showCondition: root.showCondition
+        neckTargetWidth: root.neckTargetWidth
+        cardTargetW: root.cardTargetW
+        cardTargetH: root.cardTargetH
+        shoulderY: root.shoulderY
+        surfaceColor: Qt.rgba(0, 0, 0, 0.94)
+        outlineColor: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.25)
+        accentColor: root.accentColor
 
-        // ── Search bar (collapsible) ──────────────────────────────────────
-        Item {
-            id: searchBar
+        Column {
+            anchors.fill: parent
+            anchors.topMargin: root.topPad
+            anchors.leftMargin: root.hPad
+            anchors.rightMargin: root.hPad
+            anchors.bottomMargin: root.botPad
+            spacing: 6
 
-            property bool expanded: false
+            // ── Search bar (collapsible) ──────────────────────────────────────
+            Item {
+                id: searchBar
 
-            width: parent.width
-            height: 34
+                property bool expanded: false
 
-            Rectangle {
-                id: searchBg
-
-                width: searchBar.expanded ? parent.width : 34
+                width: parent.width
                 height: 34
-                anchors.right: parent.right
-                radius: 10
-                color: Qt.rgba(1, 1, 1, searchBar.expanded ? 0.06 : (iconMouse.containsMouse ? 0.1 : 0.06))
-                border.width: searchInput.activeFocus ? 1 : 0
-                border.color: "#60a5fa"
 
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 180
-                        easing.type: Easing.OutCubic
-                    }
+                Rectangle {
+                    id: searchBg
 
-                }
+                    width: searchBar.expanded ? parent.width : 34
+                    height: 34
+                    anchors.right: parent.right
+                    radius: 10
+                    color: Qt.rgba(1, 1, 1, searchBar.expanded ? 0.06 : (iconMouse.containsMouse ? 0.1 : 0.06))
+                    border.width: searchInput.activeFocus ? 1 : 0
+                    border.color: "#60a5fa"
 
-            }
-
-            Rectangle {
-                id: iconButton
-
-                width: 34
-                height: 34
-                anchors.right: parent.right
-                color: "transparent"
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf002"
-                    font.family: root.iconFontFamily
-                    font.pixelSize: 12
-                    color: Qt.rgba(1, 1, 1, searchBar.expanded ? 0.55 : 0.35)
-                }
-
-                MouseArea {
-                    id: iconMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    enabled: !searchBar.expanded
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.focusSearch()
-                }
-
-            }
-
-            TextInput {
-                id: searchInput
-
-                visible: searchBar.expanded
-                anchors.left: searchBg.left
-                anchors.right: clearButton.visible ? clearButton.left : iconButton.left
-                anchors.leftMargin: 10
-                anchors.rightMargin: 6
-                anchors.verticalCenter: parent.verticalCenter
-                color: "white"
-                font.pixelSize: 12
-                font.family: root.textFontFamily
-                clip: true
-                selectByMouse: true
-                onTextChanged: root.searchQuery = text
-                onActiveFocusChanged: {
-                    if (!activeFocus && text === "")
-                        searchBar.expanded = false;
-
-                }
-                Keys.onEscapePressed: {
-                    if (text !== "")
-                        text = "";
-                    else
-                        searchBar.expanded = false;
-                }
-            }
-
-            Text {
-                visible: searchBar.expanded && searchInput.text === ""
-                text: I18n.tr("Cerca sfondi...")
-                font.pixelSize: 12
-                font.family: root.textFontFamily
-                color: Qt.rgba(1, 1, 1, 0.28)
-                anchors.left: searchInput.left
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Rectangle {
-                id: clearButton
-
-                visible: searchBar.expanded && searchInput.text !== ""
-                width: 20
-                height: 20
-                radius: 10
-                color: clearMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
-                anchors.right: iconButton.left
-                anchors.rightMargin: 4
-                anchors.verticalCenter: parent.verticalCenter
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "\uf00d"
-                    font.family: root.iconFontFamily
-                    font.pixelSize: 10
-                    color: Qt.rgba(1, 1, 1, 0.5)
-                }
-
-                MouseArea {
-                    id: clearMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: searchInput.text = ""
-                }
-
-            }
-
-        }
-
-        // ── Carousel ───────────────────────────────────────────────────────
-        Item {
-            width: parent.width
-            height: root.cardAreaH
-
-            // Empty state
-            Column {
-                anchors.centerIn: parent
-                spacing: 8
-                visible: !root.wallpapersLoaded || filteredWallpapers.count === 0
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: !root.wallpapersLoaded ? "Scanning…" : "\uf03e"
-                    font.pixelSize: !root.wallpapersLoaded ? 12 : 26
-                    font.family: !root.wallpapersLoaded ? root.textFontFamily : root.iconFontFamily
-                    color: Qt.rgba(1, 1, 1, 0.22)
-                }
-
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    visible: root.wallpapersLoaded && filteredWallpapers.count === 0
-                    text: allWallpapers.count === 0 ? ("No wallpapers found\nin " + root.displayPath(root.wallpaperDir)) : ("No wallpapers match \"" + root.searchQuery + "\"")
-                    horizontalAlignment: Text.AlignHCenter
-                    color: Qt.rgba(1, 1, 1, 0.22)
-                    font.pixelSize: 11
-                    font.family: root.textFontFamily
-                    lineHeight: 1.5
-                }
-
-            }
-
-            PathView {
-                id: pathView
-
-                anchors.fill: parent
-                model: root.showCondition ? filteredWallpapers : null
-                visible: filteredWallpapers.count > 0
-                clip: false
-                pathItemCount: Math.min(filteredWallpapers.count, 5)
-                cacheItemCount: 4
-                snapMode: PathView.SnapToItem
-                preferredHighlightBegin: 0.5
-                preferredHighlightEnd: 0.5
-                highlightRangeMode: PathView.StrictlyEnforceRange
-                highlightMoveDuration: 200
-
-                path: Path {
-                    startX: pathView.width / 2 - root.spacing * 2
-                    startY: root.cardPathY
-
-                    PathLine {
-                        x: pathView.width / 2 + root.spacing * 2
-                        y: root.cardPathY
-                    }
-
-                }
-
-                delegate: Item {
-                    id: del
-
-                    readonly property bool isCurrent: PathView.isCurrentItem
-                    readonly property bool onPath: PathView.onPath
-                    property real sc: isCurrent ? 1 : onPath ? root.sideScale : 0
-                    property real op: isCurrent ? 1 : onPath ? 0.65 : 0
-
-                    width: root.cardW
-                    height: root.cardH + root.labelGap + root.labelH
-                    z: isCurrent ? 3 : 1
-
-                    Item {
-                        id: inner
-
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.top: parent.top
-                        width: root.cardW
-                        height: root.cardH + root.labelGap + root.labelH
-                        scale: del.sc
-                        opacity: del.op
-                        transformOrigin: Item.Center
-
-                        // Clipped image
-                        ClippingRectangle {
-                            id: thumb
-
-                            anchors.top: parent.top
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: root.cardW
-                            height: root.cardH
-                            radius: 14
-                            color: "#1a1a1a"
-                            antialiasing: false
-
-                            Image {
-                                anchors.fill: parent
-                                source: root.showCondition && model.thumbnailSource ? model.thumbnailSource : ""
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: false
-                                smooth: true
-                                mipmap: false
-                                sourceSize: Qt.size(root.cardW * 2, root.cardH * 2)
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    color: "#282828"
-                                    opacity: parent.status === Image.Ready ? 0 : 1
-
-                                    Behavior on opacity {
-                                        NumberAnimation {
-                                            duration: 200
-                                        }
-
-                                    }
-
-                                }
-
-                            }
-
-                        }
-
-                        // Border overlay
-                        Rectangle {
-                            anchors.top: parent.top
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: root.cardW
-                            height: root.cardH
-                            radius: 14
-                            color: "transparent"
-                            border.width: (model.filePath === root.effectiveActiveWallpaper) ? 2.5 : 0
-                            border.color: root.accentColor
-
-                            Behavior on border.width {
-                                NumberAnimation {
-                                    duration: 150
-                                }
-
-                            }
-
-                        }
-
-                        // Click area
-                        MouseArea {
-                            anchors.top: parent.top
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: root.cardW
-                            height: root.cardH
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                pathView.currentIndex = index;
-                                root.applyWallpaper(model.filePath);
-                            }
-                        }
-
-                        // Filename label
-                        Text {
-                            anchors.top: thumb.bottom
-                            anchors.topMargin: root.labelGap
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            width: root.cardW - 4
-                            text: model.fileName
-                            color: del.isCurrent ? "white" : Qt.rgba(1, 1, 1, 0.5)
-                            font.pixelSize: del.isCurrent ? 11 : 10
-                            font.family: root.textFontFamily
-                            font.weight: del.isCurrent ? Font.Medium : Font.Normal
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideMiddle
-
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 150
-                                }
-
-                            }
-
-                        }
-
-                    }
-
-                    Behavior on sc {
-                        NumberAnimation {
-                            duration: 200
-                            easing.type: Easing.OutCubic
-                        }
-
-                    }
-
-                    Behavior on op {
+                    Behavior on width {
                         NumberAnimation {
                             duration: 180
                             easing.type: Easing.OutCubic
@@ -859,16 +575,306 @@ FocusScope {
 
                 }
 
+                Rectangle {
+                    id: iconButton
+
+                    width: 34
+                    height: 34
+                    anchors.right: parent.right
+                    color: "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf002"
+                        font.family: root.iconFontFamily
+                        font.pixelSize: 12
+                        color: Qt.rgba(1, 1, 1, searchBar.expanded ? 0.55 : 0.35)
+                    }
+
+                    MouseArea {
+                        id: iconMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        enabled: !searchBar.expanded
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.focusSearch()
+                    }
+
+                }
+
+                TextInput {
+                    id: searchInput
+
+                    visible: searchBar.expanded
+                    anchors.left: searchBg.left
+                    anchors.right: clearButton.visible ? clearButton.left : iconButton.left
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: "white"
+                    font.pixelSize: 12
+                    font.family: root.textFontFamily
+                    clip: true
+                    selectByMouse: true
+                    onTextChanged: root.searchQuery = text
+                    onActiveFocusChanged: {
+                        if (!activeFocus && text === "")
+                            searchBar.expanded = false;
+
+                    }
+                    Keys.onEscapePressed: {
+                        if (text !== "")
+                            text = "";
+                        else
+                            searchBar.expanded = false;
+                    }
+                }
+
+                Text {
+                    visible: searchBar.expanded && searchInput.text === ""
+                    text: I18n.tr("Cerca sfondi...")
+                    font.pixelSize: 12
+                    font.family: root.textFontFamily
+                    color: Qt.rgba(1, 1, 1, 0.28)
+                    anchors.left: searchInput.left
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Rectangle {
+                    id: clearButton
+
+                    visible: searchBar.expanded && searchInput.text !== ""
+                    width: 20
+                    height: 20
+                    radius: 10
+                    color: clearMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+                    anchors.right: iconButton.left
+                    anchors.rightMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "\uf00d"
+                        font.family: root.iconFontFamily
+                        font.pixelSize: 10
+                        color: Qt.rgba(1, 1, 1, 0.5)
+                    }
+
+                    MouseArea {
+                        id: clearMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: searchInput.text = ""
+                    }
+
+                }
+
             }
 
-        }
+            // ── Carousel ───────────────────────────────────────────────────────
+            Item {
+                width: parent.width
+                height: root.cardAreaH
 
-    }
+                // Empty state
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 8
+                    visible: root.showCondition && (!root.wallpapersLoaded || filteredWallpapers.count === 0)
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: showCondition ? 240 : 120
-            easing.type: Easing.InOutQuad
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: !root.wallpapersLoaded ? "Scanning…" : "\uf03e"
+                        font.pixelSize: !root.wallpapersLoaded ? 12 : 26
+                        font.family: !root.textFontFamily ? root.textFontFamily : root.iconFontFamily
+                        color: Qt.rgba(1, 1, 1, 0.22)
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: root.wallpapersLoaded && filteredWallpapers.count === 0
+                        text: allWallpapers.count === 0 ? ("No wallpapers found\nin " + root.displayPath(root.wallpaperDir)) : ("No wallpapers match \"" + root.searchQuery + "\"")
+                        horizontalAlignment: Text.AlignHCenter
+                        color: Qt.rgba(1, 1, 1, 0.22)
+                        font.pixelSize: 11
+                        font.family: root.textFontFamily
+                        lineHeight: 1.5
+                    }
+
+                }
+
+                PathView {
+                    id: pathView
+
+                    anchors.fill: parent
+                    model: filteredWallpapers
+                    visible: filteredWallpapers.count > 0
+                    clip: false
+                    pathItemCount: Math.min(filteredWallpapers.count, 5)
+                    cacheItemCount: 4
+                    snapMode: PathView.SnapToItem
+                    preferredHighlightBegin: 0.5
+                    preferredHighlightEnd: 0.5
+                    highlightRangeMode: PathView.StrictlyEnforceRange
+                    highlightMoveDuration: 200
+
+                    path: Path {
+                        startX: pathView.width / 2 - root.spacing * 2
+                        startY: root.cardPathY
+
+                        PathLine {
+                            x: pathView.width / 2 + root.spacing * 2
+                            y: root.cardPathY
+                        }
+
+                    }
+
+                    delegate: Item {
+                        id: del
+
+                        readonly property bool isCurrent: PathView.isCurrentItem
+                        readonly property bool onPath: PathView.onPath
+                        property real sc: isCurrent ? 1 : onPath ? root.sideScale : 0
+                        property real op: isCurrent ? 1 : onPath ? 0.65 : 0
+
+                        width: root.cardW
+                        height: root.cardH + root.labelGap + root.labelH
+                        z: isCurrent ? 3 : 1
+
+                        Item {
+                            id: inner
+
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.top: parent.top
+                            width: root.cardW
+                            height: root.cardH + root.labelGap + root.labelH
+                            scale: del.sc
+                            opacity: del.op
+                            transformOrigin: Item.Center
+
+                            // Clipped image
+                            ClippingRectangle {
+                                id: thumb
+
+                                anchors.top: parent.top
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: root.cardW
+                                height: root.cardH
+                                radius: 14
+                                color: "#1a1a1a"
+                                antialiasing: false
+
+                                Image {
+                                    anchors.fill: parent
+                                    source: root.showCondition && model.thumbnailSource ? model.thumbnailSource : ""
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    cache: false
+                                    smooth: true
+                                    mipmap: false
+                                    sourceSize: Qt.size(root.cardW * 2, root.cardH * 2)
+
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        color: "#282828"
+                                        opacity: parent.status === Image.Ready ? 0 : 1
+
+                                        Behavior on opacity {
+                                            NumberAnimation {
+                                                duration: 200
+                                            }
+
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                            // Border overlay
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: root.cardW
+                                height: root.cardH
+                                radius: 14
+                                color: "transparent"
+                                border.width: (model.filePath === root.effectiveActiveWallpaper) ? 2.5 : 0
+                                border.color: root.accentColor
+
+                                Behavior on border.width {
+                                    NumberAnimation {
+                                        duration: 150
+                                    }
+
+                                }
+
+                            }
+
+                            // Click area
+                            MouseArea {
+                                anchors.top: parent.top
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: root.cardW
+                                height: root.cardH
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    pathView.currentIndex = index;
+                                    root.applyWallpaper(model.filePath);
+                                }
+                            }
+
+                            // Filename label
+                            Text {
+                                anchors.top: thumb.bottom
+                                anchors.topMargin: root.labelGap
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: root.cardW - 4
+                                text: model.fileName
+                                color: del.isCurrent ? "white" : Qt.rgba(1, 1, 1, 0.5)
+                                font.pixelSize: del.isCurrent ? 11 : 10
+                                font.family: root.textFontFamily
+                                font.weight: del.isCurrent ? Font.Medium : Font.Normal
+                                horizontalAlignment: Text.AlignHCenter
+                                elide: Text.ElideMiddle
+
+                                Behavior on color {
+                                    ColorAnimation {
+                                        duration: 150
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                        Behavior on sc {
+                            NumberAnimation {
+                                duration: 200
+                                easing.type: Easing.OutCubic
+                            }
+
+                        }
+
+                        Behavior on op {
+                            NumberAnimation {
+                                duration: 180
+                                easing.type: Easing.OutCubic
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
         }
 
     }

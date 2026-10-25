@@ -171,7 +171,7 @@ def main():
         # Ensure layerrule for blur is present
         has_layer_blur = any("layerrule = blur, dynamic-island" in l for l in new_conf_lines)
         if not has_layer_blur:
-            new_conf_lines.insert(0, "layerrule = blur, dynamic-island\nlayerrule = ignorealpha 0.15, dynamic-island\n")
+            new_conf_lines.insert(0, "layerrule = noanim, dynamic-island\nlayerrule = noanim, quickshell\nlayerrule = blur, dynamic-island\nlayerrule = ignorealpha 0.15, dynamic-island\n")
 
         with open(SHORTCUTS_CONF_DYNAMIC, "w") as f:
             f.writelines(new_conf_lines)

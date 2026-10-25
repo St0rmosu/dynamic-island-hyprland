@@ -1,8 +1,8 @@
 import IslandBackend
+import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
-import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
@@ -62,18 +62,7 @@ PanelWindow {
     property bool screenshotImageLanded: false
     property bool screenshotCapturing: false
     readonly property bool isScreenshotModeActive: root.screenshotCapturing || root.screenshotSnippingActive || (islandContainer && (islandContainer.islandState === "screenshot_preview" || islandContainer.islandState === "screenshot_editor"))
-    readonly property bool modalExpandedActive: isScreenshotModeActive || (islandContainer && (
-        islandContainer.islandState === "control_center" ||
-        islandContainer.islandState === "settings_app" ||
-        islandContainer.islandState === "power_menu" ||
-        islandContainer.islandState === "notification_center" ||
-        islandContainer.islandState === "wallpaper_picker" ||
-        islandContainer.islandState === "application_launcher" ||
-        islandContainer.islandState === "clipboard" ||
-        islandContainer.islandState === "file_shelf" ||
-        islandContainer.islandState === "screen_share_picker" ||
-        islandContainer.islandState === "expanded"
-    ))
+    readonly property bool modalExpandedActive: isScreenshotModeActive || (islandContainer && (islandContainer.islandState === "control_center" || islandContainer.islandState === "settings_app" || islandContainer.islandState === "power_menu" || islandContainer.islandState === "notification_center" || islandContainer.islandState === "wallpaper_picker" || islandContainer.islandState === "application_launcher" || islandContainer.islandState === "clipboard" || islandContainer.islandState === "file_shelf" || islandContainer.islandState === "screen_share_picker" || islandContainer.islandState === "expanded"))
     readonly property alias islandContainer: islandContainer
     readonly property alias hoverCollapseDelayTimer: hoverCollapseDelayTimer
     readonly property var userConfig: UserConfig
@@ -81,39 +70,36 @@ PanelWindow {
     readonly property real capsuleWindowHeight: {
         if (islandContainer.islandState === "settings_app" || islandContainer.settingsAppLayerVisible)
             return root.screen ? root.screen.height : 1080;
+
         if (root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.islandState === "screenshot_editor")
             return root.screen ? root.screen.height : 1080;
 
         const shadowPad = Math.max(52, ((dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 20) + 28);
-        var targetH = mainCapsule.targetHeight;
-        if (islandContainer.islandState === "control_center") {
+        var targetH = Math.max(mainCapsule.targetHeight, mainCapsule.height);
+        if (islandContainer.islandState === "control_center")
             targetH = Math.max(targetH, 540);
-        }
+
+        if (islandContainer.islandState === "power_menu" || islandContainer.powerMenuLayerVisible || root.powerMenuRetracting)
+            targetH = Math.max(targetH, 160);
+
         var h = Math.ceil(effectiveIslandTopMargin + targetH + shadowPad);
         if (islandContainer.islandState === "control_center" && trayFloatingIsland && trayFloatingIsland.visible) {
             h = Math.max(h, Math.ceil(effectiveIslandTopMargin + targetH + 8 + 38 + shadowPad));
             if (trayFloatingIsland.menuVisible)
                 h = Math.max(h, Math.ceil(trayFloatingIsland.menuY + trayFloatingIsland.menuHeight + shadowPad));
+
         }
-        if (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)) {
+        if (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible))
             h = Math.max(h, Math.ceil(effectiveIslandTopMargin + targetH + 10 + 38 + shadowPad));
-        }
+
         return h;
     }
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted ? Math.ceil(effectiveIslandTopMargin + root.connectivityDetailHeight + 20) : 0
     readonly property real overviewWindowHeight: root.overviewVisible ? Math.ceil(effectiveIslandTopMargin + root.overviewCapsuleHeight + 12) : 0
-    readonly property real musicFloatingIslandHeight: (musicFloatingIsland && musicFloatingIsland.visible)
-        ? Math.ceil(effectiveIslandTopMargin + (musicFloatingIsland.isExpanded ? musicFloatingIsland.expandedHeight : musicFloatingIsland.compactHeight) + 40)
-        : 0
-    readonly property real headphonesFloatingIslandHeight: (headphonesFloatingIsland && headphonesFloatingIsland.visible)
-        ? Math.ceil(effectiveIslandTopMargin + (headphonesFloatingIsland.isExpanded ? headphonesFloatingIsland.expandedHeight : headphonesFloatingIsland.compactHeight) + 40)
-        : 0
-    readonly property real callFloatingIslandHeight: (callFloatingIsland && callFloatingIsland.visible)
-        ? Math.ceil(effectiveIslandTopMargin + (callFloatingIsland.isExpanded ? callFloatingIsland.expandedHeight : callFloatingIsland.compactHeight) + 40)
-        : 0
-    readonly property real themeFloatingIslandHeight: (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible))
-        ? Math.ceil(effectiveIslandTopMargin + mainCapsule.targetHeight + 10 + 38 + 40)
-        : 0
+    readonly property real musicFloatingIslandHeight: (musicFloatingIsland && musicFloatingIsland.visible) ? Math.ceil(effectiveIslandTopMargin + (musicFloatingIsland.isExpanded ? musicFloatingIsland.expandedHeight : musicFloatingIsland.compactHeight) + 40) : 0
+    readonly property real headphonesFloatingIslandHeight: (headphonesFloatingIsland && headphonesFloatingIsland.visible) ? Math.ceil(effectiveIslandTopMargin + (headphonesFloatingIsland.isExpanded ? headphonesFloatingIsland.expandedHeight : headphonesFloatingIsland.compactHeight) + 40) : 0
+    readonly property real callFloatingIslandHeight: (callFloatingIsland && callFloatingIsland.visible) ? Math.ceil(effectiveIslandTopMargin + (callFloatingIsland.isExpanded ? callFloatingIsland.expandedHeight : callFloatingIsland.compactHeight) + 40) : 0
+    readonly property real themeFloatingIslandHeight: (themeFloatingIsland && (themeFloatingIsland.activeState || themeFloatingIsland.visible)) ? Math.ceil(effectiveIslandTopMargin + Math.max(mainCapsule.targetHeight, mainCapsule.height) + 10 + 38 + 40) : 0
     readonly property real requestedWindowHeight: Math.max(root.notificationCenterWindowHeight, root.capsuleWindowHeight, root.connectivityDetailWindowHeight, root.overviewWindowHeight, Math.ceil(root.controlCenterWindowHeight), root.musicFloatingIslandHeight, root.headphonesFloatingIslandHeight, root.callFloatingIslandHeight, root.themeFloatingIslandHeight)
     // Grow the layer surface immediately, but keep the old extent while the
     // capsule finishes its collapse animation. A later expansion interrupts
@@ -158,6 +144,7 @@ PanelWindow {
     readonly property bool autoBalanceSatellites: {
         if (lockIslandCenter)
             return false;
+
         let v = cfgVal("autoBalanceSatellites", userConfig ? userConfig.autoBalanceSatellites : true);
         return (v !== undefined) ? Boolean(v) : true;
     }
@@ -250,15 +237,16 @@ PanelWindow {
     readonly property string timeFontFamily: (dynamicConfig && dynamicConfig.timeFontFamily !== "") ? dynamicConfig.timeFontFamily : cfgVal("timeFontFamily", userConfig ? userConfig.timeFontFamily : "Google Sans Flex")
     // ── Monitor Resolution & Proportional Font Scaling ───────────────
     readonly property real screenScaleFactor: {
-        if (!root.screen) return 1.0;
+        if (!root.screen)
+            return 1;
+
         const minDim = Math.min(root.screen.width, root.screen.height);
-        return Math.max(1.0, minDim / 1080);
+        return Math.max(1, minDim / 1080);
     }
     readonly property int autoClockFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.44) * screenScaleFactor)
     readonly property int autoBodyFontSize: Math.round(Math.max(14, effectiveIslandHeight * 0.36) * screenScaleFactor)
-    readonly property int autoTitleFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.40) * screenScaleFactor)
-    readonly property int autoIconFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.40) * screenScaleFactor)
-
+    readonly property int autoTitleFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.4) * screenScaleFactor)
+    readonly property int autoIconFontSize: Math.round(Math.max(16, effectiveIslandHeight * 0.4) * screenScaleFactor)
     readonly property int bodyFontSize: (dynamicConfig && dynamicConfig.bodyFontSize) ? dynamicConfig.bodyFontSize : autoBodyFontSize
     readonly property int titleFontSize: (dynamicConfig && dynamicConfig.titleFontSize) ? dynamicConfig.titleFontSize : autoTitleFontSize
     readonly property int iconFontSize: (dynamicConfig && dynamicConfig.iconFontSize) ? dynamicConfig.iconFontSize : autoIconFontSize
@@ -281,10 +269,13 @@ PanelWindow {
     readonly property bool hoverExpandEnabled: {
         if (dynamicConfig && dynamicConfig.hoverExpandEnabled !== undefined)
             return Boolean(dynamicConfig.hoverExpandEnabled);
+
         if (localUserConfigFile.parsedData && localUserConfigFile.parsedData.hoverExpandEnabled !== undefined)
             return Boolean(localUserConfigFile.parsedData.hoverExpandEnabled);
+
         if (userConfig && userConfig.hoverExpandEnabled !== undefined)
             return Boolean(userConfig.hoverExpandEnabled);
+
         return true;
     }
     readonly property bool topGestureInputActive: false
@@ -296,7 +287,7 @@ PanelWindow {
     readonly property bool autoHideTargetVisible: !autoHideForcedHidden && (autoHideMustShow || !autoHideEnabled || autoHideVisible)
     readonly property bool autoHideSuppressesTransientReveal: (autoHideEnabled || autoHideForcedHidden) && !autoHideTargetVisible
     property real autoHideProgress: autoHideTargetVisible ? 1 : 0
-    readonly property bool exclusiveZoneTargetActive: (!autoHideEnabled && autoHideTargetVisible) || (autoHideRevealSource === "edge" && autoHideTargetVisible) || islandContainer.notificationLayerVisible || islandContainer.reloadLayerVisible
+    readonly property bool exclusiveZoneTargetActive: (!autoHideEnabled && autoHideTargetVisible) || (autoHideRevealSource === "edge" && autoHideTargetVisible) || islandContainer.notificationLayerVisible || islandContainer.reloadLayerVisible || root.notificationRetracting || root.reloadRetracting
     property real exclusiveZoneProgress: exclusiveZoneTargetActive ? 1 : 0
     readonly property real autoHideRevealWidth: Math.min(root.width, Math.max(root.effectiveIslandWidth + 120, 240))
     readonly property real autoHideRevealHeight: autoHideEnabled ? 10 : 0
@@ -318,6 +309,11 @@ PanelWindow {
     readonly property bool anyConnectivityDetailMounted: wifiConnectivityDetailMounted || bluetoothConnectivityDetailMounted || powerConnectivityDetailMounted
     readonly property real connectivityDetailHeight: 404
     property bool controlCenterMounted: false
+    property bool powerMenuRetracting: false
+    property bool wallpaperPickerRetracting: false
+    property bool notificationRetracting: false
+    property bool screenshotPreviewRetracting: false
+    property bool reloadRetracting: false
     readonly property real controlCenterMaximumExtraHeight: controlCenterLoader.item ? controlCenterLoader.item.controlCenterMaximumExtraHeight : 120
     readonly property real controlCenterWindowHeight: islandContainer.controlCenterLayerVisible ? root.effectiveIslandTopMargin + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 540) + 60 : 0
     readonly property real notificationCenterWindowHeight: islandContainer.notificationCenterLayerVisible ? root.effectiveIslandTopMargin + (notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 400) + 6 : 0
@@ -361,6 +357,127 @@ PanelWindow {
         return root.effectiveWallpaperUrl;
     }
     property string wallpaperPickerActiveWallpaper: userConfig.wallpaperPath
+    readonly property color themeAccent: {
+        if (dynamicConfig && dynamicConfig.effectiveAccentColor)
+            return dynamicConfig.effectiveAccentColor;
+
+        if (irisColors && irisColors.accentHex !== "")
+            return irisColors.accentHex;
+
+        if (matugenColors && matugenColors.accentHex !== "")
+            return matugenColors.accentHex;
+
+        if (wallustColors && wallustColors.accentHex !== "")
+            return wallustColors.accentHex;
+
+        return pywalColors.walAccent;
+    }
+    readonly property color themeBg: {
+        if (irisColors && irisColors.bgHex !== "")
+            return irisColors.bgHex;
+
+        if (matugenColors && matugenColors.bgHex !== "")
+            return matugenColors.bgHex;
+
+        if (wallustColors && wallustColors.bgHex !== "")
+            return wallustColors.bgHex;
+
+        return "#1e3a6c";
+    }
+    readonly property color themeSurface: {
+        if (irisColors && irisColors.surfaceHex !== "")
+            return irisColors.surfaceHex;
+
+        if (matugenColors && matugenColors.surfaceHex !== "")
+            return matugenColors.surfaceHex;
+
+        if (wallustColors && wallustColors.surfaceHex !== "")
+            return wallustColors.surfaceHex;
+
+        return "#264988";
+    }
+    readonly property color themeFg: {
+        if (irisColors && irisColors.fgHex !== "")
+            return irisColors.fgHex;
+
+        if (matugenColors && matugenColors.fgHex !== "")
+            return matugenColors.fgHex;
+
+        if (wallustColors && wallustColors.fgHex !== "")
+            return wallustColors.fgHex;
+
+        return "#ffffff";
+    }
+    readonly property color themeDim: {
+        if (irisColors && irisColors.dimHex !== "")
+            return irisColors.dimHex;
+
+        return Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.62);
+    }
+    readonly property color themeRed: (irisColors && irisColors.redHex !== "") ? irisColors.redHex : "#c29770"
+    readonly property color themeGreen: (irisColors && irisColors.greenHex !== "") ? irisColors.greenHex : "#54b699"
+    readonly property color themeYellow: (irisColors && irisColors.yellowHex !== "") ? irisColors.yellowHex : "#c29770"
+    readonly property color themeBlue: (irisColors && irisColors.blueHex !== "") ? irisColors.blueHex : "#84a1e6"
+    readonly property var irisColorPalette: [themeAccent, themeRed, themeGreen, themeYellow, themeBlue, "#ffffff", "#000000"]
+    property bool hasFingerprintSensor: {
+        if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined)
+            return !!dynamicConfig.hasFingerprintReader;
+
+        if (userConfig && userConfig.hasFingerprintReader !== undefined)
+            return !!userConfig.hasFingerprintReader;
+
+        return false;
+    }
+    property bool hasFaceUnlock: {
+        if (dynamicConfig && dynamicConfig.hasFaceUnlock !== undefined)
+            return !!dynamicConfig.hasFaceUnlock;
+
+        if (userConfig && userConfig.hasFaceUnlock !== undefined)
+            return !!userConfig.hasFaceUnlock;
+
+        return false;
+    }
+
+    function requestPowerMenuClose() {
+        if (root.powerMenuRetracting)
+            return ;
+
+        root.powerMenuRetracting = true;
+        powerMenuRetractTimer.restart();
+    }
+
+    function requestWallpaperPickerClose() {
+        if (root.wallpaperPickerRetracting)
+            return ;
+
+        root.wallpaperPickerRetracting = true;
+        islandContainer.smartRestoreState();
+        wallpaperPickerRetractTimer.restart();
+    }
+
+    function requestNotificationClose() {
+        if (root.notificationRetracting)
+            return ;
+
+        root.notificationRetracting = true;
+        notificationRetractTimer.restart();
+    }
+
+    function requestScreenshotPreviewClose() {
+        if (root.screenshotPreviewRetracting)
+            return ;
+
+        root.screenshotPreviewRetracting = true;
+        screenshotPreviewRetractTimer.restart();
+    }
+
+    function requestReloadClose() {
+        if (root.reloadRetracting)
+            return ;
+
+        root.reloadRetracting = true;
+        reloadRetractTimer.restart();
+    }
 
     function refreshWallpaperSources() {
         if (walWallpaperFile)
@@ -441,7 +558,6 @@ PanelWindow {
             autoHideVisible = false;
             return ;
         }
-
         if (!autoHideEnabled) {
             if (autoHideMustShow)
                 return ;
@@ -483,7 +599,7 @@ PanelWindow {
         if (islandContainer && islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics") {
             islandContainer.hoverExpandedActive = false;
             islandContainer.smartRestoreState();
-            return;
+            return ;
         }
         toggleAutoHiddenIsland();
     }
@@ -634,6 +750,7 @@ PanelWindow {
         wallpaperPickerActiveWallpaper = filePath;
         if (dynamicConfig)
             dynamicConfig.set("wallpaperPath", filePath);
+
         if (shellRootController && shellRootController.refreshOverviewWallpaperCaches)
             shellRootController.refreshOverviewWallpaperCaches(filePath);
         else
@@ -651,20 +768,21 @@ PanelWindow {
     }
 
     function showScreenshotPreview(filePath) {
+        root.screenshotImageLanded = true;
         islandContainer.showScreenshotPreviewCapsule(filePath);
     }
 
     function startScreenshotSnipping() {
         if (root.screenshotSnippingActive) {
             cancelScreenshotSnipping();
-            return;
+            return ;
         }
         root.screenshotSnippingActive = true;
         root.screenshotSnippingSattyMode = false;
         root.screenshotSnippingStatusText = I18n.tr("Clicca finestra o trascina");
-        if (root.shellRootController && root.shellRootController.notifySnipStarted) {
+        if (root.shellRootController && root.shellRootController.notifySnipStarted)
             root.shellRootController.notifySnipStarted();
-        }
+
         islandContainer.showScreenshotSnippingCapsule();
     }
 
@@ -673,74 +791,64 @@ PanelWindow {
         root.screenshotSnippingSattyMode = false;
         root.screenshotFlyAnimationActive = false;
         screenshotCaptureProc.running = false;
-        if (root.shellRootController && root.shellRootController.notifySnipCancelled) {
+        if (root.shellRootController && root.shellRootController.notifySnipCancelled)
             root.shellRootController.notifySnipCancelled();
-        }
+
         islandContainer.smartRestoreState();
     }
 
     function handleScreenshotImageLanded() {
-        if (!screenshotCaptureProc.running) {
+        if (!screenshotCaptureProc.running)
             root.screenshotImageLanded = true;
-        } else {
+        else
             screenshotCaptureProc.landPending = true;
-        }
     }
 
     function executeSnip(x, y, w, h, isSatty) {
         root.screenshotSnippingActive = false;
-
         if (w <= 2 || h <= 2) {
             root.screenshotFlyAnimationActive = false;
             islandContainer.smartRestoreState();
-            return;
+            return ;
         }
-
         const sw = root.screen ? root.screen.width : 1920;
         const sh = root.screen ? root.screen.height : 1080;
-
         x = Math.max(0, Math.round(x));
         y = Math.max(0, Math.round(y));
         w = Math.max(1, Math.min(Math.round(w), sw - x));
         h = Math.max(1, Math.min(Math.round(h), sh - y));
-
         const monX = root.hyprMonitor ? root.hyprMonitor.x : 0;
         const monY = root.hyprMonitor ? root.hyprMonitor.y : 0;
-        const scale = (root.hyprMonitor && root.hyprMonitor.scale) ? root.hyprMonitor.scale : 1.0;
-
+        const scale = (root.hyprMonitor && root.hyprMonitor.scale) ? root.hyprMonitor.scale : 1;
         const gx = Math.round((monX + x) * scale);
         const gy = Math.round((monY + y) * scale);
         const gw = Math.round(w * scale);
         const gh = Math.round(h * scale);
         const geom = `${gx},${gy} ${gw}x${gh}`;
-
         const d = new Date();
-        const pad = n => String(n).padStart(2, "0");
+        const pad = (n) => {
+            return String(n).padStart(2, "0");
+        };
         const dir = root.homeDir + "/Pictures/Screenshots";
-        const file = dir + "/Screenshot_" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
-            + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + ".png";
-
+        const file = dir + "/Screenshot_" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + ".png";
         root.screenshotFlyAnimationActive = false;
         root.screenshotImageLanded = false;
-
-        const asp = Math.max(0.4, Math.min(6.0, w / h));
+        const asp = Math.max(0.4, Math.min(6, w / h));
         let targetCapsuleW = 380;
-        if (asp >= 1.6) targetCapsuleW = 400;
-        else if (asp >= 1.1) targetCapsuleW = 360;
-        else if (asp >= 0.8) targetCapsuleW = 320;
-        else targetCapsuleW = 280;
-
-        const capsuleCenterX = root.lockIslandCenter
-            ? (root.width / 2)
-            : (root.width * root.effectiveIslandPositionX / 100);
-
+        if (asp >= 1.6)
+            targetCapsuleW = 400;
+        else if (asp >= 1.1)
+            targetCapsuleW = 360;
+        else if (asp >= 0.8)
+            targetCapsuleW = 320;
+        else
+            targetCapsuleW = 280;
+        const capsuleCenterX = root.lockIslandCenter ? (root.width / 2) : (root.width * root.effectiveIslandPositionX / 100);
         const targetW = targetCapsuleW - 24;
         const targetH = Math.max(50, Math.min(220, Math.round(targetW / asp)));
         const targetX = capsuleCenterX - targetW / 2;
         const targetY = root.effectiveIslandTopMargin + 52;
-
         islandContainer.updateScreenshotAspect(w, h);
-
         screenshotCaptureProc.targetFile = file;
         screenshotCaptureProc.isSattyMode = isSatty;
         screenshotCaptureProc.landPending = false;
@@ -752,12 +860,10 @@ PanelWindow {
         screenshotCaptureProc.pendingTargetY = targetY;
         screenshotCaptureProc.pendingTargetW = targetW;
         screenshotCaptureProc.pendingTargetH = targetH;
-
         // Nascondi completamente l'isola durante lo scatto di grim per non fotografare nessuna notch o overlay!
         root.screenshotCapturing = true;
-        if (root.shellRootController) {
+        if (root.shellRootController)
             root.shellRootController.screenshotCapturing = true;
-        }
 
         // sleep 0.08 assicura che il compositor Wayland abbia completato il frame nascondendo l'overlay prima dello scatto
         const captureCmd = `sleep 0.08 && mkdir -p '${dir}' && grim -l 0 -g '${geom}' '${file}' && (wl-copy < '${file}' >/dev/null 2>&1 &)`;
@@ -771,12 +877,16 @@ PanelWindow {
     }
 
     function showCharging(capacity, isCharging) {
-        if (!islandContainer.hasBattery) return;
+        if (!islandContainer.hasBattery)
+            return ;
+
         islandContainer.showChargingCapsule(capacity, isCharging);
     }
 
     function showLowBattery(capacity) {
-        if (!islandContainer.hasBattery) return;
+        if (!islandContainer.hasBattery)
+            return ;
+
         islandContainer.showLowBatteryCapsule(capacity);
     }
 
@@ -849,6 +959,7 @@ PanelWindow {
     function showWorkspaceWindow(wsId) {
         if (root.dynamicConfig && root.dynamicConfig.enableWorkspacePill !== false)
             return ;
+
         islandContainer.showWorkspaceCapsule(wsId);
         showAutoHiddenIsland("state");
     }
@@ -878,6 +989,7 @@ PanelWindow {
     function toggleLyricsWindow() {
         if (musicFloatingIsland)
             musicFloatingIsland.isExpanded = false;
+
         islandContainer.toggleLyricsMode();
         showAutoHiddenIsland("manual");
         scheduleAutoHide();
@@ -889,6 +1001,7 @@ PanelWindow {
         } else if (islandContainer.restingState === "normal") {
             if (islandContainer.hasCustomLeftItems)
                 islandContainer.showCustomCapsule();
+
         } else {
             islandContainer.showTimeCapsule();
         }
@@ -897,15 +1010,14 @@ PanelWindow {
     }
 
     function swipeLeftWindow() {
-        if (islandContainer.restingState === "custom") {
+        if (islandContainer.restingState === "custom")
             islandContainer.showTimeCapsule();
-        } else if (islandContainer.restingState === "lyrics") {
+        else if (islandContainer.restingState === "lyrics")
             islandContainer.showTimeCapsule();
-        } else if (islandContainer.hasCustomLeftItems) {
+        else if (islandContainer.hasCustomLeftItems)
             islandContainer.showCustomCapsule();
-        } else {
+        else
             islandContainer.showTimeCapsule();
-        }
         showAutoHiddenIsland("manual");
         scheduleAutoHide();
     }
@@ -925,12 +1037,14 @@ PanelWindow {
             headphonesFloatingIsland.isExpanded = !headphonesFloatingIsland.isExpanded;
             if (headphonesFloatingIsland.isExpanded)
                 headphonesFloatingIsland.fetchStatus(true);
+
         }
     }
 
     function setHeadphonesHidden(hidden) {
         if (headphonesFloatingIsland)
             headphonesFloatingIsland.forceHidden = hidden;
+
     }
 
     function showTimerWindow() {
@@ -943,6 +1057,7 @@ PanelWindow {
         islandContainer.showControlCenter();
         if (controlCenterLoader.item)
             controlCenterLoader.item.powerViewActive = false;
+
     }
 
     function toggleControlCenterWindow() {
@@ -954,13 +1069,14 @@ PanelWindow {
             islandContainer.showControlCenter();
             if (controlCenterLoader.item)
                 controlCenterLoader.item.powerViewActive = false;
+
         }
     }
 
     function togglePowerMenuWindow() {
         islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "power_menu")
-            islandContainer.smartRestoreState();
+            root.requestPowerMenuClose();
         else
             islandContainer.showPowerMenu();
     }
@@ -976,7 +1092,7 @@ PanelWindow {
     function toggleWallpaperPickerWindow() {
         islandContainer.hoverExpandedActive = false;
         if (islandContainer.islandState === "wallpaper_picker")
-            islandContainer.smartRestoreState();
+            root.requestWallpaperPickerClose();
         else
             islandContainer.showWallpaperPicker();
     }
@@ -1016,15 +1132,23 @@ PanelWindow {
     function setFocusTimeWeekView(weekView) {
         if (islandContainer.islandState !== "focustime")
             islandContainer.showFocusTime();
+
         if (focustimeLoader.item)
             focustimeLoader.item.isWeekView = weekView;
+
     }
 
     function setFocusTimeSelectedApp(appClass) {
         if (islandContainer.islandState !== "focustime")
             islandContainer.showFocusTime();
+
         if (focustimeLoader.item)
-            focustimeLoader.item.selectApp({ class: appClass, name: appClass, icon: "" });
+            focustimeLoader.item.selectApp({
+            "class": appClass,
+            "name": appClass,
+            "icon": ""
+        });
+
     }
 
     function toggleSettingsAppWindow() {
@@ -1095,77 +1219,32 @@ PanelWindow {
 
     function testFingerprint() {
         showPolkitPrompt();
-        if (polkitLoader.item) {
+        if (polkitLoader.item)
             polkitLoader.item.switchToFingerprint();
-        }
+
     }
 
     function testFingerprintSuccess() {
         showPolkitPrompt();
-        if (polkitLoader.item) {
+        if (polkitLoader.item)
             polkitLoader.item.switchToFingerprint();
-        }
+
         demoPolkitFingerprintTimer.restart();
     }
 
     function testFaceId() {
         showPolkitPrompt();
-        if (polkitLoader.item) {
+        if (polkitLoader.item)
             polkitLoader.item.switchToFace();
-        }
+
     }
 
     function testFaceIdSuccess() {
         showPolkitPrompt();
-        if (polkitLoader.item) {
+        if (polkitLoader.item)
             polkitLoader.item.switchToFace();
-        }
+
         demoPolkitFaceTimer.restart();
-    }
-
-    Timer {
-        id: demoPolkitFaceTimer
-        interval: 2400
-        repeat: false
-        onTriggered: {
-            if (polkitLoader.item) {
-                polkitLoader.item.simulateFaceSuccess();
-                demoMorphTimer.restart();
-            }
-        }
-    }
-
-    Timer {
-        id: demoPolkitFingerprintTimer
-        interval: 1000
-        repeat: false
-        onTriggered: {
-            if (polkitLoader.item) {
-                polkitLoader.item.simulateFingerprintSuccess();
-                demoMorphTimer.restart();
-            }
-        }
-    }
-
-    Timer {
-        id: demoPolkitTimer
-        interval: 1000
-        repeat: false
-        onTriggered: {
-            if (polkitLoader.item) {
-                polkitLoader.item.simulateDemoSuccess();
-                demoMorphTimer.restart();
-            }
-        }
-    }
-
-    Timer {
-        id: demoMorphTimer
-        interval: 650
-        repeat: false
-        onTriggered: {
-            islandContainer.polkitSuccessMorph = true;
-        }
     }
 
     function promptScreenShareSelection(fifoPath) {
@@ -1178,13 +1257,13 @@ PanelWindow {
 
     function handlePolkitFinished() {
         if (polkitLoader.item) {
-            if (polkitLoader.item.isSuccess) {
-                return;
-            }
+            if (polkitLoader.item.isSuccess)
+                return ;
+
             if (!polkitLoader.item.isFailed) {
                 islandContainer.polkitSuccessMorph = true;
                 polkitLoader.item.markSuccess();
-                return;
+                return ;
             }
         }
         closePolkitPrompt();
@@ -1303,7 +1382,7 @@ PanelWindow {
 
     }
     color: "transparent"
-    implicitHeight: Math.max(root.requestedWindowHeight, root.retainedWindowHeight)
+    implicitHeight: root.screen ? root.screen.height : 1080
     onRequestedWindowHeightChanged: root.reconcileWindowHeight()
     Component.onCompleted: {
         root.retainedWindowHeight = root.requestedWindowHeight;
@@ -1311,7 +1390,7 @@ PanelWindow {
     }
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
     WlrLayershell.namespace: "dynamic-island"
-    WlrLayershell.layer: root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.screenshotEditorLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.notificationLayerVisible || islandContainer.focustimeLayerVisible ? WlrLayer.Overlay : WlrLayer.Top
+    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: {
         if (root.screenshotSnippingActive || islandContainer.screenshotEditorLayerVisible)
             return WlrKeyboardFocus.Exclusive;
@@ -1387,6 +1466,109 @@ PanelWindow {
         if (connectivityPromptActive && monitorFocused)
             connectivityPromptFocusTimer.restart();
 
+    }
+
+    Timer {
+        id: powerMenuRetractTimer
+
+        interval: 215
+        repeat: false
+        onTriggered: {
+            islandContainer.smartRestoreState();
+            root.powerMenuRetracting = false;
+        }
+    }
+
+    Timer {
+        id: wallpaperPickerRetractTimer
+
+        interval: 220
+        repeat: false
+        onTriggered: {
+            root.wallpaperPickerRetracting = false;
+        }
+    }
+
+    Timer {
+        id: notificationRetractTimer
+
+        interval: 215
+        repeat: false
+        onTriggered: {
+            islandContainer.smartRestoreState(true);
+            root.notificationRetracting = false;
+        }
+    }
+
+    Timer {
+        id: screenshotPreviewRetractTimer
+
+        interval: 215
+        repeat: false
+        onTriggered: {
+            islandContainer.smartRestoreState(true);
+            root.screenshotPreviewRetracting = false;
+        }
+    }
+
+    Timer {
+        id: reloadRetractTimer
+
+        interval: 215
+        repeat: false
+        onTriggered: {
+            islandContainer.smartRestoreState(true);
+            root.reloadRetracting = false;
+        }
+    }
+
+    Timer {
+        id: demoPolkitFaceTimer
+
+        interval: 2400
+        repeat: false
+        onTriggered: {
+            if (polkitLoader.item) {
+                polkitLoader.item.simulateFaceSuccess();
+                demoMorphTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: demoPolkitFingerprintTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (polkitLoader.item) {
+                polkitLoader.item.simulateFingerprintSuccess();
+                demoMorphTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: demoPolkitTimer
+
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            if (polkitLoader.item) {
+                polkitLoader.item.simulateDemoSuccess();
+                demoMorphTimer.restart();
+            }
+        }
+    }
+
+    Timer {
+        id: demoMorphTimer
+
+        interval: 650
+        repeat: false
+        onTriggered: {
+            islandContainer.polkitSuccessMorph = true;
+        }
     }
 
     FileView {
@@ -1494,6 +1676,7 @@ PanelWindow {
                     wallpaperPath = p;
                     if (changed)
                         console.log("[DynamicIsland] Loaded wallpaper from ~/.cache/wal/wal:", p);
+
                 }
             } catch (e) {
                 console.warn("[DynamicIsland] Failed to read wal wallpaper path:", e);
@@ -1518,6 +1701,7 @@ PanelWindow {
                     wallpaperPath = p;
                     if (changed)
                         console.log("[DynamicIsland] Loaded current wallpaper path from caelestia:", p);
+
                 }
             } catch (e) {
                 console.warn("[DynamicIsland] Failed to read current wallpaper path:", e);
@@ -1572,10 +1756,12 @@ PanelWindow {
 
     FileView {
         id: wallustColors
+
         property string accentHex: ""
         property string bgHex: ""
         property string fgHex: ""
         property string surfaceHex: ""
+
         path: root.homeDir + "/.cache/wallust/colors.json"
         watchChanges: true
         printErrors: false
@@ -1587,25 +1773,31 @@ PanelWindow {
                 if (d) {
                     if (d.colors && (d.colors.color4 || d.colors.color2))
                         accentHex = d.colors.color4 || d.colors.color2;
+
                     if (d.special && d.special.background)
                         bgHex = d.special.background;
+
                     if (d.special && d.special.foreground)
                         fgHex = d.special.foreground;
+
                     if (d.colors && d.colors.color8)
                         surfaceHex = d.colors.color8;
                     else if (d.colors && d.colors.color0)
                         surfaceHex = d.colors.color0;
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
         }
     }
 
     FileView {
         id: matugenColors
+
         property string accentHex: ""
         property string bgHex: ""
         property string fgHex: ""
         property string surfaceHex: ""
+
         path: root.homeDir + "/.config/matugen/colors.json"
         watchChanges: true
         printErrors: false
@@ -1629,53 +1821,12 @@ PanelWindow {
                         fgHex = d.colors.on_background;
                     if (d.colors.surface && d.colors.surface.default && d.colors.surface.default.hex)
                         surfaceHex = d.colors.surface.default.hex;
+
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
         }
     }
-
-    readonly property color themeAccent: {
-        if (dynamicConfig && dynamicConfig.effectiveAccentColor) return dynamicConfig.effectiveAccentColor;
-        if (irisColors && irisColors.accentHex !== "") return irisColors.accentHex;
-        if (matugenColors && matugenColors.accentHex !== "") return matugenColors.accentHex;
-        if (wallustColors && wallustColors.accentHex !== "") return wallustColors.accentHex;
-        return pywalColors.walAccent;
-    }
-    readonly property color themeBg: {
-        if (irisColors && irisColors.bgHex !== "") return irisColors.bgHex;
-        if (matugenColors && matugenColors.bgHex !== "") return matugenColors.bgHex;
-        if (wallustColors && wallustColors.bgHex !== "") return wallustColors.bgHex;
-        return "#1e3a6c";
-    }
-    readonly property color themeSurface: {
-        if (irisColors && irisColors.surfaceHex !== "") return irisColors.surfaceHex;
-        if (matugenColors && matugenColors.surfaceHex !== "") return matugenColors.surfaceHex;
-        if (wallustColors && wallustColors.surfaceHex !== "") return wallustColors.surfaceHex;
-        return "#264988";
-    }
-    readonly property color themeFg: {
-        if (irisColors && irisColors.fgHex !== "") return irisColors.fgHex;
-        if (matugenColors && matugenColors.fgHex !== "") return matugenColors.fgHex;
-        if (wallustColors && wallustColors.fgHex !== "") return wallustColors.fgHex;
-        return "#ffffff";
-    }
-    readonly property color themeDim: {
-        if (irisColors && irisColors.dimHex !== "") return irisColors.dimHex;
-        return Qt.rgba(root.themeFg.r, root.themeFg.g, root.themeFg.b, 0.62);
-    }
-    readonly property color themeRed: (irisColors && irisColors.redHex !== "") ? irisColors.redHex : "#c29770"
-    readonly property color themeGreen: (irisColors && irisColors.greenHex !== "") ? irisColors.greenHex : "#54b699"
-    readonly property color themeYellow: (irisColors && irisColors.yellowHex !== "") ? irisColors.yellowHex : "#c29770"
-    readonly property color themeBlue: (irisColors && irisColors.blueHex !== "") ? irisColors.blueHex : "#84a1e6"
-    readonly property var irisColorPalette: [
-        themeAccent,
-        themeRed,
-        themeGreen,
-        themeYellow,
-        themeBlue,
-        "#ffffff",
-        "#000000"
-    ]
 
     Process {
         id: awwwQueryProc
@@ -1722,7 +1873,6 @@ PanelWindow {
     Process {
         id: screenshotCaptureProc
 
-        running: false
         property string targetFile: ""
         property bool isSattyMode: false
         property bool landPending: false
@@ -1735,38 +1885,33 @@ PanelWindow {
         property real pendingTargetW: 0
         property real pendingTargetH: 0
 
+        running: false
         onExited: (code) => {
             root.screenshotCapturing = false;
-            if (root.shellRootController) {
+            if (root.shellRootController)
                 root.shellRootController.screenshotCapturing = false;
-            }
 
             if (code !== 0) {
                 console.log("[DynamicIsland] Grim error:", code);
                 root.screenshotFlyAnimationActive = false;
                 islandContainer.smartRestoreState();
-                return;
+                return ;
             }
-
             // Apri l'isola istantaneamente e pulita, senza alcuna animazione trasparente di trasporto
             root.screenshotImageLanded = true;
             root.screenshotFlyAnimationActive = false;
-            if (isSattyMode) {
+            if (isSattyMode)
                 islandContainer.showScreenshotEditorCapsule(targetFile);
-            } else {
+            else
                 islandContainer.showScreenshotPreviewCapsule(targetFile);
-            }
-
-            if (screenshotPreviewLoader && screenshotPreviewLoader.item && typeof screenshotPreviewLoader.item.refreshImage === "function") {
+            if (screenshotPreviewLoader && screenshotPreviewLoader.item && typeof screenshotPreviewLoader.item.refreshImage === "function")
                 screenshotPreviewLoader.item.refreshImage(targetFile);
-            }
-            if (screenshotEditorLoader && screenshotEditorLoader.item && typeof screenshotEditorLoader.item.refreshImage === "function") {
-                screenshotEditorLoader.item.refreshImage(targetFile);
-            }
 
-            if (root.shellRootController && root.shellRootController.notifyScreenshotFileReady) {
+            if (screenshotEditorLoader && screenshotEditorLoader.item && typeof screenshotEditorLoader.item.refreshImage === "function")
+                screenshotEditorLoader.item.refreshImage(targetFile);
+
+            if (root.shellRootController && root.shellRootController.notifyScreenshotFileReady)
                 root.shellRootController.notifyScreenshotFileReady(targetFile);
-            }
 
             if (landPending || !root.screenshotFlyAnimationActive) {
                 root.screenshotImageLanded = true;
@@ -1805,16 +1950,6 @@ PanelWindow {
         running: false
     }
 
-    property bool hasFingerprintSensor: {
-        if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined) {
-            return !!dynamicConfig.hasFingerprintReader;
-        }
-        if (userConfig && userConfig.hasFingerprintReader !== undefined) {
-            return !!userConfig.hasFingerprintReader;
-        }
-        return false;
-    }
-
     Process {
         id: rootFpDetectorProc
 
@@ -1823,27 +1958,25 @@ PanelWindow {
 
         stdout: StdioCollector {
             onDataChanged: {
-                if (!data) return;
+                if (!data)
+                    return ;
+
                 try {
                     const res = JSON.parse(data.trim());
                     if (res && res.available !== undefined) {
-                        if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined) return;
-                        if (userConfig && userConfig.hasFingerprintReader !== undefined) return;
+                        if (dynamicConfig && dynamicConfig.hasFingerprintReader !== undefined)
+                            return ;
+
+                        if (userConfig && userConfig.hasFingerprintReader !== undefined)
+                            return ;
+
                         root.hasFingerprintSensor = !!res.available;
                     }
-                } catch(e) {}
+                } catch (e) {
+                }
             }
         }
-    }
 
-    property bool hasFaceUnlock: {
-        if (dynamicConfig && dynamicConfig.hasFaceUnlock !== undefined) {
-            return !!dynamicConfig.hasFaceUnlock;
-        }
-        if (userConfig && userConfig.hasFaceUnlock !== undefined) {
-            return !!userConfig.hasFaceUnlock;
-        }
-        return false;
     }
 
     Process {
@@ -1854,17 +1987,25 @@ PanelWindow {
 
         stdout: StdioCollector {
             onDataChanged: {
-                if (!data) return;
+                if (!data)
+                    return ;
+
                 try {
                     const res = JSON.parse(data.trim());
                     if (res && res.available !== undefined) {
-                        if (dynamicConfig && dynamicConfig.hasFaceUnlock !== undefined) return;
-                        if (userConfig && userConfig.hasFaceUnlock !== undefined) return;
+                        if (dynamicConfig && dynamicConfig.hasFaceUnlock !== undefined)
+                            return ;
+
+                        if (userConfig && userConfig.hasFaceUnlock !== undefined)
+                            return ;
+
                         root.hasFaceUnlock = !!res.available;
                     }
-                } catch(e) {}
+                } catch (e) {
+                }
             }
         }
+
     }
 
     Timer {
@@ -1894,7 +2035,7 @@ PanelWindow {
     Timer {
         id: windowShrinkTimer
 
-        interval: 1000
+        interval: 420
         repeat: false
         onTriggered: root.retainedWindowHeight = root.requestedWindowHeight
     }
@@ -1964,6 +2105,7 @@ PanelWindow {
 
     Timer {
         id: controlCenterPrewarmTimer
+
         interval: 1500
         running: !root.controlCenterMounted
         repeat: false
@@ -2004,17 +2146,22 @@ PanelWindow {
                 islandCenterX: root.lockIslandCenter ? (root.width / 2) : (root.width * root.effectiveIslandPositionX / 100)
                 islandTopMargin: root.effectiveIslandTopMargin
                 islandHeight: root.effectiveIslandHeight
-                onSnipRequested: (x, y, w, h, isSatty) => root.executeSnip(x, y, w, h, isSatty)
+                onSnipRequested: (x, y, w, h, isSatty) => {
+                    return root.executeSnip(x, y, w, h, isSatty);
+                }
                 onDragUpdated: (w, h) => {
                     root.screenshotSnippingStatusText = Math.round(w) + " × " + Math.round(h) + " px";
                 }
                 onCancelRequested: root.cancelScreenshotSnipping()
             }
+
         }
+
     }
 
     ScreenshotFlyLayer {
         id: screenshotFlyLayer
+
         anchors.fill: parent
         z: 15
         enabled: false
@@ -2029,12 +2176,11 @@ PanelWindow {
     // --- 灵动岛主容器与全局状态 ---
     FocusScope {
         id: islandContainer
-        z: 10
 
         property string islandState: "normal"
         property bool reloadFailed: false
         property string reloadErrorString: ""
-        readonly property bool reloadLayerVisible: !root.overviewVisible && islandState === "reload"
+        readonly property bool reloadLayerVisible: !root.overviewVisible && (islandState === "reload" || root.reloadRetracting)
         property bool polkitSuccessMorph: false
         property string splitIcon: root.defaultSplitIcon
         property real osdProgress: -1
@@ -2110,49 +2256,12 @@ PanelWindow {
         readonly property real rightSwipeProgress: Math.max(0, swipeTransitionProgress)
         readonly property var customLeftItems: systemState.customLeftItems
         readonly property bool hasCustomLeftItems: systemState.hasCustomLeftItems
-        readonly property bool customSwipeVisible: !root.overviewVisible
-            && islandState !== "long_capsule"
-            && islandState !== "split"
-            && islandState !== "charging"
-            && islandState !== "silent_ring"
-            && islandState !== "notification"
-            && islandState !== "screenshot_preview"
-            && islandState !== "screenshot_snipping"
-            && islandState !== "screenshot_editor"
-            && islandState !== "reload"
-            && islandState !== "discord_call"
-            && !expandedLayerVisible && !bluetoothExpandedLayerVisible
-            && !controlCenterLayerVisible && !powerMenuLayerVisible
-            && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible
-            && !applicationLauncherLayerVisible && !clipboardLayerVisible
-            && !settingsAppLayerVisible && !fileShelfLayerVisible
-            && !polkitLayerVisible && !screenSharePickerLayerVisible
-            && !focustimeLayerVisible
-            && hasCustomLeftItems
-            && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0)))
-        readonly property bool lyricsSwipeVisible: !root.overviewVisible
-            && islandState !== "long_capsule"
-            && islandState !== "split"
-            && islandState !== "charging"
-            && islandState !== "silent_ring"
-            && islandState !== "notification"
-            && islandState !== "screenshot_preview"
-            && islandState !== "screenshot_snipping"
-            && islandState !== "screenshot_editor"
-            && islandState !== "reload"
-            && islandState !== "discord_call"
-            && !expandedLayerVisible && !bluetoothExpandedLayerVisible
-            && !controlCenterLayerVisible && !powerMenuLayerVisible
-            && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible
-            && !applicationLauncherLayerVisible && !clipboardLayerVisible
-            && !settingsAppLayerVisible && !fileShelfLayerVisible
-            && !polkitLayerVisible && !screenSharePickerLayerVisible
-            && !focustimeLayerVisible
-            && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || (islandState === "normal" && swipeTransitionProgress >= 0)))
+        readonly property bool customSwipeVisible: !root.overviewVisible && islandState !== "long_capsule" && islandState !== "split" && islandState !== "charging" && islandState !== "silent_ring" && islandState !== "notification" && islandState !== "screenshot_preview" && islandState !== "screenshot_snipping" && islandState !== "screenshot_editor" && islandState !== "reload" && islandState !== "discord_call" && !expandedLayerVisible && !bluetoothExpandedLayerVisible && !controlCenterLayerVisible && !notificationCenterLayerVisible && !wallpaperPickerLayerVisible && !applicationLauncherLayerVisible && !clipboardLayerVisible && !settingsAppLayerVisible && !fileShelfLayerVisible && !polkitLayerVisible && !screenSharePickerLayerVisible && !focustimeLayerVisible && hasCustomLeftItems && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress < 0 : (islandState === "custom" || (islandState === "normal" && swipeTransitionProgress < 0)))
+        readonly property bool lyricsSwipeVisible: !root.overviewVisible && islandState !== "long_capsule" && islandState !== "split" && islandState !== "charging" && islandState !== "silent_ring" && islandState !== "screenshot_snipping" && islandState !== "screenshot_editor" && islandState !== "discord_call" && !expandedLayerVisible && !bluetoothExpandedLayerVisible && !controlCenterLayerVisible && !notificationCenterLayerVisible && !applicationLauncherLayerVisible && !clipboardLayerVisible && !settingsAppLayerVisible && !fileShelfLayerVisible && !polkitLayerVisible && !screenSharePickerLayerVisible && !focustimeLayerVisible && (capsuleMouseArea.sideSwipeInteractive ? swipeTransitionProgress >= 0 : (islandState === "lyrics" || ((islandState === "normal" || islandState === "power_menu" || islandState === "notification" || islandState === "screenshot_preview" || islandState === "reload" || islandState === "wallpaper_picker") && swipeTransitionProgress >= 0)))
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
-        readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
-        readonly property bool screenshotPreviewLayerVisible: !root.overviewVisible && islandState === "screenshot_preview"
+        readonly property bool notificationLayerVisible: !root.overviewVisible && (islandState === "notification" || root.notificationRetracting)
+        readonly property bool screenshotPreviewLayerVisible: !root.overviewVisible && (islandState === "screenshot_preview" || root.screenshotPreviewRetracting)
         readonly property bool screenshotSnippingLayerVisible: !root.overviewVisible && islandState === "screenshot_snipping"
         readonly property bool screenshotEditorLayerVisible: !root.overviewVisible && islandState === "screenshot_editor"
         property string screenshotPreviewPath: ""
@@ -2160,7 +2269,7 @@ PanelWindow {
         property real screenshotImgWidth: 0
         property real screenshotImgHeight: 0
         readonly property bool controlCenterLayerVisible: !root.overviewVisible && islandState === "control_center"
-        readonly property bool powerMenuLayerVisible: !root.overviewVisible && islandState === "power_menu"
+        readonly property bool powerMenuLayerVisible: !root.overviewVisible && (islandState === "power_menu" || root.powerMenuRetracting)
         readonly property bool notificationCenterLayerVisible: !root.overviewVisible && islandState === "notification_center"
         readonly property bool wallpaperPickerLayerVisible: !root.overviewVisible && islandState === "wallpaper_picker"
         readonly property bool applicationLauncherLayerVisible: !root.overviewVisible && islandState === "application_launcher"
@@ -2254,7 +2363,7 @@ PanelWindow {
             case "power":
             case "togglePowerMenu":
                 if (islandState === "power_menu")
-                    smartRestoreState();
+                    root.requestPowerMenuClose();
                 else
                     showPowerMenu();
                 return ;
@@ -2263,7 +2372,7 @@ PanelWindow {
                 return ;
             case "closePowerMenu":
                 if (islandState === "power_menu")
-                    smartRestoreState();
+                    root.requestPowerMenuClose();
 
                 return ;
             case "clipboard":
@@ -2700,9 +2809,9 @@ PanelWindow {
                     let duplicate = false;
                     if (notificationHistoryModel.count > 0) {
                         const first = notificationHistoryModel.get(0);
-                        if (first && (first.summary === resolvedSummary || (cleanedBody !== "" && first.body === cleanedBody))) {
+                        if (first && (first.summary === resolvedSummary || (cleanedBody !== "" && first.body === cleanedBody)))
                             duplicate = true;
-                        }
+
                     }
                     if (!duplicate) {
                         notificationHistoryModel.insert(0, {
@@ -2713,6 +2822,7 @@ PanelWindow {
                         });
                         if (notificationHistoryModel.count > 50)
                             notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+
                     }
                 }
                 return ;
@@ -2759,34 +2869,30 @@ PanelWindow {
             notificationIcon = (icon !== undefined && icon !== null) ? String(icon) : "";
             notificationIconColor = customColor ? customColor : (notificationAppName === "Wi-Fi" ? "#ff9f0a" : "#f4f5f7");
             notificationExpanded = false;
-
             const rawIcon = String(notificationIcon || "").trim();
             const rawBody = String(notificationBody || "").trim();
             const rawSumm = String(notificationSummary || "").trim();
-            const isImgIcon = (rawIcon.startsWith("/") || rawIcon.startsWith("file://")) &&
-                              (rawIcon.endsWith(".png") || rawIcon.endsWith(".jpg") || rawIcon.endsWith(".jpeg") || rawIcon.endsWith(".webp"));
+            const isImgIcon = (rawIcon.startsWith("/") || rawIcon.startsWith("file://")) && (rawIcon.endsWith(".png") || rawIcon.endsWith(".jpg") || rawIcon.endsWith(".jpeg") || rawIcon.endsWith(".webp"));
             const matchImg = String(rawBody + " " + rawSumm).match(/(?:\/[^\s\n\r"']+\.(?:png|jpg|jpeg|webp))/);
-            if (isImgIcon) {
+            if (isImgIcon)
                 screenshotPreviewPath = rawIcon.replace(/^file:\/\//, "");
-            } else if (matchImg && matchImg[0]) {
+            else if (matchImg && matchImg[0])
                 screenshotPreviewPath = matchImg[0];
-            } else if (notificationAppName.toLowerCase().indexOf("screenshot") === -1) {
+            else if (notificationAppName.toLowerCase().indexOf("screenshot") === -1)
                 screenshotPreviewPath = "";
-            }
-
-            islandState = "notification";
+            const isScrn = screenshotPreviewPath !== "" || notificationAppName.toLowerCase().indexOf("screenshot") !== -1;
+            islandState = isScrn ? "screenshot_preview" : "notification";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             root.showAutoHiddenIsland("state");
-            const isScrn = screenshotPreviewPath !== "" || notificationAppName.toLowerCase().indexOf("screenshot") !== -1;
             restartAutoHideTimer(isScrn ? 7500 : notificationAutoHideInterval);
             // Store in notification history
             if (notificationHistoryModel) {
                 let duplicate = false;
                 if (notificationHistoryModel.count > 0) {
                     const first = notificationHistoryModel.get(0);
-                    if (first && (first.summary === resolvedSummary || (cleanedBody !== "" && first.body === cleanedBody))) {
+                    if (first && (first.summary === resolvedSummary || (cleanedBody !== "" && first.body === cleanedBody)))
                         duplicate = true;
-                    }
+
                 }
                 if (!duplicate) {
                     notificationHistoryModel.insert(0, {
@@ -2797,6 +2903,7 @@ PanelWindow {
                     });
                     if (notificationHistoryModel.count > 50)
                         notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+
                 }
             }
         }
@@ -2809,9 +2916,9 @@ PanelWindow {
                 if (notificationHistoryModel.count > 0) {
                     const first = notificationHistoryModel.get(0);
                     if (first && (first.appName === "Screenshot" || String(first.summary).indexOf("Screenshot") !== -1)) {
-                        if (first.body && (first.body === body || first.body.indexOf(fileName) !== -1)) {
-                            return;
-                        }
+                        if (first.body && (first.body === body || first.body.indexOf(fileName) !== -1))
+                            return ;
+
                     }
                 }
                 notificationHistoryModel.insert(0, {
@@ -2822,10 +2929,12 @@ PanelWindow {
                 });
                 if (notificationHistoryModel.count > 50)
                     notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+
             }
         }
 
         function showScreenshotPreviewCapsule(filePath) {
+            root.screenshotImageLanded = true;
             screenshotPreviewPath = filePath || "";
             const fileName = (filePath && filePath !== "") ? filePath.split("/").pop() : "";
             const bodyText = fileName !== "" ? (fileName + " • " + I18n.tr("Copiato negli appunti")) : I18n.tr("Copiato negli appunti");
@@ -2863,21 +2972,23 @@ PanelWindow {
             const hadDifferentPath = filePath && filePath !== "" && filePath !== screenshotPreviewPath;
             if (filePath && filePath !== "")
                 screenshotPreviewPath = filePath;
+
             islandState = "screenshot_editor";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             root.showAutoHiddenIsland("state");
             if (hadDifferentPath)
                 recordScreenshotNotification(filePath, "Screenshot catturato");
+
         }
 
         function updateScreenshotAspect(w, h) {
             if (w > 0 && h > 0) {
                 screenshotImgWidth = w;
                 screenshotImgHeight = h;
-                screenshotAspect = Math.max(0.4, Math.min(6.0, w / h));
-                if (islandState === "screenshot_preview" || islandState === "screenshot_editor" || islandState === "notification") {
+                screenshotAspect = Math.max(0.4, Math.min(6, w / h));
+                if (islandState === "screenshot_preview" || islandState === "screenshot_editor" || islandState === "notification")
                     mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
-                }
+
             }
         }
 
@@ -3030,8 +3141,30 @@ PanelWindow {
             restingState = normalizeRestingState(nextState);
         }
 
-        function smartRestoreState() {
+        function smartRestoreState(forceImmediate) {
             try {
+                if (!forceImmediate) {
+                    if (islandState === "reload" && !root.reloadRetracting) {
+                        root.requestReloadClose();
+                        return ;
+                    }
+                    if (islandState === "notification" && !root.notificationRetracting) {
+                        root.requestNotificationClose();
+                        return ;
+                    }
+                    if (islandState === "screenshot_preview" && !root.screenshotPreviewRetracting) {
+                        root.requestScreenshotPreviewClose();
+                        return ;
+                    }
+                    if (islandState === "power_menu" && !root.powerMenuRetracting) {
+                        root.requestPowerMenuClose();
+                        return ;
+                    }
+                    if (islandState === "wallpaper_picker" && !root.wallpaperPickerRetracting) {
+                        root.requestWallpaperPickerClose();
+                        return ;
+                    }
+                }
                 if (screenShareFifoPath !== "") {
                     Quickshell.execDetached(["bash", "-c", "echo 'cancel' > '" + screenShareFifoPath + "'"]);
                     screenShareFifoPath = "";
@@ -3045,6 +3178,7 @@ PanelWindow {
                 restoreRestingCapsule();
                 if (controlCenterLoader.item)
                     controlCenterLoader.item.powerViewActive = false;
+
             } catch (err) {
                 console.log("[DynamicIsland] Error in smartRestoreState:", err);
                 restoreRestingCapsule(true);
@@ -3263,6 +3397,7 @@ PanelWindow {
 
             if (currentWs === wsId && islandState === "long_capsule")
                 return ;
+
             if (root.autoHideSuppressesTransientReveal)
                 return ;
 
@@ -3297,6 +3432,7 @@ PanelWindow {
             lyricsCapsuleWidth = Math.max(220, Math.min(screenW - 48, view.preferredWidth));
         }
 
+        z: 10
         anchors.fill: parent
         focus: root.screenshotSnippingActive || screenshotPreviewLayerVisible || screenshotEditorLayerVisible || controlCenterLayerVisible || wallpaperPickerLayerVisible || applicationLauncherLayerVisible || clipboardLayerVisible || settingsAppLayerVisible || fileShelfLayerVisible || polkitLayerVisible || expandedPlayerKeyboardFocusRequested || (root.monitorFocused && (root.overviewVisible || root.connectivityPromptActive))
         onIslandPointerInsideChanged: {
@@ -3305,15 +3441,9 @@ PanelWindow {
                 hoverCollapseDelayTimer.stop();
                 controlCenterAutoCollapseTimer.stop();
             } else if (islandHadPointer) {
-                if (islandState !== "normal" &&
-                    islandState !== "custom" &&
-                    islandState !== "lyrics" &&
-                    islandState !== "settings_app" &&
-                    islandState !== "screenshot_editor" &&
-                    islandState !== "screenshot_snipping" &&
-                    islandState !== "screenshot_preview") {
+                if (islandState !== "normal" && islandState !== "custom" && islandState !== "lyrics" && islandState !== "settings_app" && islandState !== "screenshot_editor" && islandState !== "screenshot_snipping" && islandState !== "screenshot_preview")
                     hoverCollapseDelayTimer.restart();
-                }
+
             }
         }
         onControlCenterPointerInsideChanged: {
@@ -3374,23 +3504,23 @@ PanelWindow {
                 if (root.screenshotSnippingActive) {
                     root.cancelScreenshotSnipping();
                     event.accepted = true;
-                    return;
+                    return ;
                 }
                 if (root.overviewVisible) {
                     root.closeOverviewEverywhere();
                     event.accepted = true;
-                    return;
+                    return ;
                 }
                 if (islandContainer.islandState === "focustime" && focustimeLoader.item && focustimeLoader.item.handleEscapeKey) {
                     if (focustimeLoader.item.handleEscapeKey()) {
                         event.accepted = true;
-                        return;
+                        return ;
                     }
                 }
                 if (islandContainer.islandState !== "normal") {
                     islandContainer.smartRestoreState();
                     event.accepted = true;
-                    return;
+                    return ;
                 }
             }
             if (!root.overviewVisible)
@@ -3511,6 +3641,7 @@ PanelWindow {
             onWorkspaceActivated: function(workspaceId) {
                 if (root.dynamicConfig && root.dynamicConfig.enableWorkspacePill !== false)
                     return ;
+
                 if (userConfig.islandShowWorkspaceOnAutoHide)
                     root.showAutoHiddenIsland();
 
@@ -3625,31 +3756,15 @@ PanelWindow {
             }
             repeat: false
             onTriggered: {
-                console.log("[DynamicIsland] hoverCollapseDelayTimer TRIGGERED! cmaMouse:", (capsuleMouseArea && capsuleMouseArea.containsMouse),
-                            "capsuleHovered:", (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered),
-                            "wsHovered:", (workspaceFloatingIsland && workspaceFloatingIsland.hovered),
-                            "trayHovered:", (trayFloatingIsland && trayFloatingIsland.hovered),
-                            "connMounted:", root.anyConnectivityDetailMounted,
-                            "state:", islandContainer.islandState);
-                if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) ||
-                    (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) ||
-                    (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) ||
-                    root.anyConnectivityDetailMounted ||
-                    (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) ||
-                    (capsuleMouseArea && capsuleMouseArea.containsMouse))
+                console.log("[DynamicIsland] hoverCollapseDelayTimer TRIGGERED! cmaMouse:", (capsuleMouseArea && capsuleMouseArea.containsMouse), "capsuleHovered:", (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered), "wsHovered:", (workspaceFloatingIsland && workspaceFloatingIsland.hovered), "trayHovered:", (trayFloatingIsland && trayFloatingIsland.hovered), "connMounted:", root.anyConnectivityDetailMounted, "state:", islandContainer.islandState);
+                if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) || (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || root.anyConnectivityDetailMounted || (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (capsuleMouseArea && capsuleMouseArea.containsMouse))
                     return ;
 
-                if (islandContainer.islandState === "settings_app" ||
-                    islandContainer.islandState === "screenshot_editor" ||
-                    islandContainer.islandState === "screenshot_snipping" ||
-                    islandContainer.islandState === "screenshot_preview") {
+                if (islandContainer.islandState === "settings_app" || islandContainer.islandState === "screenshot_editor" || islandContainer.islandState === "screenshot_snipping" || islandContainer.islandState === "screenshot_preview") {
                     islandContainer.hoverExpandedActive = false;
                     return ;
                 }
-
-                if (islandContainer.islandState !== "normal" &&
-                    islandContainer.islandState !== "custom" &&
-                    islandContainer.islandState !== "lyrics") {
+                if (islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics") {
                     if (islandContainer.islandHadPointer && !islandContainer.islandPointerInside) {
                         islandContainer.hoverExpandedActive = false;
                         islandContainer.islandHadPointer = false;
@@ -3667,13 +3782,9 @@ PanelWindow {
             onTriggered: {
                 console.log("[DynamicIsland] controlCenterAutoCollapseTimer TRIGGERED! pointerInside:", islandContainer.controlCenterPointerInside);
                 if (islandContainer.islandState === "control_center") {
-                    if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) ||
-                        (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) ||
-                        (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) ||
-                        root.anyConnectivityDetailMounted ||
-                        (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) ||
-                        (capsuleMouseArea && capsuleMouseArea.containsMouse))
+                    if ((trayFloatingIsland && trayFloatingIsland.visible && (trayFloatingIsland.hovered || trayFloatingIsland.menuVisible)) || (workspaceFloatingIsland && workspaceFloatingIsland.visible && workspaceFloatingIsland.hovered) || (themeFloatingIsland && themeFloatingIsland.visible && themeFloatingIsland.hovered) || root.anyConnectivityDetailMounted || (mainCapsuleHoverHandler && mainCapsuleHoverHandler.hovered) || (capsuleMouseArea && capsuleMouseArea.containsMouse))
                         return ;
+
                     islandContainer.hoverExpandedActive = false;
                     islandContainer.smartRestoreState();
                 }
@@ -3812,14 +3923,13 @@ PanelWindow {
         // ── Ombre Satelliti (Music, Workspace & Headphones) ──────────────
         RectangularGlow {
             id: musicPillShadow
+
             anchors.fill: musicFloatingIsland
             anchors.topMargin: musicFloatingIsland.isExpanded ? 5 : 3
             anchors.bottomMargin: musicFloatingIsland.isExpanded ? -5 : -3
-            glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0)
-                ? (musicFloatingIsland.isExpanded ? (dynamicConfig.shadowRadius + 4) : dynamicConfig.shadowRadius)
-                : (musicFloatingIsland.isExpanded ? 22 : 14)
-            spread: musicFloatingIsland.isExpanded ? 0.0 : 0.02
-            color: Qt.rgba(0, 0, 0, (musicFloatingIsland.isExpanded ? 0.42 : 0.38) * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? (musicFloatingIsland.isExpanded ? (dynamicConfig.shadowRadius + 4) : dynamicConfig.shadowRadius) : (musicFloatingIsland.isExpanded ? 22 : 14)
+            spread: musicFloatingIsland.isExpanded ? 0 : 0.02
+            color: Qt.rgba(0, 0, 0, (musicFloatingIsland.isExpanded ? 0.42 : 0.38) * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60))
             cornerRadius: Math.min(musicFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
             visible: musicFloatingIsland.isEnabled && (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && musicFloatingIsland.visible && musicFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
@@ -3828,12 +3938,13 @@ PanelWindow {
 
         RectangularGlow {
             id: workspacePillShadow
+
             anchors.fill: workspaceFloatingIsland
             anchors.topMargin: 3
             anchors.bottomMargin: -3
             glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 14
             spread: 0.02
-            color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60))
             cornerRadius: Math.min(workspaceFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
             visible: workspaceFloatingIsland.isEnabled && (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && workspaceFloatingIsland.visible && workspaceFloatingIsland.opacity > 0.01 && !root.screenshotCapturing && !root.overviewVisible && root.overviewPhase === "closed" && !root.overviewMounted
@@ -3842,12 +3953,13 @@ PanelWindow {
 
         RectangularGlow {
             id: headphonesPillShadow
+
             anchors.fill: headphonesFloatingIsland
             anchors.topMargin: 3
             anchors.bottomMargin: -3
             glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? dynamicConfig.shadowRadius : 14
             spread: 0.02
-            color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0))
+            color: Qt.rgba(0, 0, 0, 0.38 * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60))
             cornerRadius: Math.min(headphonesFloatingIsland.radius, Math.min(width, height) / 2)
             z: 7
             visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && headphonesFloatingIsland.visible && headphonesFloatingIsland.opacity > 0.01 && !root.screenshotCapturing
@@ -3922,7 +4034,8 @@ PanelWindow {
             accentColor: root.themeAccent
             textFontFamily: root.textFontFamily
             iconFontFamily: root.iconFontFamily
-            activeState: islandContainer.wallpaperPickerLayerVisible
+            activeState: islandContainer.wallpaperPickerLayerVisible && !root.wallpaperPickerRetracting
+            customY: Math.round(root.effectiveIslandTopMargin + 48 + 260 + 10)
             z: 16
         }
 
@@ -3931,19 +4044,23 @@ PanelWindow {
 
             anchors.fill: parent
             z: 1
-            enabled: islandContainer.islandState !== "normal" &&
-                     islandContainer.islandState !== "custom" &&
-                     islandContainer.islandState !== "lyrics" &&
-                     islandContainer.islandState !== "settings_app" &&
-                     islandContainer.islandState !== "screenshot_editor" &&
-                     islandContainer.islandState !== "screenshot_snipping" &&
-                     islandContainer.islandState !== "screenshot_preview"
-            onClicked: islandContainer.smartRestoreState()
+            enabled: islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics" && islandContainer.islandState !== "settings_app" && islandContainer.islandState !== "screenshot_editor" && islandContainer.islandState !== "screenshot_snipping" && islandContainer.islandState !== "screenshot_preview"
+            onClicked: {
+                if (islandContainer.islandState === "power_menu")
+                    root.requestPowerMenuClose();
+                else if (islandContainer.islandState === "wallpaper_picker")
+                    root.requestWallpaperPickerClose();
+                else
+                    islandContainer.smartRestoreState();
+            }
         }
 
         // ── Ombre Eleganti Dynamic Island (Elevation Drop Shadows) ────────
         Item {
             id: capsuleShadowContainer
+
+            readonly property real safeCornerRadius: Math.min(mainCapsule.radius, Math.min(width, height) / 2)
+
             z: 4
             x: mainCapsule.x
             y: mainCapsule.y
@@ -3951,10 +4068,8 @@ PanelWindow {
             height: mainCapsule.height
             scale: mainCapsule.scale
             transformOrigin: mainCapsule.transformOrigin
-            opacity: mainCapsule.opacity * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60.0)
+            opacity: mainCapsule.opacity * ((dynamicConfig && dynamicConfig.shadowIntensity !== undefined ? dynamicConfig.shadowIntensity : 60) / 60)
             visible: (dynamicConfig ? (dynamicConfig.enableShadows !== false) : true) && mainCapsule.visible && mainCapsule.opacity > 0.01 && !root.screenshotCapturing
-
-            readonly property real safeCornerRadius: Math.min(mainCapsule.radius, Math.min(width, height) / 2)
 
             // 1. Ombra Diffusa Morbida (Ambient Soft Shadow con decadimento naturale)
             RectangularGlow {
@@ -3962,7 +4077,7 @@ PanelWindow {
                 anchors.topMargin: 5
                 anchors.bottomMargin: -5
                 glowRadius: (dynamicConfig && dynamicConfig.shadowRadius > 0) ? (dynamicConfig.shadowRadius + 2) : 22
-                spread: 0.0
+                spread: 0
                 color: Qt.rgba(0, 0, 0, 0.36)
                 cornerRadius: capsuleShadowContainer.safeCornerRadius
             }
@@ -3982,10 +4097,11 @@ PanelWindow {
             RectangularGlow {
                 anchors.fill: parent
                 glowRadius: (dynamicConfig && dynamicConfig.blurRadius > 0) ? Math.max(3, Math.round(dynamicConfig.blurRadius * 0.35)) : 7
-                spread: 0.0
+                spread: 0
                 color: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.12)
                 cornerRadius: capsuleShadowContainer.safeCornerRadius
             }
+
         }
 
         // --- UI 渲染：灵动岛主干 ---
@@ -3993,14 +4109,16 @@ PanelWindow {
             id: mainCapsule
 
             readonly property bool isScreenshotPreviewActive: islandContainer.islandState === "screenshot_preview" || (islandContainer.islandState === "notification" && notificationLoader.item && notificationLoader.item.hasScreenshotPreview)
-
             property int morphDuration: {
                 if (islandContainer.islandState === "polkit" && islandContainer.polkitSuccessMorph)
                     return 320;
+
                 if (mainCapsule.isScreenshotPreviewActive)
                     return 290;
+
                 if (islandContainer.islandState === "reload")
                     return 340;
+
                 return 400;
             }
             readonly property bool notificationHistorySurface: islandContainer.islandState === "notification_center"
@@ -4029,12 +4147,15 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "power_menu":
-                    return 420;
+                case "wallpaper_picker":
+                case "notification":
+                case "screenshot_preview":
+                case "reload":
+                    return root.effectiveIslandWidth;
                 case "control_center":
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredWidth : 380;
                 case "notification_center":
                     return 410;
-                case "wallpaper_picker":
                 case "file_shelf":
                     return 1100;
                 case "application_launcher":
@@ -4060,37 +4181,11 @@ PanelWindow {
                     return 410;
                 case "screenshot_snipping":
                     return 280;
-                case "screenshot_preview": {
-                    const asp = islandContainer.screenshotAspect || 1.77;
-                    if (asp >= 1.6) return 400;
-                    if (asp >= 1.1) return 360;
-                    if (asp >= 0.8) return 320;
-                    return 280;
-                }
-                case "screenshot_editor": {
-                    const screenW = root.screen ? root.screen.width : 1920;
-                    return Math.min(screenW - 48, 860);
-                }
-                case "notification": {
-                    if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview)) {
-                        const asp = islandContainer.screenshotAspect || 1.77;
-                        if (asp >= 1.6) return 400;
-                        if (asp >= 1.1) return 360;
-                        if (asp >= 0.8) return 320;
-                        return 280;
-                    }
-                    if (!notificationLoader.item)
-                        return 272;
-
-                    const screenW = (root.screen && root.screen.width > 0) ? root.screen.width : ((root.width > 300) ? root.width : 1920);
-                    return Math.max(notificationLoader.item.minimumWidth, Math.min(screenW - 48, notificationLoader.item.maximumWidth, notificationLoader.item.preferredWidth));
-                }
-                case "reload": {
-                    if (islandContainer.reloadFailed) {
-                        return (islandContainer.reloadErrorString !== "") ? 510 : 320;
-                    }
-                    return 300;
-                }
+                case "screenshot_editor":
+                    {
+                        const screenW = root.screen ? root.screen.width : 1920;
+                        return Math.min(screenW - 48, 860);
+                    };
                 case "charging":
                     return 260;
                 case "silent_ring":
@@ -4107,7 +4202,11 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "power_menu":
-                    return 96;
+                case "wallpaper_picker":
+                case "notification":
+                case "screenshot_preview":
+                case "reload":
+                    return root.effectiveIslandHeight;
                 case "control_center":
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
                         return 470;
@@ -4115,7 +4214,6 @@ PanelWindow {
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 540;
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
-                case "wallpaper_picker":
                 case "file_shelf":
                     return 260;
                 case "application_launcher":
@@ -4141,33 +4239,11 @@ PanelWindow {
                     return 165;
                 case "screenshot_snipping":
                     return root.effectiveIslandHeight;
-                case "screenshot_preview": {
-                    const asp = Math.max(0.4, Math.min(6.0, islandContainer.screenshotAspect || 1.77));
-                    const w = mainCapsule.baseTargetWidth;
-                    const contentW = Math.max(200, w - 24);
-                    const imgH = Math.max(50, Math.min(220, Math.round(contentW / asp)));
-                    return imgH + 106;
-                }
-                case "screenshot_editor": {
-                    const screenH = root.screen ? root.screen.height : 1080;
-                    return Math.min(screenH - 80, 580);
-                }
-                case "notification": {
-                    if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview)) {
-                        const asp = Math.max(0.4, Math.min(6.0, islandContainer.screenshotAspect || 1.77));
-                        const w = mainCapsule.baseTargetWidth;
-                        const contentW = Math.max(200, w - 24);
-                        const imgH = Math.max(50, Math.min(220, Math.round(contentW / asp)));
-                        return imgH + 106;
-                    }
-                    return notificationLoader.item ? Math.max(56, notificationLoader.item.preferredHeight) : 56;
-                }
-                case "reload": {
-                    if (islandContainer.reloadFailed && islandContainer.reloadErrorString !== "") {
-                        return reloadLoader.item ? reloadLoader.item.preferredHeight : 88;
-                    }
-                    return Math.max(root.effectiveIslandHeight, 42);
-                }
+                case "screenshot_editor":
+                    {
+                        const screenH = root.screen ? root.screen.height : 1080;
+                        return Math.min(screenH - 80, 580);
+                    };
                 case "charging":
                     return 44;
                 case "silent_ring":
@@ -4184,12 +4260,15 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "power_menu":
-                    return 36;
+                case "wallpaper_picker":
+                case "notification":
+                case "screenshot_preview":
+                case "reload":
+                    return root.effectiveIslandHeight / 2;
                 case "control_center":
                     return 34;
                 case "notification_center":
                     return mainCapsule.targetHeight * 36 / 165;
-                case "wallpaper_picker":
                 case "file_shelf":
                     return 34;
                 case "application_launcher":
@@ -4211,20 +4290,8 @@ PanelWindow {
                     return 40;
                 case "screenshot_snipping":
                     return root.effectiveIslandCornerRadius;
-                case "screenshot_preview":
-                    return 22;
                 case "screenshot_editor":
                     return 26;
-                case "notification":
-                    if (islandContainer.screenshotPreviewPath !== "" || (notificationLoader.item && notificationLoader.item.hasScreenshotPreview))
-                        return 22;
-                    return islandContainer.notificationExpanded ? 28 : mainCapsule.targetHeight / 2;
-                case "reload": {
-                    if (islandContainer.reloadFailed && islandContainer.reloadErrorString !== "") {
-                        return reloadLoader.item ? reloadLoader.item.preferredRadius : 24;
-                    }
-                    return mainCapsule.targetHeight / 2;
-                }
                 case "charging":
                 case "silent_ring":
                     return 22;
@@ -4257,7 +4324,7 @@ PanelWindow {
             width: displayedWidth
             height: targetHeight
             radius: targetRadius
-            opacity: root.screenshotCapturing ? 0.0 : root.autoHideProgress
+            opacity: root.screenshotCapturing ? 0 : root.autoHideProgress
             visible: opacity > 0.01
             scale: 0.96 + root.autoHideProgress * 0.04
             transformOrigin: Item.Top
@@ -4288,123 +4355,45 @@ PanelWindow {
 
             }
 
-            // ── Indicatore Batteria Interno (da sinistra verso destra, sopra e sotto) ─
-            Item {
-                id: innerBatteryClip
-
-                readonly property int batteryCap: islandContainer.batteryCapacity
-                readonly property bool hasBattery: islandContainer.hasBattery && batteryCap > 0
-                readonly property bool isLyricsActive: (islandContainer.islandState === "lyrics"
-                    || islandContainer.restingState === "lyrics"
-                    || root.lyricsActive
-                    || (islandContainer.swipeTransitionProgress > 0.05))
-                readonly property bool isResting: (islandContainer.islandState === "normal"
-                    || islandContainer.islandState === "custom")
-                    && !isLyricsActive
-                    && !root.overviewVisible
-                    && !root.isScreenshotModeActive
-                    && !root.screenshotCapturing
-                    && mainCapsule.height <= (root.effectiveIslandHeight + 6)
-
-                readonly property real batteryFraction: Math.max(0.0, Math.min(1.0, batteryCap / 100.0))
-
-                readonly property color indicatorColor: {
-                    if (batteryCap <= 20)
-                        return "#ff3b30"; // Rosso vivo critico (< 20%)
-                    if (batteryCap <= 40)
-                        return "#ff9500"; // Arancione di avviso (21-40%)
-                    if (batteryCap <= 65)
-                        return "#ffd60a"; // Giallo medio (41-65%)
-                    if (batteryCap <= 85)
-                        return (irisColors && irisColors.greenHex !== "") ? irisColors.greenHex : "#30d158"; // Verde menta / Iris (66-85%)
-                    return "#34c759"; // Verde brillante (86-100%)
-                }
-
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: Math.round(parent.width * batteryFraction)
-                clip: true
-                z: 3
-                visible: hasBattery && isResting && (batteryCap > 0 || islandContainer.isCharging)
-                opacity: (visible && !isLyricsActive) ? root.autoHideProgress : 0.0
-
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 380
-                        easing.type: Easing.OutQuint
-                    }
-                }
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 240
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-
-                Rectangle {
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    width: mainCapsule.width
-                    height: mainCapsule.height
-                    radius: mainCapsule.radius
-                    color: "transparent"
-                    border.width: 2.5
-                    border.color: innerBatteryClip.indicatorColor
-                    antialiasing: true
-
-                    Behavior on border.color {
-                        ColorAnimation { duration: 300 }
-                    }
-                }
-            }
-
             HoverHandler {
                 id: mainCapsuleHoverHandler
 
                 onHoveredChanged: {
-                    console.log("[DynamicIsland] mainCapsuleHoverHandler hovered:", hovered,
-                                "state:", islandContainer.islandState,
-                                "hoverExpandedActive:", islandContainer.hoverExpandedActive);
+                    console.log("[DynamicIsland] mainCapsuleHoverHandler hovered:", hovered, "state:", islandContainer.islandState, "hoverExpandedActive:", islandContainer.hoverExpandedActive);
                     if (hovered) {
                         islandContainer.islandHadPointer = true;
                         hoverCollapseDelayTimer.stop();
                         if (controlCenterAutoCollapseTimer.running)
                             controlCenterAutoCollapseTimer.stop();
+
                         if (root.autoHideEnabled) {
                             root.autoHidePointerInside = true;
                             root.showAutoHiddenIsland();
                         }
-                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
+                        if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics"))
                             hoverExpandDelayTimer.restart();
-                        }
+
                     } else {
                         if (root.autoHideEnabled) {
                             root.autoHidePointerInside = false;
                             root.scheduleAutoHide();
                         }
-                        if (root.hoverExpandEnabled) {
+                        if (root.hoverExpandEnabled)
                             hoverExpandDelayTimer.stop();
-                        }
-                        if (islandContainer.islandHadPointer &&
-                            islandContainer.islandState !== "normal" &&
-                            islandContainer.islandState !== "custom" &&
-                            islandContainer.islandState !== "lyrics" &&
-                            islandContainer.islandState !== "settings_app" &&
-                            islandContainer.islandState !== "screenshot_editor" &&
-                            islandContainer.islandState !== "screenshot_snipping" &&
-                            islandContainer.islandState !== "screenshot_preview") {
+
+                        if (islandContainer.islandHadPointer && islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics" && islandContainer.islandState !== "settings_app" && islandContainer.islandState !== "screenshot_editor" && islandContainer.islandState !== "screenshot_snipping" && islandContainer.islandState !== "screenshot_preview")
                             hoverCollapseDelayTimer.restart();
-                        }
+
                     }
                 }
-
                 onPointChanged: {
                     if (hovered) {
                         if (hoverCollapseDelayTimer.running)
                             hoverCollapseDelayTimer.stop();
+
                         if (controlCenterAutoCollapseTimer.running)
                             controlCenterAutoCollapseTimer.stop();
+
                     }
                 }
             }
@@ -4434,13 +4423,14 @@ PanelWindow {
                     hoverCollapseDelayTimer.stop();
                     if (controlCenterAutoCollapseTimer.running)
                         controlCenterAutoCollapseTimer.stop();
+
                     if (root.autoHideEnabled) {
                         root.autoHidePointerInside = true;
                         root.showAutoHiddenIsland();
                     }
-                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics")) {
+                    if (root.hoverExpandEnabled && (islandContainer.islandState === "normal" || islandContainer.islandState === "custom" || islandContainer.islandState === "lyrics"))
                         hoverExpandDelayTimer.restart();
-                    }
+
                 }
                 onExited: {
                     console.log("[DynamicIsland] capsuleMouseArea onExited, state:", islandContainer.islandState);
@@ -4448,19 +4438,12 @@ PanelWindow {
                         root.autoHidePointerInside = false;
                         root.scheduleAutoHide();
                     }
-                    if (root.hoverExpandEnabled) {
+                    if (root.hoverExpandEnabled)
                         hoverExpandDelayTimer.stop();
-                    }
-                    if (islandContainer.islandHadPointer &&
-                        islandContainer.islandState !== "normal" &&
-                        islandContainer.islandState !== "custom" &&
-                        islandContainer.islandState !== "lyrics" &&
-                        islandContainer.islandState !== "settings_app" &&
-                        islandContainer.islandState !== "screenshot_editor" &&
-                        islandContainer.islandState !== "screenshot_snipping" &&
-                        islandContainer.islandState !== "screenshot_preview") {
+
+                    if (islandContainer.islandHadPointer && islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics" && islandContainer.islandState !== "settings_app" && islandContainer.islandState !== "screenshot_editor" && islandContainer.islandState !== "screenshot_snipping" && islandContainer.islandState !== "screenshot_preview")
                         hoverCollapseDelayTimer.restart();
-                    }
+
                 }
                 onPressed: (mouse) => {
                     const mappedPoint = capsuleMouseArea.mapToItem(islandContainer, mouse.x, mouse.y);
@@ -4589,9 +4572,9 @@ PanelWindow {
                             return ;
                         }
                         const action = (dynamicConfig && dynamicConfig.primaryClickAction) ? dynamicConfig.primaryClickAction : (userConfig.dynamicIslandPrimaryAction && userConfig.dynamicIslandPrimaryAction !== "toggleExpandedPlayer" ? userConfig.dynamicIslandPrimaryAction : "");
-                        if (action === "none" || action === "") {
+                        if (action === "none" || action === "")
                             return ;
-                        }
+
                         islandContainer.handleConfiguredClickAction(action);
                         return ;
                     }
@@ -4617,40 +4600,37 @@ PanelWindow {
                 onWheel: (wheel) => {
                     wheel.accepted = true;
                     const stepPercent = (dynamicConfig && dynamicConfig.scrollStep > 0) ? dynamicConfig.scrollStep : 5;
-                    const stepFraction = stepPercent / 100.0;
-
+                    const stepFraction = stepPercent / 100;
                     // Vertical scroll handling
                     if (Math.abs(wheel.angleDelta.y) >= 20) {
                         const isUp = wheel.angleDelta.y > 0;
                         const vAction = (dynamicConfig && dynamicConfig.scrollVerticalAction) ? dynamicConfig.scrollVerticalAction : "volume";
                         if (vAction === "volume") {
                             let curVol = islandContainer.currentVolume;
-                            let newVol = Math.max(0.0, Math.min(1.0, curVol + (isUp ? stepFraction : -stepFraction)));
+                            let newVol = Math.max(0, Math.min(1, curVol + (isUp ? stepFraction : -stepFraction)));
                             SystemServices.setVolume(newVol);
                             root.showOsdWindow("", newVol, "");
                         } else if (vAction === "brightness") {
                             let curBri = islandContainer.currentBrightness;
-                            let newBri = Math.max(0.05, Math.min(1.0, curBri + (isUp ? stepFraction : -stepFraction)));
+                            let newBri = Math.max(0.05, Math.min(1, curBri + (isUp ? stepFraction : -stepFraction)));
                             SystemServices.setBrightness(newBri);
                             root.showOsdWindow("", newBri, "");
                         }
-                        return;
+                        return ;
                     }
-
                     // Horizontal scroll handling
                     if (Math.abs(wheel.angleDelta.x) >= 20) {
                         const isRight = wheel.angleDelta.x > 0;
                         const hAction = (dynamicConfig && dynamicConfig.scrollHorizontalAction) ? dynamicConfig.scrollHorizontalAction : "track";
                         if (hAction === "track") {
-                            if (isRight) {
+                            if (isRight)
                                 mediaController.next();
-                            } else {
+                            else
                                 mediaController.previous();
-                            }
                         } else if (hAction === "workspace") {
                             Quickshell.execDetached(["hyprctl", "dispatch", "workspace", isRight ? "m+1" : "m-1"]);
                         }
-                        return;
+                        return ;
                     }
                 }
 
@@ -4725,12 +4705,16 @@ PanelWindow {
                 active: islandContainer.customSwipeVisible
                 asynchronous: false
                 visible: active && opacity > 0.01
-                opacity: (active && mainCapsule.height <= (root.effectiveIslandHeight + 8) && mainCapsule.width <= (islandContainer.customCapsuleWidth + 30)) ? 1.0 : 0.0
+                opacity: (active && mainCapsule.height <= (root.effectiveIslandHeight + 8) && mainCapsule.width <= (islandContainer.customCapsuleWidth + 30)) ? 1 : 0
+                onLoaded: islandContainer.syncCustomCapsuleWidth()
 
                 Behavior on opacity {
-                    NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+                    NumberAnimation {
+                        duration: 120
+                        easing.type: Easing.OutQuad
+                    }
+
                 }
-                onLoaded: islandContainer.syncCustomCapsuleWidth()
 
                 sourceComponent: Component {
                     SwipeCustomInfoLayer {
@@ -4765,12 +4749,16 @@ PanelWindow {
                 active: islandContainer.lyricsSwipeVisible || islandContainer.restingState === "lyrics"
                 asynchronous: false
                 visible: islandContainer.lyricsSwipeVisible && opacity > 0.01
-                opacity: (islandContainer.lyricsSwipeVisible && mainCapsule.height <= (root.effectiveIslandHeight + 8)) ? 1.0 : 0.0
+                opacity: (islandContainer.lyricsSwipeVisible && mainCapsule.height <= (root.effectiveIslandHeight + 8) && mainCapsule.width <= (Math.max(root.effectiveIslandWidth, islandContainer.lyricsCapsuleWidth) + 30)) ? 1 : 0
+                onLoaded: islandContainer.syncLyricsCapsuleWidth()
 
                 Behavior on opacity {
-                    NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+                    NumberAnimation {
+                        duration: 120
+                        easing.type: Easing.OutQuad
+                    }
+
                 }
-                onLoaded: islandContainer.syncLyricsCapsuleWidth()
 
                 sourceComponent: Component {
                     SwipeLyricsLayer {
@@ -4949,102 +4937,6 @@ PanelWindow {
             }
 
             Loader {
-                id: notificationLoader
-
-                anchors.fill: parent
-                active: islandContainer.notificationLayerVisible
-                asynchronous: false
-                visible: active
-
-                sourceComponent: Component {
-                    NotificationLayer {
-                        appName: islandContainer.notificationAppName
-                        summary: islandContainer.notificationSummary
-                        body: islandContainer.notificationBody
-                        screenshotPath: islandContainer.screenshotPreviewPath
-                        screenshotAspect: islandContainer.screenshotAspect
-                        expanded: islandContainer.notificationExpanded
-                        toggleButton: userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)
-                        iconText: {
-                            if (islandContainer.notificationIcon !== "")
-                                return islandContainer.notificationIcon;
-
-                            if (islandContainer.notificationAppName === "Wi-Fi" || islandContainer.notificationAppName === "wifi")
-                                return "";
-
-                            return root.notificationStatusIcon;
-                        }
-                        iconColor: islandContainer.notificationIconColor
-                        iconFontFamily: root.iconFontFamily
-                        textFontFamily: root.textFontFamily
-                        heroFontFamily: root.heroFontFamily
-                        accentColor: root.themeAccent
-                        textColor: root.themeFg
-                        dimColor: root.themeDim
-                        surfaceColor: root.themeSurface
-                        irisBlue: root.themeBlue
-                        irisPurple: (irisColors && irisColors.purpleHex !== "") ? irisColors.purpleHex : "#bb95d0"
-                        irisGreen: root.themeGreen
-                        irisYellow: root.themeYellow
-                        irisRed: root.themeRed
-                        showCondition: true
-                        onExpansionToggleRequested: {
-                            islandContainer.suppressCapsuleClick(true);
-                            islandContainer.toggleNotificationExpansionIfNeeded();
-                        }
-                        onOpenSattyRequested: (path) => {
-                            islandContainer.openScreenshotInSatty(path || islandContainer.screenshotPreviewPath);
-                        }
-                        onOpenEditorRequested: (path) => {
-                            islandContainer.showScreenshotEditorCapsule(path || islandContainer.screenshotPreviewPath);
-                        }
-                        onImageSizeReady: (w, h) => {
-                            islandContainer.updateScreenshotAspect(w, h);
-                        }
-                        onDismissRequested: {
-                            islandContainer.smartRestoreState();
-                        }
-                    }
-
-                }
-
-            }
-
-            Loader {
-                id: screenshotPreviewLoader
-
-                anchors.fill: parent
-                active: islandContainer.screenshotPreviewLayerVisible
-                asynchronous: false
-                visible: active
-                z: 4
-
-                sourceComponent: Component {
-                    ScreenshotPreviewLayer {
-                        screenshotPath: islandContainer.screenshotPreviewPath
-                        screenshotAspect: islandContainer.screenshotAspect
-                        iconFontFamily: root.iconFontFamily
-                        textFontFamily: root.textFontFamily
-                        accentColor: root.themeAccent
-                        textColor: root.themeFg
-                        dimColor: root.themeDim
-                        surfaceColor: root.themeSurface
-                        irisBlue: root.themeBlue
-                        irisPurple: (irisColors && irisColors.purpleHex !== "") ? irisColors.purpleHex : "#bb95d0"
-                        irisGreen: root.themeGreen
-                        irisYellow: root.themeYellow
-                        irisRed: root.themeRed
-                        showCondition: islandContainer.screenshotPreviewLayerVisible
-                        imageLanded: root.screenshotImageLanded
-                        onOpenSattyRequested: islandContainer.openScreenshotInSatty()
-                        onOpenEditorRequested: islandContainer.showScreenshotEditorCapsule()
-                        onImageSizeReady: (w, h) => islandContainer.updateScreenshotAspect(w, h)
-                        onDismissRequested: islandContainer.smartRestoreState()
-                    }
-                }
-            }
-
-            Loader {
                 id: screenshotEditorLoader
 
                 anchors.fill: parent
@@ -5065,9 +4957,13 @@ PanelWindow {
                         customColorPalette: root.irisColorPalette
                         onCloseRequested: islandContainer.smartRestoreState()
                         onOpenSattyRequested: islandContainer.openScreenshotInSatty()
-                        onScreenshotSaved: (path) => islandContainer.recordScreenshotNotification(path, I18n.tr("Screenshot modificato"))
+                        onScreenshotSaved: (path) => {
+                            return islandContainer.recordScreenshotNotification(path, I18n.tr("Screenshot modificato"));
+                        }
                     }
+
                 }
+
             }
 
             Loader {
@@ -5100,29 +4996,6 @@ PanelWindow {
                         onCancelRequested: {
                             root.cancelScreenshotSnipping();
                         }
-                    }
-                }
-            }
-
-            Loader {
-                id: reloadLoader
-
-                anchors.fill: parent
-                active: true
-                asynchronous: false
-                visible: islandContainer.reloadLayerVisible
-                z: 4
-
-                sourceComponent: Component {
-                    ReloadLayer {
-                        failed: islandContainer.reloadFailed
-                        errorString: islandContainer.reloadErrorString
-                        iconFontFamily: root.iconFontFamily
-                        textFontFamily: root.textFontFamily
-                        heroFontFamily: root.heroFontFamily
-                        accentColor: root.themeAccent
-                        showCondition: islandContainer.reloadLayerVisible
-                        onDismissRequested: islandContainer.smartRestoreState()
                     }
 
                 }
@@ -5212,11 +5085,9 @@ PanelWindow {
 
                 sourceComponent: Component {
                     ControlCenterLayer {
-                        userConfigData: (root.dynamicConfig && root.dynamicConfig.rawMap && Object.keys(root.dynamicConfig.rawMap).length > 0)
-                            ? root.dynamicConfig.rawMap
-                            : ((root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout)
-                                ? { "controlCenterCanvasLayout": root.dynamicConfig.controlCenterCanvasLayout }
-                                : localUserConfigFile.parsedData)
+                        userConfigData: (root.dynamicConfig && root.dynamicConfig.rawMap && Object.keys(root.dynamicConfig.rawMap).length > 0) ? root.dynamicConfig.rawMap : ((root.dynamicConfig && root.dynamicConfig.controlCenterCanvasLayout) ? {
+                            "controlCenterCanvasLayout": root.dynamicConfig.controlCenterCanvasLayout
+                        } : localUserConfigFile.parsedData)
                         accentColor: root.themeAccent
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
@@ -5266,32 +5137,6 @@ PanelWindow {
             }
 
             Loader {
-                id: powerMenuLoader
-
-                anchors.fill: parent
-                active: islandContainer.powerMenuLayerVisible
-                asynchronous: false
-                visible: islandContainer.powerMenuLayerVisible
-                onLoaded: {
-                    if (item)
-                        item.forceActiveFocus();
-
-                }
-
-                sourceComponent: Component {
-                    PowerMenuLayer {
-                        iconFontFamily: root.iconFontFamily
-                        textFontFamily: root.textFontFamily
-                        accentColor: root.themeAccent
-                        showCondition: islandContainer.powerMenuLayerVisible
-                        onCloseRequested: islandContainer.smartRestoreState()
-                    }
-
-                }
-
-            }
-
-            Loader {
                 id: notificationCenterLoader
 
                 anchors.fill: parent
@@ -5308,36 +5153,6 @@ PanelWindow {
                         onClearAllRequested: {
                             islandContainer.notificationHistoryModel.clear();
                         }
-                    }
-
-                }
-
-            }
-
-            Loader {
-                id: wallpaperPickerLoader
-
-                anchors.fill: parent
-                active: islandContainer.wallpaperPickerLayerVisible
-                asynchronous: false
-                visible: islandContainer.wallpaperPickerLayerVisible
-                onLoaded: root.focusWallpaperPicker()
-
-                sourceComponent: Component {
-                    WallpaperPickerLayer {
-                        dynamicConfig: root.dynamicConfig
-                        accentColor: root.themeAccent
-                        iconFontFamily: root.iconFontFamily
-                        textFontFamily: root.textFontFamily
-                        activeWallpaper: root.effectiveWallpaperPath
-                        showCondition: islandContainer.wallpaperPickerLayerVisible
-                        onWallpaperApplied: (filePath) => {
-                            return root.wallpaperPickerActiveWallpaper = filePath;
-                        }
-                        onWallpaperApplySucceeded: (filePath) => {
-                            return root.handleWallpaperApplySucceeded(filePath);
-                        }
-                        onCloseRequested: islandContainer.smartRestoreState()
                     }
 
                 }
@@ -5415,7 +5230,9 @@ PanelWindow {
                         showCondition: islandContainer.focustimeLayerVisible
                         onCloseRequested: islandContainer.smartRestoreState()
                     }
+
                 }
+
             }
 
             Loader {
@@ -5672,6 +5489,495 @@ PanelWindow {
                 ColorAnimation {
                     duration: 260
                     easing.type: Easing.InOutQuad
+                }
+
+            }
+
+        }
+
+        // ── Indicatore Batteria Esterno: Ritiro Inferiore ad Apertura ("sbuca il coso") e Cresta Superiore ─
+        Item {
+            id: innerBatteryClip
+
+            readonly property int batteryCap: islandContainer.batteryCapacity
+            readonly property bool hasBattery: islandContainer.hasBattery && batteryCap > 0
+            readonly property bool isLyricsActive: (islandContainer.islandState === "lyrics" || islandContainer.restingState === "lyrics" || root.lyricsActive || (islandContainer.swipeTransitionProgress > 0.05))
+            readonly property bool isRetracting: root.powerMenuRetracting || root.wallpaperPickerRetracting || root.notificationRetracting || root.screenshotPreviewRetracting || root.reloadRetracting
+            readonly property bool isNeckDropdown: islandContainer.powerMenuLayerVisible || root.powerMenuRetracting || islandContainer.wallpaperPickerLayerVisible || root.wallpaperPickerRetracting || islandContainer.notificationLayerVisible || root.notificationRetracting || islandContainer.screenshotPreviewLayerVisible || root.screenshotPreviewRetracting || islandContainer.reloadLayerVisible || root.reloadRetracting || islandContainer.islandState === "power_menu" || islandContainer.islandState === "wallpaper_picker" || islandContainer.islandState === "notification" || islandContainer.islandState === "screenshot_preview" || islandContainer.islandState === "reload"
+            readonly property bool anyModalActive: ((islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom") || isNeckDropdown) && !isRetracting
+            readonly property bool shouldBeActive: hasBattery && (batteryCap > 0 || islandContainer.isCharging) && !isLyricsActive && !root.overviewVisible && !root.screenshotCapturing && !root.screenshotSnippingActive && !(islandContainer && islandContainer.islandState === "screenshot_editor")
+            // retractProgress: 0.0 = capsula intera a riposo; 1.0 = fondo completamente ritirato e aperto
+            property real retractProgress: anyModalActive ? 1 : 0
+            readonly property real batteryFraction: Math.max(0, Math.min(1, batteryCap / 100))
+            readonly property color indicatorColor: {
+                if (batteryCap <= 20)
+                    return "#ff3b30";
+
+                if (batteryCap <= 40)
+                    return "#ff9500";
+
+                if (batteryCap <= 65)
+                    return "#ffd60a";
+
+                if (batteryCap <= 85)
+                    return (irisColors && irisColors.greenHex !== "") ? irisColors.greenHex : "#30d158";
+
+                return "#34c759";
+            }
+            // Parametri geometrici per il contorno vettoriale perfetto (raggio limitato a metà altezza)
+            readonly property real w: width
+            readonly property real h: height
+            readonly property real actualRadius: Math.min(mainCapsule.radius, Math.min(w, h) / 2)
+            readonly property real sw: 2.5
+            readonly property real cr: Math.max(1, actualRadius - sw / 2)
+            readonly property real halfFlat: Math.max(0, w / 2 - actualRadius)
+            readonly property real arcLen: (Math.PI / 2) * cr
+            readonly property real totalLen: halfFlat + arcLen
+            readonly property real remLen: (1 - retractProgress) * totalLen
+            readonly property real curFlatLen: Math.max(0, remLen - arcLen)
+            readonly property real arcFrac: Math.max(0.001, Math.min(1, remLen / arcLen))
+            readonly property real bottomOpacity: Math.max(0, 1 - Math.pow(retractProgress, 1.6))
+
+            z: 5.2
+            enabled: false
+            // Allineamento su mainCapsule
+            x: mainCapsule.x
+            y: mainCapsule.y
+            width: mainCapsule.width
+            height: mainCapsule.height
+            scale: mainCapsule.scale
+            transformOrigin: mainCapsule.transformOrigin
+            // Visibilità globale: se è un dropdown col colletto, la cresta superiore resta visibile; se morphing card, dissolve
+            opacity: {
+                if (!shouldBeActive)
+                    return 0;
+
+                if (!isNeckDropdown && anyModalActive)
+                    return Math.max(0, 1 - retractProgress) * mainCapsule.opacity;
+
+                return mainCapsule.opacity;
+            }
+            visible: opacity > 0.001
+
+            // Clip orizzontale per la percentuale di carica (con headroom verticale di 10px sopra e sotto)
+            Item {
+                id: batteryProgressClip
+
+                anchors.left: parent.left
+                width: Math.round(parent.width * innerBatteryClip.batteryFraction)
+                y: -10
+                height: parent.height + 20
+                clip: true
+
+                Item {
+                    id: batteryContourContainer
+
+                    x: 0
+                    y: 10
+                    width: innerBatteryClip.width
+                    height: innerBatteryClip.height
+                    layer.enabled: true
+                    layer.samples: 8
+                    layer.smooth: true
+
+                    // 1. Arco Superiore (Top Arch / Crest): rimane visibile sopra al colletto dell'isola (come da disegno utente)
+                    Shape {
+                        anchors.fill: parent
+                        asynchronous: false
+                        preferredRendererType: Shape.CurveRenderer
+
+                        ShapePath {
+                            strokeColor: innerBatteryClip.indicatorColor
+                            strokeWidth: innerBatteryClip.sw
+                            capStyle: ShapePath.RoundCap
+                            fillColor: "transparent"
+                            startX: innerBatteryClip.sw / 2
+                            startY: innerBatteryClip.h / 2
+
+                            // Quadrante superiore sinistro (da 180° a 270° / 12 in punto)
+                            PathAngleArc {
+                                centerX: innerBatteryClip.actualRadius
+                                centerY: innerBatteryClip.h / 2
+                                radiusX: innerBatteryClip.cr
+                                radiusY: innerBatteryClip.cr
+                                startAngle: 180
+                                sweepAngle: 90
+                            }
+
+                            // Linea orizzontale superiore
+                            PathLine {
+                                x: innerBatteryClip.w - innerBatteryClip.actualRadius
+                                y: innerBatteryClip.sw / 2
+                            }
+
+                            // Quadrante superiore destro (da 270° a 0° / 3 in punto)
+                            PathAngleArc {
+                                centerX: innerBatteryClip.w - innerBatteryClip.actualRadius
+                                centerY: innerBatteryClip.h / 2
+                                radiusX: innerBatteryClip.cr
+                                radiusY: innerBatteryClip.cr
+                                startAngle: 270
+                                sweepAngle: 90
+                            }
+
+                            Behavior on strokeColor {
+                                ColorAnimation {
+                                    duration: 300
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    // 2. Fondo Inferiore che si ritrae aprendosi ("si ritrae aprendosi e sbuca il coso")
+                    Item {
+                        anchors.fill: parent
+                        opacity: innerBatteryClip.bottomOpacity
+                        visible: opacity > 0.001
+
+                        // A. Archi degli angoli inferiori (si ritraggono risalendo verso le spalle)
+                        Shape {
+                            anchors.fill: parent
+                            asynchronous: false
+                            preferredRendererType: Shape.CurveRenderer
+                            visible: innerBatteryClip.remLen > 0.2
+
+                            // Angolo inferiore sinistro
+                            ShapePath {
+                                strokeColor: innerBatteryClip.indicatorColor
+                                strokeWidth: innerBatteryClip.sw
+                                capStyle: ShapePath.RoundCap
+                                fillColor: "transparent"
+                                startX: innerBatteryClip.sw / 2
+                                startY: innerBatteryClip.h / 2
+
+                                PathAngleArc {
+                                    centerX: innerBatteryClip.actualRadius
+                                    centerY: innerBatteryClip.h / 2
+                                    radiusX: innerBatteryClip.cr
+                                    radiusY: innerBatteryClip.cr
+                                    startAngle: 180
+                                    sweepAngle: -90 * innerBatteryClip.arcFrac
+                                }
+
+                                Behavior on strokeColor {
+                                    ColorAnimation {
+                                        duration: 300
+                                    }
+
+                                }
+
+                            }
+
+                            // Angolo inferiore destro
+                            ShapePath {
+                                strokeColor: innerBatteryClip.indicatorColor
+                                strokeWidth: innerBatteryClip.sw
+                                capStyle: ShapePath.RoundCap
+                                fillColor: "transparent"
+                                startX: innerBatteryClip.w - innerBatteryClip.sw / 2
+                                startY: innerBatteryClip.h / 2
+
+                                PathAngleArc {
+                                    centerX: innerBatteryClip.w - innerBatteryClip.actualRadius
+                                    centerY: innerBatteryClip.h / 2
+                                    radiusX: innerBatteryClip.cr
+                                    radiusY: innerBatteryClip.cr
+                                    startAngle: 0
+                                    sweepAngle: 90 * innerBatteryClip.arcFrac
+                                }
+
+                                Behavior on strokeColor {
+                                    ColorAnimation {
+                                        duration: 300
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                        // B. Segmenti orizzontali inferiori (si ritirano dal centro verso gli angoli)
+                        Shape {
+                            anchors.fill: parent
+                            asynchronous: false
+                            preferredRendererType: Shape.CurveRenderer
+                            visible: innerBatteryClip.curFlatLen > 0.5
+
+                            // Ritiro sinistro dal centro
+                            ShapePath {
+                                strokeColor: innerBatteryClip.indicatorColor
+                                strokeWidth: innerBatteryClip.sw
+                                capStyle: ShapePath.RoundCap
+                                fillColor: "transparent"
+                                startX: innerBatteryClip.actualRadius
+                                startY: innerBatteryClip.h - innerBatteryClip.sw / 2
+
+                                PathLine {
+                                    x: innerBatteryClip.actualRadius + innerBatteryClip.curFlatLen + (innerBatteryClip.retractProgress < 0.01 ? 1 : 0)
+                                    y: innerBatteryClip.h - innerBatteryClip.sw / 2
+                                }
+
+                                Behavior on strokeColor {
+                                    ColorAnimation {
+                                        duration: 300
+                                    }
+
+                                }
+
+                            }
+
+                            // Ritiro destro dal centro
+                            ShapePath {
+                                strokeColor: innerBatteryClip.indicatorColor
+                                strokeWidth: innerBatteryClip.sw
+                                capStyle: ShapePath.RoundCap
+                                fillColor: "transparent"
+                                startX: innerBatteryClip.w - innerBatteryClip.actualRadius
+                                startY: innerBatteryClip.h - innerBatteryClip.sw / 2
+
+                                PathLine {
+                                    x: innerBatteryClip.w - innerBatteryClip.actualRadius - innerBatteryClip.curFlatLen - (innerBatteryClip.retractProgress < 0.01 ? 1 : 0)
+                                    y: innerBatteryClip.h - innerBatteryClip.sw / 2
+                                }
+
+                                Behavior on strokeColor {
+                                    ColorAnimation {
+                                        duration: 300
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+            Behavior on retractProgress {
+                NumberAnimation {
+                    duration: innerBatteryClip.anyModalActive ? 280 : 240
+                    easing.type: Easing.OutCubic
+                }
+
+            }
+
+        }
+
+        Loader {
+            id: powerMenuLoader
+
+            z: 4.5
+            x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
+            y: root.effectiveIslandTopMargin
+            width: 460
+            height: 170
+            active: islandContainer.powerMenuLayerVisible
+            asynchronous: false
+            visible: active
+            onLoaded: {
+                if (item)
+                    item.forceActiveFocus();
+
+            }
+
+            sourceComponent: Component {
+                PowerMenuLayer {
+                    neckTargetWidth: mainCapsule.displayedWidth
+                    iconFontFamily: root.iconFontFamily
+                    textFontFamily: root.textFontFamily
+                    accentColor: root.themeAccent
+                    surfaceColor: Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100)
+                    outlineColor: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.25)
+                    outlineWidth: 1
+                    showCondition: islandContainer.islandState === "power_menu" && !root.powerMenuRetracting
+                    onCloseRequested: root.requestPowerMenuClose()
+                }
+
+            }
+
+        }
+
+        Loader {
+            id: notificationLoader
+
+            z: 4.5
+            x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
+            y: root.effectiveIslandTopMargin
+            width: 480
+            height: 180
+            active: islandContainer.notificationLayerVisible
+            asynchronous: false
+            visible: active
+
+            sourceComponent: Component {
+                NotificationLayer {
+                    neckTargetWidth: mainCapsule.displayedWidth
+                    appName: islandContainer.notificationAppName
+                    summary: islandContainer.notificationSummary
+                    body: islandContainer.notificationBody
+                    screenshotPath: islandContainer.screenshotPreviewPath
+                    screenshotAspect: islandContainer.screenshotAspect
+                    expanded: islandContainer.notificationExpanded
+                    toggleButton: userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)
+                    iconText: {
+                        if (islandContainer.notificationIcon !== "")
+                            return islandContainer.notificationIcon;
+
+                        if (islandContainer.notificationAppName === "Wi-Fi" || islandContainer.notificationAppName === "wifi")
+                            return "";
+
+                        return root.notificationStatusIcon;
+                    }
+                    iconColor: islandContainer.notificationIconColor
+                    iconFontFamily: root.iconFontFamily
+                    textFontFamily: root.textFontFamily
+                    heroFontFamily: root.heroFontFamily
+                    accentColor: root.themeAccent
+                    textColor: root.themeFg
+                    dimColor: root.themeDim
+                    surfaceColor: Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100)
+                    outlineColor: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.25)
+                    irisBlue: root.themeBlue
+                    irisPurple: (irisColors && irisColors.purpleHex !== "") ? irisColors.purpleHex : "#bb95d0"
+                    irisGreen: root.themeGreen
+                    irisYellow: root.themeYellow
+                    irisRed: root.themeRed
+                    showCondition: islandContainer.islandState === "notification" && !root.notificationRetracting
+                    onExpansionToggleRequested: {
+                        islandContainer.suppressCapsuleClick(true);
+                        islandContainer.toggleNotificationExpansionIfNeeded();
+                    }
+                    onOpenSattyRequested: (path) => {
+                        islandContainer.openScreenshotInSatty(path || islandContainer.screenshotPreviewPath);
+                    }
+                    onOpenEditorRequested: (path) => {
+                        islandContainer.showScreenshotEditorCapsule(path || islandContainer.screenshotPreviewPath);
+                    }
+                    onImageSizeReady: (w, h) => {
+                        islandContainer.updateScreenshotAspect(w, h);
+                    }
+                    onDismissRequested: root.requestNotificationClose()
+                }
+
+            }
+
+        }
+
+        Loader {
+            id: screenshotPreviewLoader
+
+            z: 4.5
+            x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
+            y: root.effectiveIslandTopMargin
+            width: 460
+            height: 340
+            active: islandContainer.screenshotPreviewLayerVisible
+            asynchronous: false
+            visible: active
+            onLoaded: {
+                if (item)
+                    item.forceActiveFocus();
+
+            }
+
+            sourceComponent: Component {
+                ScreenshotPreviewLayer {
+                    neckTargetWidth: mainCapsule.displayedWidth
+                    screenshotPath: islandContainer.screenshotPreviewPath
+                    screenshotAspect: islandContainer.screenshotAspect
+                    iconFontFamily: root.iconFontFamily
+                    textFontFamily: root.textFontFamily
+                    accentColor: root.themeAccent
+                    textColor: root.themeFg
+                    dimColor: root.themeDim
+                    surfaceColor: Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100)
+                    outlineColor: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.25)
+                    irisBlue: root.themeBlue
+                    irisPurple: (irisColors && irisColors.purpleHex !== "") ? irisColors.purpleHex : "#bb95d0"
+                    irisGreen: root.themeGreen
+                    irisYellow: root.themeYellow
+                    irisRed: root.themeRed
+                    showCondition: islandContainer.islandState === "screenshot_preview" && !root.screenshotPreviewRetracting
+                    imageLanded: root.screenshotImageLanded
+                    onOpenSattyRequested: islandContainer.openScreenshotInSatty()
+                    onOpenEditorRequested: islandContainer.showScreenshotEditorCapsule()
+                    onImageSizeReady: (w, h) => {
+                        return islandContainer.updateScreenshotAspect(w, h);
+                    }
+                    onDismissRequested: root.requestScreenshotPreviewClose()
+                }
+
+            }
+
+        }
+
+        Loader {
+            id: reloadLoader
+
+            z: 4.5
+            x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
+            y: root.effectiveIslandTopMargin
+            width: 520
+            height: 180
+            active: islandContainer.reloadLayerVisible
+            asynchronous: false
+            visible: active
+
+            sourceComponent: Component {
+                ReloadLayer {
+                    neckTargetWidth: mainCapsule.displayedWidth
+                    failed: islandContainer.reloadFailed
+                    errorString: islandContainer.reloadErrorString
+                    iconFontFamily: root.iconFontFamily
+                    textFontFamily: root.textFontFamily
+                    heroFontFamily: root.heroFontFamily
+                    accentColor: root.themeAccent
+                    surfaceColor: Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100)
+                    showCondition: islandContainer.islandState === "reload" && !root.reloadRetracting
+                    onDismissRequested: root.requestReloadClose()
+                }
+
+            }
+
+        }
+
+        Loader {
+            id: wallpaperPickerLoader
+
+            z: 4.5
+            x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
+            y: root.effectiveIslandTopMargin
+            width: 1140
+            height: 330
+            active: islandContainer.wallpaperPickerLayerVisible || root.wallpaperPickerRetracting
+            asynchronous: false
+            visible: active
+            onLoaded: root.focusWallpaperPicker()
+
+            sourceComponent: Component {
+                WallpaperPickerLayer {
+                    neckTargetWidth: mainCapsule.displayedWidth
+                    dynamicConfig: root.dynamicConfig
+                    accentColor: root.themeAccent
+                    iconFontFamily: root.iconFontFamily
+                    textFontFamily: root.textFontFamily
+                    activeWallpaper: root.effectiveWallpaperPath
+                    showCondition: islandContainer.wallpaperPickerLayerVisible && !root.wallpaperPickerRetracting
+                    onWallpaperApplied: (filePath) => {
+                        return root.wallpaperPickerActiveWallpaper = filePath;
+                    }
+                    onWallpaperApplySucceeded: (filePath) => {
+                        return root.handleWallpaperApplySucceeded(filePath);
+                    }
+                    onCloseRequested: root.requestWallpaperPickerClose()
                 }
 
             }
@@ -6076,13 +6382,13 @@ PanelWindow {
     }
 
     mask: Region {
-        // Se lo screenshot è attivo, la maschera copre l'INTERO schermo per catturare drag e click
+        // Schermo intero solo per screenshot, overview, app a schermo intero o quando un modal espanso e aperto (per dismiss al click esterno)
         Region {
             intersection: Intersection.Combine
             x: 0
             y: 0
-            width: root.screenshotSnippingActive ? (root.screen ? root.screen.width : 1920) : 0
-            height: root.screenshotSnippingActive ? (root.screen ? root.screen.height : 1080) : 0
+            width: (root.screenshotSnippingActive || root.overviewVisible || islandContainer.settingsAppLayerVisible || islandContainer.screenshotEditorLayerVisible || expandedModalOutsideDismissArea.enabled) ? (root.screen ? root.screen.width : 1920) : 0
+            height: (root.screenshotSnippingActive || root.overviewVisible || islandContainer.settingsAppLayerVisible || islandContainer.screenshotEditorLayerVisible || expandedModalOutsideDismissArea.enabled) ? (root.screen ? root.screen.height : 1080) : 0
         }
 
         // Input is the union of the island's visible surfaces plus a compact top
@@ -6109,6 +6415,46 @@ PanelWindow {
             y: Math.floor(mainCapsule.y)
             width: Math.ceil(mainCapsule.width)
             height: Math.ceil(mainCapsule.height)
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: Math.floor(powerMenuLoader.x)
+            y: Math.floor(powerMenuLoader.y)
+            width: (powerMenuLoader.visible && powerMenuLoader.width > 0) ? Math.ceil(powerMenuLoader.width) : 0
+            height: (powerMenuLoader.visible && powerMenuLoader.height > 0) ? Math.ceil(powerMenuLoader.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: Math.floor(notificationLoader.x)
+            y: Math.floor(notificationLoader.y)
+            width: (notificationLoader.visible && notificationLoader.width > 0) ? Math.ceil(notificationLoader.width) : 0
+            height: (notificationLoader.visible && notificationLoader.height > 0) ? Math.ceil(notificationLoader.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: Math.floor(screenshotPreviewLoader.x)
+            y: Math.floor(screenshotPreviewLoader.y)
+            width: (screenshotPreviewLoader.visible && screenshotPreviewLoader.width > 0) ? Math.ceil(screenshotPreviewLoader.width) : 0
+            height: (screenshotPreviewLoader.visible && screenshotPreviewLoader.height > 0) ? Math.ceil(screenshotPreviewLoader.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: Math.floor(reloadLoader.x)
+            y: Math.floor(reloadLoader.y)
+            width: (reloadLoader.visible && reloadLoader.width > 0) ? Math.ceil(reloadLoader.width) : 0
+            height: (reloadLoader.visible && reloadLoader.height > 0) ? Math.ceil(reloadLoader.height) : 0
+        }
+
+        Region {
+            intersection: Intersection.Combine
+            x: Math.floor(wallpaperPickerLoader.x)
+            y: Math.floor(wallpaperPickerLoader.y)
+            width: (wallpaperPickerLoader.visible && wallpaperPickerLoader.width > 0) ? Math.ceil(wallpaperPickerLoader.width) : 0
+            height: (wallpaperPickerLoader.visible && wallpaperPickerLoader.height > 0) ? Math.ceil(wallpaperPickerLoader.height) : 0
         }
 
         Region {
@@ -6186,10 +6532,10 @@ PanelWindow {
 
         Region {
             intersection: Intersection.Combine
-            x: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(Math.min(trayFloatingIsland.x, mainCapsule.x)) : 0
-            y: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(mainCapsule.y + mainCapsule.height) : 0
-            width: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(Math.max(trayFloatingIsland.width, mainCapsule.width)) : 0
-            height: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height - (mainCapsule.y + mainCapsule.height)) : 0
+            x: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(Math.min(trayFloatingIsland.x, mainCapsule.x) - 15) : 0
+            y: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.floor(mainCapsule.y + mainCapsule.height - 4) : 0
+            width: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(Math.max(trayFloatingIsland.width, mainCapsule.width) + 30) : 0
+            height: (trayFloatingIsland && trayFloatingIsland.visible) ? Math.ceil(trayFloatingIsland.y + trayFloatingIsland.height - (mainCapsule.y + mainCapsule.height) + 12) : 0
         }
 
         Region {

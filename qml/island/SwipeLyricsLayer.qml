@@ -36,7 +36,7 @@ Item {
     property string activeLyricText: lyricText
     property string previousLyricText: ""
     property real lyricChangeProgress: 1
-    property int recordingDotSpacing: 12
+    property int recordingDotSpacing: 6
     property real marqueeOffset: 0
     readonly property real clampedProgress: Math.max(0, Math.min(1, transitionProgress))
     readonly property bool lyricMostlyVisible: clampedProgress > 0.92
@@ -55,7 +55,9 @@ Item {
     readonly property real timeX: centeredX + clampedProgress * dragDistance
     readonly property real lyricBaselineY: lyricBaselineGuide.y + lyricBaselineGuide.baselineOffset
     readonly property real timeBaselineY: timeBaselineGuide.y + timeBaselineGuide.baselineOffset
-    readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
+    readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
+    readonly property real centeredClockLeftX: timeX + (textWidth - visibleTimeWidth) / 2
+    readonly property real timeRecordingDotX: Math.max(12, centeredClockLeftX - recordingDotSpacing - (timeRecordingIndicator ? timeRecordingIndicator.implicitWidth : 27))
     readonly property real lyricPadding: horizontalPadding * 2 + cavaBars.implicitWidth + visualSpacing
     readonly property real preferredWidth: Math.max(minimumWidth, Math.min(maximumWidth, Math.ceil(lyricMetrics.advanceWidth) + lyricPadding))
 
@@ -261,16 +263,17 @@ Item {
     }
 
     FlipClockText {
-        visible: timeText !== "" && showSecondaryText
-        x: timeX
-        width: textWidth
+        id: flipClock
+        visible: root.timeText !== "" && root.showSecondaryText
+        x: root.timeX
+        width: root.textWidth
         height: parent.height
         anchors.verticalCenter: parent.verticalCenter
         timeText: root.timeText
         color: root.accentColor
-        opacity: 1 - clampedProgress
-        fontPixelSize: timePixelSize
-        fontFamily: timeFontFamily
+        opacity: 1 - root.clampedProgress
+        fontPixelSize: root.timePixelSize
+        fontFamily: root.timeFontFamily
         fontWeight: Font.Bold
         fontLetterSpacing: -0.25
     }

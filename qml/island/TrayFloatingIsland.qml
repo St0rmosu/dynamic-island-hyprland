@@ -36,35 +36,42 @@ Rectangle {
     y: targetCapsule ? Math.round(targetCapsule.y + targetCapsule.height + 8) : 0
 
     // Bridge di collegamento puntatore con il Centro di Controllo:
-    // Evita che spostando il mouse tra il centro di controllo e la tray si esca dal focus
-    readonly property bool hovered: (trayHoverHandler && trayHoverHandler.hovered && trayMouseTracker.containsMouse)
-        || (bridgeHoverHandler && bridgeHoverHandler.hovered && bridgeMouseTracker.containsMouse)
-        || trayMouseTracker.containsMouse
-        || bridgeMouseTracker.containsMouse
+    // Mantiene attivo il focus ed evita che spostando il mouse tra il centro di controllo e la tray si chiuda la modale
+    readonly property bool hovered: Boolean(
+        (trayHoverHandler && trayHoverHandler.hovered) ||
+        (bridgeHoverHandler && bridgeHoverHandler.hovered) ||
+        (menuHoverHandler && menuHoverHandler.hovered) ||
+        (trayMouseTracker && trayMouseTracker.containsMouse) ||
+        (bridgeMouseTracker && bridgeMouseTracker.containsMouse) ||
+        root.menuVisible
+    )
 
     Item {
         id: hoverBridge
         anchors.bottom: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.max(parent.width, 240)
-        height: 14 // Copre gli 8px di distacco + 6px di sovrapposizione con la capsula superiore
-
-        MouseArea {
-            id: bridgeMouseTracker
-            anchors.fill: parent
-            z: -1
-            hoverEnabled: true
-            acceptedButtons: Qt.NoButton
-            onExited: {
-                if (rootWindow && rootWindow.hoverCollapseDelayTimer && rootWindow.islandContainer && rootWindow.islandContainer.hoverExpandedActive) {
-                    rootWindow.hoverCollapseDelayTimer.restart();
-                }
-            }
-        }
+        // Copre l'intera larghezza del Centro di Controllo + margine per evitare qualsiasi gap sui lati
+        width: targetCapsule ? Math.max(parent.width, targetCapsule.width + 30) : Math.max(parent.width, 420)
+        // Copre l'intero distacco di 8px + 12px di sovrapposizione verso l'alto + 4px verso il basso
+        height: 24
+        anchors.bottomMargin: -4
 
         HoverHandler {
             id: bridgeHoverHandler
         }
+
+        MouseArea {
+            id: bridgeMouseTracker
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.AllButtons
+            // Assorbe i click accidentali nell'intercapedine tra capsula e tray per non triggerare il dismiss
+            onClicked: {}
+        }
+    }
+
+    HoverHandler {
+        id: trayHoverHandler
     }
 
     MouseArea {
@@ -72,16 +79,8 @@ Rectangle {
         anchors.fill: parent
         z: -1
         hoverEnabled: true
-        acceptedButtons: Qt.NoButton
-        onExited: {
-            if (rootWindow && rootWindow.hoverCollapseDelayTimer && rootWindow.islandContainer && rootWindow.islandContainer.hoverExpandedActive) {
-                rootWindow.hoverCollapseDelayTimer.restart();
-            }
-        }
-    }
-
-    HoverHandler {
-        id: trayHoverHandler
+        acceptedButtons: Qt.AllButtons
+        onClicked: {}
     }
 
     readonly property alias menuX: trayMenuPopup.x
@@ -295,6 +294,10 @@ Rectangle {
         parent: root.parent || root
         visible: root.menuVisible
         z: 9999
+
+        HoverHandler {
+            id: menuHoverHandler
+        }
 
         width: Math.max(160, menuCol.implicitWidth + 16)
         height: menuCol.implicitHeight + 12

@@ -36,7 +36,7 @@ Item {
     Rectangle {
         id: pillContainer
         anchors.centerIn: parent
-        implicitWidth: contentRow.implicitWidth + 10
+        implicitWidth: contentRow.implicitWidth + 8
         height: 18
         radius: 9
         color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, 0.22)
@@ -46,7 +46,7 @@ Item {
         Row {
             id: contentRow
             anchors.centerIn: parent
-            spacing: 5
+            spacing: 4
 
             Text {
                 text: root.iconText

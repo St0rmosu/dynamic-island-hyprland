@@ -51,7 +51,7 @@ Item {
     property int batteryOuterRadius: 6
     property int batteryInnerRadius: 3
     property real iconVerticalOffset: 1
-    property int recordingDotSpacing: 12
+    property int recordingDotSpacing: 6
     property real batteryChargingXOffset: 0
     property real batteryChargingYOffset: 0
     readonly property string chargingIconGlyph: "\uf0e7"
@@ -67,7 +67,8 @@ Item {
     readonly property real itemsX: centeredItemsX + (1 - clampedProgress) * dragDistance
     readonly property real timeX: centeredTimeX - clampedProgress * dragDistance
     readonly property real visibleTimeWidth: Math.min(textWidth, Math.max(0, timeMetrics.advanceWidth))
-    readonly property real timeRecordingDotX: Math.max(4, timeX + (textWidth - visibleTimeWidth) / 2 - recordingDotSpacing - timeRecordingIndicator.width)
+    readonly property real centeredClockLeftX: timeX + (textWidth - visibleTimeWidth) / 2
+    readonly property real timeRecordingDotX: Math.max(12, centeredClockLeftX - recordingDotSpacing - (timeRecordingIndicator ? timeRecordingIndicator.implicitWidth : 27))
     readonly property real preferredWidth: Math.max(minimumWidth, Math.min(Math.max(minimumWidth, maximumWidth), contentRow.implicitWidth + horizontalPadding * 2 + 28))
 
     anchors.fill: parent
@@ -363,6 +364,22 @@ Item {
 
     }
 
+    FlipClockText {
+        id: flipClock
+        visible: root.timeText !== "" && root.showSecondaryText
+        x: root.timeX
+        width: root.textWidth
+        height: parent.height
+        anchors.verticalCenter: parent.verticalCenter
+        timeText: root.timeText
+        color: root.accentColor
+        opacity: 1 - root.clampedProgress
+        fontPixelSize: root.timePixelSize
+        fontFamily: root.timeFontFamily
+        fontWeight: Font.Bold
+        fontLetterSpacing: -0.25
+    }
+
     RecordingIndicator {
         id: timeRecordingIndicator
 
@@ -371,21 +388,6 @@ Item {
         contentOpacity: 1 - root.clampedProgress
         x: root.timeRecordingDotX
         anchors.verticalCenter: parent.verticalCenter
-    }
-
-    FlipClockText {
-        visible: timeText !== "" && showSecondaryText
-        x: timeX
-        width: textWidth
-        height: parent.height
-        anchors.verticalCenter: parent.verticalCenter
-        timeText: root.timeText
-        color: root.accentColor
-        opacity: 1 - clampedProgress
-        fontPixelSize: root.timePixelSize
-        fontFamily: timeFontFamily
-        fontWeight: Font.Bold
-        fontLetterSpacing: -0.25
     }
 
     Behavior on opacity {
