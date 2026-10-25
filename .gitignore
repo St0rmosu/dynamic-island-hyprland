@@ -1,13 +1,57 @@
+# --- Python bytecode & env ---
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+env/
+
+# --- Build & Compilazione C++ / Qt ---
+build/
+bin/
+*.so
+*.o
+*.a
+compile_commands.json
+.ninja_*
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# --- Quickshell & Runtime Logs ---
+*.qslog
+*.log
+.cache/
+wal_cache/
+
+# --- Configurazioni e State Personali / Locali ---
+userconfig.json
+dynamic_config.json
+*.local.json
+avatars/
+test_*.png
+/tmp/
+
+# --- Note di Sviluppo, Prompt & Handoff ---
+*[hH]andoff*
+*[hH]ANDOFF*
+*CODEX*
+*codex*
 *.bak*
 *.tmp
-.DS_Store
+tests/SILEO.md
 
-bin/lyricsmpris
-build/
-.cache/
-HANDOFF.md
-handoff.md
+# --- Editor & OS Artifacts ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.clangd/
+.DS_Store
+Thumbs.db
+
+# --- Componenti e test interni ---
 qml/island/ThemeFloatingIsland.qml
+test_studio.qml
+tests/tst_sileo_bridge.qml

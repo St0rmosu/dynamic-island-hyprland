@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-FocusScope {
+Item {
     id: root
 
     property string screenshotPath: ""
@@ -86,25 +86,14 @@ FocusScope {
     }
 
     anchors.fill: parent
-    focus: showCondition
     onShowConditionChanged: {
         if (!showCondition)
             controlsRevealed = false;
-        else
-            root.forceActiveFocus();
-    }
-    Keys.onPressed: (event) => {
-        if (event.key === Qt.Key_Escape) {
-            root.dismissRequested();
-            event.accepted = true;
-        }
+
     }
     Component.onCompleted: {
         if (root.imageLanded && root.screenshotPath !== "")
             refreshImage(root.screenshotPath);
-
-        if (showCondition)
-            root.forceActiveFocus();
 
     }
     onImageLandedChanged: {

@@ -61,7 +61,7 @@ PanelWindow {
     property bool screenshotFlyAnimationActive: false
     property bool screenshotImageLanded: false
     property bool screenshotCapturing: false
-    readonly property bool isScreenshotModeActive: root.screenshotCapturing || root.screenshotSnippingActive || (islandContainer && (islandContainer.islandState === "screenshot_preview" || islandContainer.islandState === "screenshot_editor"))
+    readonly property bool isScreenshotModeActive: root.screenshotCapturing || root.screenshotSnippingActive || (islandContainer && islandContainer.islandState === "screenshot_editor")
     readonly property bool modalExpandedActive: isScreenshotModeActive || (islandContainer && (islandContainer.islandState === "control_center" || islandContainer.islandState === "settings_app" || islandContainer.islandState === "power_menu" || islandContainer.islandState === "notification_center" || islandContainer.islandState === "wallpaper_picker" || islandContainer.islandState === "application_launcher" || islandContainer.islandState === "clipboard" || islandContainer.islandState === "file_shelf" || islandContainer.islandState === "screen_share_picker" || islandContainer.islandState === "expanded"))
     readonly property alias islandContainer: islandContainer
     readonly property alias hoverCollapseDelayTimer: hoverCollapseDelayTimer
@@ -1395,7 +1395,7 @@ PanelWindow {
         if (root.screenshotSnippingActive || islandContainer.screenshotEditorLayerVisible)
             return WlrKeyboardFocus.Exclusive;
 
-        if (islandContainer.screenshotPreviewLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.focustimeLayerVisible)
+        if (islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.focustimeLayerVisible)
             return WlrKeyboardFocus.Exclusive;
 
         if (islandContainer.fileShelfLayerVisible)
@@ -2804,7 +2804,7 @@ PanelWindow {
             const cleanedSummary = cleanNotificationText(summary);
             const cleanedBody = cleanNotificationText(body);
             const resolvedSummary = cleanedSummary !== "" ? cleanedSummary : (cleanedBody !== "" ? cleanedBody : "New notification");
-            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit" || islandState === "screenshot_preview") {
+            if (root.overviewVisible || islandState === "control_center" || islandState === "expanded" || islandState === "file_shelf" || islandState === "polkit") {
                 if (notificationHistoryModel) {
                     let duplicate = false;
                     if (notificationHistoryModel.count > 0) {
@@ -3434,7 +3434,7 @@ PanelWindow {
 
         z: 10
         anchors.fill: parent
-        focus: root.screenshotSnippingActive || screenshotPreviewLayerVisible || screenshotEditorLayerVisible || controlCenterLayerVisible || wallpaperPickerLayerVisible || applicationLauncherLayerVisible || clipboardLayerVisible || settingsAppLayerVisible || fileShelfLayerVisible || polkitLayerVisible || expandedPlayerKeyboardFocusRequested || (root.monitorFocused && (root.overviewVisible || root.connectivityPromptActive))
+        focus: root.screenshotSnippingActive || screenshotEditorLayerVisible || controlCenterLayerVisible || wallpaperPickerLayerVisible || applicationLauncherLayerVisible || clipboardLayerVisible || settingsAppLayerVisible || fileShelfLayerVisible || polkitLayerVisible || expandedPlayerKeyboardFocusRequested || (root.monitorFocused && (root.overviewVisible || root.connectivityPromptActive))
         onIslandPointerInsideChanged: {
             if (islandPointerInside) {
                 islandHadPointer = true;
@@ -4044,7 +4044,7 @@ PanelWindow {
 
             anchors.fill: parent
             z: 1
-            enabled: islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom" && islandContainer.islandState !== "lyrics" && islandContainer.islandState !== "settings_app" && islandContainer.islandState !== "screenshot_editor" && islandContainer.islandState !== "screenshot_snipping" && islandContainer.islandState !== "screenshot_preview"
+            enabled: islandContainer.controlCenterLayerVisible || islandContainer.powerMenuLayerVisible || islandContainer.wallpaperPickerLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.focustimeLayerVisible || islandContainer.expandedLayerVisible || islandContainer.bluetoothExpandedLayerVisible
             onClicked: {
                 if (islandContainer.islandState === "power_menu")
                     root.requestPowerMenuClose();
@@ -5504,10 +5504,10 @@ PanelWindow {
             readonly property bool isLyricsActive: (islandContainer.islandState === "lyrics" || islandContainer.restingState === "lyrics" || root.lyricsActive || (islandContainer.swipeTransitionProgress > 0.05))
             readonly property bool isRetracting: root.powerMenuRetracting || root.wallpaperPickerRetracting || root.notificationRetracting || root.screenshotPreviewRetracting || root.reloadRetracting
             readonly property bool isNeckDropdown: islandContainer.powerMenuLayerVisible || root.powerMenuRetracting || islandContainer.wallpaperPickerLayerVisible || root.wallpaperPickerRetracting || islandContainer.notificationLayerVisible || root.notificationRetracting || islandContainer.screenshotPreviewLayerVisible || root.screenshotPreviewRetracting || islandContainer.reloadLayerVisible || root.reloadRetracting || islandContainer.islandState === "power_menu" || islandContainer.islandState === "wallpaper_picker" || islandContainer.islandState === "notification" || islandContainer.islandState === "screenshot_preview" || islandContainer.islandState === "reload"
-            readonly property bool anyModalActive: ((islandContainer.islandState !== "normal" && islandContainer.islandState !== "custom") || isNeckDropdown) && !isRetracting
+            readonly property bool isMorphingCard: (islandContainer.controlCenterLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.focustimeLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.notificationCenterLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.expandedLayerVisible || islandContainer.bluetoothExpandedLayerVisible || islandContainer.islandState === "control_center" || islandContainer.islandState === "application_launcher" || islandContainer.islandState === "clipboard" || islandContainer.islandState === "settings_app" || islandContainer.islandState === "focustime" || islandContainer.islandState === "file_shelf" || islandContainer.islandState === "notification_center" || islandContainer.islandState === "polkit" || islandContainer.islandState === "screen_share_picker" || islandContainer.islandState === "expanded" || islandContainer.islandState === "bluetooth_expanded" || islandContainer.islandState === "screenshot_editor" || mainCapsule.height > (root.effectiveIslandHeight + 2) || mainCapsule.width > (islandContainer.customCapsuleWidth > 0 ? Math.max(260, islandContainer.customCapsuleWidth + 30) : 260))
             readonly property bool shouldBeActive: hasBattery && (batteryCap > 0 || islandContainer.isCharging) && !isLyricsActive && !root.overviewVisible && !root.screenshotCapturing && !root.screenshotSnippingActive && !(islandContainer && islandContainer.islandState === "screenshot_editor")
-            // retractProgress: 0.0 = capsula intera a riposo; 1.0 = fondo completamente ritirato e aperto
-            property real retractProgress: anyModalActive ? 1 : 0
+            // retractProgress: 0.0 = capsula intera a riposo; 1.0 = fondo completamente ritirato e aperto per colletti
+            property real retractProgress: (isNeckDropdown && !isRetracting) ? 1 : 0
             readonly property real batteryFraction: Math.max(0, Math.min(1, batteryCap / 100))
             readonly property color indicatorColor: {
                 if (batteryCap <= 20)
@@ -5549,11 +5549,8 @@ PanelWindow {
             transformOrigin: mainCapsule.transformOrigin
             // Visibilità globale: se è un dropdown col colletto, la cresta superiore resta visibile; se morphing card, dissolve
             opacity: {
-                if (!shouldBeActive)
+                if (!shouldBeActive || isMorphingCard)
                     return 0;
-
-                if (!isNeckDropdown && anyModalActive)
-                    return Math.max(0, 1 - retractProgress) * mainCapsule.opacity;
 
                 return mainCapsule.opacity;
             }
@@ -5761,6 +5758,14 @@ PanelWindow {
 
             }
 
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 160
+                    easing.type: Easing.OutQuad
+                }
+
+            }
+
             Behavior on retractProgress {
                 NumberAnimation {
                     duration: innerBatteryClip.anyModalActive ? 280 : 240
@@ -5882,11 +5887,6 @@ PanelWindow {
             active: islandContainer.screenshotPreviewLayerVisible
             asynchronous: false
             visible: active
-            onLoaded: {
-                if (item)
-                    item.forceActiveFocus();
-
-            }
 
             sourceComponent: Component {
                 ScreenshotPreviewLayer {
