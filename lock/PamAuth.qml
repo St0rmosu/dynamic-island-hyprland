@@ -17,6 +17,7 @@ Item {
     signal failed()
 
     function submitPassword(pwd): void {
+        if (authenticating) return;
         if (pwd !== undefined) {
             buffer = pwd;
         }
@@ -55,8 +56,7 @@ Item {
     PamContext {
         id: passwd
 
-        config: "passwd"
-        configDirectory: Quickshell.shellPath("assets/pam.d")
+        config: "hyprlock"
 
         onResponseRequiredChanged: {
             if (!responseRequired) return;

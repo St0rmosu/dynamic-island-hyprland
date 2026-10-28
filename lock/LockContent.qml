@@ -71,6 +71,12 @@ Item {
                 root.currentIdentity.triggerShake();
             }
         }
+
+        onIsErrorChanged: {
+            if (!isError && root.currentIdentity && root.currentIdentity.lockState === "failed") {
+                root.currentIdentity.lockState = "locked";
+            }
+        }
     }
 
     // ── Apple iPadOS Fluid Transitions: Entrance (Lock) and Exit (Unlock) ──
@@ -418,8 +424,10 @@ Item {
             if (root.isPreview) {
                 root.triggerUnlock();
             } else {
-                if (root.currentIdentity) root.currentIdentity.lockState = "verifying";
-                pamAuth.submitPassword();
+                if (pamAuth.buffer.length > 0) {
+                    if (root.currentIdentity) root.currentIdentity.lockState = "verifying";
+                    pamAuth.submitPassword();
+                }
             }
             event.accepted = true;
             return;
@@ -745,12 +753,16 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 24
 
+                onFocusRequested: root.forceActiveFocus()
+
                 onSubmitRequested: function(pwd) {
                     if (root.isPreview) {
                         root.triggerUnlock();
                     } else {
-                        identityNormal.lockState = "verifying";
-                        pamAuth.submitPassword(pwd);
+                        if ((pwd && pwd.length > 0) || pamAuth.buffer.length > 0) {
+                            identityNormal.lockState = "verifying";
+                            pamAuth.submitPassword(pwd);
+                        }
                     }
                 }
             }
@@ -849,12 +861,16 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 8
 
+                onFocusRequested: root.forceActiveFocus()
+
                 onSubmitRequested: function(pwd) {
                     if (root.isPreview) {
                         root.triggerUnlock();
                     } else {
-                        identityMedia.lockState = "verifying";
-                        pamAuth.submitPassword(pwd);
+                        if ((pwd && pwd.length > 0) || pamAuth.buffer.length > 0) {
+                            identityMedia.lockState = "verifying";
+                            pamAuth.submitPassword(pwd);
+                        }
                     }
                 }
             }

@@ -14,6 +14,7 @@ Item {
     property string errorMessage: ""
 
     signal submitRequested(string password)
+    signal focusRequested()
 
     readonly property bool isTyping: buffer.length > 0 && !authenticating && lockState !== "verifying" && lockState !== "unlocked"
 
@@ -53,7 +54,7 @@ Item {
                 z: -1
                 hoverEnabled: false
                 cursorShape: Qt.IBeamCursor
-                onClicked: root.forceActiveFocus()
+                onClicked: root.focusRequested()
             }
 
             Behavior on width {

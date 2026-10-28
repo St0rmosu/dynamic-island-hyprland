@@ -18,6 +18,7 @@ ColumnLayout {
     property int avatarSize: 76
 
     signal submitRequested(string password)
+    signal focusRequested()
 
     function triggerShake(): void {
         islandCapsule.triggerShake();
@@ -105,6 +106,9 @@ ColumnLayout {
 
         onSubmitRequested: function(pwd) {
             root.submitRequested(pwd);
+        }
+        onFocusRequested: {
+            root.focusRequested();
         }
     }
 }
