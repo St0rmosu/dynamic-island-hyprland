@@ -25,7 +25,7 @@ call_ipc() {
   local method="$2"
   shift 2
   local qs_pid
-  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null | head -n 1 || true)
   if [ -n "$qs_pid" ]; then
     /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call "$target" "$method" "$@" >/dev/null 2>&1
     return $?
@@ -38,7 +38,7 @@ call_ipc() {
 
 cmd_status() {
   local qs_pid
-  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null | head -n 1 || true)
   if [ -n "$qs_pid" ]; then
     local mem_rss
     mem_rss=$(ps -p "$qs_pid" -o rss= 2>/dev/null | awk '{printf "%.1f MB", $1/1024}')
@@ -66,9 +66,9 @@ cmd_status() {
 
 cmd_stop() {
   local qs_pid
-  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null || true)
+  qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null || true)
   if [ -n "$qs_pid" ]; then
-    pkill -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null || true
+    pkill -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null || true
     pkill -u "$(id -u)" -x "lyricsmpris" 2>/dev/null || true
     pkill -u "$(id -u)" -f "notification_monitor.py" 2>/dev/null || true
     pkill -u "$(id -u)" -f "discord_call_monitor.py" 2>/dev/null || true
@@ -153,14 +153,14 @@ case "${1:-}" in
     ;;
   --reload|--restart|reload|restart)
     echo -e "${STY_CYAN}==>${STY_RST} Riavvio della Dynamic Island in corso..."
-    pkill -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null || true
+    pkill -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null || true
     sleep 0.3
     shift
     exec /usr/bin/quickshell -p "$QML_PATH" -d "$@"
     ;;
   -d|--daemonize)
     shift
-    qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+    qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null | head -n 1 || true)
     if [ -n "$qs_pid" ]; then
       echo -e "${STY_YELLOW}ℹ Dynamic Island è già in esecuzione (PID ${qs_pid}).${STY_RST}"
       echo -e "  Usa ${STY_CYAN}dynamic-island --reload${STY_RST} per riavviarla."
@@ -309,7 +309,7 @@ case "${1:-}" in
     fi
     ;;
   "")
-    qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH" 2>/dev/null | head -n 1 || true)
+    qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null | head -n 1 || true)
     if [ -n "$qs_pid" ]; then
       call_ipc "island" "reveal"
       exit 0
