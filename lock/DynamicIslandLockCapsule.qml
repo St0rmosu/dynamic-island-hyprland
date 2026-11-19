@@ -12,6 +12,7 @@ Item {
     property bool authenticating: false
     property bool isError: false
     property string errorMessage: ""
+    property bool compactIdle: false
 
     signal submitRequested(string password)
     signal focusRequested()
@@ -35,9 +36,15 @@ Item {
                 if (root.lockState === "verifying" || root.authenticating) return 180;
                 if (root.lockState === "failed" || root.isError) return 204;
                 if (root.isTyping) return Math.min(340, Math.max(210, 130 + root.buffer.length * 15));
+                if (root.compactIdle) return 48;
                 return 146;
             }
-            height: 46
+            height: {
+                if (root.compactIdle && !root.isTyping && !root.authenticating && root.lockState !== "verifying" && root.lockState !== "failed" && !root.isError && root.lockState !== "unlocked") {
+                    return 28;
+                }
+                return 46;
+            }
             radius: height / 2
             color: AppleTokens.surfaceBlack
 
@@ -65,6 +72,14 @@ Item {
                 }
             }
 
+            Behavior on height {
+                NumberAnimation {
+                    duration: AppleTokens.animDurationNormal
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 1.08
+                }
+            }
+
             Behavior on border.color {
                 ColorAnimation { duration: 200 }
             }
@@ -77,17 +92,18 @@ Item {
                 shadowVerticalOffset: 4
             }
 
-            // 1. Idle Locked State: Padlock + "Bloccato"
+            // 1. Idle Locked State: Compact Padlock Pill (saneAspect style) or Padlock + "Bloccato"
             RowLayout {
                 anchors.centerIn: parent
-                spacing: 9
+                spacing: root.compactIdle ? 0 : 9
                 visible: !root.isTyping && !root.authenticating && root.lockState !== "verifying" && root.lockState !== "failed" && !root.isError && root.lockState !== "unlocked"
 
                 Text {
                     text: "󰌾"
                     font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 18
+                    font.pixelSize: root.compactIdle ? 13 : 18
                     color: AppleTokens.bodyOnDark
+                    Layout.alignment: Qt.AlignCenter
                 }
 
                 Text {
@@ -97,6 +113,7 @@ Item {
                     font.weight: Font.DemiBold
                     font.letterSpacing: AppleTokens.letterSpacingBody
                     color: AppleTokens.bodyOnDark
+                    visible: !root.compactIdle
                 }
             }
 

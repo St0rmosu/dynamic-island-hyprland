@@ -110,9 +110,8 @@ FocusScope {
 
     function runCealestiaCommand(cmd) {
         var finalCmd = cmd.trim();
-        var fullBash = "nohup setsid " + finalCmd + " >/dev/null 2>&1 &";
         try {
-            Quickshell.execDetached(["bash", "-c", fullBash]);
+            Quickshell.execDetached(["bash", "-c", finalCmd]);
         } catch (e) {
             console.warn("[PowerMenuLayer] execDetached bash failed, attempting direct exec:", e);
             try {
@@ -123,36 +122,37 @@ FocusScope {
         }
     }
 
+    function grabKeyboardFocus() {
+        root.forceActiveFocus();
+    }
+
     Timer {
-        id: actionTimer
-        property string pendingCmd: ""
-        interval: 220
+        id: focusTimer
+        interval: 40
         repeat: false
-        onTriggered: {
-            if (pendingCmd !== "") {
-                root.runCealestiaCommand(pendingCmd);
-                pendingCmd = "";
-            }
-        }
+        onTriggered: root.forceActiveFocus()
     }
 
     function triggerAction(cmd) {
-        actionTimer.pendingCmd = cmd;
-        actionTimer.restart();
+        if (!cmd || cmd.length === 0) return;
+        console.log("[PowerMenuLayer] Triggering action:", cmd);
+        root.runCealestiaCommand(cmd);
         root.closeRequested();
     }
 
     anchors.fill: parent
-    focus: showCondition
+    focus: true
     onShowConditionChanged: {
         if (showCondition) {
             root.activeIndex = 0;
             root.forceActiveFocus();
+            focusTimer.restart();
             autoCloseTimer.restart();
             closeAnim.stop();
             openAnim.from = root.animProgress;
             openAnim.restart();
         } else {
+            focusTimer.stop();
             autoCloseTimer.stop();
             openAnim.stop();
             closeAnim.from = root.animProgress;

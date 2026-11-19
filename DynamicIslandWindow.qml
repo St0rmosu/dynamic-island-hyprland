@@ -1347,6 +1347,15 @@ PanelWindow {
         }
     }
 
+    function focusPowerMenu() {
+        islandContainer.forceActiveFocus();
+        if (powerMenuLoader.item) {
+            powerMenuLoader.item.forceActiveFocus();
+            if (powerMenuLoader.item.grabKeyboardFocus)
+                powerMenuLoader.item.grabKeyboardFocus();
+        }
+    }
+
     function dragCarriesFiles(dragEvent) {
         if (!dragEvent)
             return false;
@@ -3226,6 +3235,7 @@ PanelWindow {
             islandState = "power_menu";
             mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
             stopAutoHideTimer();
+            root.focusPowerMenu();
         }
 
         function showControlCenter() {
@@ -5779,7 +5789,7 @@ PanelWindow {
         Loader {
             id: powerMenuLoader
 
-            z: 4.5
+            z: 10
             x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
             y: root.effectiveIslandTopMargin
             width: 460
@@ -5788,9 +5798,7 @@ PanelWindow {
             asynchronous: false
             visible: active
             onLoaded: {
-                if (item)
-                    item.forceActiveFocus();
-
+                root.focusPowerMenu();
             }
 
             sourceComponent: Component {

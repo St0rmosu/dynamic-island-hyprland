@@ -16,8 +16,9 @@ Item {
 
     // Configurable options
     property bool showTopStatus: false
-    property bool showProfilePhoto: true
-    property bool showComplications: true
+    property bool showProfilePhoto: false
+    property bool showComplications: false
+    property bool showDateAboveClock: false
     property bool enableMediaMode: true
     property bool showMediaButtons: true
     property bool depthEffectEnabled: false
@@ -33,10 +34,32 @@ Item {
                 if (data.lockShowProfilePhoto !== undefined) root.showProfilePhoto = Boolean(data.lockShowProfilePhoto);
                 if (data.lockShowTopStatus !== undefined) root.showTopStatus = Boolean(data.lockShowTopStatus);
                 if (data.lockShowComplications !== undefined) root.showComplications = Boolean(data.lockShowComplications);
+                if (data.lockShowDate !== undefined) root.showDateAboveClock = Boolean(data.lockShowDate);
                 if (data.lockEnableMediaMode !== undefined) root.enableMediaMode = Boolean(data.lockEnableMediaMode);
                 if (data.lockShowMediaButtons !== undefined) root.showMediaButtons = Boolean(data.lockShowMediaButtons);
             } catch(e) {}
         }
+    }
+
+    FileView {
+        id: irisColors
+        path: Quickshell.env("HOME") + "/.cache/iris/colors.json"
+        property string accentHex: ""
+        onLoaded: {
+            try {
+                let c = JSON.parse(text().trim());
+                if (c && c.accent) accentHex = c.accent;
+            } catch(e) {}
+        }
+    }
+
+    readonly property color dynamicClockColor: {
+        if (irisColors.accentHex !== "") {
+            let acc = Qt.color(irisColors.accentHex);
+            // Harmonious luminescence: blends 42% crisp white with 58% wallpaper accent
+            return Qt.tint(Qt.rgba(acc.r, acc.g, acc.b, 0.96), Qt.rgba(1.0, 1.0, 1.0, 0.42));
+        }
+        return Qt.rgba(1.0, 1.0, 1.0, 0.95);
     }
 
     signal unlockRequested()
@@ -48,7 +71,7 @@ Item {
         }
     }
 
-    readonly property var currentIdentity: root.isMediaPlaying ? identityMedia : identityNormal
+    readonly property var currentIdentity: topIslandCapsule
 
     function triggerUnlock(): void {
         if (unlockAnim.running) return;
@@ -79,109 +102,138 @@ Item {
         }
     }
 
-    // ── Apple iPadOS Fluid Transitions: Entrance (Lock) and Exit (Unlock) ──
+    // ── Apple & saneAspect Fluid Transitions: Entrance (Lock) and Exit (Unlock) ──
 
-    // 1. Lock Entrance Animation (Desktop -> Lock Screen)
+    // 1. Lock Entrance Animation (Desktop -> Lock Screen: exact saneAspect drop from island)
     ParallelAnimation {
         id: initLockAnim
         running: true
 
+        // Background Wallpaper: steady with subtle settling, zero black flicker
         NumberAnimation {
             target: backgroundWrapper
             property: "opacity"
-            from: 0.0
+            from: 1.0
             to: 1.0
+            duration: 10
+        }
+
+        NumberAnimation {
+            target: backgroundWrapper
+            property: "scale"
+            from: 1.018
+            to: 1.0
+            duration: 480
+            easing.type: Easing.OutCubic
+        }
+
+        // Top Dynamic Island Notch: emerges gracefully from top edge
+        NumberAnimation {
+            target: topIslandCapsule
+            property: "animOffsetY"
+            from: -24
+            to: 0.0
             duration: 360
             easing.type: Easing.OutCubic
         }
 
         NumberAnimation {
-            target: backgroundWrapper
-            property: "scale"
-            from: 1.04
-            to: 1.0
-            duration: 400
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            target: contentWrapper
+            target: topIslandCapsule
             property: "opacity"
             from: 0.0
             to: 1.0
-            duration: 380
+            duration: 240
+            easing.type: Easing.OutQuad
+        }
+
+        // Giant Clock: saneAspect drop animation emerging from underneath the top island pill
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animOffsetY"
+            from: -root.height * 0.28
+            to: 0.0
+            duration: 520
             easing.type: Easing.OutCubic
         }
 
         NumberAnimation {
-            target: contentWrapper
-            property: "y"
-            from: 32
-            to: 0
-            duration: 400
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            target: contentWrapper
-            property: "scale"
-            from: 0.96
+            target: normalClockGroup
+            property: "animScale"
+            from: 0.45
             to: 1.0
-            duration: 400
+            duration: 520
             easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animOpacity"
+            from: 0.0
+            to: 1.0
+            duration: 240
+            easing.type: Easing.OutQuad
         }
     }
 
-    // 2. Unlock Exit Animation (Lock Screen -> Desktop)
+    // 2. Unlock Exit Animation (Lock Screen -> Desktop: reverse glide back into island)
     SequentialAnimation {
         id: unlockAnim
 
         // Brief confirmation pause so user sees "Sbloccato" on dynamic island
         PauseAnimation {
-            duration: 240
+            duration: 200
         }
 
         ParallelAnimation {
-            // Content glides smoothly upwards and fades (signature iOS swipe-up physics)
+            // Clock glides smoothly back into the capsule
             NumberAnimation {
-                target: contentWrapper
+                target: normalClockGroup
+                property: "animOffsetY"
+                to: -root.height * 0.28
+                duration: 260
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                target: normalClockGroup
+                property: "animScale"
+                to: 0.45
+                duration: 260
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                target: normalClockGroup
+                property: "animOpacity"
+                to: 0.0
+                duration: 200
+                easing.type: Easing.InQuad
+            }
+
+            // Top island capsule glides up
+            NumberAnimation {
+                target: topIslandCapsule
+                property: "animOffsetY"
+                to: -24
+                duration: 260
+                easing.type: Easing.InCubic
+            }
+
+            NumberAnimation {
+                target: topIslandCapsule
                 property: "opacity"
                 to: 0.0
-                duration: 320
-                easing.type: Easing.InOutCubic
+                duration: 200
+                easing.type: Easing.InQuad
             }
 
-            NumberAnimation {
-                target: contentWrapper
-                property: "y"
-                to: -70
-                duration: 320
-                easing.type: Easing.InOutCubic
-            }
-
-            NumberAnimation {
-                target: contentWrapper
-                property: "scale"
-                to: 0.95
-                duration: 320
-                easing.type: Easing.InOutCubic
-            }
-
-            // Wallpaper scales slightly and dissolves into the underlying desktop
+            // Background dissolves seamlessly to desktop
             NumberAnimation {
                 target: backgroundWrapper
                 property: "opacity"
                 to: 0.0
-                duration: 340
-                easing.type: Easing.InOutCubic
-            }
-
-            NumberAnimation {
-                target: backgroundWrapper
-                property: "scale"
-                to: 1.05
-                duration: 340
-                easing.type: Easing.InOutCubic
+                duration: 280
+                easing.type: Easing.InOutQuad
             }
         }
 
@@ -327,10 +379,7 @@ Item {
         if (!root.enableMediaMode) return false;
         if (root.isPreview && root.previewMediaPlaying) return true;
         if (!root.activePlayer) return false;
-        let isPlaying = root.activePlayer.playbackState === MprisPlaybackState.Playing;
-        let isPaused = root.activePlayer.playbackState === MprisPlaybackState.Paused;
-        let hasTitle = (root.activePlayer.trackTitle || root.activePlayer.title || "").length > 0;
-        return isPlaying || (isPaused && hasTitle);
+        return root.activePlayer.playbackState === MprisPlaybackState.Playing;
     }
 
     // Debounced media mode: bridges gap between tracks so screen never flashes wallpaper when track ends
@@ -688,82 +737,107 @@ Item {
             }
         }
 
-        // MODE A: Normal Idle iPad Lockscreen (Screenshot 1: Centered Giant Clock + Date + Avatar & Password Pill BELOW)
-        ColumnLayout {
+        // 0. Top Dynamic Island Lock Capsule (Apple Dynamic Island Notch)
+        DynamicIslandLockCapsule {
+            id: topIslandCapsule
+            property real animOffsetY: 0.0
+            transform: Translate { y: topIslandCapsule.animOffsetY }
+            anchors.top: parent.top
+            anchors.topMargin: 20
+            anchors.horizontalCenter: parent.horizontalCenter
+            compactIdle: true
+            z: 50
+
+            buffer: pamAuth.buffer
+            authenticating: pamAuth.authenticating
+            isError: pamAuth.isError
+            errorMessage: pamAuth.errorMessage
+
+            onFocusRequested: root.forceActiveFocus()
+
+            onSubmitRequested: function(pwd) {
+                if (root.isPreview) {
+                    root.triggerUnlock();
+                } else {
+                    if ((pwd && pwd.length > 0) || pamAuth.buffer.length > 0) {
+                        topIslandCapsule.lockState = "verifying";
+                        pamAuth.submitPassword(pwd);
+                    }
+                }
+            }
+        }
+
+        // MODE A: Normal Idle Lockscreen (Aesthetic Giant Rounded Clock - saneAspect style)
+        Item {
             id: normalClockGroup
             anchors.centerIn: parent
-            anchors.verticalCenterOffset: 0
-            spacing: -10
+            anchors.verticalCenterOffset: -Math.round(root.height * 0.055)
+            width: clockText.implicitWidth
+            height: clockText.implicitHeight
             z: 10
+            transformOrigin: Item.Center
+
+            property real animOffsetY: 0.0
+            property real animScale: 1.0
+            property real animOpacity: 1.0
+
+            transform: [
+                Translate { y: normalClockGroup.animOffsetY },
+                Scale {
+                    origin.x: normalClockGroup.width / 2
+                    origin.y: normalClockGroup.height / 2
+                    xScale: normalClockGroup.animScale
+                    yScale: normalClockGroup.animScale
+                }
+            ]
 
             visible: opacity > 0.001
-            opacity: !root.isMediaPlaying ? 1.0 : 0.0
+            opacity: normalClockGroup.animOpacity * (!root.isMediaPlaying ? 1.0 : 0.0)
             Behavior on opacity {
+                enabled: !initLockAnim.running && !unlockAnim.running
                 NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
             }
 
-            // Date (SF Pro Rounded Bold 28px: "Mar 20 ott")
+            // Optional Subtle Date above clock (if user enables lockShowDate)
             Text {
+                id: dateAboveClock
+                anchors.bottom: clockText.top
+                anchors.bottomMargin: 12
+                anchors.horizontalCenter: clockText.horizontalCenter
                 text: root.ipadDateString
                 font.family: AppleTokens.roundedFont
-                font.pixelSize: 28
-                font.weight: Font.Bold
+                font.pixelSize: 22
+                font.weight: Font.DemiBold
                 font.letterSpacing: -0.2
-                color: AppleTokens.bodyOnDark
-                Layout.alignment: Qt.AlignHCenter
+                color: root.dynamicClockColor
+                visible: root.showDateAboveClock
 
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.55)
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
                     shadowBlur: 0.5
                     shadowVerticalOffset: 2
                 }
             }
 
-            // Clock (SF Pro Rounded Bold 156px: "19:10")
+            // Centered Clock with SaneAspect Rounded Typography & Ambient Shadow
             Text {
+                id: clockText
+                anchors.centerIn: parent
                 text: root.timeString
                 font.family: AppleTokens.roundedFont
-                font.pixelSize: 156
                 font.weight: Font.Bold
-                font.letterSpacing: -2.5
-                color: AppleTokens.bodyOnDark
-                Layout.alignment: Qt.AlignHCenter
+                font.pixelSize: Math.round(root.height * 0.165)
+                font.letterSpacing: -1.5
+                color: root.dynamicClockColor
 
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.6)
-                    shadowBlur: 0.6
-                    shadowVerticalOffset: 4
-                }
-            }
-
-            // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE CLOCK!)
-            IdentityPasswordGroup {
-                id: identityNormal
-                buffer: pamAuth.buffer
-                authenticating: pamAuth.authenticating
-                isError: pamAuth.isError
-                errorMessage: pamAuth.errorMessage
-                showProfilePhoto: root.showProfilePhoto
-                avatarPath: root.avatarPath
-                avatarSize: 84
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 24
-
-                onFocusRequested: root.forceActiveFocus()
-
-                onSubmitRequested: function(pwd) {
-                    if (root.isPreview) {
-                        root.triggerUnlock();
-                    } else {
-                        if ((pwd && pwd.length > 0) || pamAuth.buffer.length > 0) {
-                            identityNormal.lockState = "verifying";
-                            pamAuth.submitPassword(pwd);
-                        }
-                    }
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                    shadowBlur: 0.65
+                    shadowVerticalOffset: 6
                 }
             }
         }
@@ -845,33 +919,6 @@ Item {
 
                 onRippleTriggered: {
                     root.startRippleTransition();
-                }
-            }
-
-            // Avatar + Dynamic Island Password Capsule (MOVED BELOW THE MEDIA PLAYER!)
-            IdentityPasswordGroup {
-                id: identityMedia
-                buffer: pamAuth.buffer
-                authenticating: pamAuth.authenticating
-                isError: pamAuth.isError
-                errorMessage: pamAuth.errorMessage
-                showProfilePhoto: root.showProfilePhoto
-                avatarPath: root.avatarPath
-                avatarSize: 68
-                Layout.alignment: Qt.AlignHCenter
-                Layout.topMargin: 8
-
-                onFocusRequested: root.forceActiveFocus()
-
-                onSubmitRequested: function(pwd) {
-                    if (root.isPreview) {
-                        root.triggerUnlock();
-                    } else {
-                        if ((pwd && pwd.length > 0) || pamAuth.buffer.length > 0) {
-                            identityMedia.lockState = "verifying";
-                            pamAuth.submitPassword(pwd);
-                        }
-                    }
                 }
             }
         }
