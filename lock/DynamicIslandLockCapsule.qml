@@ -13,6 +13,8 @@ Item {
     property bool isError: false
     property string errorMessage: ""
     property bool compactIdle: false
+    property string currentTime: ""
+    property string clockFontFamily: ""
 
     signal submitRequested(string password)
     signal focusRequested()
@@ -32,7 +34,7 @@ Item {
             id: capsuleBg
             anchors.centerIn: parent
             width: {
-                if (root.lockState === "unlocked") return 180;
+                if (root.lockState === "unlocked") return 68;
                 if (root.lockState === "verifying" || root.authenticating) return 180;
                 if (root.lockState === "failed" || root.isError) return 204;
                 if (root.isTyping) return Math.min(340, Math.max(210, 130 + root.buffer.length * 15));
@@ -40,7 +42,7 @@ Item {
                 return 146;
             }
             height: {
-                if (root.compactIdle && !root.isTyping && !root.authenticating && root.lockState !== "verifying" && root.lockState !== "failed" && !root.isError && root.lockState !== "unlocked") {
+                if (root.compactIdle && !root.isTyping && !root.authenticating && root.lockState !== "verifying" && root.lockState !== "failed" && !root.isError) {
                     return 28;
                 }
                 return 46;
@@ -51,7 +53,6 @@ Item {
             border.width: 1.2
             border.color: {
                 if (root.lockState === "failed" || root.isError) return AppleTokens.errorRed;
-                if (root.lockState === "unlocked") return AppleTokens.successGreen;
                 if (root.isTyping) return Qt.rgba(1.0, 1.0, 1.0, 0.45);
                 return AppleTokens.hairlineDark;
             }
@@ -251,25 +252,18 @@ Item {
                 }
             }
 
-            // 5. Unlocked State (Success Green)
+            // 5. Unlocked State: Clock seamlessly settled inside the capsule
             RowLayout {
                 anchors.centerIn: parent
-                spacing: 9
                 visible: root.lockState === "unlocked"
 
                 Text {
-                    text: "󰌿"
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 19
-                    color: AppleTokens.successGreen
-                }
-
-                Text {
-                    text: "Sbloccato"
-                    font.family: AppleTokens.textFont
-                    font.pixelSize: 15
-                    font.weight: Font.DemiBold
-                    color: AppleTokens.successGreen
+                    text: root.currentTime
+                    font.family: root.clockFontFamily !== "" ? root.clockFontFamily : AppleTokens.roundedFont
+                    font.pixelSize: 13
+                    font.weight: Font.Bold
+                    color: AppleTokens.bodyOnDark
+                    Layout.alignment: Qt.AlignCenter
                 }
             }
         }

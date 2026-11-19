@@ -4157,6 +4157,11 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "power_menu":
+                    if (islandContainer.restingState === "lyrics")
+                        return islandContainer.lyricsCapsuleWidth;
+                    if (islandContainer.restingState === "custom")
+                        return islandContainer.customCapsuleWidth;
+                    return root.effectiveIslandWidth;
                 case "wallpaper_picker":
                 case "notification":
                 case "screenshot_preview":
@@ -5789,7 +5794,7 @@ PanelWindow {
         Loader {
             id: powerMenuLoader
 
-            z: 10
+            z: 4.5
             x: Math.round(mainCapsule.x + mainCapsule.width / 2 - width / 2)
             y: root.effectiveIslandTopMargin
             width: 460

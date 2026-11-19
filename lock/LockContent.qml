@@ -87,9 +87,13 @@ Item {
     readonly property var currentIdentity: topIslandCapsule
 
     function triggerUnlock(): void {
-        if (unlockAnim.running) return;
+        if (unlockAnim.running || mediaUnlockAnim.running) return;
         if (root.currentIdentity) root.currentIdentity.lockState = "unlocked";
-        unlockAnim.start();
+        if (root.isMediaPlaying) {
+            mediaUnlockAnim.restart();
+        } else {
+            unlockAnim.restart();
+        }
     }
 
     // PAM Authentication Backend
@@ -116,8 +120,8 @@ Item {
     }
 
     // ── saneAspect Clock Drop Geometry ──
-    readonly property real clockRestCenterY: root.height * 0.5 - Math.round(root.height * 0.055)
-    readonly property real capsuleCenterY: topIslandCapsule.y + (topIslandCapsule.height > 0 ? topIslandCapsule.height / 2 : 14)
+    readonly property real clockRestCenterY: (root.height > 0 ? root.height : 1080) * 0.5 - Math.round((root.height > 0 ? root.height : 1080) * 0.055)
+    readonly property real capsuleCenterY: (topIslandCapsule && topIslandCapsule.y > 0 ? topIslandCapsule.y : 20) + 14
     readonly property real clockDropOffsetY: -(clockRestCenterY - capsuleCenterY)
 
     // ── Drop Animation (Clock emerges smoothly from top capsule down to center) ──
@@ -136,7 +140,7 @@ Item {
         NumberAnimation {
             target: normalClockGroup
             property: "animScale"
-            from: 0.20
+            from: 0.16
             to: 1.0
             duration: 380
             easing.type: Easing.OutCubic
@@ -147,7 +151,7 @@ Item {
             property: "animOpacity"
             from: 0.0
             to: 1.0
-            duration: 160
+            duration: 180
             easing.type: Easing.OutQuad
         }
     }
@@ -155,9 +159,10 @@ Item {
     // ── Reset state function for reliable multi-lock lifecycle ──
     function resetToLockedState(): void {
         if (unlockAnim.running) unlockAnim.stop();
+        if (mediaUnlockAnim.running) mediaUnlockAnim.stop();
         if (dropLockAnim.running) dropLockAnim.stop();
         normalClockGroup.animOffsetY = root.clockDropOffsetY;
-        normalClockGroup.animScale = 0.20;
+        normalClockGroup.animScale = 0.16;
         normalClockGroup.animOpacity = 0.0;
         topIslandCapsule.animOffsetY = 0.0;
         topIslandCapsule.opacity = 1.0;
@@ -170,46 +175,57 @@ Item {
     }
 
     // ── Unlock Exit Animation (Clock glides and shrinks back into the top capsule) ──
-    SequentialAnimation {
+    ParallelAnimation {
         id: unlockAnim
 
-        // Brief pause so the unlocked state is perceived in the capsule
-        PauseAnimation {
-            duration: 120
+        // 1. Clock glides UP from center into the top capsule
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animOffsetY"
+            from: 0.0
+            to: root.clockDropOffsetY
+            duration: 280
+            easing.type: Easing.InQuad
         }
 
-        ParallelAnimation {
-            // Clock glides and shrinks smoothly back into the top capsule
-            NumberAnimation {
-                target: normalClockGroup
-                property: "animOffsetY"
-                to: root.clockDropOffsetY
-                duration: 220
-                easing.type: Easing.InCubic
-            }
+        // 2. Clock shrinks down to fit into the top capsule
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animScale"
+            from: 1.0
+            to: 0.16
+            duration: 280
+            easing.type: Easing.InQuad
+        }
 
-            NumberAnimation {
-                target: normalClockGroup
-                property: "animScale"
-                to: 0.20
+        // 3. Clock stays fully visible for the glide, fading gently in the last 60ms as it merges into capsule
+        SequentialAnimation {
+            PauseAnimation {
                 duration: 220
-                easing.type: Easing.InCubic
             }
-
             NumberAnimation {
                 target: normalClockGroup
                 property: "animOpacity"
+                from: 1.0
                 to: 0.0
-                duration: 170
+                duration: 60
                 easing.type: Easing.InQuad
             }
         }
 
-        ScriptAction {
-            script: {
-                root.unlockRequested();
-            }
+        onFinished: {
+            root.unlockRequested();
         }
+    }
+
+    NumberAnimation {
+        id: mediaUnlockAnim
+        target: mediaLockGroup
+        property: "opacity"
+        to: 0.0
+        duration: 220
+        easing.type: Easing.InQuad
+        onFinished: root.unlockRequested()
     }
 
     // Time & Date Formatter (Exact iPadOS "Mar 20 ott" & "19:10")
@@ -714,6 +730,8 @@ Item {
             anchors.topMargin: 20
             anchors.horizontalCenter: parent.horizontalCenter
             compactIdle: true
+            currentTime: root.timeString
+            clockFontFamily: root.effectiveClockFontFamily
             z: 50
 
             buffer: pamAuth.buffer
