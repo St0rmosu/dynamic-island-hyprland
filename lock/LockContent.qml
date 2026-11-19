@@ -128,10 +128,6 @@ Item {
         root.forceActiveFocus();
     }
 
-    Component.onCompleted: {
-        root.resetToLockedState();
-    }
-
     // ── Unlock Exit Animation (Lock Screen -> Desktop) ──
     SequentialAnimation {
         id: unlockAnim
@@ -398,7 +394,7 @@ Item {
     }
 
     Component.onCompleted: {
-        forceActiveFocus();
+        root.resetToLockedState();
         root.mprisPulse++;
         if (root.wallpaperPath === "") {
             root.wallpaperPath = Quickshell.env("HOME") + "/Sfondi/Eragny's Garden.jpg";
