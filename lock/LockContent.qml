@@ -24,6 +24,9 @@ Item {
     property bool depthEffectEnabled: false
     property string avatarPath: Quickshell.env("HOME") + "/Immagineprofilo/lollo.png"
     property string userClockFontFamily: ""
+    property int islandTopMargin: 8
+    property int islandHeight: 40
+    property int islandWidth: 140
 
     FileView {
         id: userConfigFile
@@ -35,10 +38,11 @@ Item {
             try {
                 let data = JSON.parse(text().trim());
                 if (data.clockFontFamily) root.userClockFontFamily = String(data.clockFontFamily);
-                else if (data.timeFontFamily) root.userClockFontFamily = String(data.timeFontFamily);
-                else if (data.heroFontFamily) root.userClockFontFamily = String(data.heroFontFamily);
-                else if (data.textFontFamily) root.userClockFontFamily = String(data.textFontFamily);
+                else if (data.lockClockFontFamily) root.userClockFontFamily = String(data.lockClockFontFamily);
 
+                if (data.islandTopMargin !== undefined) root.islandTopMargin = Number(data.islandTopMargin);
+                if (data.islandHeight !== undefined) root.islandHeight = Number(data.islandHeight);
+                if (data.islandWidth !== undefined) root.islandWidth = Number(data.islandWidth);
                 if (data.wallpaperPath) root.wallpaperPath = String(data.wallpaperPath);
 
                 if (data.lockDepthEffect !== undefined) root.depthEffectEnabled = Boolean(data.lockDepthEffect);
@@ -121,8 +125,9 @@ Item {
 
     // ── saneAspect Clock Drop Geometry ──
     readonly property real clockRestCenterY: (root.height > 0 ? root.height : 1080) * 0.5 - Math.round((root.height > 0 ? root.height : 1080) * 0.055)
-    readonly property real capsuleCenterY: (topIslandCapsule && topIslandCapsule.y > 0 ? topIslandCapsule.y : 20) + 14
+    readonly property real capsuleCenterY: root.islandTopMargin + (root.islandHeight / 2)
     readonly property real clockDropOffsetY: -(clockRestCenterY - capsuleCenterY)
+    readonly property real targetCapsuleScale: 19.0 / Math.max(1, clockText.font.pixelSize)
 
     // ── Drop Animation (Clock emerges smoothly from top capsule down to center) ──
     ParallelAnimation {
@@ -133,25 +138,25 @@ Item {
             property: "animOffsetY"
             from: root.clockDropOffsetY
             to: 0.0
-            duration: 380
+            duration: 240
             easing.type: Easing.OutCubic
         }
 
         NumberAnimation {
             target: normalClockGroup
             property: "animScale"
-            from: 0.16
+            from: root.targetCapsuleScale
             to: 1.0
-            duration: 380
+            duration: 240
             easing.type: Easing.OutCubic
         }
 
         NumberAnimation {
             target: normalClockGroup
             property: "animOpacity"
-            from: 0.0
+            from: 0.7
             to: 1.0
-            duration: 180
+            duration: 80
             easing.type: Easing.OutQuad
         }
     }
@@ -162,8 +167,8 @@ Item {
         if (mediaUnlockAnim.running) mediaUnlockAnim.stop();
         if (dropLockAnim.running) dropLockAnim.stop();
         normalClockGroup.animOffsetY = root.clockDropOffsetY;
-        normalClockGroup.animScale = 0.16;
-        normalClockGroup.animOpacity = 0.0;
+        normalClockGroup.animScale = root.targetCapsuleScale;
+        normalClockGroup.animOpacity = 1.0;
         topIslandCapsule.animOffsetY = 0.0;
         topIslandCapsule.opacity = 1.0;
         backgroundWrapper.opacity = 1.0;
@@ -184,8 +189,8 @@ Item {
             property: "animOffsetY"
             from: 0.0
             to: root.clockDropOffsetY
-            duration: 280
-            easing.type: Easing.InQuad
+            duration: 200
+            easing.type: Easing.InCubic
         }
 
         // 2. Clock shrinks down to fit into the top capsule
@@ -193,24 +198,9 @@ Item {
             target: normalClockGroup
             property: "animScale"
             from: 1.0
-            to: 0.16
-            duration: 280
-            easing.type: Easing.InQuad
-        }
-
-        // 3. Clock stays fully visible for the glide, fading gently in the last 60ms as it merges into capsule
-        SequentialAnimation {
-            PauseAnimation {
-                duration: 220
-            }
-            NumberAnimation {
-                target: normalClockGroup
-                property: "animOpacity"
-                from: 1.0
-                to: 0.0
-                duration: 60
-                easing.type: Easing.InQuad
-            }
+            to: root.targetCapsuleScale
+            duration: 200
+            easing.type: Easing.InCubic
         }
 
         onFinished: {
@@ -727,11 +717,13 @@ Item {
             property real animOffsetY: 0.0
             transform: Translate { y: topIslandCapsule.animOffsetY }
             anchors.top: parent.top
-            anchors.topMargin: 20
+            anchors.topMargin: root.islandTopMargin
             anchors.horizontalCenter: parent.horizontalCenter
             compactIdle: true
             currentTime: root.timeString
             clockFontFamily: root.effectiveClockFontFamily
+            islandHeight: root.islandHeight
+            restingIslandWidth: root.islandWidth
             z: 50
 
             buffer: pamAuth.buffer
@@ -760,7 +752,7 @@ Item {
             anchors.verticalCenterOffset: -Math.round(root.height * 0.055)
             width: clockText.implicitWidth
             height: clockText.implicitHeight
-            z: 10
+            z: 60
             transformOrigin: Item.Center
 
             property real animOffsetY: 0.0
@@ -814,8 +806,9 @@ Item {
                 text: root.timeString
                 font.family: root.effectiveClockFontFamily
                 font.weight: Font.Bold
-                font.pixelSize: Math.round(root.height * 0.165)
-                font.letterSpacing: -1.5
+                font.pixelSize: Math.round(root.height * 0.196)
+                font.letterSpacing: -Math.round(font.pixelSize * 0.033)
+                font.features: { "tnum": 1 }
                 color: root.dynamicClockColor
 
                 layer.enabled: true

@@ -15,6 +15,8 @@ Item {
     property bool compactIdle: false
     property string currentTime: ""
     property string clockFontFamily: ""
+    property int islandHeight: 40
+    property int restingIslandWidth: 140
 
     signal submitRequested(string password)
     signal focusRequested()
@@ -34,27 +36,22 @@ Item {
             id: capsuleBg
             anchors.centerIn: parent
             width: {
-                if (root.lockState === "unlocked") return 68;
-                if (root.lockState === "verifying" || root.authenticating) return 180;
-                if (root.lockState === "failed" || root.isError) return 204;
-                if (root.isTyping) return Math.min(340, Math.max(210, 130 + root.buffer.length * 15));
-                if (root.compactIdle) return 48;
-                return 146;
+                if (root.lockState === "unlocked") return root.restingIslandWidth;
+                if (root.lockState === "verifying" || root.authenticating) return 140;
+                if (root.lockState === "failed" || root.isError) return 180;
+                if (root.isTyping) return Math.min(280, Math.max(64, 32 + root.buffer.length * 15));
+                if (root.compactIdle) return 56;
+                return root.restingIslandWidth;
             }
-            height: {
-                if (root.compactIdle && !root.isTyping && !root.authenticating && root.lockState !== "verifying" && root.lockState !== "failed" && !root.isError) {
-                    return 28;
-                }
-                return 46;
-            }
+            height: root.islandHeight > 0 ? root.islandHeight : 40
             radius: height / 2
             color: AppleTokens.surfaceBlack
 
-            border.width: 1.2
+            border.width: 1.0
             border.color: {
                 if (root.lockState === "failed" || root.isError) return AppleTokens.errorRed;
-                if (root.isTyping) return Qt.rgba(1.0, 1.0, 1.0, 0.45);
-                return AppleTokens.hairlineDark;
+                if (root.isTyping) return Qt.rgba(1.0, 1.0, 1.0, 0.25);
+                return Qt.rgba(1.0, 1.0, 1.0, 0.12);
             }
 
             MouseArea {
@@ -118,83 +115,30 @@ Item {
                 }
             }
 
-            // 2. Typing State: Lock Icon + Password Dots + Submit Arrow
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 16
-                anchors.rightMargin: 10
-                spacing: 10
+            // 2. Typing State: Minimal Centered Dots (saneAspect style)
+            Row {
+                anchors.centerIn: parent
+                spacing: 8
                 visible: root.isTyping
 
-                Text {
-                    text: "󰌾"
-                    font.family: "JetBrainsMono Nerd Font"
-                    font.pixelSize: 16
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.6)
-                }
+                Repeater {
+                    model: root.buffer.length
 
-                // Password dots
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-
-                    Row {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.left: parent.left
-                        spacing: 7
-
-                        Repeater {
-                            model: root.buffer.length
-
-                            Rectangle {
-                                width: 9
-                                height: 9
-                                radius: 4.5
-                                color: AppleTokens.bodyOnDark
-
-                                scale: 0
-                                Component.onCompleted: dotAnim.start()
-
-                                NumberAnimation on scale {
-                                    id: dotAnim
-                                    from: 0.2
-                                    to: 1.0
-                                    duration: 130
-                                    easing.type: Easing.OutBack
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Submit Arrow Button
-                Rectangle {
-                    width: 28
-                    height: 28
-                    radius: 14
-                    color: Qt.rgba(1.0, 1.0, 1.0, 0.25)
-                    scale: btnMouse.pressed ? AppleTokens.pressScale : 1.0
-                    Behavior on scale { NumberAnimation { duration: 90 } }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "󰅂"
-                        font.family: "JetBrainsMono Nerd Font"
-                        font.pixelSize: 15
-                        font.weight: Font.Bold
+                    Rectangle {
+                        width: 7
+                        height: 7
+                        radius: 3.5
                         color: AppleTokens.bodyOnDark
-                    }
 
-                    MouseArea {
-                        id: btnMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (root.buffer.length > 0) {
-                                root.submitRequested(root.buffer);
-                            }
+                        scale: 0
+                        Component.onCompleted: dotAnim.start()
+
+                        NumberAnimation on scale {
+                            id: dotAnim
+                            from: 0.2
+                            to: 1.0
+                            duration: 120
+                            easing.type: Easing.OutBack
                         }
                     }
                 }
@@ -252,19 +196,10 @@ Item {
                 }
             }
 
-            // 5. Unlocked State: Clock seamlessly settled inside the capsule
-            RowLayout {
+            // 5. Unlocked State: Empty resting pill waiting for clock to glide inside (saneAspect style)
+            Item {
                 anchors.centerIn: parent
                 visible: root.lockState === "unlocked"
-
-                Text {
-                    text: root.currentTime
-                    font.family: root.clockFontFamily !== "" ? root.clockFontFamily : AppleTokens.roundedFont
-                    font.pixelSize: 13
-                    font.weight: Font.Bold
-                    color: AppleTokens.bodyOnDark
-                    Layout.alignment: Qt.AlignCenter
-                }
             }
         }
     }
