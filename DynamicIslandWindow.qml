@@ -1399,7 +1399,7 @@ PanelWindow {
     }
     exclusiveZone: Math.ceil(root.baseExclusiveZone * root.exclusiveZoneProgress)
     WlrLayershell.namespace: "dynamic-island"
-    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.layer: (root.screenshotSnippingActive || root.screenshotFlyAnimationActive || islandContainer.screenshotEditorLayerVisible || islandContainer.polkitLayerVisible || islandContainer.powerMenuLayerVisible) ? WlrLayer.Overlay : WlrLayer.Top
     WlrLayershell.keyboardFocus: {
         if (root.screenshotSnippingActive || islandContainer.screenshotEditorLayerVisible)
             return WlrKeyboardFocus.Exclusive;
