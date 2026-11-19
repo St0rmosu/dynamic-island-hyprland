@@ -5806,6 +5806,8 @@ PanelWindow {
                     neckTargetWidth: mainCapsule.displayedWidth
                     iconFontFamily: root.iconFontFamily
                     textFontFamily: root.textFontFamily
+                    timeFontFamily: root.timeFontFamily
+                    currentTime: timeObj.currentTime
                     accentColor: root.themeAccent
                     surfaceColor: Qt.rgba(0, 0, 0, root.effectiveIslandBackgroundOpacity / 100)
                     outlineColor: Qt.rgba(root.themeAccent.r, root.themeAccent.g, root.themeAccent.b, 0.25)

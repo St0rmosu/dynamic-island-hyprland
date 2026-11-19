@@ -13,6 +13,8 @@ FocusScope {
     property bool showCondition: false
     property string iconFontFamily: ""
     property string textFontFamily: ""
+    property string timeFontFamily: ""
+    property string currentTime: ""
     property color accentColor: "#60a5fa"
     property color surfaceColor: "#000000"
     property color outlineColor: "#22ffffff"
@@ -414,6 +416,36 @@ FocusScope {
 
             // 12. Top edge back to start
             PathLine { x: root.cx; y: root.neckTopY }
+        }
+    }
+
+    // ── Pill Clock inside Neck Area (Dynamic Island Top Pill) ───────────────
+    Item {
+        id: neckClockContainer
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: root.neckTopY
+        width: root.neckTargetWidth
+        height: root.shoulderY
+        visible: root.animProgress > 0.05
+        opacity: root.animProgress
+
+        property var localNow: new Date()
+        Timer {
+            interval: 1000
+            running: root.currentTime === "" && root.showCondition
+            repeat: true
+            onTriggered: neckClockContainer.localNow = new Date()
+        }
+
+        readonly property string displayTime: root.currentTime !== "" ? root.currentTime : Qt.formatTime(neckClockContainer.localNow, "hh:mm")
+
+        Text {
+            anchors.centerIn: parent
+            text: neckClockContainer.displayTime
+            font.pixelSize: 15
+            font.weight: Font.DemiBold
+            font.family: root.timeFontFamily !== "" ? root.timeFontFamily : (root.textFontFamily !== "" ? root.textFontFamily : "SF Pro Text")
+            color: "#ffffff"
         }
     }
 

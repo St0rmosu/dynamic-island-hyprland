@@ -23,13 +23,22 @@ Item {
     property bool showMediaButtons: true
     property bool depthEffectEnabled: false
     property string avatarPath: Quickshell.env("HOME") + "/Immagineprofilo/lollo.png"
+    property string userClockFontFamily: ""
 
     FileView {
         id: userConfigFile
         path: Quickshell.env("HOME") + "/.config/dynamic-island/userconfig.json"
+        watchChanges: true
+        Component.onCompleted: reload()
+        onFileChanged: reload()
         onLoaded: {
             try {
                 let data = JSON.parse(text().trim());
+                if (data.clockFontFamily) root.userClockFontFamily = String(data.clockFontFamily);
+                else if (data.timeFontFamily) root.userClockFontFamily = String(data.timeFontFamily);
+                else if (data.heroFontFamily) root.userClockFontFamily = String(data.heroFontFamily);
+                else if (data.textFontFamily) root.userClockFontFamily = String(data.textFontFamily);
+
                 if (data.lockDepthEffect !== undefined) root.depthEffectEnabled = Boolean(data.lockDepthEffect);
                 if (data.lockShowProfilePhoto !== undefined) root.showProfilePhoto = Boolean(data.lockShowProfilePhoto);
                 if (data.lockShowTopStatus !== undefined) root.showTopStatus = Boolean(data.lockShowTopStatus);
@@ -40,6 +49,8 @@ Item {
             } catch(e) {}
         }
     }
+
+    readonly property string effectiveClockFontFamily: root.userClockFontFamily !== "" ? root.userClockFontFamily : AppleTokens.roundedFont
 
     FileView {
         id: irisColors
@@ -102,80 +113,26 @@ Item {
         }
     }
 
-    // ── Apple & saneAspect Fluid Transitions: Entrance (Lock) and Exit (Unlock) ──
-
-    // 1. Lock Entrance Animation (Desktop -> Lock Screen: exact saneAspect drop from island)
-    ParallelAnimation {
-        id: initLockAnim
-        running: true
-
-        // Background Wallpaper: steady with subtle settling, zero black flicker
-        NumberAnimation {
-            target: backgroundWrapper
-            property: "opacity"
-            from: 1.0
-            to: 1.0
-            duration: 10
-        }
-
-        NumberAnimation {
-            target: backgroundWrapper
-            property: "scale"
-            from: 1.018
-            to: 1.0
-            duration: 480
-            easing.type: Easing.OutCubic
-        }
-
-        // Top Dynamic Island Notch: emerges gracefully from top edge
-        NumberAnimation {
-            target: topIslandCapsule
-            property: "animOffsetY"
-            from: -24
-            to: 0.0
-            duration: 360
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            target: topIslandCapsule
-            property: "opacity"
-            from: 0.0
-            to: 1.0
-            duration: 240
-            easing.type: Easing.OutQuad
-        }
-
-        // Giant Clock: saneAspect drop animation emerging from underneath the top island pill
-        NumberAnimation {
-            target: normalClockGroup
-            property: "animOffsetY"
-            from: -root.height * 0.28
-            to: 0.0
-            duration: 520
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            target: normalClockGroup
-            property: "animScale"
-            from: 0.45
-            to: 1.0
-            duration: 520
-            easing.type: Easing.OutCubic
-        }
-
-        NumberAnimation {
-            target: normalClockGroup
-            property: "animOpacity"
-            from: 0.0
-            to: 1.0
-            duration: 240
-            easing.type: Easing.OutQuad
-        }
+    // ── Reset state function for reliable multi-lock lifecycle ──
+    function resetToLockedState(): void {
+        if (unlockAnim.running) unlockAnim.stop();
+        normalClockGroup.animOffsetY = 0.0;
+        normalClockGroup.animScale = 1.0;
+        normalClockGroup.animOpacity = 1.0;
+        topIslandCapsule.animOffsetY = 0.0;
+        topIslandCapsule.opacity = 1.0;
+        backgroundWrapper.opacity = 1.0;
+        backgroundWrapper.scale = 1.0;
+        if (root.currentIdentity) root.currentIdentity.lockState = "locked";
+        pamAuth.clear();
+        root.forceActiveFocus();
     }
 
-    // 2. Unlock Exit Animation (Lock Screen -> Desktop: reverse glide back into island)
+    Component.onCompleted: {
+        root.resetToLockedState();
+    }
+
+    // ── Unlock Exit Animation (Lock Screen -> Desktop) ──
     SequentialAnimation {
         id: unlockAnim
 
@@ -240,6 +197,7 @@ Item {
         ScriptAction {
             script: {
                 root.unlockRequested();
+                root.resetToLockedState();
             }
         }
     }
@@ -794,7 +752,7 @@ Item {
             visible: opacity > 0.001
             opacity: normalClockGroup.animOpacity * (!root.isMediaPlaying ? 1.0 : 0.0)
             Behavior on opacity {
-                enabled: !initLockAnim.running && !unlockAnim.running
+                enabled: !unlockAnim.running
                 NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
             }
 
@@ -805,7 +763,7 @@ Item {
                 anchors.bottomMargin: 12
                 anchors.horizontalCenter: clockText.horizontalCenter
                 text: root.ipadDateString
-                font.family: AppleTokens.roundedFont
+                font.family: root.effectiveClockFontFamily
                 font.pixelSize: 22
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.2
@@ -826,7 +784,7 @@ Item {
                 id: clockText
                 anchors.centerIn: parent
                 text: root.timeString
-                font.family: AppleTokens.roundedFont
+                font.family: root.effectiveClockFontFamily
                 font.weight: Font.Bold
                 font.pixelSize: Math.round(root.height * 0.165)
                 font.letterSpacing: -1.5
@@ -874,7 +832,7 @@ Item {
 
                 Text {
                     text: root.timeString
-                    font.family: AppleTokens.roundedFont
+                    font.family: root.effectiveClockFontFamily
                     font.pixelSize: 26
                     font.weight: Font.Bold
                     font.letterSpacing: -0.2
@@ -891,7 +849,7 @@ Item {
 
                 Text {
                     text: root.ipadDateString
-                    font.family: AppleTokens.roundedFont
+                    font.family: root.effectiveClockFontFamily
                     font.pixelSize: 26
                     font.weight: Font.Bold
                     font.letterSpacing: -0.2

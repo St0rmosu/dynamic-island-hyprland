@@ -13,6 +13,11 @@ WlSessionLockSurface {
 
     Connections {
         target: root.lock
+        function onLockedChanged(): void {
+            if (root.lock.locked) {
+                content.resetToLockedState();
+            }
+        }
         function onRequestUnlock(): void {
             content.triggerUnlock();
         }
