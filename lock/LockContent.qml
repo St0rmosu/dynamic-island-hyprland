@@ -39,6 +39,8 @@ Item {
                 else if (data.heroFontFamily) root.userClockFontFamily = String(data.heroFontFamily);
                 else if (data.textFontFamily) root.userClockFontFamily = String(data.textFontFamily);
 
+                if (data.wallpaperPath) root.wallpaperPath = String(data.wallpaperPath);
+
                 if (data.lockDepthEffect !== undefined) root.depthEffectEnabled = Boolean(data.lockDepthEffect);
                 if (data.lockShowProfilePhoto !== undefined) root.showProfilePhoto = Boolean(data.lockShowProfilePhoto);
                 if (data.lockShowTopStatus !== undefined) root.showTopStatus = Boolean(data.lockShowTopStatus);
@@ -113,12 +115,50 @@ Item {
         }
     }
 
+    // ── saneAspect Clock Drop Geometry ──
+    readonly property real clockRestCenterY: root.height * 0.5 - Math.round(root.height * 0.055)
+    readonly property real capsuleCenterY: topIslandCapsule.y + (topIslandCapsule.height > 0 ? topIslandCapsule.height / 2 : 14)
+    readonly property real clockDropOffsetY: -(clockRestCenterY - capsuleCenterY)
+
+    // ── Drop Animation (Clock emerges smoothly from top capsule down to center) ──
+    ParallelAnimation {
+        id: dropLockAnim
+
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animOffsetY"
+            from: root.clockDropOffsetY
+            to: 0.0
+            duration: 380
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animScale"
+            from: 0.20
+            to: 1.0
+            duration: 380
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: normalClockGroup
+            property: "animOpacity"
+            from: 0.0
+            to: 1.0
+            duration: 160
+            easing.type: Easing.OutQuad
+        }
+    }
+
     // ── Reset state function for reliable multi-lock lifecycle ──
     function resetToLockedState(): void {
         if (unlockAnim.running) unlockAnim.stop();
-        normalClockGroup.animOffsetY = 0.0;
-        normalClockGroup.animScale = 1.0;
-        normalClockGroup.animOpacity = 1.0;
+        if (dropLockAnim.running) dropLockAnim.stop();
+        normalClockGroup.animOffsetY = root.clockDropOffsetY;
+        normalClockGroup.animScale = 0.20;
+        normalClockGroup.animOpacity = 0.0;
         topIslandCapsule.animOffsetY = 0.0;
         topIslandCapsule.opacity = 1.0;
         backgroundWrapper.opacity = 1.0;
@@ -126,32 +166,33 @@ Item {
         if (root.currentIdentity) root.currentIdentity.lockState = "locked";
         pamAuth.clear();
         root.forceActiveFocus();
+        dropLockAnim.restart();
     }
 
-    // ── Unlock Exit Animation (Lock Screen -> Desktop) ──
+    // ── Unlock Exit Animation (Clock glides and shrinks back into the top capsule) ──
     SequentialAnimation {
         id: unlockAnim
 
-        // Brief confirmation pause so user sees "Sbloccato" on dynamic island
+        // Brief pause so the unlocked state is perceived in the capsule
         PauseAnimation {
-            duration: 200
+            duration: 120
         }
 
         ParallelAnimation {
-            // Clock glides smoothly back into the capsule
+            // Clock glides and shrinks smoothly back into the top capsule
             NumberAnimation {
                 target: normalClockGroup
                 property: "animOffsetY"
-                to: -root.height * 0.28
-                duration: 260
+                to: root.clockDropOffsetY
+                duration: 220
                 easing.type: Easing.InCubic
             }
 
             NumberAnimation {
                 target: normalClockGroup
                 property: "animScale"
-                to: 0.45
-                duration: 260
+                to: 0.20
+                duration: 220
                 easing.type: Easing.InCubic
             }
 
@@ -159,41 +200,14 @@ Item {
                 target: normalClockGroup
                 property: "animOpacity"
                 to: 0.0
-                duration: 200
+                duration: 170
                 easing.type: Easing.InQuad
-            }
-
-            // Top island capsule glides up
-            NumberAnimation {
-                target: topIslandCapsule
-                property: "animOffsetY"
-                to: -24
-                duration: 260
-                easing.type: Easing.InCubic
-            }
-
-            NumberAnimation {
-                target: topIslandCapsule
-                property: "opacity"
-                to: 0.0
-                duration: 200
-                easing.type: Easing.InQuad
-            }
-
-            // Background dissolves seamlessly to desktop
-            NumberAnimation {
-                target: backgroundWrapper
-                property: "opacity"
-                to: 0.0
-                duration: 280
-                easing.type: Easing.InOutQuad
             }
         }
 
         ScriptAction {
             script: {
                 root.unlockRequested();
-                root.resetToLockedState();
             }
         }
     }
@@ -245,10 +259,13 @@ Item {
     }
 
     // Wallpaper Path Resolver
-    property string wallpaperPath: ""
+    property string wallpaperPath: Quickshell.env("HOME") + "/Sfondi/Pixel Art Planet Asteroid Ring Space.png"
     FileView {
         id: walFile
         path: Quickshell.env("HOME") + "/.config/dynamic-island/current_wallpaper"
+        watchChanges: true
+        Component.onCompleted: reload()
+        onFileChanged: reload()
         onLoaded: {
             let p = text().trim();
             if (p.length > 0) root.wallpaperPath = p;
@@ -396,9 +413,6 @@ Item {
     Component.onCompleted: {
         root.resetToLockedState();
         root.mprisPulse++;
-        if (root.wallpaperPath === "") {
-            root.wallpaperPath = Quickshell.env("HOME") + "/Sfondi/Eragny's Garden.jpg";
-        }
     }
 
     // Keyboard capture: Keystrokes feed directly into pamAuth and Dynamic Island
@@ -748,7 +762,7 @@ Item {
             visible: opacity > 0.001
             opacity: normalClockGroup.animOpacity * (!root.isMediaPlaying ? 1.0 : 0.0)
             Behavior on opacity {
-                enabled: !unlockAnim.running
+                enabled: !dropLockAnim.running && !unlockAnim.running
                 NumberAnimation { duration: 380; easing.type: Easing.InOutQuad }
             }
 
