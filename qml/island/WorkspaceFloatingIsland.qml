@@ -49,7 +49,7 @@ Rectangle {
     readonly property real paddingH: 8
     property var musicPill: null
     property bool _switchingPositionSide: false
-    readonly property bool overviewActive: rootWindow && (rootWindow.overviewVisible || rootWindow.overviewPhase !== "closed" || rootWindow.overviewMounted || rootWindow.overviewContentVisible)
+    readonly property bool overviewActive: rootWindow && (rootWindow.overviewVisible || rootWindow.overviewPhase !== "closed" || rootWindow.overviewContentVisible)
     readonly property bool isAutoHidden: rootWindow && rootWindow.autoHideEnabled && !rootWindow.autoHideTargetVisible
     readonly property bool showOnAutoHide: dynamicConfig ? (dynamicConfig.showWorkspaceOnAutoHide !== false) : true
     readonly property bool modalOrSnipping: rootWindow && (rootWindow.screenshotCapturing || rootWindow.screenshotSnippingActive || (rootWindow.islandContainer && (rootWindow.islandContainer.islandState === "screenshot_editor" || rootWindow.islandContainer.islandState === "settings_app")))
