@@ -70,14 +70,12 @@ Item {
         }
     }
 
-    readonly property color dynamicClockColor: {
-        if (irisColors.accentHex !== "") {
-            let acc = Qt.color(irisColors.accentHex);
-            // Harmonious luminescence: blends 42% crisp white with 58% wallpaper accent
-            return Qt.tint(Qt.rgba(acc.r, acc.g, acc.b, 0.96), Qt.rgba(1.0, 1.0, 1.0, 0.42));
-        }
+    readonly property color lockClockColor: Qt.rgba(1.0, 1.0, 1.0, 0.96)
+    readonly property color islandTargetClockColor: {
+        if (irisColors.accentHex !== "") return Qt.color(irisColors.accentHex);
         return Qt.rgba(1.0, 1.0, 1.0, 0.95);
     }
+    readonly property color dynamicClockColor: lockClockColor
 
     signal unlockRequested()
 
@@ -160,6 +158,15 @@ Item {
             easing.type: Easing.OutQuad
         }
 
+        ColorAnimation {
+            target: clockText
+            property: "color"
+            from: root.islandTargetClockColor
+            to: root.lockClockColor
+            duration: 260
+            easing.type: Easing.OutQuad
+        }
+
         SequentialAnimation {
             PauseAnimation { duration: 60 }
             NumberAnimation {
@@ -187,7 +194,7 @@ Item {
         topIslandCapsule.animOffsetY = 0.0;
         topIslandCapsule.dynamicWidth = -1;
         topIslandCapsule.opacity = 1.0;
-        clockText.color = root.dynamicClockColor;
+        clockText.color = root.lockClockColor;
         complicationsStack.opacity = 1.0;
         contentWrapper.opacity = 1.0;
         backgroundWrapper.opacity = 1.0;
@@ -234,8 +241,8 @@ Item {
             ColorAnimation {
                 target: clockText
                 property: "color"
-                from: root.dynamicClockColor
-                to: Qt.rgba(1.0, 1.0, 1.0, 1.0)
+                from: root.lockClockColor
+                to: root.islandTargetClockColor
                 duration: 240
                 easing.type: Easing.OutQuad
             }
@@ -877,7 +884,7 @@ Item {
                 font.pixelSize: 22
                 font.weight: Font.DemiBold
                 font.letterSpacing: -0.2
-                color: root.dynamicClockColor
+                color: root.lockClockColor
                 visible: root.showDateAboveClock
                 opacity: (unlockAnim.running || normalClockGroup.animOffsetY !== 0.0) ? 0.0 : 1.0
                 Behavior on opacity {
@@ -904,7 +911,7 @@ Item {
                 font.pixelSize: effectivePixelSize
                 font.letterSpacing: -Math.round(effectivePixelSize * 0.033)
                 font.features: { "tnum": 1 }
-                color: root.dynamicClockColor
+                color: root.lockClockColor
 
                 property real shadowOpacity: (unlockAnim.running || dropLockAnim.running || normalClockGroup.animOffsetY !== 0.0) ? 0.0 : 1.0
                 Behavior on shadowOpacity {
