@@ -27,6 +27,7 @@ call_ipc() {
   local qs_pid
   qs_pid=$(pgrep -u "$(id -u)" -f "quickshell.*$QML_PATH([[:space:]]|$)" 2>/dev/null | head -n 1 || true)
   if [ -n "$qs_pid" ]; then
+    /usr/bin/quickshell ipc -p "$QML_PATH" call "$target" "$method" "$@" >/dev/null 2>&1 || \
     /usr/bin/quickshell ipc --any-display -p "$QML_PATH" call "$target" "$method" "$@" >/dev/null 2>&1
     return $?
   else

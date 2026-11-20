@@ -26,8 +26,8 @@ PanelWindow {
     property bool overviewPreloading: false
     readonly property bool overviewPreparing: overviewPhase === "preparing"
     readonly property bool overviewVisible: overviewPhase === "preparing" || overviewPhase === "opening" || overviewPhase === "open"
-    readonly property bool overviewMounted: overviewPhase !== "closed" || overviewPreloading
-    readonly property bool overviewLoaderActive: overviewMounted && !compositorIsNiri
+    readonly property bool overviewMounted: true
+    readonly property bool overviewLoaderActive: !compositorIsNiri
     readonly property bool overviewDataReady: overviewLoader.item ? !!overviewLoader.item.overviewDataReady : true
     readonly property bool overviewWallpaperReady: true
     readonly property bool overviewVisualReady: overviewLoader.status === Loader.Ready
@@ -621,6 +621,7 @@ PanelWindow {
         overviewPreloading = false;
         overviewPhase = "opening";
         overviewRevealTimer.restart();
+        root.focusOverview();
     }
 
     function prepareOverview() {
@@ -4126,6 +4127,9 @@ PanelWindow {
 
                 if (islandContainer.islandState === "reload")
                     return 340;
+
+                if (root.overviewVisible)
+                    return 240;
 
                 return 400;
             }
