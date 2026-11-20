@@ -148,7 +148,7 @@ Item {
             RowLayout {
                 anchors.centerIn: parent
                 spacing: 9
-                visible: root.authenticating || root.lockState === "verifying"
+                visible: (root.authenticating || root.lockState === "verifying") && root.lockState !== "unlocked"
 
                 Text {
                     text: "󰑮"
@@ -178,7 +178,7 @@ Item {
             RowLayout {
                 anchors.centerIn: parent
                 spacing: 9
-                visible: (root.lockState === "failed" || root.isError) && !root.authenticating
+                visible: (root.lockState === "failed" || root.isError) && !root.authenticating && root.lockState !== "unlocked"
 
                 Text {
                     text: "󰌾"

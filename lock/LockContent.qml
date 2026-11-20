@@ -127,9 +127,9 @@ Item {
     readonly property real clockRestCenterY: (root.height > 0 ? root.height : 1080) * 0.5 - Math.round((root.height > 0 ? root.height : 1080) * 0.055)
     readonly property real capsuleCenterY: root.islandTopMargin + (root.islandHeight / 2)
     readonly property real clockDropOffsetY: -(clockRestCenterY - capsuleCenterY)
-    readonly property real targetCapsuleScale: 19.0 / Math.max(1, clockText.font.pixelSize)
+    readonly property real targetCapsuleScale: (root.islandHeight * 0.45) / Math.max(1, clockText.font.pixelSize)
 
-    // ── Drop Animation (Clock emerges smoothly from top capsule down to center) ──
+    // ── Drop Animation (Clock emerges smoothly from top capsule down to center - saneAspect style) ──
     ParallelAnimation {
         id: dropLockAnim
 
@@ -138,7 +138,7 @@ Item {
             property: "animOffsetY"
             from: root.clockDropOffsetY
             to: 0.0
-            duration: 240
+            duration: 400
             easing.type: Easing.OutCubic
         }
 
@@ -147,16 +147,16 @@ Item {
             property: "animScale"
             from: root.targetCapsuleScale
             to: 1.0
-            duration: 240
+            duration: 400
             easing.type: Easing.OutCubic
         }
 
         NumberAnimation {
             target: normalClockGroup
             property: "animOpacity"
-            from: 0.7
+            from: 0.6
             to: 1.0
-            duration: 80
+            duration: 180
             easing.type: Easing.OutQuad
         }
     }
@@ -171,6 +171,8 @@ Item {
         normalClockGroup.animOpacity = 1.0;
         topIslandCapsule.animOffsetY = 0.0;
         topIslandCapsule.opacity = 1.0;
+        complicationsStack.opacity = 1.0;
+        contentWrapper.opacity = 1.0;
         backgroundWrapper.opacity = 1.0;
         backgroundWrapper.scale = 1.0;
         if (root.currentIdentity) root.currentIdentity.lockState = "locked";
@@ -179,43 +181,118 @@ Item {
         dropLockAnim.restart();
     }
 
-    // ── Unlock Exit Animation (Clock glides and shrinks back into the top capsule) ──
-    ParallelAnimation {
+    // ── Unlock Exit Animation (Clock glides and shrinks back into the top capsule - saneAspect style) ──
+    SequentialAnimation {
         id: unlockAnim
 
-        // 1. Clock glides UP from center into the top capsule
-        NumberAnimation {
-            target: normalClockGroup
-            property: "animOffsetY"
-            from: 0.0
-            to: root.clockDropOffsetY
-            duration: 200
-            easing.type: Easing.InCubic
+        // Phase 1: Clock glides UP into notch and shrinks with physics-based OutCubic curve
+        ParallelAnimation {
+            NumberAnimation {
+                target: normalClockGroup
+                property: "animOffsetY"
+                from: 0.0
+                to: root.clockDropOffsetY
+                duration: 440
+                easing.type: Easing.OutCubic
+            }
+
+            NumberAnimation {
+                target: normalClockGroup
+                property: "animScale"
+                from: 1.0
+                to: root.targetCapsuleScale
+                duration: 440
+                easing.type: Easing.OutCubic
+            }
+
+            NumberAnimation {
+                target: complicationsStack
+                property: "opacity"
+                from: complicationsStack.opacity
+                to: 0.0
+                duration: 200
+                easing.type: Easing.OutQuad
+            }
         }
 
-        // 2. Clock shrinks down to fit into the top capsule
-        NumberAnimation {
-            target: normalClockGroup
-            property: "animScale"
-            from: 1.0
-            to: root.targetCapsuleScale
-            duration: 200
-            easing.type: Easing.InCubic
+        // Phase 2: Settle pause in the capsule (docked visual rest)
+        PauseAnimation {
+            duration: 100
         }
 
-        onFinished: {
-            root.unlockRequested();
+        // Phase 3: Seamless crossfade out revealing the desktop beneath
+        ParallelAnimation {
+            NumberAnimation {
+                target: backgroundWrapper
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 240
+                easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+                target: contentWrapper
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 240
+                easing.type: Easing.OutQuad
+            }
+        }
+
+        // Phase 4: Final Wayland surface unlock
+        ScriptAction {
+            script: {
+                root.unlockRequested();
+            }
         }
     }
 
-    NumberAnimation {
+    SequentialAnimation {
         id: mediaUnlockAnim
-        target: mediaLockGroup
-        property: "opacity"
-        to: 0.0
-        duration: 220
-        easing.type: Easing.InQuad
-        onFinished: root.unlockRequested()
+
+        ParallelAnimation {
+            NumberAnimation {
+                target: mediaLockGroup
+                property: "opacity"
+                to: 0.0
+                duration: 280
+                easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+                target: complicationsStack
+                property: "opacity"
+                to: 0.0
+                duration: 180
+                easing.type: Easing.OutQuad
+            }
+        }
+
+        ParallelAnimation {
+            NumberAnimation {
+                target: backgroundWrapper
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 220
+                easing.type: Easing.OutQuad
+            }
+
+            NumberAnimation {
+                target: contentWrapper
+                property: "opacity"
+                from: 1.0
+                to: 0.0
+                duration: 220
+                easing.type: Easing.OutQuad
+            }
+        }
+
+        ScriptAction {
+            script: root.unlockRequested()
+        }
     }
 
     // Time & Date Formatter (Exact iPadOS "Mar 20 ott" & "19:10")
@@ -810,17 +887,23 @@ Item {
                 text: root.timeString
                 font.family: root.effectiveClockFontFamily
                 font.weight: Font.Bold
-                font.pixelSize: Math.round(root.height * 0.196)
-                font.letterSpacing: -Math.round(font.pixelSize * 0.033)
+                readonly property int effectivePixelSize: Math.round(root.height * 0.196)
+                font.pixelSize: effectivePixelSize
+                font.letterSpacing: -Math.round(effectivePixelSize * 0.033)
                 font.features: { "tnum": 1 }
                 color: root.dynamicClockColor
 
-                layer.enabled: true
+                property real shadowOpacity: (unlockAnim.running || dropLockAnim.running || normalClockGroup.animOffsetY !== 0.0) ? 0.0 : 1.0
+                Behavior on shadowOpacity {
+                    NumberAnimation { duration: 150 }
+                }
+
+                layer.enabled: shadowOpacity > 0.01
                 layer.effect: MultiEffect {
                     shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45 * clockText.shadowOpacity)
                     shadowBlur: 0.65
-                    shadowVerticalOffset: 6
+                    shadowVerticalOffset: 6 * clockText.shadowOpacity
                 }
             }
         }

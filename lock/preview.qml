@@ -12,6 +12,7 @@ Variants {
         required property var modelData
         screen: modelData
 
+        exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         WlrLayershell.namespace: "apple-lockscreen-preview"
