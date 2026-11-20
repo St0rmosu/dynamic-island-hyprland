@@ -2843,12 +2843,12 @@ Item {
                     width: parent.width
                     spacing: 12
 
-                    // ── 1. Battery Status Hero Card ──
+                    // ── 1. Apple Hero Card: Large percentage, Apple battery capsule, charging indicator ──
                     Rectangle {
                         width: parent.width
-                        height: 66
+                        height: 72
                         radius: 16
-                        color: Qt.rgba(1, 1, 1, 0.06)
+                        color: Qt.rgba(1, 1, 1, 0.05)
                         border.width: 1
                         border.color: Qt.rgba(1, 1, 1, 0.08)
 
@@ -2857,60 +2857,60 @@ Item {
                             anchors.leftMargin: 16
                             anchors.rightMargin: 16
 
-                            // Battery Glyph
+                            // Apple iOS-styled Battery Glyph
                             Item {
                                 id: batGlyphItem
                                 anchors.left: parent.left
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 34
-                                height: 18
+                                width: 42
+                                height: 20
 
-                                // Body
+                                // Outer Body
                                 Rectangle {
-                                    width: 31
-                                    height: 18
-                                    radius: 5
+                                    width: 38
+                                    height: 20
+                                    radius: 5.5
                                     color: "transparent"
-                                    border.width: 1.5
+                                    border.width: 1.8
                                     border.color: batDetailRoot.batteryAccentColor
 
-                                    // Level Fill
+                                    // Fill Level
                                     Rectangle {
-                                        x: 2
-                                        y: 2
-                                        height: parent.height - 4
-                                        width: Math.max(2, Math.min(parent.width - 4, (parent.width - 4) * (batDetailRoot.batPercent / 100.0)))
-                                        radius: 2.5
+                                        x: 2.5
+                                        y: 2.5
+                                        height: parent.height - 5
+                                        width: Math.max(2, Math.min(parent.width - 5, (parent.width - 5) * (batDetailRoot.batPercent / 100.0)))
+                                        radius: 3
                                         color: batDetailRoot.batteryAccentColor
 
                                         Behavior on width {
-                                            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+                                            NumberAnimation { duration: 350; easing.type: Easing.OutCubic }
                                         }
                                     }
 
-                                    // Small bolt indicator if charging inside battery
+                                    // Lightning bolt icon if charging
                                     Text {
                                         visible: batDetailRoot.isCharging
                                         anchors.centerIn: parent
                                         text: "⚡"
                                         font.pixelSize: 10
-                                        color: StyleTokens.textPrimary
+                                        color: (batDetailRoot.batPercent > 45) ? "#000000" : StyleTokens.textPrimary
                                     }
                                 }
 
-                                // Tip (+ terminal)
+                                // Terminal tip (+ terminal)
                                 Rectangle {
                                     anchors.left: parent.left
-                                    anchors.leftMargin: 31
+                                    anchors.leftMargin: 38
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: 2.5
-                                    height: 7
-                                    radius: 1
+                                    width: 3
+                                    height: 8
+                                    radius: 1.5
                                     color: batDetailRoot.batteryAccentColor
                                 }
                             }
 
-                            // Status Info
+                            // Center Status Info
                             Column {
                                 anchors.left: batGlyphItem.right
                                 anchors.leftMargin: 14
@@ -2920,21 +2920,36 @@ Item {
                                 spacing: 2
 
                                 Row {
-                                    spacing: 6
+                                    spacing: 8
                                     Text {
                                         text: batDetailRoot.batPercent + "%"
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 18
+                                        color: StyleTokens.textPrimaryBright
+                                        font.pixelSize: 22
                                         font.family: controlCenter.heroFontFamily
                                         font.weight: Font.Bold
+                                        font.letterSpacing: -0.5
                                     }
-                                    Text {
+
+                                    Row {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: "• " + (batDetailRoot.isCharging ? I18n.tr("In carica") : (batDetailRoot.batState === "Full" ? I18n.tr("Carica") : I18n.tr("Batteria")))
-                                        color: batDetailRoot.batteryAccentColor
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.DemiBold
+                                        spacing: 5
+
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: 6
+                                            height: 6
+                                            radius: 3
+                                            color: batDetailRoot.batteryAccentColor
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: batDetailRoot.isCharging ? I18n.tr("In carica") : (batDetailRoot.batState === "Full" ? I18n.tr("Carica completa") : I18n.tr("Alimentazione a batteria"))
+                                            color: batDetailRoot.batteryAccentColor
+                                            font.pixelSize: 11
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.DemiBold
+                                        }
                                     }
                                 }
 
@@ -2944,18 +2959,18 @@ Item {
                                     text: {
                                         let parts = [];
                                         if (batDetailRoot.batTimeRemaining) {
-                                            parts.push(batDetailRoot.formatTimeRemaining(batDetailRoot.batTimeRemaining) + (batDetailRoot.isCharging ? "" : (" " + I18n.tr("rimanenti"))));
+                                            parts.push(batDetailRoot.formatTimeRemaining(batDetailRoot.batTimeRemaining) + (batDetailRoot.isCharging ? (" " + I18n.tr("al termine")) : (" " + I18n.tr("rimanenti"))));
                                         } else if (batDetailRoot.isCharging) {
                                             parts.push(I18n.tr("Alimentatore collegato"));
                                         } else {
-                                            parts.push(I18n.tr("Alimentazione a batteria"));
+                                            parts.push(I18n.tr("Batteria interna"));
                                         }
                                         if (batDetailRoot.batRate !== "--") {
                                             parts.push(batDetailRoot.batRate);
                                         }
                                         return parts.join(" • ");
                                     }
-                                    color: StyleTokens.textMuted
+                                    color: StyleTokens.textSecondary
                                     font.pixelSize: 11
                                     font.family: controlCenter.textFontFamily
                                 }
@@ -2969,7 +2984,7 @@ Item {
                                 height: 26
                                 width: healthRow.width + 16
                                 radius: 13
-                                color: Qt.rgba(1, 1, 1, 0.07)
+                                color: Qt.rgba(1, 1, 1, 0.08)
                                 border.width: 1
                                 border.color: Qt.rgba(1, 1, 1, 0.1)
 
@@ -3005,27 +3020,28 @@ Item {
                         }
                     }
 
-                    // ── 2. Profilo Energetico (Segmented Control) ──
+                    // ── 2. Profilo Energetico (Apple Segmented Control) ──
                     Column {
                         width: parent.width
                         spacing: 6
 
                         Text {
-                            text: I18n.tr("Profilo Energetico")
-                            color: StyleTokens.textMuted
-                            font.pixelSize: 12
+                            text: I18n.tr("PROFILO ENERGETICO")
+                            color: StyleTokens.textSecondary
+                            font.pixelSize: 10
                             font.family: controlCenter.textFontFamily
-                            font.weight: Font.DemiBold
+                            font.weight: Font.Bold
+                            font.letterSpacing: 0.6
                             anchors.left: parent.left
-                            anchors.leftMargin: 4
+                            anchors.leftMargin: 6
                         }
 
                         Rectangle {
                             id: segProfileBox
                             width: parent.width
-                            height: 40
-                            radius: 14
-                            color: Qt.rgba(1, 1, 1, 0.06)
+                            height: 38
+                            radius: 12
+                            color: Qt.rgba(1, 1, 1, 0.05)
                             border.width: 1
                             border.color: Qt.rgba(1, 1, 1, 0.08)
 
@@ -3042,7 +3058,7 @@ Item {
                                 x: 3 + segProfileBox.activeIdx * segProfileBox.slotW
                                 width: segProfileBox.slotW
                                 height: parent.height - 6
-                                radius: 11
+                                radius: 9
                                 color: Qt.rgba(1, 1, 1, 0.14)
                                 border.width: 1
                                 border.color: Qt.rgba(1, 1, 1, 0.12)
@@ -3063,13 +3079,13 @@ Item {
 
                                     Row {
                                         anchors.centerIn: parent
-                                        spacing: 5
+                                        spacing: 6
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: ""
                                             font.family: controlCenter.iconFontFamily
                                             font.pixelSize: 11
-                                            color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                            color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimaryBright : StyleTokens.textSecondary
                                         }
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
@@ -3077,7 +3093,7 @@ Item {
                                             font.family: controlCenter.textFontFamily
                                             font.pixelSize: 11
                                             font.weight: segProfileBox.activeIdx === 0 ? Font.Bold : Font.Medium
-                                            color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                            color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimaryBright : StyleTokens.textSecondary
                                         }
                                     }
 
@@ -3096,13 +3112,13 @@ Item {
 
                                     Row {
                                         anchors.centerIn: parent
-                                        spacing: 5
+                                        spacing: 6
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: ""
                                             font.family: controlCenter.iconFontFamily
                                             font.pixelSize: 11
-                                            color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                            color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimaryBright : StyleTokens.textSecondary
                                         }
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
@@ -3110,7 +3126,7 @@ Item {
                                             font.family: controlCenter.textFontFamily
                                             font.pixelSize: 11
                                             font.weight: segProfileBox.activeIdx === 1 ? Font.Bold : Font.Medium
-                                            color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                            color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimaryBright : StyleTokens.textSecondary
                                         }
                                     }
 
@@ -3129,13 +3145,13 @@ Item {
 
                                     Row {
                                         anchors.centerIn: parent
-                                        spacing: 5
+                                        spacing: 6
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
                                             text: ""
                                             font.family: controlCenter.iconFontFamily
                                             font.pixelSize: 11
-                                            color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                            color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimaryBright : StyleTokens.textSecondary
                                         }
                                         Text {
                                             anchors.verticalCenter: parent.verticalCenter
@@ -3143,7 +3159,7 @@ Item {
                                             font.family: controlCenter.textFontFamily
                                             font.pixelSize: 11
                                             font.weight: segProfileBox.activeIdx === 2 ? Font.Bold : Font.Medium
-                                            color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                            color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimaryBright : StyleTokens.textSecondary
                                         }
                                     }
 
@@ -3158,26 +3174,27 @@ Item {
                         }
                     }
 
-                    // ── 3. Specifiche Batteria (Grouped Inset Card) ──
+                    // ── 3. Specifiche Hardware (Apple Grouped Inset Card) ──
                     Column {
                         width: parent.width
                         spacing: 6
 
                         Text {
-                            text: I18n.tr("Specifiche Hardware")
-                            color: StyleTokens.textMuted
-                            font.pixelSize: 12
+                            text: I18n.tr("SPECIFICHE HARDWARE")
+                            color: StyleTokens.textSecondary
+                            font.pixelSize: 10
                             font.family: controlCenter.textFontFamily
-                            font.weight: Font.DemiBold
+                            font.weight: Font.Bold
+                            font.letterSpacing: 0.6
                             anchors.left: parent.left
-                            anchors.leftMargin: 4
+                            anchors.leftMargin: 6
                         }
 
                         Rectangle {
                             width: parent.width
                             height: specCol.height + 12
                             radius: 16
-                            color: Qt.rgba(1, 1, 1, 0.06)
+                            color: Qt.rgba(1, 1, 1, 0.05)
                             border.width: 1
                             border.color: Qt.rgba(1, 1, 1, 0.08)
 
@@ -3192,17 +3209,38 @@ Item {
                                 // Row 1: Capacità effettiva / nominale
                                 Item {
                                     width: parent.width
-                                    height: 33
+                                    height: 34
 
-                                    Text {
+                                    Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 10
+                                        anchors.leftMargin: 8
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Capacità reale / nominale")
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.Medium
+                                        spacing: 10
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: Qt.rgba(0.04, 0.52, 1.0, 0.16)
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: ""
+                                                color: "#0a84ff"
+                                                font.pixelSize: 11
+                                                font.family: controlCenter.iconFontFamily
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Capacità reale / targa")
+                                            color: StyleTokens.textPrimary
+                                            font.pixelSize: 12
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.Medium
+                                        }
                                     }
 
                                     Text {
@@ -3210,33 +3248,56 @@ Item {
                                         anchors.rightMargin: 10
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: (batDetailRoot.batCapacityFull !== "--" ? batDetailRoot.batCapacityFull : "--") + " / " + (batDetailRoot.batCapacityDesign !== "--" ? batDetailRoot.batCapacityDesign : "--")
-                                        color: StyleTokens.textMuted
+                                        color: StyleTokens.textSecondary
                                         font.pixelSize: 12
                                         font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
                                     }
                                 }
 
                                 Rectangle {
-                                    width: parent.width - 20
+                                    width: parent.width - 40
                                     height: 1
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 40
                                     color: Qt.rgba(1, 1, 1, 0.05)
                                 }
 
                                 // Row 2: Stato salute
                                 Item {
                                     width: parent.width
-                                    height: 33
+                                    height: 34
 
-                                    Text {
+                                    Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 10
+                                        anchors.leftMargin: 8
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Salute batteria")
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.Medium
+                                        spacing: 10
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: Qt.rgba(0.2, 0.78, 0.35, 0.16)
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: ""
+                                                color: "#34c759"
+                                                font.pixelSize: 11
+                                                font.family: controlCenter.iconFontFamily
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Salute batteria")
+                                            color: StyleTokens.textPrimary
+                                            font.pixelSize: 12
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.Medium
+                                        }
                                     }
 
                                     Text {
@@ -3249,33 +3310,56 @@ Item {
                                             let desc = (!isNaN(h) && h >= 80) ? I18n.tr("Ottimale") : I18n.tr("Normale");
                                             return batDetailRoot.batHealth + " (" + desc + ")";
                                         }
-                                        color: StyleTokens.textMuted
+                                        color: StyleTokens.textSecondary
                                         font.pixelSize: 12
                                         font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
                                     }
                                 }
 
                                 Rectangle {
-                                    width: parent.width - 20
+                                    width: parent.width - 40
                                     height: 1
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 40
                                     color: Qt.rgba(1, 1, 1, 0.05)
                                 }
 
                                 // Row 3: Assorbimento / Ricarica
                                 Item {
                                     width: parent.width
-                                    height: 33
+                                    height: 34
 
-                                    Text {
+                                    Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 10
+                                        anchors.leftMargin: 8
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: batDetailRoot.isCharging ? I18n.tr("Potenza di ricarica") : I18n.tr("Assorbimento energetico")
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.Medium
+                                        spacing: 10
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: Qt.rgba(1.0, 0.8, 0.0, 0.16)
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: ""
+                                                color: "#ffd60a"
+                                                font.pixelSize: 11
+                                                font.family: controlCenter.iconFontFamily
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: batDetailRoot.isCharging ? I18n.tr("Potenza di ricarica") : I18n.tr("Consumo energetico")
+                                            color: StyleTokens.textPrimary
+                                            font.pixelSize: 12
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.Medium
+                                        }
                                     }
 
                                     Text {
@@ -3283,33 +3367,56 @@ Item {
                                         anchors.rightMargin: 10
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: batDetailRoot.batRate !== "--" ? batDetailRoot.batRate : "--"
-                                        color: StyleTokens.textMuted
+                                        color: StyleTokens.textSecondary
                                         font.pixelSize: 12
                                         font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
                                     }
                                 }
 
                                 Rectangle {
-                                    width: parent.width - 20
+                                    width: parent.width - 40
                                     height: 1
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 40
                                     color: Qt.rgba(1, 1, 1, 0.05)
                                 }
 
                                 // Row 4: Soglia di carica
                                 Item {
                                     width: parent.width
-                                    height: 33
+                                    height: 34
 
-                                    Text {
+                                    Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 10
+                                        anchors.leftMargin: 8
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Soglia limite di carica")
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.Medium
+                                        spacing: 10
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: Qt.rgba(0.75, 0.35, 0.95, 0.16)
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "󰚥"
+                                                color: "#bf5af2"
+                                                font.pixelSize: 12
+                                                font.family: controlCenter.iconFontFamily
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Soglia limite di carica")
+                                            color: StyleTokens.textPrimary
+                                            font.pixelSize: 12
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.Medium
+                                        }
                                     }
 
                                     Text {
@@ -3317,33 +3424,56 @@ Item {
                                         anchors.rightMargin: 10
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: batDetailRoot.batLimit !== "--" ? batDetailRoot.batLimit : I18n.tr("Nessuna (100%)")
-                                        color: StyleTokens.textMuted
+                                        color: StyleTokens.textSecondary
                                         font.pixelSize: 12
                                         font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
                                     }
                                 }
 
                                 Rectangle {
-                                    width: parent.width - 20
+                                    width: parent.width - 40
                                     height: 1
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 40
                                     color: Qt.rgba(1, 1, 1, 0.05)
                                 }
 
-                                // Row 5: Cicli
+                                // Row 5: Cicli di ricarica
                                 Item {
                                     width: parent.width
-                                    height: 33
+                                    height: 34
 
-                                    Text {
+                                    Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 10
+                                        anchors.leftMargin: 8
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Cicli di ricarica")
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.Medium
+                                        spacing: 10
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: Qt.rgba(0.2, 0.8, 0.75, 0.16)
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: ""
+                                                color: "#30b0c7"
+                                                font.pixelSize: 11
+                                                font.family: controlCenter.iconFontFamily
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Cicli di ricarica")
+                                            color: StyleTokens.textPrimary
+                                            font.pixelSize: 12
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.Medium
+                                        }
                                     }
 
                                     Text {
@@ -3351,33 +3481,56 @@ Item {
                                         anchors.rightMargin: 10
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: batDetailRoot.batCycles !== "--" ? (batDetailRoot.batCycles + " " + I18n.tr("cicli")) : "--"
-                                        color: StyleTokens.textMuted
+                                        color: StyleTokens.textSecondary
                                         font.pixelSize: 12
                                         font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
                                     }
                                 }
 
                                 Rectangle {
-                                    width: parent.width - 20
+                                    width: parent.width - 40
                                     height: 1
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 40
                                     color: Qt.rgba(1, 1, 1, 0.05)
                                 }
 
                                 // Row 6: Dispositivo Hardware
                                 Item {
                                     width: parent.width
-                                    height: 33
+                                    height: 34
 
-                                    Text {
+                                    Row {
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 10
+                                        anchors.leftMargin: 8
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Dispositivo hardware")
-                                        color: StyleTokens.textPrimary
-                                        font.pixelSize: 12
-                                        font.family: controlCenter.textFontFamily
-                                        font.weight: Font.Medium
+                                        spacing: 10
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: 6
+                                            color: Qt.rgba(1.0, 1.0, 1.0, 0.1)
+                                            anchors.verticalCenter: parent.verticalCenter
+
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: ""
+                                                color: StyleTokens.textSecondary
+                                                font.pixelSize: 11
+                                                font.family: controlCenter.iconFontFamily
+                                            }
+                                        }
+
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Dispositivo hardware")
+                                            color: StyleTokens.textPrimary
+                                            font.pixelSize: 12
+                                            font.family: controlCenter.textFontFamily
+                                            font.weight: Font.Medium
+                                        }
                                     }
 
                                     Text {
@@ -3392,9 +3545,10 @@ Item {
                                             if (batDetailRoot.batTechnology) s += " (" + batDetailRoot.batTechnology + ")";
                                             return s;
                                         }
-                                        color: StyleTokens.textMuted
+                                        color: StyleTokens.textSecondary
                                         font.pixelSize: 12
                                         font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
                                     }
                                 }
                             }

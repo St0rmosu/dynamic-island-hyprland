@@ -4235,7 +4235,7 @@ PanelWindow {
                     return root.effectiveIslandHeight;
                 case "control_center":
                     if (controlCenterLoader.item && controlCenterLoader.item.anyConnectivitySubViewActive)
-                        return 470;
+                        return (controlCenterLoader.item.activeDetailModule === "battery") ? 495 : 470;
 
                     return controlCenterLoader.item ? controlCenterLoader.item.controlCenterPreferredHeight : 540;
                 case "notification_center":
