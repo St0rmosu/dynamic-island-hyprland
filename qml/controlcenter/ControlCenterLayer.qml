@@ -2718,12 +2718,9 @@ Item {
     Component {
         id: batteryDetailComponent
 
-        Rectangle {
+        Item {
             id: batDetailRoot
             anchors.fill: parent
-            radius: 18
-            color: StyleTokens.clearBlack
-            clip: true
 
             property int batPercent: 100
             property string batState: "Discharging"
@@ -2733,11 +2730,6 @@ Item {
             property string batCycles: "--"
             property string batProfile: "power-saver"
             property string batIcon: "󰁹"
-
-            MatteSurface {
-                anchors.fill: parent
-                radius: parent.radius
-            }
 
             // Backend process to fetch real-time battery data from get-battery.py
             Process {
@@ -2791,220 +2783,193 @@ Item {
             }
 
             readonly property color batteryAccentColor: {
-                if (batDetailRoot.batPercent <= 20) return "#ff3b30";
-                if (batDetailRoot.batPercent <= 40) return "#ff9500";
-                return (controlCenter.cardAccent && String(controlCenter.cardAccent) !== "#000000") ? controlCenter.cardAccent : "#30d158";
+                if (batDetailRoot.batPercent <= 15) return StyleTokens.danger;
+                if (batDetailRoot.batPercent <= 30) return StyleTokens.warning;
+                return StyleTokens.success;
             }
+            readonly property bool isCharging: batDetailRoot.batState.toLowerCase().indexOf("charg") !== -1
 
-            ColumnLayout {
+            Column {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 8
+                spacing: 12
 
-                // ── 1. Apple Hero Card: Large percentage, Apple battery capsule, charging indicator ─
+                // ── 1. Battery Status Card (Matching WiFi connected card in ConnectivityDetailPanel) ──
                 Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 62
-                    radius: 14
-                    color: Qt.rgba(255, 255, 255, 0.05)
+                    width: parent.width
+                    height: 58
+                    radius: 16
+                    color: Qt.rgba(1, 1, 1, 0.06)
                     border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.08)
+                    border.color: Qt.rgba(1, 1, 1, 0.08)
 
-                    RowLayout {
+                    Item {
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 12
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
 
-                        // Apple iOS Battery Icon
+                        // Battery Glyph
                         Item {
-                            Layout.preferredWidth: 44
-                            Layout.preferredHeight: 22
-                            Layout.alignment: Qt.AlignVCenter
+                            id: batGlyphItem
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 32
+                            height: 16
 
-                            // Outer Battery Body
+                            // Body
                             Rectangle {
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                width: parent.width - 4
-                                radius: 5.5
+                                width: 29
+                                height: 16
+                                radius: 4.5
                                 color: "transparent"
-                                border.width: 1.8
-                                border.color: Qt.rgba(255, 255, 255, 0.55)
+                                border.width: 1.5
+                                border.color: batDetailRoot.batteryAccentColor
 
-                                // Inner Fill
+                                // Level Fill
                                 Rectangle {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 2
-                                    anchors.top: parent.top
-                                    anchors.topMargin: 2
-                                    anchors.bottom: parent.bottom
-                                    anchors.bottomMargin: 2
-                                    width: Math.max(2, (parent.width - 4) * Math.min(100, Math.max(0, batDetailRoot.batPercent)) / 100.0)
-                                    radius: 3.5
+                                    x: 2
+                                    y: 2
+                                    height: parent.height - 4
+                                    width: Math.max(2, Math.min(parent.width - 4, (parent.width - 4) * (batDetailRoot.batPercent / 100.0)))
+                                    radius: 2
                                     color: batDetailRoot.batteryAccentColor
 
                                     Behavior on width {
                                         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
                                     }
                                 }
-
-                                // Charging Lightning bolt inside battery
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: ""
-                                    font.family: controlCenter.iconFontFamily
-                                    font.pixelSize: 10
-                                    color: "#000000"
-                                    visible: batDetailRoot.batState.toLowerCase().indexOf("charg") !== -1
-                                }
                             }
 
-                            // Right Terminal Nub
+                            // Tip (+ terminal)
                             Rectangle {
-                                anchors.right: parent.right
+                                anchors.left: parent.left
+                                anchors.leftMargin: 29
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: 2.5
-                                height: 7
-                                radius: 1.2
-                                color: Qt.rgba(255, 255, 255, 0.45)
+                                height: 6
+                                radius: 1
+                                color: batDetailRoot.batteryAccentColor
                             }
                         }
 
                         // Status Info
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: 1
+                        Column {
+                            anchors.left: batGlyphItem.right
+                            anchors.leftMargin: 14
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 2
 
                             Text {
-                                text: I18n.tr("Livello Carica")
-                                font.family: controlCenter.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Medium
-                                color: StyleTokens.textMuted
+                                text: batDetailRoot.batPercent + "%" + (batDetailRoot.isCharging ? (" • " + I18n.tr("In carica")) : (batDetailRoot.batSubtitle === "THRESHOLD" ? (" • " + I18n.tr("Soglia limite")) : (" • " + I18n.tr("Batteria"))))
+                                color: StyleTokens.textPrimary
+                                font.pixelSize: 14
+                                font.family: controlCenter.heroFontFamily
+                                font.weight: Font.Bold
                             }
 
-                            Row {
-                                spacing: 5
-                                Rectangle {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 5
-                                    height: 5
-                                    radius: 2.5
-                                    color: batDetailRoot.batteryAccentColor
+                            Text {
+                                text: {
+                                    let details = [];
+                                    if (batDetailRoot.batSize && batDetailRoot.batSize !== "--")
+                                        details.push(I18n.tr("Capacità") + " " + batDetailRoot.batSize);
+                                    if (batDetailRoot.batLimit && batDetailRoot.batLimit !== "--")
+                                        details.push(I18n.tr("Limite") + " " + batDetailRoot.batLimit);
+                                    return details.length > 0 ? details.join(" • ") : I18n.tr("Stato alimentazione regolare");
                                 }
-                                Text {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: {
-                                        const isChg = batDetailRoot.batState.toLowerCase().indexOf("charg") !== -1;
-                                        if (isChg) return I18n.tr("In carica") + " • " + batDetailRoot.batSize;
-                                        if (batDetailRoot.batSubtitle === "THRESHOLD") return I18n.tr("Soglia limite") + " • " + batDetailRoot.batSize;
-                                        return I18n.tr("Alimentazione batteria") + " • " + batDetailRoot.batSize;
-                                    }
-                                    font.family: controlCenter.textFontFamily
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                    color: controlCenter.textPrimary
-                                }
+                                color: StyleTokens.textMuted
+                                font.pixelSize: 11
+                                font.family: controlCenter.textFontFamily
                             }
                         }
 
-                        // Large Apple Percentage
+                        // Right Status Indicator
                         Text {
-                            text: batDetailRoot.batPercent + "%"
-                            font.family: controlCenter.heroFontFamily
-                            font.pixelSize: 25
-                            font.weight: Font.Bold
-                            color: controlCenter.textPrimary
-                            Layout.alignment: Qt.AlignVCenter
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: batDetailRoot.isCharging ? "" : (batDetailRoot.batPercent >= 95 ? "✓" : "")
+                            color: batDetailRoot.batteryAccentColor
+                            font.pixelSize: 14
+                            font.family: controlCenter.iconFontFamily
                         }
                     }
                 }
 
-                // ── 2. Apple iOS 18 Segmented Slider (Profilo Energetico) ─
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 4
+                // ── 2. Profilo Energetico (Matching Dynamic Island Section Style) ──
+                Column {
+                    width: parent.width
+                    spacing: 6
 
                     Text {
-                        text: I18n.tr("PROFILO ENERGETICO")
-                        font.family: "JetBrainsMono Nerd Font, monospace"
-                        font.pixelSize: 9
-                        font.weight: Font.Bold
-                        font.letterSpacing: 1.1
+                        text: I18n.tr("Profilo Energetico")
                         color: StyleTokens.textMuted
+                        font.pixelSize: 12
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.DemiBold
+                        anchors.left: parent.left
+                        anchors.leftMargin: 4
                     }
 
                     Rectangle {
-                        id: segmentedContainer
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 34
-                        radius: 11
-                        color: Qt.rgba(255, 255, 255, 0.05)
+                        id: segProfileBox
+                        width: parent.width
+                        height: 40
+                        radius: 14
+                        color: Qt.rgba(1, 1, 1, 0.06)
                         border.width: 1
-                        border.color: Qt.rgba(255, 255, 255, 0.07)
+                        border.color: Qt.rgba(1, 1, 1, 0.08)
 
-                        readonly property int activeIndex: {
+                        readonly property int activeIdx: {
                             if (batDetailRoot.batProfile === "performance") return 2;
                             if (batDetailRoot.batProfile === "balanced") return 1;
                             return 0;
                         }
-                        readonly property real segWidth: (width - 6) / 3
+                        readonly property real slotW: (width - 6) / 3
 
-                        // Smooth Sliding Highlight Capsule
+                        // Smooth highlight slider
                         Rectangle {
                             y: 3
-                            x: 3 + segmentedContainer.activeIndex * segmentedContainer.segWidth
-                            width: segmentedContainer.segWidth
+                            x: 3 + segProfileBox.activeIdx * segProfileBox.slotW
+                            width: segProfileBox.slotW
                             height: parent.height - 6
-                            radius: 8.5
-                            color: Qt.rgba(255, 255, 255, 0.16)
+                            radius: 11
+                            color: Qt.rgba(1, 1, 1, 0.14)
                             border.width: 1
-                            border.color: Qt.rgba(255, 255, 255, 0.15)
+                            border.color: Qt.rgba(1, 1, 1, 0.12)
 
                             Behavior on x {
-                                NumberAnimation {
-                                    duration: 220
-                                    easing.type: Easing.OutCubic
-                                }
+                                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
                             }
                         }
 
-                        RowLayout {
+                        Row {
                             anchors.fill: parent
                             anchors.margins: 3
-                            spacing: 0
 
-                            // 0: Risparmio
+                            // Saver
                             Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
+                                width: segProfileBox.slotW
+                                height: parent.height
 
                                 Row {
                                     anchors.centerIn: parent
                                     spacing: 5
-                                    scale: saverMouse.pressed ? 0.94 : (saverMouse.containsMouse ? 1.03 : 1.0)
-                                    Behavior on scale { NumberAnimation { duration: 120 } }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: ""
                                         font.family: controlCenter.iconFontFamily
                                         font.pixelSize: 11
-                                        color: segmentedContainer.activeIndex === 0 ? controlCenter.textPrimary : StyleTokens.textMuted
+                                        color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: I18n.tr("Risparmio")
                                         font.family: controlCenter.textFontFamily
-                                        font.pixelSize: 10
-                                        font.weight: segmentedContainer.activeIndex === 0 ? Font.Bold : Font.Normal
-                                        color: segmentedContainer.activeIndex === 0 ? controlCenter.textPrimary : StyleTokens.textMuted
+                                        font.pixelSize: 11
+                                        font.weight: segProfileBox.activeIdx === 0 ? Font.Bold : Font.Medium
+                                        color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
                                     }
                                 }
 
                                 MouseArea {
-                                    id: saverMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
@@ -3012,35 +2977,32 @@ Item {
                                 }
                             }
 
-                            // 1: Bilanciato
+                            // Balanced
                             Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
+                                width: segProfileBox.slotW
+                                height: parent.height
 
                                 Row {
                                     anchors.centerIn: parent
                                     spacing: 5
-                                    scale: balMouse.pressed ? 0.94 : (balMouse.containsMouse ? 1.03 : 1.0)
-                                    Behavior on scale { NumberAnimation { duration: 120 } }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: ""
                                         font.family: controlCenter.iconFontFamily
                                         font.pixelSize: 11
-                                        color: segmentedContainer.activeIndex === 1 ? controlCenter.textPrimary : StyleTokens.textMuted
+                                        color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: I18n.tr("Bilanciato")
                                         font.family: controlCenter.textFontFamily
-                                        font.pixelSize: 10
-                                        font.weight: segmentedContainer.activeIndex === 1 ? Font.Bold : Font.Normal
-                                        color: segmentedContainer.activeIndex === 1 ? controlCenter.textPrimary : StyleTokens.textMuted
+                                        font.pixelSize: 11
+                                        font.weight: segProfileBox.activeIdx === 1 ? Font.Bold : Font.Medium
+                                        color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
                                     }
                                 }
 
                                 MouseArea {
-                                    id: balMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
@@ -3048,35 +3010,32 @@ Item {
                                 }
                             }
 
-                            // 2: Prestazioni
+                            // Performance
                             Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
+                                width: segProfileBox.slotW
+                                height: parent.height
 
                                 Row {
                                     anchors.centerIn: parent
                                     spacing: 5
-                                    scale: perfMouse.pressed ? 0.94 : (perfMouse.containsMouse ? 1.03 : 1.0)
-                                    Behavior on scale { NumberAnimation { duration: 120 } }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: ""
                                         font.family: controlCenter.iconFontFamily
                                         font.pixelSize: 11
-                                        color: segmentedContainer.activeIndex === 2 ? controlCenter.textPrimary : StyleTokens.textMuted
+                                        color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: I18n.tr("Prestazioni")
                                         font.family: controlCenter.textFontFamily
-                                        font.pixelSize: 10
-                                        font.weight: segmentedContainer.activeIndex === 2 ? Font.Bold : Font.Normal
-                                        color: segmentedContainer.activeIndex === 2 ? controlCenter.textPrimary : StyleTokens.textMuted
+                                        font.pixelSize: 11
+                                        font.weight: segProfileBox.activeIdx === 2 ? Font.Bold : Font.Medium
+                                        color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
                                     }
                                 }
 
                                 MouseArea {
-                                    id: perfMouse
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
@@ -3087,193 +3046,161 @@ Item {
                     }
                 }
 
-                // ── 3. Apple Settings Inset Grouped Metrics Card ─
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    radius: 14
-                    color: Qt.rgba(255, 255, 255, 0.04)
-                    border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.06)
+                // ── 3. Dettagli & Salute Batteria (Matching Grouped Inset Card) ──
+                Column {
+                    width: parent.width
+                    spacing: 6
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 0
+                    Text {
+                        text: I18n.tr("Dettagli Batteria")
+                        color: StyleTokens.textMuted
+                        font.pixelSize: 12
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.DemiBold
+                        anchors.left: parent.left
+                        anchors.leftMargin: 4
+                    }
 
-                        // Row 1: Capacità nominale
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            spacing: 8
+                    Rectangle {
+                        width: parent.width
+                        height: 156
+                        radius: 16
+                        color: Qt.rgba(1, 1, 1, 0.06)
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.08)
 
-                            Rectangle {
-                                width: 22
-                                height: 22
-                                radius: 5.5
-                                color: Qt.rgba(48, 209, 88, 0.15)
+                        Column {
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            spacing: 0
+
+                            // Row 1: Capacità
+                            Item {
+                                width: parent.width
+                                height: 36
+
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "󰂑"
-                                    font.family: "JetBrainsMono Nerd Font, Symbols Nerd Font"
-                                    font.pixelSize: 11
-                                    color: "#30d158"
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Capacità nominale")
+                                    color: StyleTokens.textPrimary
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
+                                    font.weight: Font.Medium
+                                }
+
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: batDetailRoot.batSize
+                                    color: StyleTokens.textMuted
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
                                 }
                             }
 
-                            Text {
-                                text: I18n.tr("Capacità nominale")
-                                font.family: controlCenter.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Normal
-                                color: controlCenter.textPrimary
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: batDetailRoot.batSize
-                                font.family: "JetBrainsMono Nerd Font, monospace"
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: StyleTokens.textSecondary
-                            }
-                        }
-
-                        // Divider
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: Qt.rgba(255, 255, 255, 0.05)
-                            Layout.leftMargin: 30
-                        }
-
-                        // Row 2: Soglia di carica
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            spacing: 8
-
                             Rectangle {
-                                width: 22
-                                height: 22
-                                radius: 5.5
-                                color: Qt.rgba(10, 132, 255, 0.15)
+                                width: parent.width - 20
+                                height: 1
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: Qt.rgba(1, 1, 1, 0.05)
+                            }
+
+                            // Row 2: Soglia di carica
+                            Item {
+                                width: parent.width
+                                height: 36
+
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "󰁹"
-                                    font.family: "JetBrainsMono Nerd Font, Symbols Nerd Font"
-                                    font.pixelSize: 11
-                                    color: "#0a84ff"
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Soglia limite di carica")
+                                    color: StyleTokens.textPrimary
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
+                                    font.weight: Font.Medium
+                                }
+
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: batDetailRoot.batLimit
+                                    color: StyleTokens.textMuted
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
                                 }
                             }
 
-                            Text {
-                                text: I18n.tr("Soglia di carica")
-                                font.family: controlCenter.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Normal
-                                color: controlCenter.textPrimary
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: batDetailRoot.batLimit
-                                font.family: "JetBrainsMono Nerd Font, monospace"
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: StyleTokens.textSecondary
-                            }
-                        }
-
-                        // Divider
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: Qt.rgba(255, 255, 255, 0.05)
-                            Layout.leftMargin: 30
-                        }
-
-                        // Row 3: Cicli ricarica
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            spacing: 8
-
                             Rectangle {
-                                width: 22
-                                height: 22
-                                radius: 5.5
-                                color: Qt.rgba(255, 159, 10, 0.15)
+                                width: parent.width - 20
+                                height: 1
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: Qt.rgba(1, 1, 1, 0.05)
+                            }
+
+                            // Row 3: Cicli
+                            Item {
+                                width: parent.width
+                                height: 36
+
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "󰑮"
-                                    font.family: "JetBrainsMono Nerd Font, Symbols Nerd Font"
-                                    font.pixelSize: 11
-                                    color: "#ff9f0a"
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Cicli di ricarica")
+                                    color: StyleTokens.textPrimary
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
+                                    font.weight: Font.Medium
+                                }
+
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: batDetailRoot.batCycles + " " + I18n.tr("cicli")
+                                    color: StyleTokens.textMuted
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
                                 }
                             }
 
-                            Text {
-                                text: I18n.tr("Cicli di ricarica")
-                                font.family: controlCenter.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Normal
-                                color: controlCenter.textPrimary
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: batDetailRoot.batCycles + " " + I18n.tr("cicli")
-                                font.family: "JetBrainsMono Nerd Font, monospace"
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: StyleTokens.textSecondary
-                            }
-                        }
-
-                        // Divider
-                        Rectangle {
-                            Layout.fillWidth: true
-                            height: 1
-                            color: Qt.rgba(255, 255, 255, 0.05)
-                            Layout.leftMargin: 30
-                        }
-
-                        // Row 4: Stato batteria
-                        RowLayout {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            spacing: 8
-
                             Rectangle {
-                                width: 22
-                                height: 22
-                                radius: 5.5
-                                color: Qt.rgba(191, 90, 242, 0.15)
+                                width: parent.width - 20
+                                height: 1
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: Qt.rgba(1, 1, 1, 0.05)
+                            }
+
+                            // Row 4: Stato
+                            Item {
+                                width: parent.width
+                                height: 36
+
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "󰄬"
-                                    font.family: "JetBrainsMono Nerd Font, Symbols Nerd Font"
-                                    font.pixelSize: 11
-                                    color: "#bf5af2"
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Stato alimentazione")
+                                    color: StyleTokens.textPrimary
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
+                                    font.weight: Font.Medium
                                 }
-                            }
 
-                            Text {
-                                text: I18n.tr("Stato batteria")
-                                font.family: controlCenter.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.Normal
-                                color: controlCenter.textPrimary
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: batDetailRoot.batState
-                                font.family: controlCenter.textFontFamily
-                                font.pixelSize: 11
-                                font.weight: Font.DemiBold
-                                color: StyleTokens.textSecondary
+                                Text {
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: 10
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: batDetailRoot.batState
+                                    color: StyleTokens.textMuted
+                                    font.pixelSize: 12
+                                    font.family: controlCenter.textFontFamily
+                                }
                             }
                         }
                     }
@@ -3898,53 +3825,36 @@ Item {
             anchors.margins: 14
             visible: controlCenter.activeDetailModule !== "" && !controlCenter.wifiPanelOpen && !controlCenter.bluetoothPanelOpen
 
-            // Header top bar with Back button and Module title
+            // Header top bar with Back button and Module title (matching ConnectivityDetailPanel)
             Item {
                 id: detailTopBar
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                height: 36
+                height: 32
 
                 Rectangle {
                     id: backBtn
+                    width: 28
+                    height: 28
+                    radius: 14
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    width: backRow.width + 18
-                    height: 30
-                    radius: 15
-                    color: backBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.06)
-                    border.width: 1
-                    border.color: backBtnMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.18) : Qt.rgba(255, 255, 255, 0.10)
-                    scale: backBtnMouse.pressed ? 0.92 : (backBtnMouse.containsMouse ? 1.03 : 1.0)
+                    color: backBtnMouse.containsMouse ? StyleTokens.moduleHover : StyleTokens.secondaryButton
+                    scale: backBtnMouse.pressed ? 0.92 : (backBtnMouse.containsMouse ? 1.05 : 1.0)
 
                     Behavior on scale {
-                        NumberAnimation {
-                            duration: backBtnMouse.pressed ? 90 : 180
-                            easing.type: backBtnMouse.pressed ? Easing.OutQuad : Easing.OutBack
-                            easing.overshoot: 1.15
-                        }
+                        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
                     }
 
-                    Row {
-                        id: backRow
+                    Text {
                         anchors.centerIn: parent
-                        spacing: 6
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: ""
-                            font.family: controlCenter.iconFontFamily
-                            font.pixelSize: 11
-                            color: controlCenter.cardAccent
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: I18n.tr("Indietro")
-                            font.family: controlCenter.textFontFamily
-                            font.pixelSize: 11
-                            font.weight: Font.DemiBold
-                            color: controlCenter.textPrimary
-                        }
+                        anchors.horizontalCenterOffset: -1
+                        text: "‹"
+                        font.family: controlCenter.textFontFamily
+                        font.pixelSize: 22
+                        font.weight: Font.Bold
+                        color: StyleTokens.textPrimary
                     }
 
                     MouseArea {
@@ -3956,46 +3866,25 @@ Item {
                     }
                 }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 7
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: {
-                            switch (controlCenter.activeDetailModule) {
-                            case "volume": return controlCenter.volumeIconGlyph;
-                            case "brightness": return controlCenter.brightnessIconGlyph;
-                            case "battery": return "\uf240";
-                            case "toggles": return "\uf186";
-                            case "notifications": return "\uf0f3";
-                            case "quickactions": return "\uf108";
-                            default: return "";
-                            }
+                Text {
+                    anchors.left: backBtn.right
+                    anchors.leftMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: {
+                        switch (controlCenter.activeDetailModule) {
+                        case "volume": return I18n.tr("Volume");
+                        case "brightness": return I18n.tr("Luminosità");
+                        case "battery": return I18n.tr("Batteria");
+                        case "toggles": return I18n.tr("Luce Notturna & Focus");
+                        case "notifications": return I18n.tr("Centro Notifiche");
+                        case "quickactions": return I18n.tr("Barra & Appunti");
+                        default: return "";
                         }
-                        font.family: controlCenter.iconFontFamily
-                        font.pixelSize: 14
-                        color: controlCenter.cardAccent
                     }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: {
-                            switch (controlCenter.activeDetailModule) {
-                            case "volume": return I18n.tr("Controllo Volume");
-                            case "brightness": return I18n.tr("Luminosità Display");
-                            case "battery": return I18n.tr("Stato & Statistiche Batteria");
-                            case "toggles": return I18n.tr("Luce Notturna & Focus");
-                            case "notifications": return I18n.tr("Centro Notifiche");
-                            case "quickactions": return I18n.tr("Barra & Appunti");
-                            default: return "";
-                            }
-                        }
-                        font.family: controlCenter.textFontFamily
-                        font.pixelSize: 13
-                        font.weight: Font.DemiBold
-                        color: controlCenter.textPrimary
-                    }
+                    font.family: controlCenter.heroFontFamily
+                    font.pixelSize: 15
+                    font.weight: Font.Bold
+                    color: StyleTokens.textPrimary
                 }
             }
 
@@ -4005,22 +3894,23 @@ Item {
                 anchors.right: parent.right
                 anchors.top: detailTopBar.bottom
                 anchors.bottom: parent.bottom
-                anchors.topMargin: 14
+                anchors.topMargin: 12
 
                 Loader {
                     id: detailLoader
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: (controlCenter.activeDetailModule === "notifications") ? parent.top : undefined
-                    anchors.verticalCenter: (controlCenter.activeDetailModule !== "notifications") ? parent.verticalCenter : undefined
+                    anchors.top: (controlCenter.activeDetailModule === "notifications" || controlCenter.activeDetailModule === "battery") ? parent.top : undefined
+                    anchors.bottom: (controlCenter.activeDetailModule === "notifications" || controlCenter.activeDetailModule === "battery") ? parent.bottom : undefined
+                    anchors.verticalCenter: (controlCenter.activeDetailModule !== "notifications" && controlCenter.activeDetailModule !== "battery") ? parent.verticalCenter : undefined
                     width: parent.width
                     height: {
                         switch (controlCenter.activeDetailModule) {
                         case "volume": return 90;
                         case "brightness": return 90;
-                        case "battery": return Math.min(parent.height - 8, 275);
+                        case "battery": return parent.height;
                         case "toggles": return 100;
                         case "quickactions": return 64;
-                        case "notifications": return Math.min(parent.height, 320);
+                        case "notifications": return parent.height;
                         default: return 90;
                         }
                     }
