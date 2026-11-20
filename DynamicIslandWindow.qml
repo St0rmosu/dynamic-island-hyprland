@@ -5530,10 +5530,37 @@ PanelWindow {
             readonly property bool isLyricsActive: (islandContainer.islandState === "lyrics" || islandContainer.restingState === "lyrics" || root.lyricsActive || (islandContainer.swipeTransitionProgress > 0.05))
             readonly property bool isRetracting: root.powerMenuRetracting || root.wallpaperPickerRetracting || root.notificationRetracting || root.screenshotPreviewRetracting || root.reloadRetracting
             readonly property bool isNeckDropdown: islandContainer.powerMenuLayerVisible || root.powerMenuRetracting || islandContainer.wallpaperPickerLayerVisible || root.wallpaperPickerRetracting || islandContainer.notificationLayerVisible || root.notificationRetracting || islandContainer.screenshotPreviewLayerVisible || root.screenshotPreviewRetracting || islandContainer.reloadLayerVisible || root.reloadRetracting || islandContainer.islandState === "power_menu" || islandContainer.islandState === "wallpaper_picker" || islandContainer.islandState === "notification" || islandContainer.islandState === "screenshot_preview" || islandContainer.islandState === "reload"
-            readonly property bool isMorphingCard: (islandContainer.controlCenterLayerVisible || islandContainer.applicationLauncherLayerVisible || islandContainer.clipboardLayerVisible || islandContainer.settingsAppLayerVisible || islandContainer.focustimeLayerVisible || islandContainer.fileShelfLayerVisible || islandContainer.notificationCenterLayerVisible || islandContainer.polkitLayerVisible || islandContainer.screenSharePickerLayerVisible || islandContainer.expandedLayerVisible || islandContainer.bluetoothExpandedLayerVisible || islandContainer.islandState === "control_center" || islandContainer.islandState === "application_launcher" || islandContainer.islandState === "clipboard" || islandContainer.islandState === "settings_app" || islandContainer.islandState === "focustime" || islandContainer.islandState === "file_shelf" || islandContainer.islandState === "notification_center" || islandContainer.islandState === "polkit" || islandContainer.islandState === "screen_share_picker" || islandContainer.islandState === "expanded" || islandContainer.islandState === "bluetooth_expanded" || islandContainer.islandState === "screenshot_editor" || mainCapsule.height > (root.effectiveIslandHeight + 2) || mainCapsule.width > (islandContainer.customCapsuleWidth > 0 ? Math.max(260, islandContainer.customCapsuleWidth + 30) : 260))
+            readonly property bool isMorphingCard: (
+                islandContainer.controlCenterLayerVisible
+                || islandContainer.applicationLauncherLayerVisible
+                || islandContainer.clipboardLayerVisible
+                || islandContainer.settingsAppLayerVisible
+                || islandContainer.focustimeLayerVisible
+                || islandContainer.fileShelfLayerVisible
+                || islandContainer.notificationCenterLayerVisible
+                || islandContainer.polkitLayerVisible
+                || islandContainer.screenSharePickerLayerVisible
+                || islandContainer.expandedLayerVisible
+                || islandContainer.bluetoothExpandedLayerVisible
+                || islandContainer.islandState === "control_center"
+                || islandContainer.islandState === "application_launcher"
+                || islandContainer.islandState === "clipboard"
+                || islandContainer.islandState === "settings_app"
+                || islandContainer.islandState === "focustime"
+                || islandContainer.islandState === "file_shelf"
+                || islandContainer.islandState === "notification_center"
+                || islandContainer.islandState === "polkit"
+                || islandContainer.islandState === "screen_share_picker"
+                || islandContainer.islandState === "expanded"
+                || islandContainer.islandState === "bluetooth_expanded"
+                || islandContainer.islandState === "screenshot_editor"
+                || mainCapsule.targetHeight > (root.effectiveIslandHeight + 2)
+                || mainCapsule.height > (root.effectiveIslandHeight + 2)
+                || mainCapsule.width > (islandContainer.customCapsuleWidth > 0 ? Math.max(260, islandContainer.customCapsuleWidth + 30) : 260)
+            )
             readonly property bool shouldBeActive: hasBattery && (batteryCap > 0 || islandContainer.isCharging) && !isLyricsActive && !root.overviewVisible && !root.screenshotCapturing && !root.screenshotSnippingActive && !(islandContainer && islandContainer.islandState === "screenshot_editor")
             // retractProgress: 0.0 = capsula intera a riposo; 1.0 = fondo completamente ritirato e aperto per colletti
-            property real retractProgress: (isNeckDropdown && !isRetracting) ? 1 : 0
+            property real retractProgress: (!isMorphingCard && isNeckDropdown && !isRetracting) ? 1 : 0
             readonly property real batteryFraction: Math.max(0, Math.min(1, batteryCap / 100))
             readonly property color indicatorColor: {
                 if (batteryCap <= 20)
@@ -5566,12 +5593,12 @@ PanelWindow {
 
             z: 5.2
             enabled: false
-            // Allineamento su mainCapsule
-            x: mainCapsule.x
-            y: mainCapsule.y
-            width: mainCapsule.width
-            height: mainCapsule.height
-            scale: mainCapsule.scale
+            // Allineamento su mainCapsule: bloccato alle dimensioni a riposo per prevenire distorsioni durante il morphing
+            x: isMorphingCard ? Math.round(((parent && parent.width > 0 ? parent.width : 1920) - root.effectiveIslandWidth) / 2) : mainCapsule.x
+            y: isMorphingCard ? root.effectiveIslandTopMargin : mainCapsule.y
+            width: isMorphingCard ? root.effectiveIslandWidth : mainCapsule.width
+            height: isMorphingCard ? root.effectiveIslandHeight : Math.min(mainCapsule.height, root.effectiveIslandHeight)
+            scale: isMorphingCard ? 1.0 : mainCapsule.scale
             transformOrigin: mainCapsule.transformOrigin
             // Visibilità globale: se è un dropdown col colletto, la cresta superiore resta visibile; se morphing card, dissolve
             opacity: {
@@ -5703,7 +5730,7 @@ PanelWindow {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 160
+                    duration: innerBatteryClip.isMorphingCard ? 0 : 160
                     easing.type: Easing.OutQuad
                 }
 
@@ -5711,7 +5738,7 @@ PanelWindow {
 
             Behavior on retractProgress {
                 NumberAnimation {
-                    duration: innerBatteryClip.anyModalActive ? 280 : 240
+                    duration: 240
                     easing.type: Easing.OutCubic
                 }
 
