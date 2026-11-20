@@ -694,8 +694,17 @@ PanelWindow {
         if (!islandContainer.controlCenterLayerVisible && open)
             showControlCenterWindow();
 
-        if (controlCenterLoader.item && controlCenterLoader.item.setConnectivityPanelOpen)
-            controlCenterLoader.item.setConnectivityPanelOpen(kind, open);
+        if (controlCenterLoader.item) {
+            if (kind === "wifi" || kind === "bluetooth") {
+                if (controlCenterLoader.item.setConnectivityPanelOpen)
+                    controlCenterLoader.item.setConnectivityPanelOpen(kind, open);
+            } else {
+                if (open && controlCenterLoader.item.openModuleDetail)
+                    controlCenterLoader.item.openModuleDetail(kind);
+                else if (!open && controlCenterLoader.item.closeConnectivityPanels)
+                    controlCenterLoader.item.closeConnectivityPanels();
+            }
+        }
 
     }
 

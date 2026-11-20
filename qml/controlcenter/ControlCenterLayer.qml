@@ -1780,66 +1780,98 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
 
-                Text {
-                    text: controlCenter.chargingIconGlyph
-                    color: StyleTokens.white
-                    font.pixelSize: 13
-                    font.family: controlCenter.iconFontFamily
-                    visible: controlCenter.isCharging
+                Rectangle {
+                    id: batteryPillBtn
                     anchors.verticalCenter: parent.verticalCenter
-                }
+                    width: batteryPillContent.width + 12
+                    height: 26
+                    radius: 13
+                    color: batteryPillMouse.containsMouse ? "#20ffffff" : "transparent"
+                    border.width: 1
+                    border.color: batteryPillMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.18) : "transparent"
+                    scale: batteryPillMouse.pressed ? 0.92 : (batteryPillMouse.containsMouse ? 1.04 : 1.0)
 
-                Text {
-                    text: controlCenter.batteryCapacity + "%"
-                    color: StyleTokens.white
-                    font.pixelSize: 13
-                    font.family: controlCenter.textFontFamily
-                    font.weight: Font.DemiBold
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+                    Behavior on scale {
+                        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                    }
 
-                Item {
-                    width: 28
-                    height: 14
-                    anchors.verticalCenter: parent.verticalCenter
+                    Row {
+                        id: batteryPillContent
+                        anchors.centerIn: parent
+                        spacing: 6
 
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.rightMargin: 2
-                        radius: 4
-                        color: StyleTokens.transparent
-                        border.color: StyleTokens.textSecondary
-                        border.width: 1
+                        Text {
+                            text: controlCenter.chargingIconGlyph
+                            color: StyleTokens.white
+                            font.pixelSize: 13
+                            font.family: controlCenter.iconFontFamily
+                            visible: controlCenter.isCharging
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
 
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            anchors.margins: 2
-                            radius: 2
-                            width: (parent.width - 4) * (controlCenter.batteryCapacity / 100.0)
-                            color: {
-                                if (controlCenter.batteryCapacity <= 10) return StyleTokens.danger;
-                                if (controlCenter.batteryCapacity <= 20) return StyleTokens.warning;
-                                return StyleTokens.success;
+                        Text {
+                            text: controlCenter.batteryCapacity + "%"
+                            color: StyleTokens.white
+                            font.pixelSize: 13
+                            font.family: controlCenter.textFontFamily
+                            font.weight: Font.DemiBold
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Item {
+                            width: 28
+                            height: 14
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.rightMargin: 2
+                                radius: 4
+                                color: StyleTokens.transparent
+                                border.color: StyleTokens.textSecondary
+                                border.width: 1
+
+                                Rectangle {
+                                    anchors.left: parent.left
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.margins: 2
+                                    radius: 2
+                                    width: (parent.width - 4) * (controlCenter.batteryCapacity / 100.0)
+                                    color: {
+                                        if (controlCenter.batteryCapacity <= 10) return StyleTokens.danger;
+                                        if (controlCenter.batteryCapacity <= 20) return StyleTokens.warning;
+                                        return StyleTokens.success;
+                                    }
+
+                                    Behavior on width {
+                                        NumberAnimation {
+                                            duration: 300
+                                            easing.type: Easing.OutCubic
+                                        }
+                                    }
+                                }
                             }
 
-                            Behavior on width {
-                                NumberAnimation {
-                                    duration: 300
-                                    easing.type: Easing.OutCubic
-                                }
+                            Rectangle {
+                                width: 2
+                                height: 6
+                                radius: 1
+                                color: StyleTokens.textSecondary
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
                             }
                         }
                     }
 
-                    Rectangle {
-                        width: 2
-                        height: 6
-                        radius: 1
-                        color: StyleTokens.textSecondary
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
+                    MouseArea {
+                        id: batteryPillMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            controlCenter.openModuleDetail("battery");
+                        }
                     }
                 }
 
