@@ -2913,15 +2913,20 @@ Item {
                             // Center Status Info
                             Column {
                                 anchors.left: batGlyphItem.right
-                                anchors.leftMargin: 14
+                                anchors.leftMargin: 12
                                 anchors.right: healthBadge.left
-                                anchors.rightMargin: 8
+                                anchors.rightMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
-                                spacing: 2
+                                spacing: 3
+                                clip: true
 
                                 Row {
-                                    spacing: 8
+                                    id: topInfoRow
+                                    width: parent.width
+                                    spacing: 6
+
                                     Text {
+                                        id: percentTxt
                                         text: batDetailRoot.batPercent + "%"
                                         color: StyleTokens.textPrimaryBright
                                         font.pixelSize: 22
@@ -2930,25 +2935,36 @@ Item {
                                         font.letterSpacing: -0.5
                                     }
 
-                                    Row {
+                                    Item {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        spacing: 5
+                                        width: Math.max(0, topInfoRow.width - percentTxt.width - topInfoRow.spacing)
+                                        height: stateRow.height
+                                        clip: true
 
-                                        Rectangle {
+                                        Row {
+                                            id: stateRow
+                                            anchors.left: parent.left
                                             anchors.verticalCenter: parent.verticalCenter
-                                            width: 6
-                                            height: 6
-                                            radius: 3
-                                            color: batDetailRoot.batteryAccentColor
-                                        }
+                                            spacing: 5
 
-                                        Text {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: batDetailRoot.isCharging ? I18n.tr("In carica") : (batDetailRoot.batState === "Full" ? I18n.tr("Carica completa") : I18n.tr("Alimentazione a batteria"))
-                                            color: batDetailRoot.batteryAccentColor
-                                            font.pixelSize: 11
-                                            font.family: controlCenter.textFontFamily
-                                            font.weight: Font.DemiBold
+                                            Rectangle {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                width: 6
+                                                height: 6
+                                                radius: 3
+                                                color: batDetailRoot.batteryAccentColor
+                                            }
+
+                                            Text {
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                text: batDetailRoot.isCharging ? I18n.tr("In carica") : ((batDetailRoot.batPercent >= 99 || batDetailRoot.batState === "Full") ? I18n.tr("Carica") : I18n.tr("A batteria"))
+                                                color: batDetailRoot.batteryAccentColor
+                                                font.pixelSize: 11
+                                                font.family: controlCenter.textFontFamily
+                                                font.weight: Font.DemiBold
+                                                width: Math.max(0, parent.parent.width - 11)
+                                                elide: Text.ElideRight
+                                            }
                                         }
                                     }
                                 }
@@ -2962,10 +2978,12 @@ Item {
                                             parts.push(batDetailRoot.formatTimeRemaining(batDetailRoot.batTimeRemaining) + (batDetailRoot.isCharging ? (" " + I18n.tr("al termine")) : (" " + I18n.tr("rimanenti"))));
                                         } else if (batDetailRoot.isCharging) {
                                             parts.push(I18n.tr("Alimentatore collegato"));
+                                        } else if (batDetailRoot.batPercent >= 99 || batDetailRoot.batState === "Full") {
+                                            parts.push(I18n.tr("Completamente carica"));
                                         } else {
                                             parts.push(I18n.tr("Batteria interna"));
                                         }
-                                        if (batDetailRoot.batRate !== "--") {
+                                        if (batDetailRoot.batRate !== "--" && batDetailRoot.batRate !== "0.0W" && batDetailRoot.batRate !== "0W") {
                                             parts.push(batDetailRoot.batRate);
                                         }
                                         return parts.join(" • ");
