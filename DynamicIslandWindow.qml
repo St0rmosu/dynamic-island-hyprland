@@ -5643,137 +5643,58 @@ PanelWindow {
                                 ColorAnimation {
                                     duration: 300
                                 }
-
                             }
-
                         }
-
                     }
 
-                    // 2. Fondo Inferiore che si ritrae aprendosi ("si ritrae aprendosi e sbuca il coso")
-                    Item {
+                    // 2. Fondo Inferiore: perfettamente speculare alla cresta superiore, con dissolvenza fluida ad apertura colletto
+                    Shape {
                         anchors.fill: parent
+                        asynchronous: false
+                        preferredRendererType: Shape.CurveRenderer
                         opacity: innerBatteryClip.bottomOpacity
                         visible: opacity > 0.001
 
-                        // A. Archi degli angoli inferiori (si ritraggono risalendo verso le spalle)
-                        Shape {
-                            anchors.fill: parent
-                            asynchronous: false
-                            preferredRendererType: Shape.CurveRenderer
-                            visible: innerBatteryClip.remLen > 0.2
+                        ShapePath {
+                            strokeColor: innerBatteryClip.indicatorColor
+                            strokeWidth: innerBatteryClip.sw
+                            capStyle: ShapePath.RoundCap
+                            fillColor: "transparent"
+                            startX: innerBatteryClip.sw / 2
+                            startY: innerBatteryClip.h / 2
 
-                            // Angolo inferiore sinistro
-                            ShapePath {
-                                strokeColor: innerBatteryClip.indicatorColor
-                                strokeWidth: innerBatteryClip.sw
-                                capStyle: ShapePath.RoundCap
-                                fillColor: "transparent"
-                                startX: innerBatteryClip.sw / 2
-                                startY: innerBatteryClip.h / 2
-
-                                PathAngleArc {
-                                    centerX: innerBatteryClip.actualRadius
-                                    centerY: innerBatteryClip.h / 2
-                                    radiusX: innerBatteryClip.cr
-                                    radiusY: innerBatteryClip.cr
-                                    startAngle: 180
-                                    sweepAngle: -90 * innerBatteryClip.arcFrac * Math.min(1.0, innerBatteryClip.progressX / Math.max(1, innerBatteryClip.actualRadius))
-                                }
-
-                                Behavior on strokeColor {
-                                    ColorAnimation {
-                                        duration: 300
-                                    }
-
-                                }
-
+                            // Quadrante inferiore sinistro (da 180° a 90° / 6 in punto, in senso antiorario -90°)
+                            PathAngleArc {
+                                centerX: innerBatteryClip.actualRadius
+                                centerY: innerBatteryClip.h / 2
+                                radiusX: innerBatteryClip.cr
+                                radiusY: innerBatteryClip.cr
+                                startAngle: 180
+                                sweepAngle: -Math.min(90, Math.max(0.1, (innerBatteryClip.progressX / Math.max(1, innerBatteryClip.actualRadius)) * 90))
                             }
 
-                            // Angolo inferiore destro
-                            ShapePath {
-                                strokeColor: innerBatteryClip.indicatorColor
-                                strokeWidth: innerBatteryClip.sw
-                                capStyle: ShapePath.RoundCap
-                                fillColor: "transparent"
-                                startX: innerBatteryClip.w - innerBatteryClip.sw / 2
-                                startY: innerBatteryClip.h / 2
-
-                                PathAngleArc {
-                                    centerX: innerBatteryClip.w - innerBatteryClip.actualRadius
-                                    centerY: innerBatteryClip.h / 2
-                                    radiusX: innerBatteryClip.cr
-                                    radiusY: innerBatteryClip.cr
-                                    startAngle: 0
-                                    sweepAngle: innerBatteryClip.progressX > (innerBatteryClip.w - innerBatteryClip.actualRadius) ? (90 * innerBatteryClip.arcFrac * Math.min(1.0, (innerBatteryClip.progressX - (innerBatteryClip.w - innerBatteryClip.actualRadius)) / Math.max(1, innerBatteryClip.actualRadius))) : 0
-                                }
-
-                                Behavior on strokeColor {
-                                    ColorAnimation {
-                                        duration: 300
-                                    }
-
-                                }
-
+                            // Linea orizzontale inferiore
+                            PathLine {
+                                x: Math.max(innerBatteryClip.actualRadius, Math.min(innerBatteryClip.w - innerBatteryClip.actualRadius, innerBatteryClip.progressX))
+                                y: innerBatteryClip.h - innerBatteryClip.sw / 2
                             }
 
+                            // Quadrante inferiore destro (da 90° / 6 in punto a 0° / 3 in punto, in senso antiorario -90°)
+                            PathAngleArc {
+                                centerX: innerBatteryClip.w - innerBatteryClip.actualRadius
+                                centerY: innerBatteryClip.h / 2
+                                radiusX: innerBatteryClip.cr
+                                radiusY: innerBatteryClip.cr
+                                startAngle: 90
+                                sweepAngle: innerBatteryClip.progressX > (innerBatteryClip.w - innerBatteryClip.actualRadius) ? -Math.min(90, Math.max(0, ((innerBatteryClip.progressX - (innerBatteryClip.w - innerBatteryClip.actualRadius)) / Math.max(1, innerBatteryClip.actualRadius)) * 90)) : 0
+                            }
+
+                            Behavior on strokeColor {
+                                ColorAnimation {
+                                    duration: 300
+                                }
+                            }
                         }
-
-                        // B. Segmenti orizzontali inferiori (si ritirano dal centro verso gli angoli)
-                        Shape {
-                            anchors.fill: parent
-                            asynchronous: false
-                            preferredRendererType: Shape.CurveRenderer
-                            visible: innerBatteryClip.curFlatLen > 0.5
-
-                            // Ritiro sinistro dal centro
-                            ShapePath {
-                                strokeColor: innerBatteryClip.indicatorColor
-                                strokeWidth: innerBatteryClip.sw
-                                capStyle: ShapePath.RoundCap
-                                fillColor: "transparent"
-                                startX: innerBatteryClip.actualRadius
-                                startY: innerBatteryClip.h - innerBatteryClip.sw / 2
-
-                                PathLine {
-                                    x: innerBatteryClip.actualRadius + innerBatteryClip.curFlatLen + (innerBatteryClip.retractProgress < 0.01 ? 1 : 0)
-                                    y: innerBatteryClip.h - innerBatteryClip.sw / 2
-                                }
-
-                                Behavior on strokeColor {
-                                    ColorAnimation {
-                                        duration: 300
-                                    }
-
-                                }
-
-                            }
-
-                            // Ritiro destro dal centro
-                            ShapePath {
-                                strokeColor: innerBatteryClip.indicatorColor
-                                strokeWidth: innerBatteryClip.sw
-                                capStyle: ShapePath.RoundCap
-                                fillColor: "transparent"
-                                startX: innerBatteryClip.w - innerBatteryClip.actualRadius
-                                startY: innerBatteryClip.h - innerBatteryClip.sw / 2
-
-                                PathLine {
-                                    x: innerBatteryClip.w - innerBatteryClip.actualRadius - innerBatteryClip.curFlatLen - (innerBatteryClip.retractProgress < 0.01 ? 1 : 0)
-                                    y: innerBatteryClip.h - innerBatteryClip.sw / 2
-                                }
-
-                                Behavior on strokeColor {
-                                    ColorAnimation {
-                                        duration: 300
-                                    }
-
-                                }
-
-                            }
-
-                        }
-
                     }
 
                 }
