@@ -2724,17 +2724,42 @@ Item {
 
             property int batPercent: 100
             property string batState: "Discharging"
-            property string batSubtitle: "BATTERY"
-            property string batSize: "--"
+            property string batStatusText: "Discharging"
+            property bool isCharging: false
+            property string batCapacityFull: "--"
+            property string batCapacityDesign: "--"
+            property string batHealth: "--"
+            property string batRate: "--"
+            property string batTimeRemaining: ""
             property string batLimit: "--"
             property string batCycles: "--"
+            property string batVendor: ""
+            property string batModel: ""
+            property string batTechnology: ""
             property string batProfile: "power-saver"
-            property string batIcon: "󰁹"
 
-            // Backend process to fetch real-time battery data from get-battery.py
+            function formatTimeRemaining(t) {
+                if (!t) return "";
+                return t.replace("hours", I18n.tr("ore"))
+                        .replace("hour", I18n.tr("ora"))
+                        .replace("minutes", I18n.tr("minuti"))
+                        .replace("minute", I18n.tr("minuto"));
+            }
+
+            // Universal cross-environment process to fetch live battery specifications
             Process {
                 id: batFetchProcess
-                command: ["python3", "/home/lollo/.scripts/get-battery.py"]
+                command: [
+                    "python3", "-c",
+                    "import os, sys, subprocess; " +
+                    "home = os.path.expanduser('~'); " +
+                    "candidates = [" +
+                    "os.path.join(home, '.config/quickshell/dynamic-island/scripts/get_battery_specs.py'), " +
+                    "os.path.join(home, 'Progetti/dynamic-island-hyprland/scripts/get_battery_specs.py'), " +
+                    "os.path.join(os.getcwd(), 'scripts/get_battery_specs.py')]; " +
+                    "s = next((c for c in candidates if os.path.isfile(c)), None); " +
+                    "subprocess.run([sys.executable, s]) if s else None"
+                ]
                 running: false
                 stdout: SplitParser {
                     onRead: function(line) {
@@ -2743,12 +2768,19 @@ Item {
                             if (d) {
                                 if (d.percentage !== undefined) batDetailRoot.batPercent = Number(d.percentage);
                                 if (d.state) batDetailRoot.batState = String(d.state);
-                                if (d.subtitle) batDetailRoot.batSubtitle = String(d.subtitle);
-                                if (d.size) batDetailRoot.batSize = String(d.size);
+                                if (d.status_text) batDetailRoot.batStatusText = String(d.status_text);
+                                if (d.is_charging !== undefined) batDetailRoot.isCharging = Boolean(d.is_charging);
+                                if (d.capacity_full) batDetailRoot.batCapacityFull = String(d.capacity_full);
+                                if (d.capacity_design) batDetailRoot.batCapacityDesign = String(d.capacity_design);
+                                if (d.health) batDetailRoot.batHealth = String(d.health);
+                                if (d.rate) batDetailRoot.batRate = String(d.rate);
+                                if (d.time_remaining !== undefined) batDetailRoot.batTimeRemaining = String(d.time_remaining);
                                 if (d.limit) batDetailRoot.batLimit = String(d.limit);
                                 if (d.cycles) batDetailRoot.batCycles = String(d.cycles);
+                                if (d.vendor) batDetailRoot.batVendor = String(d.vendor);
+                                if (d.model) batDetailRoot.batModel = String(d.model);
+                                if (d.technology) batDetailRoot.batTechnology = String(d.technology);
                                 if (d.profile) batDetailRoot.batProfile = String(d.profile);
-                                if (d.icon) batDetailRoot.batIcon = String(d.icon);
                             }
                         } catch(e) {}
                     }
@@ -2765,7 +2797,19 @@ Item {
 
             function setProfile(profName) {
                 batDetailRoot.batProfile = profName;
-                batProfileSetter.command = ["/home/lollo/.scripts/power-profile-switch.sh", profName];
+                batProfileSetter.command = [
+                    "python3", "-c",
+                    "import os, sys, subprocess; " +
+                    "home = os.path.expanduser('~'); " +
+                    "prof = sys.argv[1] if len(sys.argv) > 1 else 'balanced'; " +
+                    "candidates = [" +
+                    "os.path.join(home, '.config/quickshell/dynamic-island/scripts/power_profile_switch.sh'), " +
+                    "os.path.join(home, 'Progetti/dynamic-island-hyprland/scripts/power_profile_switch.sh'), " +
+                    "os.path.join(os.getcwd(), 'scripts/power_profile_switch.sh')]; " +
+                    "s = next((c for c in candidates if os.path.isfile(c)), None); " +
+                    "subprocess.run(['bash', s, prof]) if s else None",
+                    profName
+                ];
                 batProfileSetter.running = true;
             }
 
@@ -2787,419 +2831,571 @@ Item {
                 if (batDetailRoot.batPercent <= 30) return StyleTokens.warning;
                 return StyleTokens.success;
             }
-            readonly property bool isCharging: batDetailRoot.batState.toLowerCase().indexOf("charg") !== -1
 
-            Column {
+            Flickable {
                 anchors.fill: parent
-                spacing: 12
+                contentHeight: batContentCol.height
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
 
-                // ── 1. Battery Status Card (Matching WiFi connected card in ConnectivityDetailPanel) ──
-                Rectangle {
-                    width: parent.width
-                    height: 58
-                    radius: 16
-                    color: Qt.rgba(1, 1, 1, 0.06)
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                    Item {
-                        anchors.fill: parent
-                        anchors.leftMargin: 16
-                        anchors.rightMargin: 16
-
-                        // Battery Glyph
-                        Item {
-                            id: batGlyphItem
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: 32
-                            height: 16
-
-                            // Body
-                            Rectangle {
-                                width: 29
-                                height: 16
-                                radius: 4.5
-                                color: "transparent"
-                                border.width: 1.5
-                                border.color: batDetailRoot.batteryAccentColor
-
-                                // Level Fill
-                                Rectangle {
-                                    x: 2
-                                    y: 2
-                                    height: parent.height - 4
-                                    width: Math.max(2, Math.min(parent.width - 4, (parent.width - 4) * (batDetailRoot.batPercent / 100.0)))
-                                    radius: 2
-                                    color: batDetailRoot.batteryAccentColor
-
-                                    Behavior on width {
-                                        NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-                                    }
-                                }
-                            }
-
-                            // Tip (+ terminal)
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.leftMargin: 29
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 2.5
-                                height: 6
-                                radius: 1
-                                color: batDetailRoot.batteryAccentColor
-                            }
-                        }
-
-                        // Status Info
-                        Column {
-                            anchors.left: batGlyphItem.right
-                            anchors.leftMargin: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-
-                            Text {
-                                text: batDetailRoot.batPercent + "%" + (batDetailRoot.isCharging ? (" • " + I18n.tr("In carica")) : (batDetailRoot.batSubtitle === "THRESHOLD" ? (" • " + I18n.tr("Soglia limite")) : (" • " + I18n.tr("Batteria"))))
-                                color: StyleTokens.textPrimary
-                                font.pixelSize: 14
-                                font.family: controlCenter.heroFontFamily
-                                font.weight: Font.Bold
-                            }
-
-                            Text {
-                                text: {
-                                    let details = [];
-                                    if (batDetailRoot.batSize && batDetailRoot.batSize !== "--")
-                                        details.push(I18n.tr("Capacità") + " " + batDetailRoot.batSize);
-                                    if (batDetailRoot.batLimit && batDetailRoot.batLimit !== "--")
-                                        details.push(I18n.tr("Limite") + " " + batDetailRoot.batLimit);
-                                    return details.length > 0 ? details.join(" • ") : I18n.tr("Stato alimentazione regolare");
-                                }
-                                color: StyleTokens.textMuted
-                                font.pixelSize: 11
-                                font.family: controlCenter.textFontFamily
-                            }
-                        }
-
-                        // Right Status Indicator
-                        Text {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: batDetailRoot.isCharging ? "" : (batDetailRoot.batPercent >= 95 ? "✓" : "")
-                            color: batDetailRoot.batteryAccentColor
-                            font.pixelSize: 14
-                            font.family: controlCenter.iconFontFamily
-                        }
-                    }
-                }
-
-                // ── 2. Profilo Energetico (Matching Dynamic Island Section Style) ──
                 Column {
+                    id: batContentCol
                     width: parent.width
-                    spacing: 6
+                    spacing: 12
 
-                    Text {
-                        text: I18n.tr("Profilo Energetico")
-                        color: StyleTokens.textMuted
-                        font.pixelSize: 12
-                        font.family: controlCenter.textFontFamily
-                        font.weight: Font.DemiBold
-                        anchors.left: parent.left
-                        anchors.leftMargin: 4
-                    }
-
-                    Rectangle {
-                        id: segProfileBox
-                        width: parent.width
-                        height: 40
-                        radius: 14
-                        color: Qt.rgba(1, 1, 1, 0.06)
-                        border.width: 1
-                        border.color: Qt.rgba(1, 1, 1, 0.08)
-
-                        readonly property int activeIdx: {
-                            if (batDetailRoot.batProfile === "performance") return 2;
-                            if (batDetailRoot.batProfile === "balanced") return 1;
-                            return 0;
-                        }
-                        readonly property real slotW: (width - 6) / 3
-
-                        // Smooth highlight slider
-                        Rectangle {
-                            y: 3
-                            x: 3 + segProfileBox.activeIdx * segProfileBox.slotW
-                            width: segProfileBox.slotW
-                            height: parent.height - 6
-                            radius: 11
-                            color: Qt.rgba(1, 1, 1, 0.14)
-                            border.width: 1
-                            border.color: Qt.rgba(1, 1, 1, 0.12)
-
-                            Behavior on x {
-                                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-                            }
-                        }
-
-                        Row {
-                            anchors.fill: parent
-                            anchors.margins: 3
-
-                            // Saver
-                            Item {
-                                width: segProfileBox.slotW
-                                height: parent.height
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: ""
-                                        font.family: controlCenter.iconFontFamily
-                                        font.pixelSize: 11
-                                        color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Risparmio")
-                                        font.family: controlCenter.textFontFamily
-                                        font.pixelSize: 11
-                                        font.weight: segProfileBox.activeIdx === 0 ? Font.Bold : Font.Medium
-                                        color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
-                                    }
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: batDetailRoot.setProfile("power-saver")
-                                }
-                            }
-
-                            // Balanced
-                            Item {
-                                width: segProfileBox.slotW
-                                height: parent.height
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: ""
-                                        font.family: controlCenter.iconFontFamily
-                                        font.pixelSize: 11
-                                        color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Bilanciato")
-                                        font.family: controlCenter.textFontFamily
-                                        font.pixelSize: 11
-                                        font.weight: segProfileBox.activeIdx === 1 ? Font.Bold : Font.Medium
-                                        color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
-                                    }
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: batDetailRoot.setProfile("balanced")
-                                }
-                            }
-
-                            // Performance
-                            Item {
-                                width: segProfileBox.slotW
-                                height: parent.height
-
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: 5
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: ""
-                                        font.family: controlCenter.iconFontFamily
-                                        font.pixelSize: 11
-                                        color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
-                                    }
-                                    Text {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        text: I18n.tr("Prestazioni")
-                                        font.family: controlCenter.textFontFamily
-                                        font.pixelSize: 11
-                                        font.weight: segProfileBox.activeIdx === 2 ? Font.Bold : Font.Medium
-                                        color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
-                                    }
-                                }
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: batDetailRoot.setProfile("performance")
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // ── 3. Dettagli & Salute Batteria (Matching Grouped Inset Card) ──
-                Column {
-                    width: parent.width
-                    spacing: 6
-
-                    Text {
-                        text: I18n.tr("Dettagli Batteria")
-                        color: StyleTokens.textMuted
-                        font.pixelSize: 12
-                        font.family: controlCenter.textFontFamily
-                        font.weight: Font.DemiBold
-                        anchors.left: parent.left
-                        anchors.leftMargin: 4
-                    }
-
+                    // ── 1. Battery Status Hero Card ──
                     Rectangle {
                         width: parent.width
-                        height: 156
+                        height: 66
                         radius: 16
                         color: Qt.rgba(1, 1, 1, 0.06)
                         border.width: 1
                         border.color: Qt.rgba(1, 1, 1, 0.08)
 
-                        Column {
+                        Item {
                             anchors.fill: parent
-                            anchors.margins: 6
-                            spacing: 0
+                            anchors.leftMargin: 16
+                            anchors.rightMargin: 16
 
-                            // Row 1: Capacità
+                            // Battery Glyph
                             Item {
-                                width: parent.width
-                                height: 36
+                                id: batGlyphItem
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 34
+                                height: 18
 
-                                Text {
+                                // Body
+                                Rectangle {
+                                    width: 31
+                                    height: 18
+                                    radius: 5
+                                    color: "transparent"
+                                    border.width: 1.5
+                                    border.color: batDetailRoot.batteryAccentColor
+
+                                    // Level Fill
+                                    Rectangle {
+                                        x: 2
+                                        y: 2
+                                        height: parent.height - 4
+                                        width: Math.max(2, Math.min(parent.width - 4, (parent.width - 4) * (batDetailRoot.batPercent / 100.0)))
+                                        radius: 2.5
+                                        color: batDetailRoot.batteryAccentColor
+
+                                        Behavior on width {
+                                            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+                                        }
+                                    }
+
+                                    // Small bolt indicator if charging inside battery
+                                    Text {
+                                        visible: batDetailRoot.isCharging
+                                        anchors.centerIn: parent
+                                        text: "⚡"
+                                        font.pixelSize: 10
+                                        color: StyleTokens.textPrimary
+                                    }
+                                }
+
+                                // Tip (+ terminal)
+                                Rectangle {
                                     anchors.left: parent.left
-                                    anchors.leftMargin: 10
+                                    anchors.leftMargin: 31
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: I18n.tr("Capacità nominale")
-                                    color: StyleTokens.textPrimary
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
-                                    font.weight: Font.Medium
+                                    width: 2.5
+                                    height: 7
+                                    radius: 1
+                                    color: batDetailRoot.batteryAccentColor
+                                }
+                            }
+
+                            // Status Info
+                            Column {
+                                anchors.left: batGlyphItem.right
+                                anchors.leftMargin: 14
+                                anchors.right: healthBadge.left
+                                anchors.rightMargin: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 2
+
+                                Row {
+                                    spacing: 6
+                                    Text {
+                                        text: batDetailRoot.batPercent + "%"
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 18
+                                        font.family: controlCenter.heroFontFamily
+                                        font.weight: Font.Bold
+                                    }
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: "• " + (batDetailRoot.isCharging ? I18n.tr("In carica") : (batDetailRoot.batState === "Full" ? I18n.tr("Carica") : I18n.tr("Batteria")))
+                                        color: batDetailRoot.batteryAccentColor
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.DemiBold
+                                    }
                                 }
 
                                 Text {
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: batDetailRoot.batSize
+                                    width: parent.width
+                                    elide: Text.ElideRight
+                                    text: {
+                                        let parts = [];
+                                        if (batDetailRoot.batTimeRemaining) {
+                                            parts.push(batDetailRoot.formatTimeRemaining(batDetailRoot.batTimeRemaining) + (batDetailRoot.isCharging ? "" : (" " + I18n.tr("rimanenti"))));
+                                        } else if (batDetailRoot.isCharging) {
+                                            parts.push(I18n.tr("Alimentatore collegato"));
+                                        } else {
+                                            parts.push(I18n.tr("Alimentazione a batteria"));
+                                        }
+                                        if (batDetailRoot.batRate !== "--") {
+                                            parts.push(batDetailRoot.batRate);
+                                        }
+                                        return parts.join(" • ");
+                                    }
                                     color: StyleTokens.textMuted
-                                    font.pixelSize: 12
+                                    font.pixelSize: 11
                                     font.family: controlCenter.textFontFamily
                                 }
                             }
 
+                            // Health Badge Pill on Right
                             Rectangle {
-                                width: parent.width - 20
-                                height: 1
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                color: Qt.rgba(1, 1, 1, 0.05)
-                            }
+                                id: healthBadge
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 26
+                                width: healthRow.width + 16
+                                radius: 13
+                                color: Qt.rgba(1, 1, 1, 0.07)
+                                border.width: 1
+                                border.color: Qt.rgba(1, 1, 1, 0.1)
 
-                            // Row 2: Soglia di carica
-                            Item {
-                                width: parent.width
-                                height: 36
+                                Row {
+                                    id: healthRow
+                                    anchors.centerIn: parent
+                                    spacing: 5
 
-                                Text {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: I18n.tr("Soglia limite di carica")
-                                    color: StyleTokens.textPrimary
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
-                                    font.weight: Font.Medium
+                                    Rectangle {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: 6
+                                        height: 6
+                                        radius: 3
+                                        color: {
+                                            let h = parseInt(batDetailRoot.batHealth);
+                                            if (isNaN(h)) return StyleTokens.success;
+                                            if (h >= 80) return StyleTokens.success;
+                                            if (h >= 60) return StyleTokens.warning;
+                                            return StyleTokens.danger;
+                                        }
+                                    }
+
+                                    Text {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: batDetailRoot.batHealth !== "--" ? (I18n.tr("Salute") + " " + batDetailRoot.batHealth) : I18n.tr("Stato OK")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 11
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.DemiBold
+                                    }
                                 }
-
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: batDetailRoot.batLimit
-                                    color: StyleTokens.textMuted
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
-                                }
                             }
+                        }
+                    }
 
+                    // ── 2. Profilo Energetico (Segmented Control) ──
+                    Column {
+                        width: parent.width
+                        spacing: 6
+
+                        Text {
+                            text: I18n.tr("Profilo Energetico")
+                            color: StyleTokens.textMuted
+                            font.pixelSize: 12
+                            font.family: controlCenter.textFontFamily
+                            font.weight: Font.DemiBold
+                            anchors.left: parent.left
+                            anchors.leftMargin: 4
+                        }
+
+                        Rectangle {
+                            id: segProfileBox
+                            width: parent.width
+                            height: 40
+                            radius: 14
+                            color: Qt.rgba(1, 1, 1, 0.06)
+                            border.width: 1
+                            border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                            readonly property int activeIdx: {
+                                if (batDetailRoot.batProfile === "performance") return 2;
+                                if (batDetailRoot.batProfile === "balanced") return 1;
+                                return 0;
+                            }
+                            readonly property real slotW: (width - 6) / 3
+
+                            // Smooth highlight slider
                             Rectangle {
-                                width: parent.width - 20
-                                height: 1
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                color: Qt.rgba(1, 1, 1, 0.05)
-                            }
+                                y: 3
+                                x: 3 + segProfileBox.activeIdx * segProfileBox.slotW
+                                width: segProfileBox.slotW
+                                height: parent.height - 6
+                                radius: 11
+                                color: Qt.rgba(1, 1, 1, 0.14)
+                                border.width: 1
+                                border.color: Qt.rgba(1, 1, 1, 0.12)
 
-                            // Row 3: Cicli
-                            Item {
-                                width: parent.width
-                                height: 36
-
-                                Text {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: I18n.tr("Cicli di ricarica")
-                                    color: StyleTokens.textPrimary
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
-                                    font.weight: Font.Medium
-                                }
-
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: batDetailRoot.batCycles + " " + I18n.tr("cicli")
-                                    color: StyleTokens.textMuted
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
+                                Behavior on x {
+                                    NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
                                 }
                             }
 
-                            Rectangle {
-                                width: parent.width - 20
-                                height: 1
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                color: Qt.rgba(1, 1, 1, 0.05)
-                            }
+                            Row {
+                                anchors.fill: parent
+                                anchors.margins: 3
 
-                            // Row 4: Stato
-                            Item {
-                                width: parent.width
-                                height: 36
+                                // Saver
+                                Item {
+                                    width: segProfileBox.slotW
+                                    height: parent.height
 
-                                Text {
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: I18n.tr("Stato alimentazione")
-                                    color: StyleTokens.textPrimary
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
-                                    font.weight: Font.Medium
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 5
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: ""
+                                            font.family: controlCenter.iconFontFamily
+                                            font.pixelSize: 11
+                                            color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                        }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Risparmio")
+                                            font.family: controlCenter.textFontFamily
+                                            font.pixelSize: 11
+                                            font.weight: segProfileBox.activeIdx === 0 ? Font.Bold : Font.Medium
+                                            color: segProfileBox.activeIdx === 0 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: batDetailRoot.setProfile("power-saver")
+                                    }
                                 }
 
-                                Text {
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: 10
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: batDetailRoot.batState
-                                    color: StyleTokens.textMuted
-                                    font.pixelSize: 12
-                                    font.family: controlCenter.textFontFamily
+                                // Balanced
+                                Item {
+                                    width: segProfileBox.slotW
+                                    height: parent.height
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 5
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: ""
+                                            font.family: controlCenter.iconFontFamily
+                                            font.pixelSize: 11
+                                            color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                        }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Bilanciato")
+                                            font.family: controlCenter.textFontFamily
+                                            font.pixelSize: 11
+                                            font.weight: segProfileBox.activeIdx === 1 ? Font.Bold : Font.Medium
+                                            color: segProfileBox.activeIdx === 1 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: batDetailRoot.setProfile("balanced")
+                                    }
+                                }
+
+                                // Performance
+                                Item {
+                                    width: segProfileBox.slotW
+                                    height: parent.height
+
+                                    Row {
+                                        anchors.centerIn: parent
+                                        spacing: 5
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: ""
+                                            font.family: controlCenter.iconFontFamily
+                                            font.pixelSize: 11
+                                            color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                        }
+                                        Text {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: I18n.tr("Prestazioni")
+                                            font.family: controlCenter.textFontFamily
+                                            font.pixelSize: 11
+                                            font.weight: segProfileBox.activeIdx === 2 ? Font.Bold : Font.Medium
+                                            color: segProfileBox.activeIdx === 2 ? StyleTokens.textPrimary : StyleTokens.textMuted
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: batDetailRoot.setProfile("performance")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ── 3. Specifiche Batteria (Grouped Inset Card) ──
+                    Column {
+                        width: parent.width
+                        spacing: 6
+
+                        Text {
+                            text: I18n.tr("Specifiche Hardware")
+                            color: StyleTokens.textMuted
+                            font.pixelSize: 12
+                            font.family: controlCenter.textFontFamily
+                            font.weight: Font.DemiBold
+                            anchors.left: parent.left
+                            anchors.leftMargin: 4
+                        }
+
+                        Rectangle {
+                            width: parent.width
+                            height: specCol.height + 12
+                            radius: 16
+                            color: Qt.rgba(1, 1, 1, 0.06)
+                            border.width: 1
+                            border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                            Column {
+                                id: specCol
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: 6
+                                spacing: 0
+
+                                // Row 1: Capacità effettiva / nominale
+                                Item {
+                                    width: parent.width
+                                    height: 33
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("Capacità reale / nominale")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: (batDetailRoot.batCapacityFull !== "--" ? batDetailRoot.batCapacityFull : "--") + " / " + (batDetailRoot.batCapacityDesign !== "--" ? batDetailRoot.batCapacityDesign : "--")
+                                        color: StyleTokens.textMuted
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width - 20
+                                    height: 1
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                }
+
+                                // Row 2: Stato salute
+                                Item {
+                                    width: parent.width
+                                    height: 33
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("Salute batteria")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: {
+                                            if (batDetailRoot.batHealth === "--") return "--";
+                                            let h = parseInt(batDetailRoot.batHealth);
+                                            let desc = (!isNaN(h) && h >= 80) ? I18n.tr("Ottimale") : I18n.tr("Normale");
+                                            return batDetailRoot.batHealth + " (" + desc + ")";
+                                        }
+                                        color: StyleTokens.textMuted
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width - 20
+                                    height: 1
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                }
+
+                                // Row 3: Assorbimento / Ricarica
+                                Item {
+                                    width: parent.width
+                                    height: 33
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: batDetailRoot.isCharging ? I18n.tr("Potenza di ricarica") : I18n.tr("Assorbimento energetico")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: batDetailRoot.batRate !== "--" ? batDetailRoot.batRate : "--"
+                                        color: StyleTokens.textMuted
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width - 20
+                                    height: 1
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                }
+
+                                // Row 4: Soglia di carica
+                                Item {
+                                    width: parent.width
+                                    height: 33
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("Soglia limite di carica")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: batDetailRoot.batLimit !== "--" ? batDetailRoot.batLimit : I18n.tr("Nessuna (100%)")
+                                        color: StyleTokens.textMuted
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width - 20
+                                    height: 1
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                }
+
+                                // Row 5: Cicli
+                                Item {
+                                    width: parent.width
+                                    height: 33
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("Cicli di ricarica")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: batDetailRoot.batCycles !== "--" ? (batDetailRoot.batCycles + " " + I18n.tr("cicli")) : "--"
+                                        color: StyleTokens.textMuted
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                    }
+                                }
+
+                                Rectangle {
+                                    width: parent.width - 20
+                                    height: 1
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    color: Qt.rgba(1, 1, 1, 0.05)
+                                }
+
+                                // Row 6: Dispositivo Hardware
+                                Item {
+                                    width: parent.width
+                                    height: 33
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("Dispositivo hardware")
+                                        color: StyleTokens.textPrimary
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                        font.weight: Font.Medium
+                                    }
+
+                                    Text {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: {
+                                            let s = "";
+                                            if (batDetailRoot.batVendor) s += batDetailRoot.batVendor + " ";
+                                            if (batDetailRoot.batModel) s += batDetailRoot.batModel;
+                                            else s += I18n.tr("Batteria interna");
+                                            if (batDetailRoot.batTechnology) s += " (" + batDetailRoot.batTechnology + ")";
+                                            return s;
+                                        }
+                                        color: StyleTokens.textMuted
+                                        font.pixelSize: 12
+                                        font.family: controlCenter.textFontFamily
+                                    }
                                 }
                             }
                         }
@@ -3899,18 +4095,17 @@ Item {
                 Loader {
                     id: detailLoader
                     anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.top: (controlCenter.activeDetailModule === "notifications" || controlCenter.activeDetailModule === "battery") ? parent.top : undefined
-                    anchors.bottom: (controlCenter.activeDetailModule === "notifications" || controlCenter.activeDetailModule === "battery") ? parent.bottom : undefined
-                    anchors.verticalCenter: (controlCenter.activeDetailModule !== "notifications" && controlCenter.activeDetailModule !== "battery") ? parent.verticalCenter : undefined
+                    anchors.top: parent.top
+                    anchors.topMargin: (controlCenter.activeDetailModule === "notifications" || controlCenter.activeDetailModule === "battery") ? 0 : Math.max(0, (parent.height - height) / 2)
                     width: parent.width
                     height: {
+                        if (controlCenter.activeDetailModule === "notifications" || controlCenter.activeDetailModule === "battery")
+                            return parent.height;
                         switch (controlCenter.activeDetailModule) {
                         case "volume": return 90;
                         case "brightness": return 90;
-                        case "battery": return parent.height;
                         case "toggles": return 100;
                         case "quickactions": return 64;
-                        case "notifications": return parent.height;
                         default: return 90;
                         }
                     }
@@ -3919,7 +4114,7 @@ Item {
                         switch (controlCenter.activeDetailModule) {
                         case "volume": return volumeComponent;
                         case "brightness": return brightnessComponent;
-                        case "battery": return controlCenter.hasBattery ? batteryDetailComponent : null;
+                        case "battery": return batteryDetailComponent;
                         case "toggles": return togglesComponent;
                         case "notifications": return notificationsComponent;
                         case "quickactions": return quickactionsComponent;
