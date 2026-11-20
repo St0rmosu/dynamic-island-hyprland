@@ -138,7 +138,7 @@ Item {
             property: "animOffsetY"
             from: root.clockDropOffsetY
             to: 0.0
-            duration: 320
+            duration: 280
             easing.type: Easing.OutCubic
         }
 
@@ -147,7 +147,7 @@ Item {
             property: "animScale"
             from: root.targetCapsuleScale
             to: 1.0
-            duration: 320
+            duration: 280
             easing.type: Easing.OutCubic
         }
 
@@ -156,8 +156,23 @@ Item {
             property: "animOpacity"
             from: 0.6
             to: 1.0
-            duration: 160
+            duration: 140
             easing.type: Easing.OutQuad
+        }
+
+        SequentialAnimation {
+            PauseAnimation { duration: 60 }
+            NumberAnimation {
+                target: topIslandCapsule
+                property: "dynamicWidth"
+                from: root.islandWidth
+                to: 56
+                duration: 180
+                easing.type: Easing.OutCubic
+            }
+            ScriptAction {
+                script: topIslandCapsule.dynamicWidth = -1
+            }
         }
     }
 
@@ -170,7 +185,9 @@ Item {
         normalClockGroup.animScale = root.targetCapsuleScale;
         normalClockGroup.animOpacity = 1.0;
         topIslandCapsule.animOffsetY = 0.0;
+        topIslandCapsule.dynamicWidth = -1;
         topIslandCapsule.opacity = 1.0;
+        clockText.color = root.dynamicClockColor;
         complicationsStack.opacity = 1.0;
         contentWrapper.opacity = 1.0;
         backgroundWrapper.opacity = 1.0;
@@ -185,14 +202,14 @@ Item {
     SequentialAnimation {
         id: unlockAnim
 
-        // Phase 1: Clock glides UP into notch and shrinks with snappy physics-based OutCubic curve
+        // Phase 1: Snappy 250ms clock flight and dynamic capsule swallow
         ParallelAnimation {
             NumberAnimation {
                 target: normalClockGroup
                 property: "animOffsetY"
                 from: 0.0
                 to: root.clockDropOffsetY
-                duration: 310
+                duration: 250
                 easing.type: Easing.OutCubic
             }
 
@@ -201,7 +218,7 @@ Item {
                 property: "animScale"
                 from: 1.0
                 to: root.targetCapsuleScale
-                duration: 310
+                duration: 250
                 easing.type: Easing.OutCubic
             }
 
@@ -210,14 +227,51 @@ Item {
                 property: "opacity"
                 from: complicationsStack.opacity
                 to: 0.0
-                duration: 160
+                duration: 100
                 easing.type: Easing.OutQuad
+            }
+
+            ColorAnimation {
+                target: clockText
+                property: "color"
+                from: root.dynamicClockColor
+                to: Qt.rgba(1.0, 1.0, 1.0, 1.0)
+                duration: 240
+                easing.type: Easing.OutQuad
+            }
+
+            // SaneAspect "Dynamic Notch Swallow" Choreography:
+            // 1. Immediately snaps down to compact pill 56px (over 60ms) as dots disappear
+            // 2. Holds compact while clock ascends mid-flight (60ms)
+            // 3. Smoothly widens to 140px right as the clock arrives (130ms, OutCubic)
+            SequentialAnimation {
+                NumberAnimation {
+                    target: topIslandCapsule
+                    property: "dynamicWidth"
+                    from: topIslandCapsule.width
+                    to: 56
+                    duration: 60
+                    easing.type: Easing.OutQuad
+                }
+
+                PauseAnimation {
+                    duration: 60
+                }
+
+                NumberAnimation {
+                    target: topIslandCapsule
+                    property: "dynamicWidth"
+                    from: 56
+                    to: root.islandWidth
+                    duration: 130
+                    easing.type: Easing.OutCubic
+                }
             }
         }
 
-        // Phase 2: Instant hand-off without any black background fade
+        // Tiny 20ms pause for compositor frame alignment
         PauseAnimation {
-            duration: 30
+            duration: 20
         }
 
         // Phase 3: Final Wayland surface unlock directly into desktop
@@ -857,9 +911,9 @@ Item {
                     NumberAnimation { duration: 150 }
                 }
 
-                layer.enabled: shadowOpacity > 0.01
+                layer.enabled: true
                 layer.effect: MultiEffect {
-                    shadowEnabled: true
+                    shadowEnabled: clockText.shadowOpacity > 0.01
                     shadowColor: Qt.rgba(0, 0, 0, 0.45 * clockText.shadowOpacity)
                     shadowBlur: 0.65
                     shadowVerticalOffset: 6 * clockText.shadowOpacity

@@ -17,6 +17,7 @@ Item {
     property string clockFontFamily: ""
     property int islandHeight: 40
     property int restingIslandWidth: 140
+    property real dynamicWidth: -1
 
     signal submitRequested(string password)
     signal focusRequested()
@@ -36,6 +37,7 @@ Item {
             id: capsuleBg
             anchors.centerIn: parent
             width: {
+                if (root.dynamicWidth > 0) return root.dynamicWidth;
                 if (root.lockState === "unlocked") return root.restingIslandWidth;
                 if (root.lockState === "verifying" || root.authenticating) return 140;
                 if (root.lockState === "failed" || root.isError) return 180;
@@ -49,6 +51,7 @@ Item {
 
             border.width: 1.0
             border.color: {
+                if (root.lockState === "unlocked") return Qt.rgba(1.0, 1.0, 1.0, 0.0);
                 if (root.lockState === "failed" || root.isError) return AppleTokens.errorRed;
                 if (root.isTyping) return Qt.rgba(1.0, 1.0, 1.0, 0.25);
                 return Qt.rgba(1.0, 1.0, 1.0, 0.12);
@@ -63,6 +66,7 @@ Item {
             }
 
             Behavior on width {
+                enabled: root.dynamicWidth <= 0
                 NumberAnimation {
                     duration: AppleTokens.animDurationNormal
                     easing.type: Easing.OutBack
