@@ -138,7 +138,7 @@ Item {
             property: "animOffsetY"
             from: root.clockDropOffsetY
             to: 0.0
-            duration: 400
+            duration: 320
             easing.type: Easing.OutCubic
         }
 
@@ -147,7 +147,7 @@ Item {
             property: "animScale"
             from: root.targetCapsuleScale
             to: 1.0
-            duration: 400
+            duration: 320
             easing.type: Easing.OutCubic
         }
 
@@ -156,7 +156,7 @@ Item {
             property: "animOpacity"
             from: 0.6
             to: 1.0
-            duration: 180
+            duration: 160
             easing.type: Easing.OutQuad
         }
     }
@@ -181,18 +181,18 @@ Item {
         dropLockAnim.restart();
     }
 
-    // ── Unlock Exit Animation (Clock glides and shrinks back into the top capsule - saneAspect style) ──
+    // ── Unlock Exit Animation (Clock glides smoothly and fast into top capsule - saneAspect style) ──
     SequentialAnimation {
         id: unlockAnim
 
-        // Phase 1: Clock glides UP into notch and shrinks with physics-based OutCubic curve
+        // Phase 1: Clock glides UP into notch and shrinks with snappy physics-based OutCubic curve
         ParallelAnimation {
             NumberAnimation {
                 target: normalClockGroup
                 property: "animOffsetY"
                 from: 0.0
                 to: root.clockDropOffsetY
-                duration: 440
+                duration: 310
                 easing.type: Easing.OutCubic
             }
 
@@ -201,7 +201,7 @@ Item {
                 property: "animScale"
                 from: 1.0
                 to: root.targetCapsuleScale
-                duration: 440
+                duration: 310
                 easing.type: Easing.OutCubic
             }
 
@@ -210,38 +210,17 @@ Item {
                 property: "opacity"
                 from: complicationsStack.opacity
                 to: 0.0
-                duration: 200
+                duration: 160
                 easing.type: Easing.OutQuad
             }
         }
 
-        // Phase 2: Settle pause in the capsule (docked visual rest)
+        // Phase 2: Instant hand-off without any black background fade
         PauseAnimation {
-            duration: 100
+            duration: 30
         }
 
-        // Phase 3: Seamless crossfade out revealing the desktop beneath
-        ParallelAnimation {
-            NumberAnimation {
-                target: backgroundWrapper
-                property: "opacity"
-                from: 1.0
-                to: 0.0
-                duration: 240
-                easing.type: Easing.OutQuad
-            }
-
-            NumberAnimation {
-                target: contentWrapper
-                property: "opacity"
-                from: 1.0
-                to: 0.0
-                duration: 240
-                easing.type: Easing.OutQuad
-            }
-        }
-
-        // Phase 4: Final Wayland surface unlock
+        // Phase 3: Final Wayland surface unlock directly into desktop
         ScriptAction {
             script: {
                 root.unlockRequested();
@@ -257,7 +236,7 @@ Item {
                 target: mediaLockGroup
                 property: "opacity"
                 to: 0.0
-                duration: 280
+                duration: 200
                 easing.type: Easing.OutQuad
             }
 
@@ -265,27 +244,7 @@ Item {
                 target: complicationsStack
                 property: "opacity"
                 to: 0.0
-                duration: 180
-                easing.type: Easing.OutQuad
-            }
-        }
-
-        ParallelAnimation {
-            NumberAnimation {
-                target: backgroundWrapper
-                property: "opacity"
-                from: 1.0
-                to: 0.0
-                duration: 220
-                easing.type: Easing.OutQuad
-            }
-
-            NumberAnimation {
-                target: contentWrapper
-                property: "opacity"
-                from: 1.0
-                to: 0.0
-                duration: 220
+                duration: 150
                 easing.type: Easing.OutQuad
             }
         }
