@@ -244,8 +244,8 @@ Item {
                                 radius: 0
                                 topLeftRadius: root.batteryOuterRadius
                                 bottomLeftRadius: root.batteryOuterRadius
-                                topRightRadius: batteryShape.roundedEnd ? root.batteryOuterRadius : 0
-                                bottomRightRadius: batteryShape.roundedEnd ? root.batteryOuterRadius : 0
+                                topRightRadius: (batteryShape.level >= 90 || batteryShape.roundedEnd) ? root.batteryOuterRadius : 0
+                                bottomRightRadius: (batteryShape.level >= 90 || batteryShape.roundedEnd) ? root.batteryOuterRadius : 0
                                 width: Math.max(root.batteryOuterRadius * 2, parent.width * (batteryShape.level / 100))
                                 color: batteryShape.bodyColor
 

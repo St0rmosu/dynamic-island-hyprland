@@ -760,13 +760,13 @@ Item {
             property real animOpacity: 1.0
 
             transform: [
-                Translate { y: normalClockGroup.animOffsetY },
                 Scale {
                     origin.x: normalClockGroup.width / 2
                     origin.y: normalClockGroup.height / 2
                     xScale: normalClockGroup.animScale
                     yScale: normalClockGroup.animScale
-                }
+                },
+                Translate { y: normalClockGroup.animOffsetY }
             ]
 
             visible: opacity > 0.001
@@ -789,6 +789,10 @@ Item {
                 font.letterSpacing: -0.2
                 color: root.dynamicClockColor
                 visible: root.showDateAboveClock
+                opacity: (unlockAnim.running || normalClockGroup.animOffsetY !== 0.0) ? 0.0 : 1.0
+                Behavior on opacity {
+                    NumberAnimation { duration: 120 }
+                }
 
                 layer.enabled: true
                 layer.effect: MultiEffect {

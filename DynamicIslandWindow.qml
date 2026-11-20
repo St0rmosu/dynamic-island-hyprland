@@ -1386,9 +1386,7 @@ PanelWindow {
     }
 
     onScreenRecordingActiveChanged: {
-        if (screenRecordingActive)
-            islandContainer.showNotificationCapsule(I18n.tr("Schermo"), I18n.tr("Condivisione Schermo"), I18n.tr("Trasmissione video attiva"), "\u{F0379}", root.themeAccent);
-
+        // Minimal state change: notification popup removed to avoid intrusive space-consuming banner
     }
     color: "transparent"
     implicitHeight: root.screen ? root.screen.height : 1080
@@ -5571,23 +5569,19 @@ PanelWindow {
             }
             visible: opacity > 0.001
 
-            // Clip orizzontale per la percentuale di carica (con headroom verticale di 10px sopra e sotto)
+            // Contorno orizzontale per la percentuale di carica (senza scissor clip per raccordi sempre arrotondati)
+            readonly property real progressX: w * batteryFraction
+
             Item {
                 id: batteryProgressClip
 
-                anchors.left: parent.left
-                width: Math.round(parent.width * innerBatteryClip.batteryFraction)
-                y: -10
-                height: parent.height + 20
-                clip: true
+                anchors.fill: parent
+                clip: false
 
                 Item {
                     id: batteryContourContainer
 
-                    x: 0
-                    y: 10
-                    width: innerBatteryClip.width
-                    height: innerBatteryClip.height
+                    anchors.fill: parent
                     layer.enabled: true
                     layer.samples: 8
                     layer.smooth: true
@@ -5613,12 +5607,12 @@ PanelWindow {
                                 radiusX: innerBatteryClip.cr
                                 radiusY: innerBatteryClip.cr
                                 startAngle: 180
-                                sweepAngle: 90
+                                sweepAngle: Math.min(90, Math.max(0.1, (innerBatteryClip.progressX / Math.max(1, innerBatteryClip.actualRadius)) * 90))
                             }
 
                             // Linea orizzontale superiore
                             PathLine {
-                                x: innerBatteryClip.w - innerBatteryClip.actualRadius
+                                x: Math.max(innerBatteryClip.actualRadius, Math.min(innerBatteryClip.w - innerBatteryClip.actualRadius, innerBatteryClip.progressX))
                                 y: innerBatteryClip.sw / 2
                             }
 
@@ -5629,7 +5623,7 @@ PanelWindow {
                                 radiusX: innerBatteryClip.cr
                                 radiusY: innerBatteryClip.cr
                                 startAngle: 270
-                                sweepAngle: 90
+                                sweepAngle: innerBatteryClip.progressX > (innerBatteryClip.w - innerBatteryClip.actualRadius) ? Math.min(90, Math.max(0, ((innerBatteryClip.progressX - (innerBatteryClip.w - innerBatteryClip.actualRadius)) / Math.max(1, innerBatteryClip.actualRadius)) * 90)) : 0
                             }
 
                             Behavior on strokeColor {
@@ -5671,7 +5665,7 @@ PanelWindow {
                                     radiusX: innerBatteryClip.cr
                                     radiusY: innerBatteryClip.cr
                                     startAngle: 180
-                                    sweepAngle: -90 * innerBatteryClip.arcFrac
+                                    sweepAngle: -90 * innerBatteryClip.arcFrac * Math.min(1.0, innerBatteryClip.progressX / Math.max(1, innerBatteryClip.actualRadius))
                                 }
 
                                 Behavior on strokeColor {
@@ -5698,7 +5692,7 @@ PanelWindow {
                                     radiusX: innerBatteryClip.cr
                                     radiusY: innerBatteryClip.cr
                                     startAngle: 0
-                                    sweepAngle: 90 * innerBatteryClip.arcFrac
+                                    sweepAngle: innerBatteryClip.progressX > (innerBatteryClip.w - innerBatteryClip.actualRadius) ? (90 * innerBatteryClip.arcFrac * Math.min(1.0, (innerBatteryClip.progressX - (innerBatteryClip.w - innerBatteryClip.actualRadius)) / Math.max(1, innerBatteryClip.actualRadius))) : 0
                                 }
 
                                 Behavior on strokeColor {

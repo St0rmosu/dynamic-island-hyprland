@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Bluetooth
@@ -2484,12 +2485,25 @@ Item {
             }
 
             Text {
+                id: chevronIcon
                 visible: !batteryModeCardItem.isCompact
                 anchors.right: parent.right
                 anchors.rightMargin: 12
                 anchors.top: parent.top
+                anchors.topMargin: Math.min(13, Math.max(7, (parent.height - 56) / 2))
+                text: ""
+                font.family: controlCenter.iconFontFamily
+                font.pixelSize: 9
+                color: batteryHeaderMouse.containsMouse ? controlCenter.cardAccent : StyleTokens.textMuted
+            }
+
+            Text {
+                visible: !batteryModeCardItem.isCompact
+                anchors.right: chevronIcon.left
+                anchors.rightMargin: 6
+                anchors.top: parent.top
                 anchors.topMargin: Math.min(12, Math.max(6, (parent.height - 56) / 2))
-                width: Math.max(0, parent.width - 88)
+                width: Math.max(0, parent.width - 110)
                 text: controlCenter.batteryModeError.length > 0
                     ? controlCenter.batteryModeError
                     : (controlCenter.batteryModeInfoMessage.length > 0
@@ -2501,6 +2515,17 @@ Item {
                 font.family: controlCenter.textFontFamily
                 font.weight: Font.Medium
                 elide: Text.ElideRight
+            }
+
+            MouseArea {
+                id: batteryHeaderMouse
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                height: 34
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: controlCenter.openModuleDetail("battery")
             }
 
             Item {
@@ -2652,6 +2677,393 @@ Item {
                         controlCenter.batteryModeSliderDragging = false;
                         controlCenter.batteryModeDragOffset = 0;
                         controlCenter.setBatteryModeVisualIndex(controlCenter.batteryModeAppliedIndex, true);
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: batteryDetailComponent
+
+        Rectangle {
+            id: batDetailRoot
+            anchors.fill: parent
+            radius: 18
+            color: StyleTokens.clearBlack
+            clip: true
+
+            property int batPercent: 100
+            property string batState: "Unknown"
+            property string batSubtitle: "BATTERY"
+            property string batSize: "--"
+            property string batLimit: "--"
+            property string batCycles: "--"
+            property string batProfile: "power-saver"
+            property string batIcon: "󰁹"
+
+            MatteSurface {
+                anchors.fill: parent
+                radius: parent.radius
+            }
+
+            // Backend process to fetch real-time battery data from get-battery.py
+            Process {
+                id: batFetchProcess
+                command: ["python3", "/home/lollo/.scripts/get-battery.py"]
+                running: false
+                stdout: SplitParser {
+                    onRead: function(line) {
+                        try {
+                            const d = JSON.parse(line.trim());
+                            if (d) {
+                                if (d.percentage !== undefined) batDetailRoot.batPercent = Number(d.percentage);
+                                if (d.state) batDetailRoot.batState = String(d.state);
+                                if (d.subtitle) batDetailRoot.batSubtitle = String(d.subtitle);
+                                if (d.size) batDetailRoot.batSize = String(d.size);
+                                if (d.limit) batDetailRoot.batLimit = String(d.limit);
+                                if (d.cycles) batDetailRoot.batCycles = String(d.cycles);
+                                if (d.profile) batDetailRoot.batProfile = String(d.profile);
+                                if (d.icon) batDetailRoot.batIcon = String(d.icon);
+                            }
+                        } catch(e) {}
+                    }
+                }
+            }
+
+            Process {
+                id: batProfileSetter
+                running: false
+                onExited: function(code, status) {
+                    batFetchTimer.restart();
+                }
+            }
+
+            function setProfile(profName) {
+                batDetailRoot.batProfile = profName;
+                batProfileSetter.command = ["powerprofilesctl", "set", profName];
+                batProfileSetter.running = true;
+            }
+
+            Timer {
+                id: batFetchTimer
+                interval: 2500
+                running: batDetailRoot.visible
+                repeat: true
+                triggeredOnStart: true
+                onTriggered: {
+                    if (!batFetchProcess.running) {
+                        batFetchProcess.running = true;
+                    }
+                }
+            }
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 14
+                spacing: 10
+
+                // 1. Header (Icon + Title/Subtitle on left, Percentage on right)
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+
+                    Text {
+                        text: batDetailRoot.batIcon
+                        font.family: "JetBrainsMono Nerd Font, Symbols Nerd Font"
+                        font.pixelSize: 26
+                        color: controlCenter.cardAccent
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+
+                    ColumnLayout {
+                        spacing: 1
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Text {
+                            text: I18n.tr("Batteria")
+                            font.family: controlCenter.textFontFamily
+                            font.pixelSize: 15
+                            font.weight: Font.Bold
+                            color: controlCenter.textPrimary
+                        }
+
+                        Text {
+                            text: batDetailRoot.batSubtitle
+                            font.family: "JetBrainsMono Nerd Font, monospace"
+                            font.pixelSize: 9
+                            font.weight: Font.DemiBold
+                            font.letterSpacing: 1.2
+                            color: StyleTokens.textMuted
+                        }
+                    }
+
+                    Text {
+                        text: batDetailRoot.batPercent + "%"
+                        font.family: controlCenter.textFontFamily
+                        font.pixelSize: 26
+                        font.weight: Font.Bold
+                        color: controlCenter.textPrimary
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                }
+
+                // 2. Sleek Progress Bar
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 6
+                    radius: 3
+                    color: Qt.rgba(255, 255, 255, 0.08)
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: Math.max(parent.height, parent.width * Math.max(0, Math.min(100, batDetailRoot.batPercent)) / 100.0)
+                        radius: 3
+                        color: {
+                            if (batDetailRoot.batPercent <= 20) return "#ff3b30";
+                            if (batDetailRoot.batPercent <= 40) return "#ff9500";
+                            return controlCenter.cardAccent;
+                        }
+
+                        Behavior on width {
+                            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+                        }
+                    }
+                }
+
+                // 3. 2x2 Info Grid (Cealestia style)
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 68
+                    radius: 12
+                    color: Qt.rgba(255, 255, 255, 0.04)
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.06)
+
+                    GridLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        columns: 2
+                        rowSpacing: 6
+                        columnSpacing: 16
+
+                        // Row 1: Size & Limit
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: I18n.tr("Capacità")
+                                font.family: controlCenter.textFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: StyleTokens.textMuted
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                text: batDetailRoot.batSize
+                                font.family: "JetBrainsMono Nerd Font, monospace"
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                color: controlCenter.textPrimary
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: I18n.tr("Soglia limite")
+                                font.family: controlCenter.textFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: StyleTokens.textMuted
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                text: batDetailRoot.batLimit
+                                font.family: "JetBrainsMono Nerd Font, monospace"
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                color: controlCenter.textPrimary
+                            }
+                        }
+
+                        // Row 2: Cycles & State
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: I18n.tr("Cicli carica")
+                                font.family: controlCenter.textFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: StyleTokens.textMuted
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                text: batDetailRoot.batCycles
+                                font.family: "JetBrainsMono Nerd Font, monospace"
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                color: controlCenter.textPrimary
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Text {
+                                text: I18n.tr("Stato")
+                                font.family: controlCenter.textFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: StyleTokens.textMuted
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                text: batDetailRoot.batState
+                                font.family: controlCenter.textFontFamily
+                                font.pixelSize: 11
+                                font.weight: Font.Bold
+                                color: controlCenter.textPrimary
+                            }
+                        }
+                    }
+                }
+
+                // 4. Power Profile Section (Cealestia style: 3 buttons for power-saver, balanced, performance)
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Text {
+                        text: I18n.tr("PROFILO ENERGETICO")
+                        font.family: "JetBrainsMono Nerd Font, monospace"
+                        font.pixelSize: 9
+                        font.weight: Font.Bold
+                        font.letterSpacing: 1.2
+                        color: StyleTokens.textMuted
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        // Power Saver
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 32
+                            radius: 10
+                            readonly property bool isAct: batDetailRoot.batProfile === "power-saver"
+                            color: isAct ? controlCenter.cardAccent : (saverMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(255, 255, 255, 0.04))
+                            border.width: 1
+                            border.color: isAct ? controlCenter.cardAccent : Qt.rgba(255, 255, 255, 0.08)
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 5
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ""
+                                    font.family: controlCenter.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: parent.parent.isAct ? "#000000" : controlCenter.textPrimary
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Risparmio")
+                                    font.family: controlCenter.textFontFamily
+                                    font.pixelSize: 10
+                                    font.weight: parent.parent.isAct ? Font.Bold : Font.Medium
+                                    color: parent.parent.isAct ? "#000000" : controlCenter.textPrimary
+                                }
+                            }
+
+                            MouseArea {
+                                id: saverMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: batDetailRoot.setProfile("power-saver")
+                            }
+                        }
+
+                        // Balanced
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 32
+                            radius: 10
+                            readonly property bool isAct: batDetailRoot.batProfile === "balanced"
+                            color: isAct ? controlCenter.cardAccent : (balMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(255, 255, 255, 0.04))
+                            border.width: 1
+                            border.color: isAct ? controlCenter.cardAccent : Qt.rgba(255, 255, 255, 0.08)
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 5
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ""
+                                    font.family: controlCenter.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: parent.parent.isAct ? "#000000" : controlCenter.textPrimary
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Bilanciato")
+                                    font.family: controlCenter.textFontFamily
+                                    font.pixelSize: 10
+                                    font.weight: parent.parent.isAct ? Font.Bold : Font.Medium
+                                    color: parent.parent.isAct ? "#000000" : controlCenter.textPrimary
+                                }
+                            }
+
+                            MouseArea {
+                                id: balMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: batDetailRoot.setProfile("balanced")
+                            }
+                        }
+
+                        // Performance
+                        Rectangle {
+                            Layout.fillWidth: true
+                            height: 32
+                            radius: 10
+                            readonly property bool isAct: batDetailRoot.batProfile === "performance"
+                            color: isAct ? controlCenter.cardAccent : (perfMouse.containsMouse ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(255, 255, 255, 0.04))
+                            border.width: 1
+                            border.color: isAct ? controlCenter.cardAccent : Qt.rgba(255, 255, 255, 0.08)
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 5
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ""
+                                    font.family: controlCenter.iconFontFamily
+                                    font.pixelSize: 11
+                                    color: parent.parent.isAct ? "#000000" : controlCenter.textPrimary
+                                }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: I18n.tr("Prestazioni")
+                                    font.family: controlCenter.textFontFamily
+                                    font.pixelSize: 10
+                                    font.weight: parent.parent.isAct ? Font.Bold : Font.Medium
+                                    color: parent.parent.isAct ? "#000000" : controlCenter.textPrimary
+                                }
+                            }
+
+                            MouseArea {
+                                id: perfMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: batDetailRoot.setProfile("performance")
+                            }
+                        }
                     }
                 }
             }
@@ -3342,7 +3754,7 @@ Item {
                             switch (controlCenter.activeDetailModule) {
                             case "volume": return controlCenter.volumeIconGlyph;
                             case "brightness": return controlCenter.brightnessIconGlyph;
-                            case "battery": return "\uf0e7";
+                            case "battery": return "\uf240";
                             case "toggles": return "\uf186";
                             case "notifications": return "\uf0f3";
                             case "quickactions": return "\uf108";
@@ -3360,7 +3772,7 @@ Item {
                             switch (controlCenter.activeDetailModule) {
                             case "volume": return I18n.tr("Controllo Volume");
                             case "brightness": return I18n.tr("Luminosità Display");
-                            case "battery": return I18n.tr("Profilo Batteria TLP");
+                            case "battery": return I18n.tr("Stato & Statistiche Batteria");
                             case "toggles": return I18n.tr("Luce Notturna & Focus");
                             case "notifications": return I18n.tr("Centro Notifiche");
                             case "quickactions": return I18n.tr("Barra & Appunti");
@@ -3393,7 +3805,7 @@ Item {
                         switch (controlCenter.activeDetailModule) {
                         case "volume": return 90;
                         case "brightness": return 90;
-                        case "battery": return 100;
+                        case "battery": return 240;
                         case "toggles": return 100;
                         case "quickactions": return 64;
                         case "notifications": return Math.min(parent.height, 320);
@@ -3405,7 +3817,7 @@ Item {
                         switch (controlCenter.activeDetailModule) {
                         case "volume": return volumeComponent;
                         case "brightness": return brightnessComponent;
-                        case "battery": return controlCenter.hasBattery ? batteryComponent : null;
+                        case "battery": return controlCenter.hasBattery ? batteryDetailComponent : null;
                         case "toggles": return togglesComponent;
                         case "notifications": return notificationsComponent;
                         case "quickactions": return quickactionsComponent;
